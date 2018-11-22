@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{78ebb4f1-34d2-409e-a3e6-f10fecef27bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics">
+      <UniqueIdentifier>{b0dea819-ca9b-4419-b8da-442cde84aef1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\Vulkan">
+      <UniqueIdentifier>{ada72ffd-e6ea-401d-872c-e378fa5c458c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Window">
+      <UniqueIdentifier>{59c747bc-b5aa-451b-8f24-0b64d90d9e51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Utility">
+      <UniqueIdentifier>{ac3be736-9823-40ac-bf53-de54f6304185}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\Vulkan\Pipeline">
+      <UniqueIdentifier>{ec278646-90cd-471a-96a9-e6337ed98e65}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Window\Window.h">
+      <Filter>Code\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utility\Utility.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKImageData.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utility\json.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utility\stb_image.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utility\stb_image_write.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utility\tiny_gltf.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Model.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code\Window\Window.cpp">
+      <Filter>Code\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\Utility.cpp">
+      <Filter>Code\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\stb_image.cpp">
+      <Filter>Code\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\stb_image_write.cpp">
+      <Filter>Code\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\tiny_gltf.cpp">
+      <Filter>Code\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Model.cpp">
+      <Filter>Code\Graphics</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
