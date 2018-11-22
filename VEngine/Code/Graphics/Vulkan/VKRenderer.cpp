@@ -29,9 +29,8 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->init(width, height);
 	m_swapChain->init(width, height);
 	m_forwardPipeline->init(width, height, m_renderResources.get());
-	static Model model("Resources/Models/chip.obj");
-	static std::vector<std::shared_ptr<VEngine::Model>> models = {std::shared_ptr<VEngine::Model>(&model)};
-	m_forwardPipeline->recordCommandBuffer(models);
+	static std::shared_ptr<VEngine::Model> model = std::shared_ptr<VEngine::Model>(new Model("Resources/Models/ice.obj"));
+	m_forwardPipeline->recordCommandBuffer({ model });
 }
 
 void VEngine::VKRenderer::update()
@@ -48,11 +47,11 @@ void VEngine::VKRenderer::update()
 	ubo.projection = glm::perspective(glm::radians(45.0f), m_width / (float)m_height, 0.1f, 100.0f);
 	ubo.projection[1][1] *= -1;
 
+	void *data;
 	auto buffer = m_forwardPipeline->getUniformBuffer();
-	void* data;
-	vkMapMemory(g_context.m_device, buffer.m_info.deviceMemory, buffer.m_info.offset, sizeof(ubo), 0, &data);
+	vmaMapMemory(g_context.m_allocator, buffer.m_allocation, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(g_context.m_device, buffer.m_info.deviceMemory);
+	vmaUnmapMemory(g_context.m_allocator, buffer.m_allocation);
 }
 
 void VEngine::VKRenderer::render()

@@ -77,7 +77,7 @@ VEngine::Model::Model(const char *filepath)
 	{
 		VkDeviceSize bufferSizes[] = { sizeof(indices[0]) * indices.size(), sizeof(vertices[0]) * vertices.size() };
 		VkBufferUsageFlags usages[] = { VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
-		VKBufferData buffers[] = { m_indexBuffer, m_vertexBuffer };
+		VKBufferData *buffers[] = { &m_indexBuffer, &m_vertexBuffer };
 
 		for (size_t i = 0; i < 2; ++i)
 		{
@@ -115,12 +115,12 @@ VEngine::Model::Model(const char *filepath)
 				VmaAllocationCreateInfo allocInfo = {};
 				allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-				if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &buffers[i].m_buffer, &buffers[i].m_allocation, &buffers[i].m_info) != VK_SUCCESS)
+				if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &buffers[i]->m_buffer, &buffers[i]->m_allocation, &buffers[i]->m_info) != VK_SUCCESS)
 				{
 					Utility::fatalExit("Failed to create buffer!", -1);
 				}
 
-				VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, buffers[i], bufferSize);
+				VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, *buffers[i], bufferSize);
 
 				vmaDestroyBuffer(g_context.m_allocator, stagingBuffer.m_buffer, stagingBuffer.m_allocation);
 			}

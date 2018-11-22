@@ -140,7 +140,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-		if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &m_uniformBuffer.m_buffer, &m_uniformBuffer.m_allocation, nullptr) != VK_SUCCESS)
+		if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &m_uniformBuffer.m_buffer, &m_uniformBuffer.m_allocation, &m_uniformBuffer.m_info) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create buffer!", -1);
 		}
