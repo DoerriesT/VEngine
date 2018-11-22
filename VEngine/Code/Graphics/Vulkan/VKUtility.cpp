@@ -108,7 +108,7 @@ void VEngine::VKUtility::copyBuffer(VkQueue queue, VkCommandPool commandPool, VK
 {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
 
-	VkBufferCopy copyRegion = { srcBuffer.m_info.offset, dstBuffer.m_info.offset, size };
+	VkBufferCopy copyRegion = { 0, 0, size };
 	vkCmdCopyBuffer(commandBuffer, srcBuffer.m_buffer, dstBuffer.m_buffer, 1, &copyRegion);
 
 	endSingleTimeCommands(queue, commandPool, commandBuffer);
@@ -175,4 +175,49 @@ void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage i
 	}
 
 	vkCmdPipelineBarrier(commandBuffer, srcStages, destStages, 0, 0, NULL, 0, NULL, 1, &barrier);
+}
+
+void VEngine::VKUtility::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
+{
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(g_context.m_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to create buffer!", -1);
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(g_context.m_device, buffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to allocate buffer memory!", -1);
+	}
+
+	vkBindBufferMemory(g_context.m_device, buffer, bufferMemory, 0);
+}
+
+uint32_t VEngine::VKUtility::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(g_context.m_physicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		{
+			return i;
+		}
+	}
+
+	Utility::fatalExit("Failed to find suitable memory type!", -1);
 }

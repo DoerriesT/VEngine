@@ -16,5 +16,7 @@ namespace VEngine
 		void endSingleTimeCommands(VkQueue queue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
 		void copyBuffer(VkQueue queue, VkCommandPool commandPool, VKBufferData srcBuffer, VKBufferData dstBuffer, VkDeviceSize size);
 		void setImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStages, VkPipelineStageFlags destStages);
+		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	}
 }

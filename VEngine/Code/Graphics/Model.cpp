@@ -75,55 +75,44 @@ VEngine::Model::Model(const char *filepath)
 
 	// upload to vulkan
 	{
-		VkDeviceSize bufferSizes[] = { sizeof(indices[0]) * indices.size(), sizeof(vertices[0]) * vertices.size() };
-		VkBufferUsageFlags usages[] = { VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
-		VKBufferData *buffers[] = { &m_indexBuffer, &m_vertexBuffer };
-
-		for (size_t i = 0; i < 2; ++i)
+		// index buffer
 		{
-			VkDeviceSize bufferSize = bufferSizes[i];
+			VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
 			VKBufferData stagingBuffer;
-			{
-				VkBufferCreateInfo bufferInfo = {};
-				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-				bufferInfo.size = bufferSize;
-				bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-				bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer.m_buffer, stagingBuffer.m_memory);
 
-				VmaAllocationCreateInfo allocInfo = {};
-				allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+			void *data;
+			vkMapMemory(g_context.m_device, stagingBuffer.m_memory, 0, bufferSize, 0, &data);
+			memcpy(data, indices.data(), (size_t)bufferSize);
+			vkUnmapMemory(g_context.m_device, stagingBuffer.m_memory);
 
-				if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &stagingBuffer.m_buffer, &stagingBuffer.m_allocation, &stagingBuffer.m_info) != VK_SUCCESS)
-				{
-					Utility::fatalExit("Failed to create buffer!", -1);
-				}
+			VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer.m_buffer, m_indexBuffer.m_memory);
 
-				void* data;
-				vkMapMemory(g_context.m_device, stagingBuffer.m_info.deviceMemory, stagingBuffer.m_info.offset, stagingBuffer.m_info.size, 0, &data);
-				memcpy(data, vertices.data(), (size_t)bufferSize);
-				vkUnmapMemory(g_context.m_device, stagingBuffer.m_info.deviceMemory);
-			}
+			VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, m_indexBuffer, bufferSize);
 
-			{
-				VkBufferCreateInfo bufferInfo = {};
-				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-				bufferInfo.size = bufferSize;
-				bufferInfo.usage = usages[i];
-				bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			vkDestroyBuffer(g_context.m_device, stagingBuffer.m_buffer, nullptr);
+			vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
+		}
 
-				VmaAllocationCreateInfo allocInfo = {};
-				allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		// vertex buffer
+		{
+			VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-				if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &buffers[i]->m_buffer, &buffers[i]->m_allocation, &buffers[i]->m_info) != VK_SUCCESS)
-				{
-					Utility::fatalExit("Failed to create buffer!", -1);
-				}
+			VKBufferData stagingBuffer;
+			VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer.m_buffer, stagingBuffer.m_memory);
 
-				VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, *buffers[i], bufferSize);
+			void *data;
+			vkMapMemory(g_context.m_device, stagingBuffer.m_memory, 0, bufferSize, 0, &data);
+			memcpy(data, vertices.data(), (size_t)bufferSize);
+			vkUnmapMemory(g_context.m_device, stagingBuffer.m_memory);
 
-				vmaDestroyBuffer(g_context.m_allocator, stagingBuffer.m_buffer, stagingBuffer.m_allocation);
-			}
+			VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer.m_buffer, m_vertexBuffer.m_memory);
+
+			VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, m_vertexBuffer, bufferSize);
+
+			vkDestroyBuffer(g_context.m_device, stagingBuffer.m_buffer, nullptr);
+			vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
 		}
 	}
 

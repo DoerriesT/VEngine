@@ -47,11 +47,11 @@ void VEngine::VKRenderer::update()
 	ubo.projection = glm::perspective(glm::radians(45.0f), m_width / (float)m_height, 0.1f, 100.0f);
 	ubo.projection[1][1] *= -1;
 
-	void *data;
 	auto buffer = m_forwardPipeline->getUniformBuffer();
-	vmaMapMemory(g_context.m_allocator, buffer.m_allocation, &data);
+	void* data;
+	vkMapMemory(g_context.m_device, buffer.m_memory, 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vmaUnmapMemory(g_context.m_allocator, buffer.m_allocation);
+	vkUnmapMemory(g_context.m_device, buffer.m_memory);
 }
 
 void VEngine::VKRenderer::render()

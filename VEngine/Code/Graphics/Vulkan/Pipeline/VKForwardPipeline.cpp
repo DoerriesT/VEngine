@@ -131,19 +131,9 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 
 	// create uniform buffer
 	{
-		VkBufferCreateInfo bufferInfo = {};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(UBO);
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkDeviceSize bufferSize = sizeof(UBO);
+		VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffer.m_buffer, m_uniformBuffer.m_memory);
 
-		VmaAllocationCreateInfo allocInfo = {};
-		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		if (vmaCreateBuffer(g_context.m_allocator, &bufferInfo, &allocInfo, &m_uniformBuffer.m_buffer, &m_uniformBuffer.m_allocation, &m_uniformBuffer.m_info) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create buffer!", -1);
-		}
 	}
 
 	// create descriptor set pool
@@ -370,10 +360,11 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(const std::vector<std::shar
 	for (size_t i = 0; i < models.size(); ++i)
 	{
 		VKBufferData vertexBufferData = models[i]->getVertexBufferData();
-		vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, &vertexBufferData.m_buffer, &vertexBufferData.m_info.offset);
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, &vertexBufferData.m_buffer, &offset);
 
 		VKBufferData indexBufferData = models[i]->getIndexBufferData();
-		vkCmdBindIndexBuffer(m_commandBuffer, indexBufferData.m_buffer, indexBufferData.m_info.offset, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(m_commandBuffer, indexBufferData.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
 

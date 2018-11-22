@@ -70,20 +70,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>D:\Users\Tim\Documents\C++ Projects\VEngine\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\lib\32\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>.\..\Libraries\lib\32\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>D:\Users\Tim\Documents\C++ Projects\VEngine\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\lib\32\release;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>.\..\Libraries\lib\32\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Users\Tim\Documents\C++ Projects\VEngine\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\lib\64\debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>.\..\Libraries\lib\64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\Users\Tim\Documents\C++ Projects\VEngine\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Users\Tim\Documents\C++ Projects\VEngine\Libraries\lib\64\release;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>.\..\Libraries\lib\64\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
