@@ -9,7 +9,6 @@ namespace VEngine
 	{
 	public:
 		explicit Camera(const glm::vec3 &position, const glm::quat &rotation, float aspectRatio, float fovy, float near, float far);
-		explicit Camera(const glm::vec3 &position, const glm::vec3 &pitchYawRoll, float aspectRatio, float fovy, float near, float far);
 		void setRotation(const glm::quat &rotation);
 		void setPosition(const glm::vec3 &position);
 		void setAspectRatio(float aspectRatio);

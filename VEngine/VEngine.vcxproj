@@ -130,7 +130,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Code\ECS\Component\Component.h" />
+    <ClInclude Include="Code\ECS\Component\ModelComponent.h" />
+    <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
+    <ClInclude Include="Code\ECS\Component\TransformationComponent.h" />
+    <ClInclude Include="Code\ECS\EntityManager.h" />
+    <ClInclude Include="Code\ECS\IOnComponentAddedListener.h" />
+    <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h" />
+    <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h" />
+    <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h" />
+    <ClInclude Include="Code\ECS\System\RenderSystem.h" />
+    <ClInclude Include="Code\ECS\System\System.h" />
+    <ClInclude Include="Code\Engine.h" />
+    <ClInclude Include="Code\GlobalVar.h" />
+    <ClInclude Include="Code\Graphics\Camera\Camera.h" />
+    <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h" />
     <ClInclude Include="Code\Graphics\Model.h" />
+    <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
@@ -140,7 +156,12 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h" />
+    <ClInclude Include="Code\IGameLogic.h" />
+    <ClInclude Include="Code\Input\IInputListener.h" />
+    <ClInclude Include="Code\Input\InputTokens.h" />
+    <ClInclude Include="Code\Input\UserInput.h" />
+    <ClInclude Include="Code\Scene.h" />
+    <ClInclude Include="Code\Utility\ContainerUtility.h" />
     <ClInclude Include="Code\Utility\json.h" />
     <ClInclude Include="Code\Utility\stb_image.h" />
     <ClInclude Include="Code\Utility\stb_image_write.h" />
@@ -149,6 +170,14 @@
     <ClInclude Include="Code\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Code\ECS\Component\Component.cpp" />
+    <ClCompile Include="Code\ECS\EntityManager.cpp" />
+    <ClCompile Include="Code\ECS\System\RenderSystem.cpp" />
+    <ClCompile Include="Code\ECS\System\System.cpp" />
+    <ClCompile Include="Code\Engine.cpp" />
+    <ClCompile Include="Code\GlobalVar.cpp" />
+    <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
+    <ClCompile Include="Code\Graphics\Camera\FPSCameraController.cpp" />
     <ClCompile Include="Code\Graphics\Model.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
@@ -157,7 +186,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp" />
+    <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Utility\stb_image.cpp" />
     <ClCompile Include="Code\Utility\stb_image_write.cpp" />
     <ClCompile Include="Code\Utility\tiny_gltf.cpp" />

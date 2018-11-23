@@ -13,7 +13,7 @@ VEngine::VKSwapChain::VKSwapChain()
 
 VEngine::VKSwapChain::~VKSwapChain()
 {
-	cleanup();
+	shutdown();
 }
 
 void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
@@ -171,7 +171,7 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 void VEngine::VKSwapChain::recreate(unsigned int width, unsigned int height)
 {
 	vkDeviceWaitIdle(g_context.m_device);
-	cleanup();
+	shutdown();
 	init(width, height);
 }
 
@@ -201,7 +201,7 @@ std::size_t VEngine::VKSwapChain::getImageCount() const
 	return m_images.size();
 }
 
-void VEngine::VKSwapChain::cleanup()
+void VEngine::VKSwapChain::shutdown()
 {
 	for (auto imageView : m_imageViews)
 	{

@@ -1,25 +1,21 @@
 #include <cstdlib>
-#include <Window/Window.h>
-#include <Graphics/Vulkan/VKContext.h>
-#include <Graphics/Vulkan/VKRenderer.h>
+#include <Engine.h>
+#include <IGameLogic.h>
 
-extern VEngine::VKContext g_context;
+class DummyLogic : public VEngine::IGameLogic
+{
+public:
+	void init() {};
+	void input(double time, double timeDelta) {};
+	void update(double time, double timeDelta) {};
+	void render() {};
+};
 
 int main()
 {
-	VEngine::Window window(800, 600, "Vulkan");
-	window.init();
-
+	DummyLogic logic;
+	VEngine::Engine engine("Vulkan", logic);
+	engine.start();
 	
-	g_context.init(window.getWindowHandle());
-	VEngine::VKRenderer renderer;
-	renderer.init(800, 600);
-
-	while (!window.shouldClose())
-	{
-		renderer.update();
-		renderer.render();
-		glfwPollEvents();
-	}
 	return EXIT_SUCCESS;
 }

@@ -315,18 +315,6 @@ namespace VEngine
 			}
 		}
 
-		// create memory allocator
-		{
-			VmaAllocatorCreateInfo allocatorInfo = {};
-			allocatorInfo.physicalDevice = m_physicalDevice;
-			allocatorInfo.device = m_device;
-
-			if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create memory allocator!", -1);
-			}
-		}
-
 		// create semaphores
 		{
 			VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -340,9 +328,8 @@ namespace VEngine
 		}
 	}
 
-	void VKContext::cleanup()
+	void VKContext::shutdown()
 	{
-		vmaDestroyAllocator(m_allocator);
 		vkDestroyDevice(m_device, nullptr);
 
 #if ENABLE_VALIDATION_LAYERS

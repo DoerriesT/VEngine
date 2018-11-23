@@ -116,7 +116,7 @@ VEngine::Model::Model(const char *filepath)
 		}
 	}
 
-	indexCount = indices.size();
+	indexCount = static_cast<uint32_t>(indices.size());
 }
 
 VEngine::VKBufferData VEngine::Model::getIndexBufferData() const

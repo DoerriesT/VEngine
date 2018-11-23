@@ -13,18 +13,6 @@ VEngine::Camera::Camera(const glm::vec3 &position, const glm::quat &rotation, fl
 	updateProjectionMatrix();
 }
 
-VEngine::Camera::Camera(const glm::vec3 &position, const glm::vec3 &pitchYawRoll, float aspectRatio, float fovy, float near, float far)
-	:m_position(position),
-	m_rotation(pitchYawRoll),
-	m_aspectRatio(aspectRatio),
-	m_fovy(fovy),
-	m_near(near),
-	m_far(far)
-{
-	updateViewMatrix();
-	updateProjectionMatrix();
-}
-
 void VEngine::Camera::setRotation(const glm::quat &rotation)
 {
 	m_rotation = rotation;
@@ -124,4 +112,5 @@ void VEngine::Camera::updateViewMatrix()
 void VEngine::Camera::updateProjectionMatrix()
 {
 	m_projectionMatrix = glm::perspective(m_fovy, m_aspectRatio, m_near, m_far);
+	m_projectionMatrix[1][1] *= -1;
 }

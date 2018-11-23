@@ -7,6 +7,7 @@ namespace VEngine
 	struct VKRenderResources;
 	class VKSwapChain;
 	class VKForwardPipeline;
+	class Camera;
 
 	class VKRenderer
 	{
@@ -14,7 +15,7 @@ namespace VEngine
 		explicit VKRenderer();
 		~VKRenderer();
 		void init(unsigned int width, unsigned int height);
-		void update();
+		void update(Camera *camera);
 		void render();
 
 	private:

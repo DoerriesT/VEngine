@@ -28,6 +28,6 @@ namespace VEngine
 		VkExtent2D m_extent;
 		std::vector<VkImageView> m_imageViews;
 
-		void cleanup();
+		void shutdown();
 	};
 }

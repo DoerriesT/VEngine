@@ -9,8 +9,7 @@ namespace VEngine
 	class UserInput :public IInputListener
 	{
 	public:
-		static UserInput &getInstance();
-
+		explicit UserInput();
 		UserInput(const UserInput &) = delete;
 		UserInput(const UserInput &&) = delete;
 		UserInput &operator= (const UserInput &) = delete;
@@ -20,7 +19,7 @@ namespace VEngine
 		glm::vec2 getCurrentMousePos();
 		glm::vec2 getMousePosDelta();
 		glm::vec2 getScrollOffset();
-		bool isKeyPressed(InputKey key);
+		bool isKeyPressed(InputKey key, bool ignoreRepeated = false);
 		bool isMouseButtonPressed(InputMouse mouseButton);
 		void addKeyListener(IKeyListener *listener);
 		void removeKeyListener(IKeyListener *listener);
@@ -31,21 +30,22 @@ namespace VEngine
 		void addMouseButtonListener(IMouseButtonListener *listener);
 		void removeMouseButtonListener(IMouseButtonListener *listener);
 		void onKey(InputKey key, InputAction action) override;
-		void onChar(InputKey charKey) override;
+		void onChar(Codepoint charKey) override;
 		void onMouseButton(InputMouse mouseButton, InputAction action) override;
-		void onScroll(double xOffset, double yOffset);
+		void onMouseMove(double x, double y) override;
+		void onMouseScroll(double xOffset, double yOffset) override;
 
 	private:
+		glm::vec2 m_mousePos;
 		glm::vec2 m_previousMousePos;
-		glm::vec2 m_currentMousePos;
+		glm::vec2 m_mousePosDelta;
 		glm::vec2 m_scrollOffset;
 		std::vector<IKeyListener*> m_keyListeners;
 		std::vector<ICharListener*> m_charListeners;
 		std::vector<IScrollListener*> m_scrollListeners;
 		std::vector<IMouseButtonListener*> m_mouseButtonlisteners;
-		std::bitset<349> m_pressedKeys;
+		std::bitset<350> m_pressedKeys;
+		std::bitset<350> m_repeatedKeys;
 		std::bitset<8> m_pressedMouseButtons;
-
-		UserInput() = default;
 	};
 }

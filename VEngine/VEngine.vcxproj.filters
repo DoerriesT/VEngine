@@ -19,13 +19,25 @@
     <Filter Include="Code\Graphics\Vulkan\Pipeline">
       <UniqueIdentifier>{ec278646-90cd-471a-96a9-e6337ed98e65}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Input">
+      <UniqueIdentifier>{b9042ce5-8996-43e3-a87d-136048f86e5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\ECS">
+      <UniqueIdentifier>{8501741e-7058-423b-ad83-bad9424162aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\ECS\System">
+      <UniqueIdentifier>{a54c5c35-8de8-45f0-8c10-cc26c57614e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\ECS\Component">
+      <UniqueIdentifier>{18150fdf-5c24-476e-a49e-c3a8f1590325}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\Camera">
+      <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Window\Window.h">
-      <Filter>Code\Window</Filter>
     </ClInclude>
     <ClInclude Include="Code\Utility\Utility.h">
       <Filter>Code\Utility</Filter>
@@ -37,9 +49,6 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h">
-      <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h">
@@ -72,11 +81,77 @@
     <ClInclude Include="Code\Graphics\Model.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Utility\ContainerUtility.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Input\IInputListener.h">
+      <Filter>Code\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Input\InputTokens.h">
+      <Filter>Code\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Input\UserInput.h">
+      <Filter>Code\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Engine.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\IGameLogic.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Window\Window.h">
+      <Filter>Code\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\EntityManager.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\IOnComponentAddedListener.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\Component.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\System\RenderSystem.h">
+      <Filter>Code\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\TransformationComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\RenderableComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\ModelComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\System\System.h">
+      <Filter>Code\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\GlobalVar.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Scene.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\RenderData.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Camera\Camera.h">
+      <Filter>Code\Graphics\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h">
+      <Filter>Code\Graphics\Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Code\Window\Window.cpp">
-      <Filter>Code\Window</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Utility\Utility.cpp">
       <Filter>Code\Utility</Filter>
     </ClCompile>
@@ -90,9 +165,6 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp">
-      <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp">
@@ -115,6 +187,36 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Model.cpp">
       <Filter>Code\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Input\UserInput.cpp">
+      <Filter>Code\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Engine.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Window\Window.cpp">
+      <Filter>Code\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\EntityManager.cpp">
+      <Filter>Code\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\System\RenderSystem.cpp">
+      <Filter>Code\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\Component\Component.cpp">
+      <Filter>Code\ECS\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\System\System.cpp">
+      <Filter>Code\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\GlobalVar.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Camera\Camera.cpp">
+      <Filter>Code\Graphics\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Camera\FPSCameraController.cpp">
+      <Filter>Code\Graphics\Camera</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

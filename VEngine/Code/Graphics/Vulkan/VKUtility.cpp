@@ -6,29 +6,42 @@
 extern VEngine::VKContext g_context;
 
 
-void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VKImageData &image)
+void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) 
 {
-	VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
 	imageInfo.extent.width = width;
 	imageInfo.extent.height = height;
 	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
+	imageInfo.mipLevels = mipLevels;
 	imageInfo.arrayLayers = 1;
-	imageInfo.format = image.m_format;
+	imageInfo.format = format;
 	imageInfo.tiling = tiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = usage;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.samples = numSamples;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VmaAllocationCreateInfo allocInfo = {};
-	allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-	if (vmaCreateImage(g_context.m_allocator, &imageInfo, &allocInfo, &image.m_image, &image.m_allocation, nullptr))
+	if (vkCreateImage(g_context.m_device, &imageInfo, nullptr, &image) != VK_SUCCESS) 
 	{
 		Utility::fatalExit("Failed to create image!", -1);
 	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(g_context.m_device, image, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) 
+	{
+		Utility::fatalExit("Failed to allocate image memory!", -1);
+	}
+
+	vkBindImageMemory(g_context.m_device, image, imageMemory, 0);
 }
 
 void VEngine::VKUtility::createImageView(VkImageAspectFlags aspectFlags, VKImageData &image)
@@ -43,13 +56,10 @@ void VEngine::VKUtility::createImageView(VkImageAspectFlags aspectFlags, VKImage
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	VkImageView imageView;
-	if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+	if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &image.m_view) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to create image view!", -1);
 	}
-
-	image.m_view = imageView;
 }
 
 VkFormat VEngine::VKUtility::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
@@ -67,6 +77,7 @@ VkFormat VEngine::VKUtility::findSupportedFormat(const std::vector<VkFormat>& ca
 	}
 
 	Utility::fatalExit("Failed to find supported format!", -1);
+	return VkFormat();
 }
 
 VkCommandBuffer VEngine::VKUtility::beginSingleTimeCommands(VkCommandPool commandPool)
@@ -220,4 +231,5 @@ uint32_t VEngine::VKUtility::findMemoryType(uint32_t typeFilter, VkMemoryPropert
 	}
 
 	Utility::fatalExit("Failed to find suitable memory type!", -1);
+	return 0;
 }

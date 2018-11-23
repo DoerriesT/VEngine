@@ -9,7 +9,7 @@ namespace VEngine
 
 	namespace VKUtility
 	{
-		void createImage(uint32_t width, uint32_t height, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VKImageData &image);
+		void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
 		void createImageView(VkImageAspectFlags aspectFlags, VKImageData &image);
 		VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool);
