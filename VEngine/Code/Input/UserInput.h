@@ -15,12 +15,12 @@ namespace VEngine
 		UserInput &operator= (const UserInput &) = delete;
 		UserInput &operator= (const UserInput &&) = delete;
 		void input();
-		glm::vec2 getPreviousMousePos();
-		glm::vec2 getCurrentMousePos();
-		glm::vec2 getMousePosDelta();
-		glm::vec2 getScrollOffset();
-		bool isKeyPressed(InputKey key, bool ignoreRepeated = false);
-		bool isMouseButtonPressed(InputMouse mouseButton);
+		glm::vec2 getPreviousMousePos() const;
+		glm::vec2 getCurrentMousePos() const;
+		glm::vec2 getMousePosDelta() const;
+		glm::vec2 getScrollOffset() const;
+		bool isKeyPressed(InputKey key, bool ignoreRepeated = false) const;
+		bool isMouseButtonPressed(InputMouse mouseButton) const;
 		void addKeyListener(IKeyListener *listener);
 		void removeKeyListener(IKeyListener *listener);
 		void addCharListener(ICharListener *listener);

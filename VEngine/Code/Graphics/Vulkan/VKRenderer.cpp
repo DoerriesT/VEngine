@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include "Graphics/Camera/Camera.h"
+#include "Graphics/RenderParams.h"
 
 extern VEngine::VKContext g_context;
 
@@ -34,13 +35,13 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_forwardPipeline->recordCommandBuffer({ model });
 }
 
-void VEngine::VKRenderer::update(Camera *camera)
+void VEngine::VKRenderer::update(const RenderParams &renderParams)
 {
 	UBO ubo = {};
 
 	ubo.model = glm::mat4();
-	ubo.view = camera->getViewMatrix();
-	ubo.projection = camera->getProjectionMatrix();
+	ubo.view = renderParams.m_viewMatrix;
+	ubo.projection = renderParams.m_projectionMatrix;
 
 	auto buffer = m_forwardPipeline->getUniformBuffer();
 	void* data;

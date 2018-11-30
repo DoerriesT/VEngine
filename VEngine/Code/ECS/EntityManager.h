@@ -41,6 +41,8 @@ namespace VEngine
 			using type = T;
 		};
 
+		explicit EntityManager();
+		~EntityManager();
 		const Entity *createEntity(bool notifyListeners = true);
 		void destroyEntity(const Entity *entity, bool notifyListeners = true);
 		template<typename ComponentType, typename ...Args>

@@ -31,6 +31,9 @@
     <Filter Include="Code\Graphics\Camera">
       <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\ECS\System">
+      <UniqueIdentifier>{5283f8fe-617e-4be1-9b9e-51e43caa3c28}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -129,9 +132,6 @@
     <ClInclude Include="Code\Scene.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderData.h">
-      <Filter>Code\Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Camera\Camera.h">
       <Filter>Code\Graphics\Camera</Filter>
     </ClInclude>
@@ -140,6 +140,24 @@
     </ClInclude>
     <ClInclude Include="Code\ECS\EntityManager.h">
       <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\System\System.h">
+      <Filter>Code\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\SystemManager.h">
+      <Filter>Code\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\System\RenderSystem.h">
+      <Filter>Code\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\CameraComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\RenderParams.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\System\CameraControllerSystem.h">
+      <Filter>Code\ECS\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -202,6 +220,18 @@
     </ClCompile>
     <ClCompile Include="Code\ECS\EntityManager.cpp">
       <Filter>Code\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\System\System.cpp">
+      <Filter>Code\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\SystemManager.cpp">
+      <Filter>Code\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\System\RenderSystem.cpp">
+      <Filter>Code\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\System\CameraControllerSystem.cpp">
+      <Filter>Code\ECS\System</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

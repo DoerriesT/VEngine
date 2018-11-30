@@ -5,6 +5,5 @@ namespace VEngine
 {
 	struct RenderableComponent : public Component<RenderableComponent>
 	{
-
 	};
 }

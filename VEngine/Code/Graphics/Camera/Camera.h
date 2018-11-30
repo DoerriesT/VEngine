@@ -5,10 +5,13 @@
 
 namespace VEngine
 {
+	struct TransformationComponent;
+	struct CameraComponent;
+
 	class Camera
 	{
 	public:
-		explicit Camera(const glm::vec3 &position, const glm::quat &rotation, float aspectRatio, float fovy, float near, float far);
+		explicit Camera(TransformationComponent &transformationComponent, CameraComponent &cameraComponent);
 		void setRotation(const glm::quat &rotation);
 		void setPosition(const glm::vec3 &position);
 		void setAspectRatio(float aspectRatio);
@@ -26,15 +29,8 @@ namespace VEngine
 		float getFovy() const;
 
 	private:
-		glm::vec3 m_position;
-		glm::quat m_rotation;
-		float m_aspectRatio;
-		float m_fovy;
-		float m_near;
-		float m_far;
-
-		glm::mat4 m_viewMatrix;
-		glm::mat4 m_projectionMatrix;
+		TransformationComponent & m_transformationComponent;
+		CameraComponent & m_cameraComponent;
 
 		void updateViewMatrix();
 		void updateProjectionMatrix();

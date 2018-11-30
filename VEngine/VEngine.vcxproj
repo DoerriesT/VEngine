@@ -130,6 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Code\ECS\Component\CameraComponent.h" />
     <ClInclude Include="Code\ECS\Component\Component.h" />
     <ClInclude Include="Code\ECS\Component\ModelComponent.h" />
     <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
@@ -139,12 +140,16 @@
     <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h" />
     <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h" />
     <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h" />
+    <ClInclude Include="Code\ECS\SystemManager.h" />
+    <ClInclude Include="Code\ECS\System\CameraControllerSystem.h" />
+    <ClInclude Include="Code\ECS\System\RenderSystem.h" />
+    <ClInclude Include="Code\ECS\System\System.h" />
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
     <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h" />
     <ClInclude Include="Code\Graphics\Model.h" />
-    <ClInclude Include="Code\Graphics\RenderData.h" />
+    <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
@@ -170,6 +175,10 @@
   <ItemGroup>
     <ClCompile Include="Code\ECS\Component\Component.cpp" />
     <ClCompile Include="Code\ECS\EntityManager.cpp" />
+    <ClCompile Include="Code\ECS\SystemManager.cpp" />
+    <ClCompile Include="Code\ECS\System\CameraControllerSystem.cpp" />
+    <ClCompile Include="Code\ECS\System\RenderSystem.cpp" />
+    <ClCompile Include="Code\ECS\System\System.cpp" />
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />

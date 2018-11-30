@@ -11,6 +11,7 @@ namespace VEngine
 	{
 	public:
 		using ComponentTypeID = uint64_t;
+
 		virtual ~IComponent() = default;
 		virtual ComponentTypeID getTypeIdOfDerived() = 0;
 

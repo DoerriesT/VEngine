@@ -11,33 +11,33 @@ void VEngine::UserInput::input()
 	m_previousMousePos = m_mousePos;
 }
 
-glm::vec2 VEngine::UserInput::getPreviousMousePos()
+glm::vec2 VEngine::UserInput::getPreviousMousePos() const
 {
 	return m_previousMousePos;
 }
 
-glm::vec2 VEngine::UserInput::getCurrentMousePos()
+glm::vec2 VEngine::UserInput::getCurrentMousePos() const
 {
 	return m_mousePos;
 }
 
-glm::vec2 VEngine::UserInput::getMousePosDelta()
+glm::vec2 VEngine::UserInput::getMousePosDelta() const
 {
 	return m_mousePosDelta;
 }
 
-glm::vec2 VEngine::UserInput::getScrollOffset()
+glm::vec2 VEngine::UserInput::getScrollOffset() const
 {
 	return m_scrollOffset;
 }
 
-bool VEngine::UserInput::isKeyPressed(InputKey key, bool ignoreRepeated)
+bool VEngine::UserInput::isKeyPressed(InputKey key, bool ignoreRepeated) const
 {
 	size_t pos = static_cast<size_t>(key);
 	return m_pressedKeys[pos] && (!ignoreRepeated || !m_repeatedKeys[pos]);
 }
 
-bool VEngine::UserInput::isMouseButtonPressed(InputMouse mouseButton)
+bool VEngine::UserInput::isMouseButtonPressed(InputMouse mouseButton) const
 {
 	return m_pressedMouseButtons[static_cast<size_t>(mouseButton)];
 }

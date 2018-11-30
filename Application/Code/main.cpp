@@ -2,94 +2,45 @@
 #include <Engine.h>
 #include <IGameLogic.h>
 #include <ECS/EntityManager.h>
-#include <ECS/Component/Component.h>
+#include <ECS/SystemManager.h>
+#include <ECS/System/RenderSystem.h>
+#include <ECS/Component/TransformationComponent.h>
+#include <ECS/Component/CameraComponent.h>
 #include <iostream>
+#include <GlobalVar.h>
 
-
-struct Component0 : public VEngine::Component<Component0>
+namespace VEngine
 {
-
-};
-
-struct Component1 : public VEngine::Component<Component1>
-{
-
-};
-
-struct Component2 : public VEngine::Component<Component2>
-{
-
-};
-
+	extern GlobalVar<unsigned int> g_windowWidth;
+	extern GlobalVar<unsigned int> g_windowHeight;
+}
 
 class DummyLogic : public VEngine::IGameLogic
 {
 public:
-	void init() {};
+	void init();
 	void input(double time, double timeDelta) {};
 	void update(double time, double timeDelta) {};
 	void render() {};
 };
 
-template <typename T>
-struct identity
-{
-	typedef T type;
-};
-
-template <typename... T>
-void func(typename identity<std::function<void(T...)>>::type f) {
-	f(3, 6, 8);
-}
+DummyLogic logic;
+VEngine::Engine *e; 
 
 int main()
 {
-	VEngine::EntityManager entityManager;
-	const VEngine::Entity *entities[32];
-
-	for (size_t i = 0; i < 32; ++i)
-	{
-		entities[i] = entityManager.createEntity();
-
-		entityManager.addComponent<Component0>(entities[i]);
-
-		if (i % 2 == 0)
-		{
-			entityManager.addComponent<Component1>(entities[i]);
-		}
-
-		if (i % 3 == 0)
-		{
-			entityManager.addComponent<Component1>(entities[i]);
-			entityManager.addComponent<Component2>(entities[i]);
-		}
-	}
-
-	int counter = 0;
-
-	entityManager.each<Component0, Component1, Component2>([&counter](const VEngine::Entity *entity, Component0&, Component1&, Component2&)
-	{
-		++counter;
-	});
-
-	for (size_t i = 0; i < 32; ++i)
-	{
-		if (i % 2 == 0)
-		{
-			entityManager.destroyEntity(entities[i]);
-		}
-	}
-
-	counter = 0;
-
-	entityManager.each<Component0, Component1, Component2>([&counter](const VEngine::Entity *entity, Component0&, Component1&, Component2&)
-	{
-		++counter;
-	});
-
-	DummyLogic logic;
 	VEngine::Engine engine("Vulkan", logic);
+	e = &engine;
 	engine.start();
 
 	return EXIT_SUCCESS;
+}
+
+void DummyLogic::init()
+{
+	VEngine::EntityManager &em = e->getEntityManager();
+	const VEngine::Entity *cameraEntity = em.createEntity();
+	em.addComponent<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC);
+	em.addComponent<VEngine::CameraComponent>(cameraEntity, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
+	e->getSystemManager().getSystem<VEngine::RenderSystem>()->setCameraEntity(cameraEntity);
 }

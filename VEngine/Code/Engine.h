@@ -6,9 +6,8 @@ namespace VEngine
 	class IGameLogic;
 	class UserInput;
 	class Window;
-	class VKRenderer;
-	class Camera;
-	class FPSCameraController;
+	class EntityManager;
+	class SystemManager;
 
 	class Engine
 	{
@@ -21,14 +20,15 @@ namespace VEngine
 		~Engine();
 		void start();
 		void shutdown();
+		EntityManager &getEntityManager();
+		SystemManager &getSystemManager();
 
 	private:
 		IGameLogic &m_gameLogic;
 		std::unique_ptr<Window> m_window;
 		std::unique_ptr<UserInput> m_userInput;
-		std::unique_ptr<VKRenderer> m_renderer;
-		std::unique_ptr<Camera> m_camera;
-		std::unique_ptr<FPSCameraController> m_cameraController;
+		std::unique_ptr<EntityManager> m_entityManager;
+		std::unique_ptr<SystemManager> m_systemManager;
 		double m_time;
 		double m_timeDelta;
 		double m_fps;

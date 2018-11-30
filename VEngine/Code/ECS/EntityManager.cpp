@@ -1,6 +1,24 @@
 #include "EntityManager.h"
 #include "Utility/ContainerUtility.h"
 
+VEngine::EntityManager::EntityManager()
+{
+}
+
+VEngine::EntityManager::~EntityManager()
+{
+	for (auto &entityComponents : m_entityComponents)
+	{
+		for (size_t i = 0; i < COMPONENT_TYPE_COUNT; ++i)
+		{
+			delete entityComponents.m_components[i];
+			entityComponents.m_components[i] = nullptr;
+		}
+		delete entityComponents.m_entity;
+		entityComponents.m_entity = nullptr;
+	}
+}
+
 const VEngine::Entity *VEngine::EntityManager::createEntity(bool notifyListeners)
 {
 	Entity::ID id;
@@ -32,6 +50,9 @@ const VEngine::Entity *VEngine::EntityManager::createEntity(bool notifyListeners
 	{
 		m_entityComponents.resize(index + 1);
 	}
+
+	// set all pointers to null
+	memset(&m_entityComponents[index], 0, sizeof(m_entityComponents[index]));
 
 	m_entityComponents[index].m_entity = entity;
 
