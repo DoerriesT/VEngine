@@ -242,6 +242,8 @@ namespace VEngine
 						static_cast<uint32_t>(transferFamilyIndex )
 					};
 					m_swapChainSupportDetails = swapChainSupportDetails;
+					vkGetPhysicalDeviceProperties(physicalDevice, &m_properties);
+					m_features = supportedFeatures;
 					break;
 				}
 			}

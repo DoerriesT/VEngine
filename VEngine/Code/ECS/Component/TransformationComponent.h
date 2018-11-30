@@ -8,7 +8,11 @@ namespace VEngine
 {
 	struct TransformationComponent : public Component<TransformationComponent>
 	{
-		static const std::uint64_t FAMILY_ID;
+		enum class Mobility
+		{
+			STATIC, DYNAMIC
+		};
+
 		Mobility m_mobility;
 		glm::vec3 m_position;
 		glm::quat m_rotation;

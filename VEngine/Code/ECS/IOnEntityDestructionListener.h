@@ -7,6 +7,6 @@ namespace VEngine
 	class IOnEntityDestructionListener
 	{
 	public:
-		virtual void onDestruction(const Entity *_entity) = 0;
+		virtual void onDestruction(const Entity *entity) = 0;
 	};
 }

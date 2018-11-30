@@ -25,9 +25,6 @@
     <Filter Include="Code\ECS">
       <UniqueIdentifier>{8501741e-7058-423b-ad83-bad9424162aa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\ECS\System">
-      <UniqueIdentifier>{a54c5c35-8de8-45f0-8c10-cc26c57614e7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\ECS\Component">
       <UniqueIdentifier>{18150fdf-5c24-476e-a49e-c3a8f1590325}</UniqueIdentifier>
     </Filter>
@@ -102,9 +99,6 @@
     <ClInclude Include="Code\Window\Window.h">
       <Filter>Code\Window</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\EntityManager.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="Code\ECS\IOnComponentAddedListener.h">
       <Filter>Code\ECS</Filter>
     </ClInclude>
@@ -120,9 +114,6 @@
     <ClInclude Include="Code\ECS\Component\Component.h">
       <Filter>Code\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\System\RenderSystem.h">
-      <Filter>Code\ECS\System</Filter>
-    </ClInclude>
     <ClInclude Include="Code\ECS\Component\TransformationComponent.h">
       <Filter>Code\ECS\Component</Filter>
     </ClInclude>
@@ -131,9 +122,6 @@
     </ClInclude>
     <ClInclude Include="Code\ECS\Component\ModelComponent.h">
       <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\System\System.h">
-      <Filter>Code\ECS\System</Filter>
     </ClInclude>
     <ClInclude Include="Code\GlobalVar.h">
       <Filter>Code</Filter>
@@ -149,6 +137,9 @@
     </ClInclude>
     <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h">
       <Filter>Code\Graphics\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\EntityManager.h">
+      <Filter>Code\ECS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -197,17 +188,8 @@
     <ClCompile Include="Code\Window\Window.cpp">
       <Filter>Code\Window</Filter>
     </ClCompile>
-    <ClCompile Include="Code\ECS\EntityManager.cpp">
-      <Filter>Code\ECS</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\System\RenderSystem.cpp">
-      <Filter>Code\ECS\System</Filter>
-    </ClCompile>
     <ClCompile Include="Code\ECS\Component\Component.cpp">
       <Filter>Code\ECS\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\System\System.cpp">
-      <Filter>Code\ECS\System</Filter>
     </ClCompile>
     <ClCompile Include="Code\GlobalVar.cpp">
       <Filter>Code</Filter>
@@ -217,6 +199,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Camera\FPSCameraController.cpp">
       <Filter>Code\Graphics\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\ECS\EntityManager.cpp">
+      <Filter>Code\ECS</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

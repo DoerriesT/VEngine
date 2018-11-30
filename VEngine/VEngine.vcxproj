@@ -139,8 +139,6 @@
     <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h" />
     <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h" />
     <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h" />
-    <ClInclude Include="Code\ECS\System\RenderSystem.h" />
-    <ClInclude Include="Code\ECS\System\System.h" />
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
@@ -172,8 +170,6 @@
   <ItemGroup>
     <ClCompile Include="Code\ECS\Component\Component.cpp" />
     <ClCompile Include="Code\ECS\EntityManager.cpp" />
-    <ClCompile Include="Code\ECS\System\RenderSystem.cpp" />
-    <ClCompile Include="Code\ECS\System\System.cpp" />
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />

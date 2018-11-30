@@ -3,11 +3,11 @@
 namespace VEngine
 {
 	struct Entity;
-	class BaseComponent;
+	struct IComponent;
 
 	class IOnComponentRemovedListener
 	{
 	public:
-		virtual void onComponentRemoved(const Entity *_entity, BaseComponent *_removedComponent) = 0;
+		virtual void onComponentRemoved(const Entity *entity, IComponent *removedComponent) = 0;
 	};
 }

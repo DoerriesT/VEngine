@@ -7,6 +7,6 @@ namespace VEngine
 	class IOnEntityCreatedListener
 	{
 	public:
-		virtual void onEntityCreated(const Entity *_entity) = 0;
+		virtual void onEntityCreated(const Entity *entity) = 0;
 	};
 }

@@ -30,6 +30,8 @@ namespace VEngine
 		VkInstance m_instance;
 		VkDevice m_device;
 		VkPhysicalDevice m_physicalDevice;
+		VkPhysicalDeviceFeatures m_features;
+		VkPhysicalDeviceProperties m_properties;
 		VkQueue m_graphicsQueue;
 		VkQueue m_presentQueue;
 		VkQueue m_computeQueue;

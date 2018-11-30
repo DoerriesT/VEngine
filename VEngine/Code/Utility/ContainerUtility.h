@@ -11,76 +11,87 @@ namespace VEngine
 	namespace ContainerUtility
 	{
 		template<typename T>
-		inline bool find(const std::vector<T> &_vector, const T &_item, int &_position)
+		inline bool find(const std::vector<T> &v, const T &item, int &position)
 		{
-			auto position = std::find(_vector.cbegin(), _vector.cend(), _item);
+			auto position = std::find(v.cbegin(), v.cend(), item);
 
-			if (position < _vector.cend())
+			if (position < v.cend())
 			{
-				_position = (int)(position - _vector.cbegin());
+				position = (int)(position - v.cbegin());
 				return true;
 			}
 			return false;
 		}
 
 		template<typename T>
-		inline bool contains(const std::vector<T> &_vector, const T &_item)
+		inline bool contains(const std::vector<T> &v, const T &item)
 		{
-			return std::find(_vector.cbegin(), _vector.cend(), _item) != _vector.cend();
+			return std::find(v.cbegin(), v.cend(), item) != v.cend();
 		}
 
 		template<typename Key, typename Value>
-		inline bool contains(const std::map<Key, Value> &_map, const Key &_item)
+		inline bool contains(const std::map<Key, Value> &m, const Key &item)
 		{
-			return _map.find(_item) != _map.cend();
+			return m.find(item) != m.cend();
 		}
 
 		template<typename Key, typename Value>
-		inline bool contains(const std::unordered_map<Key, Value> &_map, const Key &_item)
+		inline bool contains(const std::unordered_map<Key, Value> &m, const Key &item)
 		{
-			return _map.find(_item) != _map.cend();
+			return m.find(item) != m.cend();
 		}
 
 		template<typename T>
-		inline bool contains(const std::set<T> &_set, const T &_item)
+		inline bool contains(const std::set<T> &s, const T &item)
 		{
-			return _set.find(_item) != _set.cend();
+			return s.find(item) != s.cend();
 		}
 
 		template<typename T>
-		inline bool contains(const std::unordered_set<T> &_set, const T &_item)
+		inline bool contains(const std::unordered_set<T> &set, const T &item)
 		{
-			return _set.find(_item) != _set.cend();
+			return set.find(item) != set.cend();
 		}
 
 		template<typename T>
-		inline void remove(std::vector<T> &_vector, const T &_item)
+		inline void remove(std::vector<T> &v, const T &item)
 		{
-			_vector.erase(std::remove(_vector.begin(), _vector.end(), _item), _vector.end());
+			v.erase(std::remove(v.begin(), v.end(), item), v.end());
 		}
 
 		template<typename Key, typename Value>
-		inline void remove(std::map<Key, Value> &_map, const Key &_item)
+		inline void remove(std::map<Key, Value> &m, const Key &item)
 		{
-			_map.erase(_item);
+			m.erase(item);
 		}
 
 		template<typename Key, typename Value>
-		inline void remove(std::unordered_map<Key, Value> &_map, const Key &_item)
+		inline void remove(std::unordered_map<Key, Value> &m, const Key &item)
 		{
-			_map.erase(_item);
+			m.erase(item);
 		}
 
 		template<typename T>
-		inline void remove(std::set<T> &_set, const T &_item)
+		inline void remove(std::set<T> &s, const T &item)
 		{
-			_set.erase(_item);
+			s.erase(item);
 		}
 
 		template<typename T>
-		inline void remove(std::unordered_set<T> &_set, const T &_item)
+		inline void remove(std::unordered_set<T> &s, const T &item)
 		{
-			_set.erase(_item);
+			s.erase(item);
+		}
+
+		template<typename T>
+		inline void quickRemove(std::vector<T> &v, const T &item)
+		{
+			auto it = std::find(v.begin(), v.end(), item);
+			if (it != v.end())
+			{
+				std::swap(v.back(), *it);
+				v.erase(--v.end());
+			}
 		}
 	}
 }

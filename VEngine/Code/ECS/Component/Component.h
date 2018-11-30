@@ -1,41 +1,37 @@
 #pragma once
 #include <cstdint>
+#include <cassert>
 
-#define COMPONENT_TYPE_COUNT (3)
+#define COMPONENT_TYPE_COUNT (64)
 
 namespace VEngine
 {
-	enum class Mobility
-	{
-		STATIC, DYNAMIC
-	};
-
 	// used as a handle to store components in containers
-	class BaseComponent
+	struct IComponent
 	{
 	public:
-		virtual ~BaseComponent() = default;
-		virtual std::uint64_t getTypeIdOfDerived() = 0;
+		using ComponentTypeID = uint64_t;
+		virtual ~IComponent() = default;
+		virtual ComponentTypeID getTypeIdOfDerived() = 0;
 
 	protected:
-		static std::uint64_t m_typeCount;
+		static ComponentTypeID m_typeCount;
 	};
 
 	// all components should be derived from this class to be able to determine their type
 	template<typename Type>
-	class Component : public BaseComponent
+	struct Component : public IComponent
 	{
-	public:
-		typedef Type ComponentType;
+		ComponentTypeID getTypeIdOfDerived() override
+		{
+			return getTypeId();
+		}
 
-		static std::uint64_t getTypeId();
-		std::uint64_t getTypeIdOfDerived() override { return getTypeId(); }
+		static ComponentTypeID getTypeId()
+		{
+			assert(m_typeCount < COMPONENT_TYPE_COUNT);
+			static const ComponentTypeID type = m_typeCount++;
+			return type;
+		}
 	};
-
-	template<typename Type>
-	inline std::uint64_t Component<Type>::getTypeId()
-	{
-		static const std::uint64_t type = m_typeCount++;
-		return type;
-	}
 }

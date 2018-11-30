@@ -1,11 +1,9 @@
 #pragma once
-#include <cstdint>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
+#include <functional>
 #include <cassert>
-#include <bitset>
 #include "Component/Component.h"
-#include "Utility/ContainerUtility.h"
 #include "IOnComponentAddedListener.h"
 #include "IOnComponentRemovedListener.h"
 #include "IOnEntityCreatedListener.h"
@@ -13,42 +11,45 @@
 
 namespace VEngine
 {
-	class EntityManager;
+	// Components are stored in an array together with each Entity. The array can be indexed with the Component type.
+	// Each Entity stores an index into a vector with Entity/Component data. Each row in the diagram
+	// represents one element in the Entity/Component vector.
+	//
+	//     C0  C1  C2
+	// E0  X   X
+	// E1      X   X
+	// E2  X       X
+	//
+	// When an entity is destroyed, its index is added to a list of indices to be recycled
 
 	struct Entity
 	{
-		friend class EntityManager;
-	private:
-		using Id = uint64_t;
+		using ID = uint64_t;
 		using Version = uint64_t;
-
-		Entity(const Id &_id, const Id &_version);
-		~Entity() = default;
-
-		const Id m_id;
-		const Version m_version;
+		using Index = size_t;
+		ID m_id;
+		Version m_version;
+		Index m_index;
 	};
 
 	class EntityManager
 	{
 	public:
-		EntityManager() = default;
-		EntityManager(const EntityManager &) = delete;
-		EntityManager(const EntityManager &&) = delete;
-		EntityManager &operator= (const EntityManager &) = delete;
-		EntityManager &operator= (const EntityManager &&) = delete;
-		~EntityManager() = default;
-		const Entity *createEntity();
+		template<typename T>
+		struct Identity
+		{
+			using type = T;
+		};
+
+		const Entity *createEntity(bool notifyListeners = true);
+		void destroyEntity(const Entity *entity, bool notifyListeners = true);
 		template<typename ComponentType, typename ...Args>
-		ComponentType *addComponent(const Entity *entity, Args &&...args);
-		template<typename ComponentType>
-		void removeComponent(const Entity *entity, bool notify = true);
-		void removeComponent(const Entity *entity, uint64_t componentTypeId, bool notify = true);
+		ComponentType *addComponent(const Entity *entity, Args&& ...args);
+		void removeComponent(const Entity *entity, IComponent::ComponentTypeID componentTypeId, bool notifyListeners = true);
 		template<typename ComponentType>
 		ComponentType *getComponent(const Entity *entity);
-		void destroyEntity(const Entity *entity);
-		std::bitset<COMPONENT_TYPE_COUNT> getComponentBitSet(const Entity *entity);
-		std::unordered_map<uint64_t, BaseComponent *> getComponentMap(const Entity *entity);
+		template<typename ...Components>
+		void each(const typename Identity<std::function<void(const Entity *, Components&...)>>::type &func);
 		void addOnEntityCreatedListener(IOnEntityCreatedListener *listener);
 		void addOnEntityDestructionListener(IOnEntityDestructionListener *listener);
 		void addOnComponentAddedListener(IOnComponentAddedListener *listener);
@@ -59,81 +60,89 @@ namespace VEngine
 		void removeOnComponentRemovedListener(IOnComponentRemovedListener *listener);
 
 	private:
-		std::uint64_t m_nextFreeId;
-		std::vector<uint64_t> m_freeIds;
-		std::unordered_map<Entity::Id, std::bitset<COMPONENT_TYPE_COUNT>> m_entityIdToComponentBitSetMap;
-		std::unordered_map<Entity::Id, std::unordered_map<uint64_t, BaseComponent *>> m_entityIdToComponentMap;
-		std::unordered_map<Entity::Id, Entity::Version> m_entityIdVersionMap;
+		struct EntityComponents
+		{
+			const Entity *m_entity;
+			IComponent *m_components[COMPONENT_TYPE_COUNT];
+		};
+
+		Entity::ID m_nextFreeEntityId;
+		std::vector<Entity::ID> m_freeEntityIds;
+		std::unordered_map<Entity::ID, Entity::Version> m_entityIdVersionMap;
+		std::vector<EntityComponents> m_entityComponents;
+		Entity::Index m_nextFreeComponentIndex;
+		std::vector<Entity::Index> m_freeComponentIndices;
 		std::vector<IOnEntityCreatedListener *> m_onEntityCreatedListeners;
 		std::vector<IOnEntityDestructionListener *> m_onEntityDestructionListeners;
 		std::vector<IOnComponentAddedListener *> m_onComponentAddedListeners;
 		std::vector<IOnComponentRemovedListener *> m_onComponentRemovedListeners;
-
-		bool validateEntity(const Entity *entity);
 	};
 
 	template<typename ComponentType, typename ...Args>
-	ComponentType *EntityManager::addComponent(const Entity *entity, Args&& ...args)
+	inline ComponentType *EntityManager::addComponent(const Entity *entity, Args &&...args)
 	{
-		assert(validateEntity(entity));
+		assert(m_entityIdVersionMap.find(entity->m_id) != m_entityIdVersionMap.end() && entity->m_version == m_entityIdVersionMap[entity->m_id]);
 
-		const Entity::Id &id = entity->m_id;
+		Entity::Index index = entity->m_index;
+		const IComponent::ComponentTypeID componentId = ComponentType::getTypeId();
 
-		uint64_t typeId = ComponentType::getTypeId();
+		assert(index < m_entityComponents.size());
+		assert(componentId < COMPONENT_TYPE_COUNT);
 
 		// if a component of this type already exists, remove it
-		if (m_entityIdToComponentBitSetMap[id] & typeId)
+		if (m_entityComponents[index].m_components[componentId])
 		{
-			removeComponent<ComponentType>(entity);
+			removeComponent(entity, componentId);
 		}
 
-		// set the type and family bit
-		m_entityIdToComponentBitSetMap[id].set(typeId);
-		m_entityIdToFamilyBitFieldMap[id].set(familyId);
+		// create new component
+		ComponentType *component = new ComponentType(std::forward<Args>(args)...);
+		m_entityComponents[index].m_components[componentId] = component;
 
-		// create the new component
-		ComponentType *component = new ComponentType(std::forward<Args>(_args)...);
-
-		// add the component to type and family maps
-		m_entityIdToComponentMap[id].emplace(typeId, component);
-		m_entityIdToFamilyMap[id].emplace(familyId, component);
-
-		//invoke listeners
 		for (IOnComponentAddedListener *listener : m_onComponentAddedListeners)
 		{
-			listener->onComponentAdded(_entity, component);
+			listener->onComponentAdded(entity, component);
 		}
 
 		return component;
-	}
-
-	template<typename ComponentType>
-	void EntityManager::removeComponent(const Entity *entity, bool notify)
-	{
-		assert(validateEntity(entity));
-
-		uint64_t typeId = ComponentType::getTypeId();
-		removeComponent(entity, typeId, notify);
 	}
 
 	template<typename ComponentType>
 	inline ComponentType *EntityManager::getComponent(const Entity *entity)
 	{
-		assert(entity);
+		assert(m_entityIdVersionMap.find(entity->m_id) != m_entityIdVersionMap.end() && entity->m_version == m_entityIdVersionMap[entity->m_id]);
 
-		ComponentType *component = nullptr;
-
-		//assert that there is a bitmap attached to the entity
-		assert(ContainerUtility::contains(m_entityIdToComponentBitSetMap, entity->m_id));
-
-		// check if the component is attached to the entity
-		if ((m_entityIdToComponentBitSetMap[entity->m_id] & ComponentType::getTypeId()) == ComponentType::getTypeId())
-		{
-			assert(ContainerUtility::contains(m_entityIdToComponentMap[entity->m_id], ComponentType::getTypeId()));
-			component = static_cast<ComponentType *>(m_entityIdToComponentMap[entity->m_id][ComponentType::getTypeId()]);
-		}
-
-		return component;
+		return static_cast<ComponentType *>(m_entityComponents[entity->m_index].m_components[ComponentType::getTypeId()]);
 	}
 
+	template<typename ...Components>
+	inline void EntityManager::each(const typename Identity<std::function<void(const Entity *, Components&...)>>::type &func)
+	{
+		for (auto &entityComponents : m_entityComponents)
+		{
+			// skip empty entries
+			if (!entityComponents.m_entity)
+			{
+				continue;
+			}
+
+			// test if all required components are present
+			bool presentComponents[sizeof...(Components)] = { (static_cast<bool>(entityComponents.m_components[Components::getTypeId()]))... };
+			bool allPresent = true;
+
+			for (size_t j = 0; j < sizeof(presentComponents) / sizeof(presentComponents[0]); ++j)
+			{
+				if (!presentComponents[j])
+				{
+					allPresent = false;
+					break;
+				}
+			}
+
+			if (allPresent)
+			{
+				func(entityComponents.m_entity, *static_cast<Components *>(entityComponents.m_components[Components::getTypeId()])...);
+			}
+		}
+	}
 }

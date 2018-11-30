@@ -1,165 +1,133 @@
 #include "EntityManager.h"
+#include "Utility/ContainerUtility.h"
 
-VEngine::Entity::Entity(const Id &id, const Id &version)
-	: m_id(id),
-	m_version(version)
+const VEngine::Entity *VEngine::EntityManager::createEntity(bool notifyListeners)
 {
-}
-
-const VEngine::Entity *VEngine::EntityManager::createEntity()
-{
-	std::uint64_t id;
-	if (m_freeIds.empty())
+	Entity::ID id;
+	if (m_freeEntityIds.empty())
 	{
-		id = m_nextFreeId++;
+		id = m_nextFreeEntityId++;
 	}
 	else
 	{
-		id = m_freeIds.back();
-		m_freeIds.pop_back();
+		id = m_freeEntityIds.back();
+		m_freeEntityIds.pop_back();
 	}
-	Entity *entity = new Entity(id, m_entityIdVersionMap[id]);
-	m_entityIdToComponentBitSetMap[id] = 0;
-	m_entityIdToComponentMap[id].clear();
 
-	//invoke listeners
-	for (IOnEntityCreatedListener *listener : m_onEntityCreatedListeners)
+	Entity::Index index;
+	if (m_freeComponentIndices.empty())
 	{
-		listener->onEntityCreated(entity);
+		index = m_nextFreeComponentIndex++;
+	}
+	else
+	{
+		index = m_freeComponentIndices.back();
+		m_freeComponentIndices.pop_back();
+	}
+
+	Entity *entity = new Entity({ id, m_entityIdVersionMap[id], index });
+
+	// allocate space for future components of this entity
+	if (m_entityComponents.size() <= index)
+	{
+		m_entityComponents.resize(index + 1);
+	}
+
+	m_entityComponents[index].m_entity = entity;
+
+	if (notifyListeners)
+	{
+		for (IOnEntityCreatedListener *listener : m_onEntityCreatedListeners)
+		{
+			listener->onEntityCreated(entity);
+		}
 	}
 
 	return entity;
 }
 
-void VEngine::EntityManager::removeComponent(const Entity *entity, uint64_t componentTypeId, bool notify)
+void VEngine::EntityManager::destroyEntity(const Entity *entity, bool notifyListeners)
 {
-	assert(validateEntity(entity));
-	const Entity::Id &id = entity->m_id;
-
-	// only do something if the component is actually attached to the entity
-	if (m_entityIdToComponentBitSetMap[id][componentTypeId])
+	if (notifyListeners)
 	{
-		// fetch the component pointer
-		BaseComponent *component = m_entityIdToComponentMap[id][componentTypeId];
-		assert(component);
-
-		// remove type and family bits from their map
-		m_entityIdToComponentBitSetMap[id].reset(componentTypeId);
-
-		// invoke listeners
-		if (notify)
+		for (IOnEntityDestructionListener *listener : m_onEntityDestructionListeners)
 		{
-			for (IOnComponentRemovedListener *listener : m_onComponentRemovedListeners)
-			{
-				listener->onComponentRemoved(entity, component);
-			}
+			listener->onDestruction(entity);
 		}
-
-		// delete pointer and remove component from maps
-		delete component;
-		ContainerUtility::remove(m_entityIdToComponentMap[id], componentTypeId);
 	}
-}
 
-void VEngine::EntityManager::destroyEntity(const Entity *entity)
-{
-	assert(validateEntity(entity));
+	Entity::Index index = entity->m_index;
 
-	const Entity::Id &id = entity->m_id;
-
-	//invoke listeners
-	for (IOnEntityDestructionListener *listener : m_onEntityDestructionListeners)
+	// delete all components
+	for (size_t i = 0; i < COMPONENT_TYPE_COUNT; ++i)
 	{
-		listener->onDestruction(entity);
+		delete m_entityComponents[index].m_components[i];
 	}
 
-	for (uint64_t i = 0; i < COMPONENT_TYPE_COUNT; ++i)
-	{
-		removeComponent(entity, i, false);
-	}
+	// set all pointers to null
+	memset(&m_entityComponents[index], 0, sizeof(m_entityComponents[index]));
 
-	// bitmaps should already be zero
-	assert(m_entityIdToComponentBitSetMap[id] == 0);
-	// reset bitmaps
-	// entityIdToComponentBitFieldMap[id] = 0;
-	// entityIdToFamilyBitFieldMap[id] = 0;
-	// increase version
+	Entity::ID id = entity->m_id;
 	++m_entityIdVersionMap[id];
-	m_freeIds.push_back(id);
+	m_freeEntityIds.push_back(id);
+	m_freeComponentIndices.push_back(index);
 
 	delete entity;
 }
 
-std::bitset<COMPONENT_TYPE_COUNT> VEngine::EntityManager::getComponentBitSet(const Entity *entity)
+void VEngine::EntityManager::removeComponent(const Entity *entity, IComponent::ComponentTypeID componentTypeId, bool notifyListeners)
 {
-	assert(validateEntity(entity));
-	return m_entityIdToComponentBitSetMap[entity->m_id];
-}
+	Entity::Index index = entity->m_index;
+	IComponent *component = m_entityComponents[index].m_components[componentTypeId];
 
-std::unordered_map<std::uint64_t, VEngine::BaseComponent *> VEngine::EntityManager::getComponentMap(const Entity *entity)
-{
-	assert(validateEntity(entity));
-	return m_entityIdToComponentMap[entity->m_id];
+	if (notifyListeners)
+	{
+		for (IOnComponentRemovedListener *listener : m_onComponentRemovedListeners)
+		{
+			listener->onComponentRemoved(entity, component);
+		}
+	}
+	
+	delete component;
+	m_entityComponents[index].m_components[componentTypeId] = nullptr;
 }
 
 void VEngine::EntityManager::addOnEntityCreatedListener(IOnEntityCreatedListener *listener)
 {
-	assert(listener);
 	m_onEntityCreatedListeners.push_back(listener);
 }
 
 void VEngine::EntityManager::addOnEntityDestructionListener(IOnEntityDestructionListener *listener)
 {
-	assert(listener);
 	m_onEntityDestructionListeners.push_back(listener);
 }
 
 void VEngine::EntityManager::addOnComponentAddedListener(IOnComponentAddedListener *listener)
 {
-	assert(listener);
 	m_onComponentAddedListeners.push_back(listener);
 }
 
 void VEngine::EntityManager::addOnComponentRemovedListener(IOnComponentRemovedListener *listener)
 {
-	assert(listener);
 	m_onComponentRemovedListeners.push_back(listener);
 }
 
 void VEngine::EntityManager::removeOnEntityCreatedListener(IOnEntityCreatedListener *listener)
 {
-	assert(listener);
-	ContainerUtility::remove(m_onEntityCreatedListeners, listener);
+	ContainerUtility::quickRemove(m_onEntityCreatedListeners, listener);
 }
 
 void VEngine::EntityManager::removeOnEntityDestructionListener(IOnEntityDestructionListener *listener)
 {
-	assert(listener);
-	ContainerUtility::remove(m_onEntityDestructionListeners, listener);
+	ContainerUtility::quickRemove(m_onEntityDestructionListeners, listener);
 }
 
 void VEngine::EntityManager::removeOnComponentAddedListener(IOnComponentAddedListener *listener)
 {
-	assert(listener);
-	ContainerUtility::remove(m_onComponentAddedListeners, listener);
+	ContainerUtility::quickRemove(m_onComponentAddedListeners, listener);
 }
 
 void VEngine::EntityManager::removeOnComponentRemovedListener(IOnComponentRemovedListener *listener)
 {
-	assert(listener);
-	ContainerUtility::remove(m_onComponentRemovedListeners, listener);
-}
-
-bool VEngine::EntityManager::validateEntity(const Entity *entity)
-{
-	assert(entity);
-
-	const Entity::Id &id = entity->m_id;
-	const Entity::Version &version = entity->m_version;
-
-	//check if given id is still a valid id and present in all maps
-	return ContainerUtility::contains(m_entityIdVersionMap, id) &&
-		m_entityIdVersionMap[id] == version &&
-		ContainerUtility::contains(m_entityIdToComponentBitSetMap, id) &&
-		ContainerUtility::contains(m_entityIdToComponentMap, id);
+	ContainerUtility::quickRemove(m_onComponentRemovedListeners, listener);
 }

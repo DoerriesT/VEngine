@@ -7,7 +7,6 @@ namespace VEngine
 {
 	struct ModelComponent : public Component<ModelComponent>
 	{
-		static const std::uint64_t FAMILY_ID;
 		std::shared_ptr<Model> m_model;
 
 		explicit ModelComponent(std::shared_ptr<Model> model)
