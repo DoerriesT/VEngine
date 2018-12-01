@@ -26,6 +26,7 @@ namespace VEngine
 		std::unique_ptr<VKRenderResources> m_renderResources;
 		std::unique_ptr<VKSwapChain> m_swapChain;
 
+		VkRenderPass m_mainRenderPass;
 		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
 	};
 }

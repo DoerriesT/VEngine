@@ -3,7 +3,6 @@
 #include "Graphics/Vulkan/VKShaderModule.h"
 #include "Utility/Utility.h"
 #include "Graphics/Vulkan/VKUtility.h"
-#include "Graphics/Vulkan/VKRenderResources.h"
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include "Graphics/Model.h"
@@ -18,88 +17,10 @@ VEngine::VKForwardPipeline::~VKForwardPipeline()
 {
 }
 
-void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VKRenderResources *renderResources)
+void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer)
 {
 	m_width = width;
 	m_height = height;
-
-	// create renderpass
-	{
-		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = renderResources->m_colorAttachment.m_format;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = renderResources->m_depthAttachment.m_format;
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorAttachmentRef = {};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
-
-		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(attachments[0]));
-		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(g_context.m_device, &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create render pass!", -1);
-		}
-	}
-
-	// create framebuffer
-	{
-		VkImageView attachments[] = { renderResources->m_colorAttachment.m_view, renderResources->m_depthAttachment.m_view };
-
-		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		framebufferInfo.renderPass = m_renderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = width;
-		framebufferInfo.height = height;
-		framebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_framebuffer) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create framebuffer!", -1);
-		}
-	}
 
 	// create descriptor set layout
 	{
@@ -127,13 +48,6 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 		{
 			Utility::fatalExit("Failed to create descriptor set layout!", -1);
 		}
-	}
-
-	// create uniform buffer
-	{
-		VkDeviceSize bufferSize = sizeof(UBO);
-		VKUtility::createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffer.m_buffer, m_uniformBuffer.m_memory);
-
 	}
 
 	// create descriptor set pool
@@ -168,7 +82,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 		}
 
 		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = m_uniformBuffer.m_buffer;
+		bufferInfo.buffer = uniformBuffer;
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UBO);
 
@@ -311,7 +225,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.layout = m_pipelineLayout;
-		pipelineInfo.renderPass = m_renderPass;
+		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -322,73 +236,39 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKForwardPipeline::recordCommandBuffer(const std::vector<std::shared_ptr<Model>> &models)
+void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, const std::vector<std::shared_ptr<Model>> &models)
 {
-	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-	allocInfo.commandPool = g_context.m_graphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	vkResetCommandBuffer(commandBuffer, 0);
 
-	if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, &m_commandBuffer) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to allocate command buffer!", -1);
-	}
+	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
+	inheritanceInfo.renderPass = renderPass;
+	inheritanceInfo.subpass = 0;
+	inheritanceInfo.framebuffer = framebuffer;
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+	beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-	vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
-
-	VkRenderPassBeginInfo renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_renderPass;
-	renderPassInfo.framebuffer = m_framebuffer;
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = { m_width, m_height };
-
-	VkClearValue clearValues[2] = {};
-	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(sizeof(clearValues) / sizeof(clearValues[0]));
-	renderPassInfo.pClearValues = clearValues;
-
-	vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-
-	for (size_t i = 0; i < models.size(); ++i)
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 	{
-		VKBufferData vertexBufferData = models[i]->getVertexBufferData();
-		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, &vertexBufferData.m_buffer, &offset);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		VKBufferData indexBufferData = models[i]->getIndexBufferData();
-		vkCmdBindIndexBuffer(m_commandBuffer, indexBufferData.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		for (size_t i = 0; i < models.size(); ++i)
+		{
+			VKBufferData vertexBufferData = models[i]->getVertexBufferData();
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData.m_buffer, &offset);
 
-		vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+			VKBufferData indexBufferData = models[i]->getIndexBufferData();
+			vkCmdBindIndexBuffer(commandBuffer, indexBufferData.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(m_commandBuffer, models[i]->getIndexCount(), 1, 0, 0, 0);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+
+			vkCmdDrawIndexed(commandBuffer, models[i]->getIndexCount(), 1, 0, 0, 0);
+		}
 	}
-
-	vkCmdEndRenderPass(m_commandBuffer);
-
-	if (vkEndCommandBuffer(m_commandBuffer) != VK_SUCCESS)
+	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to record command buffer!", -1);
 	}
-}
-
-void VEngine::VKForwardPipeline::execute()
-{
-}
-
-VkCommandBuffer VEngine::VKForwardPipeline::getCommandBuffer() const
-{
-	return m_commandBuffer;
-}
-
-VEngine::VKBufferData VEngine::VKForwardPipeline::getUniformBuffer() const
-{
-	return m_uniformBuffer;
 }

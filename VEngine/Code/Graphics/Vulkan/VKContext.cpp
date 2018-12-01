@@ -302,6 +302,7 @@ namespace VEngine
 		{
 			VkCommandPoolCreateInfo graphicsPoolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 			graphicsPoolInfo.queueFamilyIndex = m_queueFamilyIndices.m_graphicsFamily;
+			graphicsPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 			if (vkCreateCommandPool(m_device, &graphicsPoolInfo, nullptr, &m_graphicsCommandPool) != VK_SUCCESS)
 			{

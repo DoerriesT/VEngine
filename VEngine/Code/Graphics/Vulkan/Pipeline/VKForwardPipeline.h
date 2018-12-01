@@ -26,22 +26,15 @@ namespace VEngine
 		VKForwardPipeline &operator= (const VKForwardPipeline &) = delete;
 		VKForwardPipeline &operator= (const VKForwardPipeline &&) = delete;
 		~VKForwardPipeline();
-		void init(unsigned int width, unsigned int height, VKRenderResources *renderResources);
-		void recordCommandBuffer(const std::vector<std::shared_ptr<Model>> &models);
-		void execute();
-		VkCommandBuffer getCommandBuffer() const;
-		VKBufferData getUniformBuffer() const;
+		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer);
+		void recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, const std::vector<std::shared_ptr<Model>> &models);
 
 	private:
 		VkPipeline m_pipeline;
 		VkPipelineLayout m_pipelineLayout;
-		VkRenderPass m_renderPass;
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSet m_descriptorSet;
 		VkDescriptorSetLayout m_descriptorSetLayout;
-		VkFramebuffer m_framebuffer;
-		VkCommandBuffer m_commandBuffer;
-		VKBufferData m_uniformBuffer;
 		unsigned int m_width;
 		unsigned int m_height;
 	};

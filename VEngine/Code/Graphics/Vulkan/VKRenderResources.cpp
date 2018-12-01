@@ -54,6 +54,24 @@ void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, u
 	vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
 }
 
+void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned int height, VkRenderPass renderPass)
+{
+	VkImageView attachments[] = { m_colorAttachment.m_view, m_depthAttachment.m_view };
+
+	VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
+	framebufferInfo.pAttachments = attachments;
+	framebufferInfo.width = width;
+	framebufferInfo.height = height;
+	framebufferInfo.layers = 1;
+
+	if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_mainFramebuffer) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to create framebuffer!", -1);
+	}
+}
+
 VEngine::VKRenderResources::VKRenderResources()
 	:m_meshBuffer()
 {
@@ -82,6 +100,43 @@ void VEngine::VKRenderResources::createResizableTextures(unsigned int width, uns
 void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned int height)
 {
 	createResizableTextures(width, height);
+}
+
+void VEngine::VKRenderResources::createUniformBuffer(VkDeviceSize size)
+{
+	m_mainUniformBuffer.m_size = size;
+	VKUtility::createBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mainUniformBuffer.m_buffer, m_mainUniformBuffer.m_memory);
+
+}
+
+void VEngine::VKRenderResources::createCommandBuffers()
+{
+	// main
+	{
+		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		allocInfo.commandPool = g_context.m_graphicsCommandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, &m_mainCommandBuffer) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to allocate command buffer!", -1);
+		}
+	}
+
+	// forward / blit
+	{
+		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		allocInfo.commandPool = g_context.m_graphicsCommandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, &m_forwardCommandBuffer) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to allocate command buffers!", -1);
+		}
+	}
+	
 }
 
 void VEngine::VKRenderResources::deleteResizableTextures()

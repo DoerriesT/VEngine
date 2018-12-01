@@ -30,9 +30,73 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 	m_renderResources->init(width, height);
 	m_swapChain->init(width, height);
-	m_forwardPipeline->init(width, height, m_renderResources.get());
-	static std::shared_ptr<VEngine::Model> model = std::shared_ptr<VEngine::Model>(new Model("Resources/Models/ice.obj"));
-	m_forwardPipeline->recordCommandBuffer({ model });
+
+	// create main renderpass
+	{
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = m_renderResources->m_colorAttachment.m_format;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = m_renderResources->m_depthAttachment.m_format;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference colorAttachmentRef = {};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttachmentRef = {};
+		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
+
+		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(attachments[0]));
+		renderPassInfo.pAttachments = attachments;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
+
+		if (vkCreateRenderPass(g_context.m_device, &renderPassInfo, nullptr, &m_mainRenderPass) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create render pass!", -1);
+		}
+	}
+
+	m_renderResources->createFramebuffer(width, height, m_mainRenderPass);
+	m_renderResources->createUniformBuffer(sizeof(UBO));
+	m_renderResources->createCommandBuffers();
+
+	m_forwardPipeline->init(width, height,m_mainRenderPass, m_renderResources->m_mainUniformBuffer.m_buffer);
+	
 }
 
 void VEngine::VKRenderer::update(const RenderParams &renderParams)
@@ -43,11 +107,43 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams)
 	ubo.view = renderParams.m_viewMatrix;
 	ubo.projection = renderParams.m_projectionMatrix;
 
-	auto buffer = m_forwardPipeline->getUniformBuffer();
 	void* data;
-	vkMapMemory(g_context.m_device, buffer.m_memory, 0, sizeof(ubo), 0, &data);
+	vkMapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory, 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(g_context.m_device, buffer.m_memory);
+	vkUnmapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory);
+
+	// record commandbuffers
+	{
+		static std::shared_ptr<VEngine::Model> model = std::shared_ptr<VEngine::Model>(new VEngine::Model("Resources/Models/ice.obj"));
+		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources->m_mainFramebuffer, m_renderResources->m_forwardCommandBuffer, { model });
+
+		// main
+		{
+			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(m_renderResources->m_mainCommandBuffer, &beginInfo);
+			{
+				VkClearValue clearValues[2] = {};
+				clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+				clearValues[1].depthStencil = { 1.0f, 0 };
+
+				VkRenderPassBeginInfo renderPassInfo = {};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				renderPassInfo.renderPass = m_mainRenderPass;
+				renderPassInfo.framebuffer = m_renderResources->m_mainFramebuffer;
+				renderPassInfo.renderArea.offset = { 0, 0 };
+				renderPassInfo.renderArea.extent = { m_width, m_height };
+				renderPassInfo.clearValueCount = static_cast<uint32_t>(sizeof(clearValues) / sizeof(clearValues[0]));
+				renderPassInfo.pClearValues = clearValues;
+
+				vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
+				vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
+			}
+			vkEndCommandBuffer(m_renderResources->m_mainCommandBuffer);
+		}
+	}
 }
 
 void VEngine::VKRenderer::render()
@@ -74,8 +170,7 @@ void VEngine::VKRenderer::render()
 	submitInfo.pWaitDstStageMask = waitStages;
 
 	submitInfo.commandBufferCount = 1;
-	VkCommandBuffer commandBuffer = m_forwardPipeline->getCommandBuffer();
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &m_renderResources->m_mainCommandBuffer;
 
 	VkSemaphore signalSemaphores[] = { g_context.m_renderFinishedSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
