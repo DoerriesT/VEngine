@@ -17,6 +17,8 @@ namespace VEngine
 		void init(unsigned int width, unsigned int height);
 		void update(const RenderParams &renderParams);
 		void render();
+		void reserveMeshBuffer(uint64_t size);
+		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 
 	private:
 		unsigned int m_width;

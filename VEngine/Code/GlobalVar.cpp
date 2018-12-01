@@ -2,6 +2,6 @@
 
 namespace VEngine
 {
-	GlobalVar<unsigned int> g_windowWidth = 800;
-	GlobalVar<unsigned int> g_windowHeight = 600;
+	GlobalVar<unsigned int> g_windowWidth = 1600;
+	GlobalVar<unsigned int> g_windowHeight = 900;
 }

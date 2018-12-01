@@ -66,9 +66,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\json.h">
-      <Filter>Code\Utility</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Utility\stb_image.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
@@ -135,9 +132,6 @@
     <ClInclude Include="Code\Graphics\Camera\Camera.h">
       <Filter>Code\Graphics\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h">
-      <Filter>Code\Graphics\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="Code\ECS\EntityManager.h">
       <Filter>Code\ECS</Filter>
     </ClInclude>
@@ -158,6 +152,15 @@
     </ClInclude>
     <ClInclude Include="Code\ECS\System\CameraControllerSystem.h">
       <Filter>Code\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\PointLightComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\SpotLightComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Mesh.h">
+      <Filter>Code\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -215,9 +218,6 @@
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp">
       <Filter>Code\Graphics\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Camera\FPSCameraController.cpp">
-      <Filter>Code\Graphics\Camera</Filter>
-    </ClCompile>
     <ClCompile Include="Code\ECS\EntityManager.cpp">
       <Filter>Code\ECS</Filter>
     </ClCompile>
@@ -232,6 +232,9 @@
     </ClCompile>
     <ClCompile Include="Code\ECS\System\CameraControllerSystem.cpp">
       <Filter>Code\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Scene.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

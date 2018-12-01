@@ -77,6 +77,16 @@ void VEngine::RenderSystem::render()
 	}
 }
 
+void VEngine::RenderSystem::reserveMeshBuffer(uint64_t size)
+{
+	m_renderer->reserveMeshBuffer(size);
+}
+
+void VEngine::RenderSystem::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
+{
+	m_renderer->uploadMeshData(vertices, vertexSize, indices, indexSize);
+}
+
 void VEngine::RenderSystem::setCameraEntity(const Entity *cameraEntity)
 {
 	m_cameraEntity = cameraEntity;

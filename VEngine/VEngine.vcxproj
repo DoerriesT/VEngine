@@ -133,7 +133,9 @@
     <ClInclude Include="Code\ECS\Component\CameraComponent.h" />
     <ClInclude Include="Code\ECS\Component\Component.h" />
     <ClInclude Include="Code\ECS\Component\ModelComponent.h" />
+    <ClInclude Include="Code\ECS\Component\PointLightComponent.h" />
     <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
+    <ClInclude Include="Code\ECS\Component\SpotLightComponent.h" />
     <ClInclude Include="Code\ECS\Component\TransformationComponent.h" />
     <ClInclude Include="Code\ECS\EntityManager.h" />
     <ClInclude Include="Code\ECS\IOnComponentAddedListener.h" />
@@ -147,7 +149,7 @@
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
-    <ClInclude Include="Code\Graphics\Camera\FPSCameraController.h" />
+    <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\Model.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
@@ -165,7 +167,6 @@
     <ClInclude Include="Code\Input\UserInput.h" />
     <ClInclude Include="Code\Scene.h" />
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
-    <ClInclude Include="Code\Utility\json.h" />
     <ClInclude Include="Code\Utility\stb_image.h" />
     <ClInclude Include="Code\Utility\stb_image_write.h" />
     <ClInclude Include="Code\Utility\tiny_gltf.h" />
@@ -182,7 +183,6 @@
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
-    <ClCompile Include="Code\Graphics\Camera\FPSCameraController.cpp" />
     <ClCompile Include="Code\Graphics\Model.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
@@ -192,6 +192,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
     <ClCompile Include="Code\Input\UserInput.cpp" />
+    <ClCompile Include="Code\Scene.cpp" />
     <ClCompile Include="Code\Utility\stb_image.cpp" />
     <ClCompile Include="Code\Utility\stb_image_write.cpp" />
     <ClCompile Include="Code\Utility\tiny_gltf.cpp" />

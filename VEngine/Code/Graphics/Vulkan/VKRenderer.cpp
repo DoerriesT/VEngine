@@ -135,3 +135,13 @@ void VEngine::VKRenderer::render()
 
 	vkQueueWaitIdle(g_context.m_presentQueue);
 }
+
+void VEngine::VKRenderer::reserveMeshBuffer(uint64_t size)
+{
+	m_renderResources->reserveMeshBuffer(size);
+}
+
+void VEngine::VKRenderer::uploadMeshData(const unsigned char * vertices, uint64_t vertexSize, const unsigned char * indices, uint64_t indexSize)
+{
+	m_renderResources->uploadMeshData(vertices, vertexSize, indices, indexSize);
+}

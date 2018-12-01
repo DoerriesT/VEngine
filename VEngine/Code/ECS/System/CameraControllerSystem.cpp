@@ -5,11 +5,10 @@
 #include "ECS/Component/CameraComponent.h"
 #include "Graphics/Camera/Camera.h"
 
-VEngine::CameraControllerSystem::CameraControllerSystem(EntityManager & entityManager, UserInput & userInput, const std::function<void(bool)>& grabMouse, ControllerType controllerType)
+VEngine::CameraControllerSystem::CameraControllerSystem(EntityManager & entityManager, UserInput & userInput, const std::function<void(bool)>& grabMouse)
 	:m_entityManager(entityManager),
 	m_userInput(userInput),
 	m_grabMouse(grabMouse),
-	m_controllerType(controllerType),
 	m_mouseHistory(),
 	m_mouseSmoothFactor()
 {
@@ -27,9 +26,9 @@ void VEngine::CameraControllerSystem::input(double time, double timeDelta)
 		// creating a Camera object automatically updates the view/projection matrices of the CameraComponent
 		Camera camera(transformationComponent, cameraComponent);
 
-		switch (m_controllerType)
+		switch (cameraComponent.m_controllerType)
 		{
-		case CameraControllerSystem::ControllerType::FPS:
+		case CameraComponent::ControllerType::FPS:
 		{
 			bool pressed = false;
 			float mod = 1.0f;

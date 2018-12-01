@@ -8,6 +8,12 @@ namespace VEngine
 {
 	struct CameraComponent : public Component<CameraComponent>
 	{
+		enum class ControllerType
+		{
+			FPS
+		};
+
+		ControllerType m_controllerType;
 		float m_aspectRatio;
 		float m_fovy;
 		float m_near;
@@ -15,8 +21,9 @@ namespace VEngine
 		glm::mat4 m_viewMatrix;
 		glm::mat4 m_projectionMatrix;
 
-		explicit CameraComponent(float aspectRatio, float fovy, float nearPlane, float farPlane)
-			:m_aspectRatio(aspectRatio),
+		explicit CameraComponent(ControllerType controllerType, float aspectRatio, float fovy, float nearPlane, float farPlane)
+			:m_controllerType(controllerType),
+			m_aspectRatio(aspectRatio),
 			m_fovy(fovy),
 			m_near(nearPlane),
 			m_far(farPlane),

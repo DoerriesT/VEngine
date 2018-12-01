@@ -1063,7 +1063,7 @@ namespace tinygltf {
 #endif
 #endif
 
-#include "json.h"
+#include <json.h>
 
 #ifndef TINYGLTF_NO_STB_IMAGE
 #include "./stb_image.h"

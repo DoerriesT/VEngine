@@ -1,0 +1,993 @@
+{
+    "IndexSize": 3147204,
+    "Max": [
+        18.6140632629395,
+        14.3193187713623,
+        11.4104194641113
+    ],
+    "MeshFile": "sponza.mesh",
+    "Min": [
+        -18.5944404602051,
+        -1.23942494392395,
+        -11.4718904495239
+    ],
+    "SubMeshCount": 25,
+    "SubMeshes": [
+        {
+            "IndexOffset": 0,
+            "IndexSize": 36504,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\lion.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.6052513122559,
+                2.67261004447937,
+                0.784700989723206
+            ],
+            "Min": [
+                -13.6593294143677,
+                0.824047029018402,
+                -0.790745973587036
+            ],
+            "Name": "",
+            "VertexOffset": 0,
+            "VertexSize": 55296
+        },
+        {
+            "IndexOffset": 36504,
+            "IndexSize": 49032,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\background.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.6136560440063,
+                7.61052417755127,
+                1.24243605136871
+            ],
+            "Min": [
+                -13.6677360534668,
+                0.433185994625092,
+                -1.27769494056702
+            ],
+            "Name": "",
+            "VertexOffset": 55296,
+            "VertexSize": 71712
+        },
+        {
+            "IndexOffset": 85536,
+            "IndexSize": 216,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                0.532370984554291,
+                3.50696992874146,
+                6.11121416091919
+            ],
+            "Min": [
+                -0.579071998596191,
+                2.59230709075928,
+                6.04274606704712
+            ],
+            "Name": "",
+            "VertexOffset": 127008,
+            "VertexSize": 1152
+        },
+        {
+            "IndexOffset": 85752,
+            "IndexSize": 41664,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\vase_plant.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                9.23385047912598,
+                0.756236016750336,
+                2.23468208312988
+            ],
+            "Min": [
+                -9.31459426879883,
+                0.448190003633499,
+                -2.26219511032104
+            ],
+            "Name": "",
+            "VertexOffset": 128160,
+            "VertexSize": 125824
+        },
+        {
+            "IndexOffset": 127416,
+            "IndexSize": 122016,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_arch_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                9.83434581756592,
+                12.7750997543335,
+                2.81430792808533
+            ],
+            "Min": [
+                -9.91374778747559,
+                2.13895297050476,
+                -2.82488894462585
+            ],
+            "Name": "",
+            "VertexOffset": 253984,
+            "VertexSize": 309728
+        },
+        {
+            "IndexOffset": 249432,
+            "IndexSize": 9552,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\spnza_bricks_a_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                18.0819110870361,
+                13.4969463348389,
+                10.7532720565796
+            ],
+            "Min": [
+                -18.0548114776611,
+                -1.23942494392395,
+                -11.0341243743896
+            ],
+            "Name": "",
+            "VertexOffset": 563712,
+            "VertexSize": 34272
+        },
+        {
+            "IndexOffset": 258984,
+            "IndexSize": 70512,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_ceiling_a_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.6370038986206,
+                12.6642684936523,
+                6.10518980026245
+            ],
+            "Min": [
+                -13.6795101165771,
+                2.18303394317627,
+                -6.09530878067017
+            ],
+            "Name": "",
+            "VertexOffset": 597984,
+            "VertexSize": 159936
+        },
+        {
+            "IndexOffset": 329496,
+            "IndexSize": 384,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\chain_texture.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                5.74860286712646,
+                2.16854810714722,
+                1.80745005607605
+            ],
+            "Min": [
+                -5.83432483673096,
+                1.36221098899841,
+                -1.8587019443512
+            ],
+            "Name": "",
+            "VertexOffset": 757920,
+            "VertexSize": 2048
+        },
+        {
+            "IndexOffset": 329880,
+            "IndexSize": 33792,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_column_a_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                9.87102890014648,
+                2.23496890068054,
+                2.82231497764587
+            ],
+            "Min": [
+                -9.95719242095947,
+                0.000392999994801357,
+                -2.81252098083496
+            ],
+            "Name": "",
+            "VertexOffset": 759968,
+            "VertexSize": 99968
+        },
+        {
+            "IndexOffset": 363672,
+            "IndexSize": 278496,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_column_b_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                9.68906021118164,
+                7.02111101150513,
+                2.70389986038208
+            ],
+            "Min": [
+                -9.76150608062744,
+                5.09132719039917,
+                -2.74088406562805
+            ],
+            "Name": "",
+            "VertexOffset": 859936,
+            "VertexSize": 736384
+        },
+        {
+            "IndexOffset": 642168,
+            "IndexSize": 85056,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_column_c_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.6477069854736,
+                6.97822189331055,
+                6.1134181022644
+            ],
+            "Min": [
+                -13.6880378723145,
+                1.85152006149292,
+                -6.1135048866272
+            ],
+            "Name": "",
+            "VertexOffset": 1596320,
+            "VertexSize": 379360
+        },
+        {
+            "IndexOffset": 727224,
+            "IndexSize": 10560,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_details_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.7702312469482,
+                7.19349908828735,
+                6.40629816055298
+            ],
+            "Min": [
+                -4.48182821273804,
+                0.00284600001759827,
+                -6.15921211242676
+            ],
+            "Name": "",
+            "VertexOffset": 1975680,
+            "VertexSize": 35136
+        },
+        {
+            "IndexOffset": 737784,
+            "IndexSize": 132096,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_fabric_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                3.44849896430969,
+                5.23093414306641,
+                2.87902212142944
+            ],
+            "Min": [
+                -3.56792211532593,
+                3.41942596435547,
+                -2.88909101486206
+            ],
+            "Name": "",
+            "VertexOffset": 2010816,
+            "VertexSize": 195456
+        },
+        {
+            "IndexOffset": 869880,
+            "IndexSize": 227328,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_curtain_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                8.81673240661621,
+                2.86180806159973,
+                2.49098992347717
+            ],
+            "Min": [
+                -8.84737014770508,
+                0.0219110008329153,
+                -2.59637403488159
+            ],
+            "Name": "",
+            "VertexOffset": 2206272,
+            "VertexSize": 318144
+        },
+        {
+            "IndexOffset": 1097208,
+            "IndexSize": 198144,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_fabric_blue_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                7.1035099029541,
+                5.23093414306641,
+                2.87902307510376
+            ],
+            "Min": [
+                -7.25398015975952,
+                3.41942596435547,
+                -2.88909101486206
+            ],
+            "Name": "",
+            "VertexOffset": 2524416,
+            "VertexSize": 293152
+        },
+        {
+            "IndexOffset": 1295352,
+            "IndexSize": 198144,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_fabric_green_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                7.13455486297607,
+                5.23093414306641,
+                2.87902402877808
+            ],
+            "Min": [
+                -7.22293519973755,
+                3.41942596435547,
+                -2.88909101486206
+            ],
+            "Name": "",
+            "VertexOffset": 2817568,
+            "VertexSize": 293184
+        },
+        {
+            "IndexOffset": 1493496,
+            "IndexSize": 172032,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_curtain_green_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                5.09533405303955,
+                2.86180686950684,
+                2.49098992347717
+            ],
+            "Min": [
+                -8.84737014770508,
+                0.0219110008329153,
+                -2.53639888763428
+            ],
+            "Name": "",
+            "VertexOffset": 3110752,
+            "VertexSize": 237728
+        },
+        {
+            "IndexOffset": 1665528,
+            "IndexSize": 172032,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_curtain_blue_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                8.81673240661621,
+                2.86180806159973,
+                2.49098992347717
+            ],
+            "Min": [
+                -5.16119718551636,
+                0.0219110008329153,
+                -2.59637403488159
+            ],
+            "Name": "",
+            "VertexOffset": 3348480,
+            "VertexSize": 237728
+        },
+        {
+            "IndexOffset": 1837560,
+            "IndexSize": 197952,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_flagpole_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                8.91793060302734,
+                8.88638114929199,
+                2.44731593132019
+            ],
+            "Min": [
+                -8.97196960449219,
+                2.77459287643433,
+                -2.54086589813232
+            ],
+            "Name": "",
+            "VertexOffset": 3586208,
+            "VertexSize": 389184
+        },
+        {
+            "IndexOffset": 2035512,
+            "IndexSize": 252,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_floor_a_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                13.6371974945068,
+                4.18029975891113,
+                6.09801387786865
+            ],
+            "Min": [
+                -13.7072305679321,
+                -6.29999994998798e-05,
+                -6.09813594818115
+            ],
+            "Name": "",
+            "VertexOffset": 3975392,
+            "VertexSize": 736
+        },
+        {
+            "IndexOffset": 2035764,
+            "IndexSize": 377232,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_thorn_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                6.12725782394409,
+                2.27601909637451,
+                3.02058792114258
+            ],
+            "Min": [
+                -6.18763589859009,
+                -0.255495995283127,
+                -3.05519199371338
+            ],
+            "Name": "",
+            "VertexOffset": 3976128,
+            "VertexSize": 774016
+        },
+        {
+            "IndexOffset": 2412996,
+            "IndexSize": 173808,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\sponza_roof_diff.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                18.6140632629395,
+                14.3193187713623,
+                11.4104194641113
+            ],
+            "Min": [
+                -18.5944404602051,
+                12.8301219940186,
+                -11.4718904495239
+            ],
+            "Name": "",
+            "VertexOffset": 4750144,
+            "VertexSize": 349376
+        },
+        {
+            "IndexOffset": 2586804,
+            "IndexSize": 110208,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\vase_dif.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                12.5566940307617,
+                1.35516798496246,
+                5.13878107070923
+            ],
+            "Min": [
+                -12.1517210006714,
+                0.0180649999529123,
+                -4.87882280349731
+            ],
+            "Name": "",
+            "VertexOffset": 5099520,
+            "VertexSize": 169856
+        },
+        {
+            "IndexOffset": 2697012,
+            "IndexSize": 237936,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\vase_hanging.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                5.8411111831665,
+                2.19451093673706,
+                2.06092405319214
+            ],
+            "Min": [
+                -5.92683219909668,
+                1.01172804832458,
+                -2.11217498779297
+            ],
+            "Name": "",
+            "VertexOffset": 5269376,
+            "VertexSize": 333184
+        },
+        {
+            "IndexOffset": 2934948,
+            "IndexSize": 212256,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "textures\\vase_round.tga",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                9.20794582366943,
+                0.586995005607605,
+                2.14927411079407
+            ],
+            "Min": [
+                -9.29237937927246,
+                -0.0153069999068975,
+                -2.16026091575623
+            ],
+            "Name": "",
+            "VertexOffset": 5602560,
+            "VertexSize": 314880
+        }
+    ],
+    "VertexSize": 5917440
+}

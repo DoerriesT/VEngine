@@ -8,6 +8,7 @@
 #include <ECS/Component/CameraComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
+#include <Scene.h>
 
 namespace VEngine
 {
@@ -41,6 +42,9 @@ void DummyLogic::init()
 	VEngine::EntityManager &em = e->getEntityManager();
 	const VEngine::Entity *cameraEntity = em.createEntity();
 	em.addComponent<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC);
-	em.addComponent<VEngine::CameraComponent>(cameraEntity, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
+	em.addComponent<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
 	e->getSystemManager().getSystem<VEngine::RenderSystem>()->setCameraEntity(cameraEntity);
+
+	VEngine::Scene scene = {};
+	scene.load(*e->getSystemManager().getSystem<VEngine::RenderSystem>(), "Resources/Models/sponza.mat");
 }

@@ -44,7 +44,7 @@ void VEngine::Engine::start()
 	m_window->init();
 	m_window->addInputListener(m_userInput.get());
 	g_context.init(static_cast<GLFWwindow *>(m_window->getWindowHandle()));
-	m_systemManager->addSystem<CameraControllerSystem>(*m_entityManager, *m_userInput, [this](bool grab) {m_window->grabMouse(grab); }, CameraControllerSystem::ControllerType::FPS);
+	m_systemManager->addSystem<CameraControllerSystem>(*m_entityManager, *m_userInput, [this](bool grab) {m_window->grabMouse(grab); });
 	m_systemManager->addSystem<RenderSystem>(*m_entityManager);
 	m_systemManager->init();
 	m_gameLogic.init();

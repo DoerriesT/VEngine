@@ -20,11 +20,11 @@ namespace VEngine
 		glm::mat4 m_transformation;
 		glm::mat4 m_prevTransformation;
 
-		explicit TransformationComponent(Mobility _mobility, const glm::vec3 &_position = glm::vec3(), const glm::quat &_rotation = glm::quat(), const glm::vec3 &_scale = glm::vec3(1.0f))
-			:m_mobility(_mobility), 
-			m_position(_position), 
-			m_rotation(_rotation), 
-			m_scale(_scale) 
+		explicit TransformationComponent(Mobility mobility, const glm::vec3 &position = glm::vec3(), const glm::quat &rotation = glm::quat(), const glm::vec3 &scale = glm::vec3(1.0f))
+			:m_mobility(mobility), 
+			m_position(position), 
+			m_rotation(rotation), 
+			m_scale(scale) 
 		{ 
 		}
 	};

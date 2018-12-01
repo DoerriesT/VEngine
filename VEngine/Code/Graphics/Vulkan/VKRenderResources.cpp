@@ -22,7 +22,40 @@ void VEngine::VKRenderResources::resize(unsigned int width, unsigned int height)
 	createResizableTextures(width, height);
 }
 
+void VEngine::VKRenderResources::reserveMeshBuffer(uint64_t size)
+{
+	if (m_meshBuffer.m_size < size)
+	{
+		if (m_meshBuffer.m_size > 0)
+		{
+			vkDestroyBuffer(g_context.m_device, m_meshBuffer.m_buffer, nullptr);
+			vkFreeMemory(g_context.m_device, m_meshBuffer.m_memory, nullptr);
+		}
+
+		m_meshBuffer.m_size = size;
+		VKUtility::createBuffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_meshBuffer.m_buffer, m_meshBuffer.m_memory);
+	}
+}
+
+void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
+{
+	VKBufferData stagingBuffer;
+	stagingBuffer.m_size = vertexSize + indexSize;
+	VKUtility::createBuffer(stagingBuffer.m_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer.m_buffer, stagingBuffer.m_memory);
+
+	void *data;
+	vkMapMemory(g_context.m_device, stagingBuffer.m_memory, 0, stagingBuffer.m_size, 0, &data);
+	memcpy(data, vertices, (size_t)stagingBuffer.m_size);
+	vkUnmapMemory(g_context.m_device, stagingBuffer.m_memory);
+
+	VKUtility::copyBuffer(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, stagingBuffer, m_meshBuffer, stagingBuffer.m_size);
+
+	vkDestroyBuffer(g_context.m_device, stagingBuffer.m_buffer, nullptr);
+	vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
+}
+
 VEngine::VKRenderResources::VKRenderResources()
+	:m_meshBuffer()
 {
 }
 
