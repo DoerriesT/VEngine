@@ -132,7 +132,7 @@
   <ItemGroup>
     <ClInclude Include="Code\ECS\Component\CameraComponent.h" />
     <ClInclude Include="Code\ECS\Component\Component.h" />
-    <ClInclude Include="Code\ECS\Component\ModelComponent.h" />
+    <ClInclude Include="Code\ECS\Component\MeshComponent.h" />
     <ClInclude Include="Code\ECS\Component\PointLightComponent.h" />
     <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
     <ClInclude Include="Code\ECS\Component\SpotLightComponent.h" />
@@ -149,8 +149,8 @@
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
+    <ClInclude Include="Code\Graphics\DrawItem.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
-    <ClInclude Include="Code\Graphics\Model.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
@@ -183,7 +183,6 @@
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
-    <ClCompile Include="Code\Graphics\Model.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />

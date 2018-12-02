@@ -3,6 +3,7 @@
 #include <fstream>
 #include <json.h>
 #include <memory>
+#include "Utility/Utility.h"
 
 void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 {
@@ -15,7 +16,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 	uint32_t vertexSize = info["VertexSize"];
 	uint32_t indexSize = info["IndexSize"];
 
-	renderSystem.reserveMeshBuffer(vertexSize + indexSize);
+	renderSystem.reserveMeshBuffers(vertexSize, indexSize);
 
 	Mesh mesh;
 	for (auto &subMeshInfo : info["SubMeshes"])
@@ -40,12 +41,9 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 
 	m_meshes[filepath] = mesh;
 
-	std::ifstream file(info["MeshFile"].get<std::string>(), std::ios::binary);
-	std::unique_ptr<unsigned char[]> meshData = std::make_unique<unsigned char[]>(vertexSize + indexSize);
+	std::vector<char> meshData = Utility::readBinaryFile(info["MeshFile"].get<std::string>().c_str());
 
-	file.read((char *)meshData.get(), vertexSize + indexSize);
-
-	renderSystem.uploadMeshData(meshData.get(), vertexSize, meshData.get() + vertexSize, indexSize);
+	renderSystem.uploadMeshData((unsigned char *)meshData.data(), vertexSize, (unsigned char *)(meshData.data()) + vertexSize, indexSize);
 }
 
 void VEngine::Scene::unload(RenderSystem &renderSystem)

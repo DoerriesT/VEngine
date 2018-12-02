@@ -5,7 +5,10 @@
 #include "Graphics/Vulkan/VKUtility.h"
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
-#include "Graphics/Model.h"
+#include "Graphics/DrawItem.h"
+#include "Graphics/Vulkan/VKRenderResources.h"
+#include "Graphics/RenderParams.h"
+#include "Graphics/Mesh.h"
 
 extern VEngine::VKContext g_context;
 
@@ -17,31 +20,33 @@ VEngine::VKForwardPipeline::~VKForwardPipeline()
 {
 }
 
-void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer)
+void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer, 
+	VkDeviceSize perFrameDataOffset, VkDeviceSize perFrameDataSize, 
+	VkDeviceSize perDrawDataOffset, VkDeviceSize perDrawDataSize)
 {
 	m_width = width;
 	m_height = height;
 
 	// create descriptor set layout
 	{
-		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.pImmutableSamplers = nullptr;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		VkDescriptorSetLayoutBinding perFrameLayoutBinding = {};
+		perFrameLayoutBinding.binding = 0;
+		perFrameLayoutBinding.descriptorCount = 1;
+		perFrameLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		perFrameLayoutBinding.pImmutableSamplers = nullptr;
+		perFrameLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding perDrawLayoutBinding = {};
+		perDrawLayoutBinding.binding = 1;
+		perDrawLayoutBinding.descriptorCount = 1;
+		perDrawLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		perDrawLayoutBinding.pImmutableSamplers = nullptr;
+		perDrawLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		VkDescriptorSetLayoutBinding bindings[] = { uboLayoutBinding /*, samplerLayoutBinding*/ };
+		VkDescriptorSetLayoutBinding bindings[] = { perFrameLayoutBinding, perDrawLayoutBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layoutInfo.bindingCount = static_cast<uint32_t>(sizeof(bindings) / sizeof(VkDescriptorSetLayoutBinding));
+		layoutInfo.bindingCount = static_cast<uint32_t>(sizeof(bindings) / sizeof(bindings[0]));
 		layoutInfo.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
@@ -55,7 +60,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 		VkDescriptorPoolSize poolSizes[] =
 		{
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1},
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1}
 		};
 
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
@@ -81,17 +86,17 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 			Utility::fatalExit("Failed to allocate descriptor set!", -1);
 		}
 
-		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = uniformBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UBO);
+		VkDescriptorBufferInfo perFrameBufferInfo = {};
+		perFrameBufferInfo.buffer = uniformBuffer;
+		perFrameBufferInfo.offset = perFrameDataOffset;
+		perFrameBufferInfo.range = perFrameDataSize;
 
-		/*VkDescriptorImageInfo imageInfo = {};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = textureImageView;
-		imageInfo.sampler = textureSampler;*/
+		VkDescriptorBufferInfo perDrawBufferInfo = {};
+		perDrawBufferInfo.buffer = uniformBuffer;
+		perDrawBufferInfo.offset = perDrawDataOffset;
+		perDrawBufferInfo.range = perDrawDataSize;
 
-		VkWriteDescriptorSet descriptorWrites[1] = {};
+		VkWriteDescriptorSet descriptorWrites[2] = {};
 		{
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = m_descriptorSet;
@@ -99,15 +104,15 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
+			descriptorWrites[0].pBufferInfo = &perFrameBufferInfo;
 
-			/*descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = m_descriptorSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;*/
+			descriptorWrites[1].pBufferInfo = &perDrawBufferInfo;
 		}
 
 
@@ -236,7 +241,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, const std::vector<std::shared_ptr<Model>> &models)
+void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, VKBufferData vertexBuffer, VKBufferData indexBuffer, uint32_t uniformBufferIncrement, const std::vector<DrawItem> &drawItems)
 {
 	vkResetCommandBuffer(commandBuffer, 0);
 
@@ -253,18 +258,17 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, Vk
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		for (size_t i = 0; i < models.size(); ++i)
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+
+		for (size_t i = 0; i < drawItems.size(); ++i)
 		{
-			VKBufferData vertexBufferData = models[i]->getVertexBufferData();
-			VkDeviceSize offset = 0;
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferData.m_buffer, &offset);
+			const DrawItem &item = drawItems[i];
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.m_buffer, &item.m_vertexOffset);
 
-			VKBufferData indexBufferData = models[i]->getIndexBufferData();
-			vkCmdBindIndexBuffer(commandBuffer, indexBufferData.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+			uint32_t dynamicOffset = static_cast<uint32_t>(uniformBufferIncrement * i);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 1, &dynamicOffset);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
-
-			vkCmdDrawIndexed(commandBuffer, models[i]->getIndexCount(), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}
 	}
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)

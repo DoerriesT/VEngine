@@ -75,9 +75,6 @@
     <ClInclude Include="Code\Utility\tiny_gltf.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Model.h">
-      <Filter>Code\Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Utility\ContainerUtility.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
@@ -120,9 +117,6 @@
     <ClInclude Include="Code\ECS\Component\RenderableComponent.h">
       <Filter>Code\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\Component\ModelComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
     <ClInclude Include="Code\GlobalVar.h">
       <Filter>Code</Filter>
     </ClInclude>
@@ -162,6 +156,12 @@
     <ClInclude Include="Code\Graphics\Mesh.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\DrawItem.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\MeshComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -196,9 +196,6 @@
     </ClCompile>
     <ClCompile Include="Code\Utility\tiny_gltf.cpp">
       <Filter>Code\Utility</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Model.cpp">
-      <Filter>Code\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Code\Input\UserInput.cpp">
       <Filter>Code\Input</Filter>

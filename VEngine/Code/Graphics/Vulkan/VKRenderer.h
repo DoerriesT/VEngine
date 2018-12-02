@@ -8,6 +8,7 @@ namespace VEngine
 	class VKSwapChain;
 	class VKForwardPipeline;
 	struct RenderParams;
+	struct DrawLists;
 
 	class VKRenderer
 	{
@@ -15,9 +16,9 @@ namespace VEngine
 		explicit VKRenderer();
 		~VKRenderer();
 		void init(unsigned int width, unsigned int height);
-		void update(const RenderParams &renderParams);
+		void update(const RenderParams &renderParams, const DrawLists &drawLists);
 		void render();
-		void reserveMeshBuffer(uint64_t size);
+		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 
 	private:

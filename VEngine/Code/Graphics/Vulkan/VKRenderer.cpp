@@ -4,11 +4,11 @@
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
-#include "Graphics/Model.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include "Graphics/Camera/Camera.h"
 #include "Graphics/RenderParams.h"
+#include "Graphics/DrawItem.h"
 
 extern VEngine::VKContext g_context;
 
@@ -92,30 +92,64 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	}
 
 	m_renderResources->createFramebuffer(width, height, m_mainRenderPass);
-	m_renderResources->createUniformBuffer(sizeof(UBO));
+	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
 	m_renderResources->createCommandBuffers();
 
-	m_forwardPipeline->init(width, height,m_mainRenderPass, m_renderResources->m_mainUniformBuffer.m_buffer);
-	
+	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources->m_mainUniformBuffer.m_buffer, 0, sizeof(RenderParams), m_renderResources->m_perFrameDataSize, m_renderResources->m_perDrawDataSize);
+
 }
 
-void VEngine::VKRenderer::update(const RenderParams &renderParams)
+void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLists &drawLists)
 {
-	UBO ubo = {};
+	if (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size() + drawLists.m_blendedItems.size() > MAX_UNIFORM_BUFFER_INSTANCE_COUNT)
+	{
+		Utility::fatalExit("Exceeded max DrawItem count!", -1);
+	}
 
-	ubo.model = glm::mat4();
-	ubo.view = renderParams.m_viewMatrix;
-	ubo.projection = renderParams.m_projectionMatrix;
+	void *data;
+	vkMapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory, 0, m_renderResources->m_mainUniformBuffer.m_size, 0, &data);
 
-	void* data;
-	vkMapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory, 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
+	// per frame data
+	{
+		RenderParams *perFrameData = (RenderParams *)data;
+		*perFrameData = renderParams;
+	}
+
+	// per draw data
+	{
+		PerDrawData *perDrawData = (PerDrawData *)(((unsigned char *)data) + m_renderResources->m_perFrameDataSize);
+
+		for (const DrawItem &item : drawLists.m_opaqueItems)
+		{
+			*perDrawData = item.m_perDrawData;
+			++perDrawData;
+		}
+
+		for (const DrawItem &item : drawLists.m_maskedItems)
+		{
+			*perDrawData = item.m_perDrawData;
+			++perDrawData;
+		}
+
+		for (const DrawItem &item : drawLists.m_blendedItems)
+		{
+			*perDrawData = item.m_perDrawData;
+			++perDrawData;
+		}
+	}
+
 	vkUnmapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory);
 
 	// record commandbuffers
 	{
-		static std::shared_ptr<VEngine::Model> model = std::shared_ptr<VEngine::Model>(new VEngine::Model("Resources/Models/ice.obj"));
-		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources->m_mainFramebuffer, m_renderResources->m_forwardCommandBuffer, { model });
+		m_forwardPipeline->recordCommandBuffer(
+			m_mainRenderPass,
+			m_renderResources->m_mainFramebuffer,
+			m_renderResources->m_forwardCommandBuffer,
+			m_renderResources->m_vertexBuffer,
+			m_renderResources->m_indexBuffer,
+			m_renderResources->m_perDrawDataSize,
+			drawLists.m_opaqueItems);
 
 		// main
 		{
@@ -231,9 +265,9 @@ void VEngine::VKRenderer::render()
 	vkQueueWaitIdle(g_context.m_presentQueue);
 }
 
-void VEngine::VKRenderer::reserveMeshBuffer(uint64_t size)
+void VEngine::VKRenderer::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
 {
-	m_renderResources->reserveMeshBuffer(size);
+	m_renderResources->reserveMeshBuffers(vertexSize, indexSize);
 }
 
 void VEngine::VKRenderer::uploadMeshData(const unsigned char * vertices, uint64_t vertexSize, const unsigned char * indices, uint64_t indexSize)

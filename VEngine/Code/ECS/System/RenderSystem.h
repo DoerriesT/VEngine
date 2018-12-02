@@ -17,7 +17,7 @@ namespace VEngine
 		void input(double time, double timeDelta) override;
 		void update(double time, double timeDelta) override;
 		void render() override;
-		void reserveMeshBuffer(uint64_t size);
+		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 		void setCameraEntity(const Entity *cameraEntity);
 		const Entity *getCameraEntity() const;

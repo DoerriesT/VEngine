@@ -5,6 +5,8 @@
 #include <ECS/SystemManager.h>
 #include <ECS/System/RenderSystem.h>
 #include <ECS/Component/TransformationComponent.h>
+#include <ECS/Component/MeshComponent.h>
+#include <ECS/Component/RenderableComponent.h>
 #include <ECS/Component/CameraComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
@@ -47,4 +49,8 @@ void DummyLogic::init()
 
 	VEngine::Scene scene = {};
 	scene.load(*e->getSystemManager().getSystem<VEngine::RenderSystem>(), "Resources/Models/sponza.mat");
+	const VEngine::Entity *objectEntity = em.createEntity();
+	em.addComponent<VEngine::TransformationComponent>(objectEntity, VEngine::TransformationComponent::Mobility::STATIC);
+	em.addComponent<VEngine::MeshComponent>(objectEntity, scene.m_meshes["Resources/Models/sponza.mat"]);
+	em.addComponent<VEngine::RenderableComponent>(objectEntity);
 }

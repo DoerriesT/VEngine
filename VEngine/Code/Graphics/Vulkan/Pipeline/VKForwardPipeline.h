@@ -8,14 +8,7 @@
 namespace VEngine
 {
 	struct VKRenderResources;
-	class Model;
-
-	struct UBO
-	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
+	struct DrawItem;
 
 	class VKForwardPipeline
 	{
@@ -26,8 +19,10 @@ namespace VEngine
 		VKForwardPipeline &operator= (const VKForwardPipeline &) = delete;
 		VKForwardPipeline &operator= (const VKForwardPipeline &&) = delete;
 		~VKForwardPipeline();
-		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer);
-		void recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, const std::vector<std::shared_ptr<Model>> &models);
+		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VkBuffer uniformBuffer,
+			VkDeviceSize perFrameDataOffset, VkDeviceSize perFrameDataSize,
+			VkDeviceSize perDrawDataOffset, VkDeviceSize perDrawDataSize);
+		void recordCommandBuffer(VkRenderPass renderPass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, VKBufferData vertexBuffer, VKBufferData indexBuffer, uint32_t uniformBufferIncrement, const std::vector<DrawItem> &drawItems);
 
 	private:
 		VkPipeline m_pipeline;

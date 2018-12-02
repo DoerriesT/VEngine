@@ -6,7 +6,6 @@ namespace VEngine
 {
 	struct RenderParams
 	{
-		uint64_t m_frame;
 		float m_time;
 		float m_fovy;
 		float m_nearPlane;
@@ -23,7 +22,8 @@ namespace VEngine
 		glm::mat4 m_prevInvViewMatrix;
 		glm::mat4 m_prevInvProjectionMatrix;
 		glm::mat4 m_prevInvViewProjectionMatrix;
-		glm::vec3 m_cameraPosition;
-		glm::vec3 m_cameraDirection;
+		glm::vec4 m_cameraPosition;
+		glm::vec4 m_cameraDirection;
+		uint32_t m_frame;
 	};
 }
