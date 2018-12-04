@@ -161,6 +161,19 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 
 	vkUnmapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory);
 
+	
+	VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), g_context.m_imageAvailableSemaphore, VK_NULL_HANDLE, &m_swapChainImageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		m_swapChain->recreate(m_width, m_height);
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		Utility::fatalExit("Failed to acquire swap chain image!", -1);
+	}
+
 	// record commandbuffers
 	{
 		m_depthPrepassPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
@@ -191,6 +204,54 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 				vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
 				vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
+
+				VkOffset3D blitSize;
+				blitSize.x = m_width;
+				blitSize.y = m_height;
+				blitSize.z = 1;
+
+				VkImageBlit imageBlitRegion = {};
+				imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlitRegion.srcSubresource.layerCount = 1;
+				imageBlitRegion.srcOffsets[1] = blitSize;
+				imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlitRegion.dstSubresource.layerCount = 1;
+				imageBlitRegion.dstOffsets[1] = blitSize;
+
+				VkImageSubresourceRange subresourceRange = {};
+				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				subresourceRange.baseMipLevel = 0;
+				subresourceRange.levelCount = 1;
+				subresourceRange.baseArrayLayer = 0;
+				subresourceRange.layerCount = 1;
+
+				VKUtility::setImageLayout(
+					m_renderResources->m_mainCommandBuffer,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					subresourceRange,
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+				vkCmdBlitImage(
+					m_renderResources->m_mainCommandBuffer,
+					m_renderResources->m_colorAttachment.m_image,
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&imageBlitRegion,
+					VK_FILTER_NEAREST);
+
+				VKUtility::setImageLayout(
+					m_renderResources->m_mainCommandBuffer,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					subresourceRange,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 			}
 			vkEndCommandBuffer(m_renderResources->m_mainCommandBuffer);
 		}
@@ -199,93 +260,22 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 
 void VEngine::VKRenderer::render()
 {
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), g_context.m_imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		m_swapChain->recreate(m_width, m_height);
-		return;
-	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	{
-		Utility::fatalExit("Failed to acquire swap chain image!", -1);
-	}
-
 	VkSemaphore waitSemaphores[] = { g_context.m_imageAvailableSemaphore };
+	VkSemaphore signalSemaphores[] = { g_context.m_renderFinishedSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
-
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &m_renderResources->m_mainCommandBuffer;
-
-	VkSemaphore signalSemaphores[] = { g_context.m_renderFinishedSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
 	if (vkQueueSubmit(g_context.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to submit draw command buffer!", -1);
-	}
-
-	// blit
-	{
-		VkOffset3D blitSize;
-		blitSize.x = m_width;
-		blitSize.y = m_height;
-		blitSize.z = 1;
-
-		VkImageBlit imageBlitRegion = {};
-		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = blitSize;
-		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = blitSize;
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkCommandBuffer blitCommandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-		{
-			VKUtility::setImageLayout(
-				blitCommandBuffer,
-				m_swapChain->getImage(imageIndex),
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				subresourceRange,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-			vkCmdBlitImage(
-				blitCommandBuffer,
-				m_renderResources->m_colorAttachment.m_image,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				m_swapChain->getImage(imageIndex),
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1,
-				&imageBlitRegion,
-				VK_FILTER_NEAREST);
-
-			VKUtility::setImageLayout(
-				blitCommandBuffer,
-				m_swapChain->getImage(imageIndex),
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				subresourceRange,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-		}
-		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, blitCommandBuffer);
-
 	}
 
 	VkSwapchainKHR swapChains[] = { m_swapChain->get() };
@@ -295,9 +285,9 @@ void VEngine::VKRenderer::render()
 	presentInfo.pWaitSemaphores = signalSemaphores;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pImageIndices = &m_swapChainImageIndex;
 
-	result = vkQueuePresentKHR(g_context.m_presentQueue, &presentInfo);
+	VkResult result = vkQueuePresentKHR(g_context.m_presentQueue, &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{

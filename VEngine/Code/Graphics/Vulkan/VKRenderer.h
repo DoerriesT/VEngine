@@ -29,6 +29,7 @@ namespace VEngine
 	private:
 		unsigned int m_width;
 		unsigned int m_height;
+		uint32_t m_swapChainImageIndex;
 		std::unique_ptr<VKRenderResources> m_renderResources;
 		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKSwapChain> m_swapChain;
