@@ -24,6 +24,7 @@ namespace VEngine
 		VkDeviceSize m_perDrawDataSize;
 		VkFramebuffer m_mainFramebuffer;
 		VkCommandBuffer m_mainCommandBuffer;
+		VkCommandBuffer m_depthPrepassCommandBuffer;
 		VkCommandBuffer m_forwardCommandBuffer;
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSetLayout m_entityDataDescriptorSetLayout;

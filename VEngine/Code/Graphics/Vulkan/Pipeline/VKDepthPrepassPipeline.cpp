@@ -1,4 +1,4 @@
-#include "VKForwardPipeline.h"
+#include "VKDepthPrepassPipeline.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKShaderModule.h"
 #include "Utility/Utility.h"
@@ -12,18 +12,18 @@
 
 extern VEngine::VKContext g_context;
 
-VEngine::VKForwardPipeline::VKForwardPipeline()
+VEngine::VKDepthPrepassPipeline::VKDepthPrepassPipeline()
 {
 }
 
-VEngine::VKForwardPipeline::~VKForwardPipeline()
+VEngine::VKDepthPrepassPipeline::~VKDepthPrepassPipeline()
 {
 }
 
-void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources)
+void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources)
 {
-	VKShaderModule vertShaderModule("Resources/Shaders/forward_vert.spv");
-	VKShaderModule fragShaderModule("Resources/Shaders/forward_frag.spv");
+	VKShaderModule vertShaderModule("Resources/Shaders/depthPrepass_vert.spv");
+	VKShaderModule fragShaderModule("Resources/Shaders/depthPrepass_frag.spv");
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -92,13 +92,13 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_FALSE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_EQUAL;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.stencilTestEnable = VK_FALSE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.colorWriteMask = 0;
 	colorBlendAttachment.blendEnable = VK_FALSE;
 
 	VkPipelineColorBlendStateCreateInfo colorBlending = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
@@ -134,7 +134,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.layout = m_pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 1;
+	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
@@ -143,39 +143,39 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const std::vector<DrawItem> &drawItems)
+void VEngine::VKDepthPrepassPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources * renderResources, const std::vector<DrawItem>& drawItems)
 {
-	vkResetCommandBuffer(renderResources->m_forwardCommandBuffer, 0);
+	vkResetCommandBuffer(renderResources->m_depthPrepassCommandBuffer, 0);
 
 	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
 	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 1;
+	inheritanceInfo.subpass = 0;
 	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 	beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-	vkBeginCommandBuffer(renderResources->m_forwardCommandBuffer, &beginInfo);
+	vkBeginCommandBuffer(renderResources->m_depthPrepassCommandBuffer, &beginInfo);
 	{
-		vkCmdBindPipeline(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		vkCmdBindPipeline(renderResources->m_depthPrepassCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		vkCmdBindIndexBuffer(renderResources->m_forwardCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_depthPrepassCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_depthPrepassCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
 		for (size_t i = 0; i < drawItems.size(); ++i)
 		{
 			const DrawItem &item = drawItems[i];
-			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+			vkCmdBindVertexBuffers(renderResources->m_depthPrepassCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-			vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_entityDataDescriptorSet, 1, &dynamicOffset);
+			vkCmdBindDescriptorSets(renderResources->m_depthPrepassCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_entityDataDescriptorSet, 1, &dynamicOffset);
 
-			vkCmdDrawIndexed(renderResources->m_forwardCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+			vkCmdDrawIndexed(renderResources->m_depthPrepassCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}
 	}
-	if (vkEndCommandBuffer(renderResources->m_forwardCommandBuffer) != VK_SUCCESS)
+	if (vkEndCommandBuffer(renderResources->m_depthPrepassCommandBuffer) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to record command buffer!", -1);
 	}

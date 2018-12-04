@@ -43,7 +43,7 @@ void DummyLogic::init()
 {
 	VEngine::EntityManager &em = e->getEntityManager();
 	const VEngine::Entity *cameraEntity = em.createEntity();
-	em.addComponent<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC);
+	em.addComponent<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
 	em.addComponent<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
 	e->getSystemManager().getSystem<VEngine::RenderSystem>()->setCameraEntity(cameraEntity);
 

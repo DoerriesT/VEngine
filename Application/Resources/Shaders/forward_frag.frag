@@ -9,6 +9,7 @@
 #define TEXTURE_ARRAY_SIZE (512)
 #endif // TEXTURE_ARRAY_SIZE
 
+layout(early_fragment_tests) in;
 
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 1) in vec3 vNormal;
@@ -118,11 +119,6 @@ void main()
 	if (uPerDrawData.albedoTexture != 0)
 	{
 		albedo *= texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
-		albedo.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
-		if(albedo.a < ALPHA_CUTOFF)
-		{
-			discard;
-		}
 	}
 		
 	vec3 N = normalize(vNormal);

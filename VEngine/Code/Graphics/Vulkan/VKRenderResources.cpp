@@ -160,7 +160,7 @@ void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture 
 	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrite.descriptorCount = TEXTURE_ARRAY_SIZE;
 	descriptorWrite.pImageInfo = descriptorImageInfos;
-	
+
 	vkQueueWaitIdle(g_context.m_graphicsQueue);
 	vkUpdateDescriptorSets(g_context.m_device, 1, &descriptorWrite, 0, nullptr);
 }
@@ -256,17 +256,22 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 	}
 
-	// forward / blit
+	// prepass / forward 
 	{
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = g_context.m_graphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = 1;
+		allocInfo.commandBufferCount = 2;
 
-		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, &m_forwardCommandBuffer) != VK_SUCCESS)
+		VkCommandBuffer cmdBufs[] = { m_depthPrepassCommandBuffer, m_forwardCommandBuffer };
+
+		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate command buffers!", -1);
 		}
+
+		m_depthPrepassCommandBuffer = cmdBufs[0];
+		m_forwardCommandBuffer = cmdBufs[1];
 	}
 
 }

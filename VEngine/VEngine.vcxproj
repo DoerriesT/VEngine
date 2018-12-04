@@ -152,6 +152,7 @@
     <ClInclude Include="Code\Graphics\DrawItem.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />

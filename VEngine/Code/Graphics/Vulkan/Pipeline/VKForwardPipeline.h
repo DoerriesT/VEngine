@@ -1,8 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <glm/mat4x4.hpp>
 #include <vector>
-#include <memory>
 
 namespace VEngine
 {

@@ -7,6 +7,7 @@ namespace VEngine
 	struct VKRenderResources;
 	class VKTextureLoader;
 	class VKSwapChain;
+	class VKDepthPrepassPipeline;
 	class VKForwardPipeline;
 	struct RenderParams;
 	struct DrawLists;
@@ -33,6 +34,7 @@ namespace VEngine
 		std::unique_ptr<VKSwapChain> m_swapChain;
 
 		VkRenderPass m_mainRenderPass;
+		std::unique_ptr<VKDepthPrepassPipeline> m_depthPrepassPipeline;
 		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
 	};
 }

@@ -165,6 +165,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.h">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -238,6 +241,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

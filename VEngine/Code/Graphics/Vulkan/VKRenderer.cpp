@@ -1,6 +1,7 @@
 #include "VKRenderer.h"
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
+#include "Pipeline/VKDepthPrepassPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
@@ -25,6 +26,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources.reset(new VKRenderResources());
 	m_textureLoader.reset(new VKTextureLoader());
 	m_swapChain.reset(new VKSwapChain());
+	m_depthPrepassPipeline.reset(new VKDepthPrepassPipeline());
 	m_forwardPipeline.reset(new VKForwardPipeline());
 
 	m_renderResources->init(width, height);
@@ -60,29 +62,46 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		VkSubpassDescription depthSubpass = {};
+		depthSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		depthSubpass.colorAttachmentCount = 0;
+		depthSubpass.pColorAttachments = nullptr;
+		depthSubpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		VkSubpassDescription forwardSubpass = {};
+		forwardSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		forwardSubpass.colorAttachmentCount = 1;
+		forwardSubpass.pColorAttachments = &colorAttachmentRef;
+		forwardSubpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+		VkSubpassDependency colorDependency = {};
+		colorDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		colorDependency.dstSubpass = 1;
+		colorDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		colorDependency.srcAccessMask = 0;
+		colorDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		colorDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency depthDependency = {};
+		depthDependency.srcSubpass = 0;
+		depthDependency.dstSubpass = 1;
+		depthDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depthDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		depthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		depthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
 		VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
+
+		VkSubpassDescription subpasses[] = { depthSubpass , forwardSubpass };
+		VkSubpassDependency dependencies[] = { colorDependency , depthDependency };
 
 		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(attachments[0]));
 		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
+		renderPassInfo.subpassCount = static_cast<uint32_t>(sizeof(subpasses) / sizeof(subpasses[0]));
+		renderPassInfo.pSubpasses = subpasses;
+		renderPassInfo.dependencyCount = static_cast<uint32_t>(sizeof(dependencies) / sizeof(dependencies[0]));
+		renderPassInfo.pDependencies = dependencies;
 
 		if (vkCreateRenderPass(g_context.m_device, &renderPassInfo, nullptr, &m_mainRenderPass) != VK_SUCCESS)
 		{
@@ -96,6 +115,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createDummyTexture();
 	m_renderResources->createDescriptors();
 
+	m_depthPrepassPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 
 }
@@ -143,10 +163,8 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 
 	// record commandbuffers
 	{
-		m_forwardPipeline->recordCommandBuffer(
-			m_mainRenderPass,
-			m_renderResources.get(),
-			drawLists.m_opaqueItems);
+		m_depthPrepassPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
+		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
 
 		// main
 		{
@@ -169,6 +187,8 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 				renderPassInfo.pClearValues = clearValues;
 
 				vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_depthPrepassCommandBuffer);
+				vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
 				vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
 			}
@@ -237,31 +257,31 @@ void VEngine::VKRenderer::render()
 		VkCommandBuffer blitCommandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 		{
 			VKUtility::setImageLayout(
-				blitCommandBuffer, 
-				m_swapChain->getImage(imageIndex), 
-				VK_IMAGE_LAYOUT_UNDEFINED, 
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				blitCommandBuffer,
+				m_swapChain->getImage(imageIndex),
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				subresourceRange,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 				VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			vkCmdBlitImage(
-				blitCommandBuffer, 
-				m_renderResources->m_colorAttachment.m_image, 
+				blitCommandBuffer,
+				m_renderResources->m_colorAttachment.m_image,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				m_swapChain->getImage(imageIndex), 
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-				1, 
-				&imageBlitRegion, 
+				m_swapChain->getImage(imageIndex),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlitRegion,
 				VK_FILTER_NEAREST);
 
 			VKUtility::setImageLayout(
-				blitCommandBuffer, 
-				m_swapChain->getImage(imageIndex), 
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 
+				blitCommandBuffer,
+				m_swapChain->getImage(imageIndex),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 				subresourceRange,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, 
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 		}
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, blitCommandBuffer);
