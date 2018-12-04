@@ -5,6 +5,10 @@
 #define PI (3.14159265359)
 #endif // PI
 
+#ifndef TEXTURE_ARRAY_SIZE
+#define TEXTURE_ARRAY_SIZE (512)
+#endif // TEXTURE_ARRAY_SIZE
+
 
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 1) in vec3 vNormal;
@@ -50,6 +54,8 @@ layout(set = 0, binding = 1) uniform PerDrawData
 	uint padding;
 } uPerDrawData;
 
+layout(set = 1, binding = 0) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a2 = roughness*roughness;
@@ -82,15 +88,53 @@ vec3 fresnelSchlick(float HdotV, vec3 F0)
 	return F0 + (1.0 - F0) * pow(2.0, power);
 }
 
+// based on http://www.thetenthplanet.de/archives/1180
+mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
+{
+    // get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx( p );
+    vec3 dp2 = dFdy( p );
+    vec2 duv1 = dFdx( uv );
+    vec2 duv2 = dFdy( uv );
+ 
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * -invmax, B * -invmax, N );
+}
+
 const vec3 lightDir = normalize(vec3(0.1, 3.0, -1.0));
+const float ALPHA_CUTOFF = 0.9;
+const float MIP_SCALE = 0.25;
 
 void main() 
 {
+	vec4 albedo = vec4(uPerDrawData.albedoFactorMetallic.rgb, 1.0);
+	if (uPerDrawData.albedoTexture != 0)
+	{
+		albedo *= texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
+		albedo.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
+		if(albedo.a < ALPHA_CUTOFF)
+		{
+			discard;
+		}
+	}
+		
 	vec3 N = normalize(vNormal);
 	
-	vec3 viewSpacePosition = (uPerFrameData.viewMatrix * vec4(vWorldPos, 1.0)).xyz;
-
-	vec3 V = -normalize(viewSpacePosition);
+	if (uPerDrawData.normalTexture != 0)
+	{
+		mat3 TBN = calculateTBN( N, vWorldPos, vTexCoord);
+		vec3 tangentSpaceNormal = texture(uTextures[uPerDrawData.normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0;
+		N = normalize(TBN * tangentSpaceNormal);
+	}
+	
+	vec3 V = normalize(uPerFrameData.cameraPosition.xyz - vWorldPos);
 	vec3 L = lightDir;
 	vec3 H = normalize(V + L);
 
@@ -98,13 +142,15 @@ void main()
 	float NdotL = max(dot(N, L), 0.0);
 	
 	float metallic = uPerDrawData.albedoFactorMetallic.w;
+	metallic *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture - 1], vTexCoord).x : 1.0;
 	float roughness = uPerDrawData.emissiveFactorRoughness.w;
+	roughness *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture - 1], vTexCoord).x : 1.0;
 	
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(NdotV, NdotL, roughness);
-	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
+	
+	vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
 	vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
 	vec3 nominator = NDF * G * F;
@@ -117,7 +163,6 @@ void main()
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
 
-	oFragColor = vec4((kD * albedo / PI + specular) * vec3(10.0) * NdotL, 1.0);
-	oFragColor.rgb += vec3(0.1);
+	oFragColor = vec4((kD * albedo.rgb / PI + specular) * vec3(5.0) * NdotL, 1.0);
 }
 

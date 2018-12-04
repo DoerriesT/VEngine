@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "Input/IInputListener.h"
+#include <string>
 
 struct GLFWwindow;
 
@@ -14,7 +15,7 @@ namespace VEngine
 		friend void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 		friend void charCallback(GLFWwindow *window, unsigned int codepoint);
 	public:
-		explicit Window(unsigned int width, unsigned int height, const char *title);
+		explicit Window(unsigned int width, unsigned int height, const std::string &title);
 		~Window();
 		void init();
 		void pollEvents() const;
@@ -23,6 +24,7 @@ namespace VEngine
 		unsigned int getHeight() const;
 		bool shouldClose() const;
 		void grabMouse(bool grabMouse);
+		void setTitle(const std::string &title);
 		void addInputListener(IInputListener *listener);
 		void removeInputListener(IInputListener *listener);
 
@@ -30,7 +32,7 @@ namespace VEngine
 		GLFWwindow *m_windowHandle;
 		unsigned int m_width;
 		unsigned int m_height;
-		const char *m_title;
+		std::string m_title;
 		std::vector<IInputListener*> m_inputListeners;
 	};
 }

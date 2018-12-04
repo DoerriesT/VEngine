@@ -11,7 +11,7 @@ void VEngine::mouseButtonCallback(GLFWwindow *window, int button, int action, in
 void VEngine::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 void VEngine::charCallback(GLFWwindow *window, unsigned int codepoint);
 
-VEngine::Window::Window(unsigned int width, unsigned int height, const char * title)
+VEngine::Window::Window(unsigned int width, unsigned int height, const std::string &title)
 	:m_width(width),
 	m_height(height),
 	m_title(title)
@@ -31,7 +31,7 @@ void VEngine::Window::init()
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	m_windowHandle = glfwCreateWindow(m_width, m_height, m_title, nullptr, nullptr);
+	m_windowHandle = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
 
 	if (!m_windowHandle)
 	{
@@ -83,6 +83,12 @@ void VEngine::Window::grabMouse(bool grabMouse)
 	{
 		glfwSetInputMode(m_windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
+}
+
+void VEngine::Window::setTitle(const std::string &title)
+{
+	m_title = title;
+	glfwSetWindowTitle(m_windowHandle, m_title.c_str());
 }
 
 void VEngine::Window::addInputListener(IInputListener *listener)

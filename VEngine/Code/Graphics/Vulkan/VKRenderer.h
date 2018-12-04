@@ -5,6 +5,7 @@
 namespace VEngine
 {
 	struct VKRenderResources;
+	class VKTextureLoader;
 	class VKSwapChain;
 	class VKForwardPipeline;
 	struct RenderParams;
@@ -20,11 +21,15 @@ namespace VEngine
 		void render();
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
+		uint32_t loadTexture(const char *filepath);
+		void freeTexture(uint32_t id);
+		void updateTextureData();
 
 	private:
 		unsigned int m_width;
 		unsigned int m_height;
 		std::unique_ptr<VKRenderResources> m_renderResources;
+		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKSwapChain> m_swapChain;
 
 		VkRenderPass m_mainRenderPass;

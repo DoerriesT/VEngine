@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 
 namespace VEngine
 {
@@ -34,6 +35,7 @@ namespace VEngine
 		double m_fps;
 		double m_lastFpsMeasure;
 		bool m_shutdown;
+		std::string m_windowTitle;
 		
 		void gameLoop();
 		void input();

@@ -231,7 +231,8 @@ namespace VEngine
 					&& transferFamilyIndex >= 0
 					&& extensionsSupported
 					&& swapChainAdequate
-					&& supportedFeatures.samplerAnisotropy)
+					&& supportedFeatures.samplerAnisotropy
+					&& supportedFeatures.textureCompressionBC)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices = 
@@ -272,6 +273,9 @@ namespace VEngine
 
 			VkPhysicalDeviceFeatures deviceFeatures = {};
 			deviceFeatures.samplerAnisotropy = VK_TRUE;
+			deviceFeatures.textureCompressionBC = VK_TRUE;
+
+			m_enabledFeatures = deviceFeatures;
 
 			VkDeviceCreateInfo createInfo = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -344,5 +348,19 @@ namespace VEngine
 
 		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 		vkDestroyInstance(m_instance, nullptr);
+	}
+
+	void VKContext::querySupportedFormats()
+	{
+		for (size_t i = 1; i <= VK_FORMAT_ASTC_12x12_SRGB_BLOCK; ++i)
+		{
+			VkFormatProperties formatProps;
+			vkGetPhysicalDeviceFormatProperties(g_context.m_physicalDevice, VkFormat(i), &formatProps);
+			if (formatProps.optimalTilingFeatures == 0)
+			{
+				printf("%d\n", (uint32_t)i);
+			}
+		}
+		
 	}
 }

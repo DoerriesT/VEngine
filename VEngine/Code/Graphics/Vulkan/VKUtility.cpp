@@ -23,6 +23,14 @@ void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, uint32_t m
 	imageInfo.samples = numSamples;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+	VkImageFormatProperties props;
+	if (vkGetPhysicalDeviceImageFormatProperties(g_context.m_physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.tiling, imageInfo.usage, imageInfo.flags, &props) != VK_SUCCESS)
+	{
+		VkFormatProperties formatProps;
+		vkGetPhysicalDeviceFormatProperties(g_context.m_physicalDevice, imageInfo.format, &formatProps);
+		Utility::fatalExit("Requested image format not supported!", -1);
+	}
+
 	if (vkCreateImage(g_context.m_device, &imageInfo, nullptr, &image) != VK_SUCCESS) 
 	{
 		Utility::fatalExit("Failed to create image!", -1);
@@ -44,17 +52,13 @@ void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, uint32_t m
 	vkBindImageMemory(g_context.m_device, image, imageMemory, 0);
 }
 
-void VEngine::VKUtility::createImageView(VkImageAspectFlags aspectFlags, VKImageData &image)
+void VEngine::VKUtility::createImageView(const VkImageSubresourceRange &subresourceRange, VKImageData &image)
 {
 	VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	viewInfo.image = image.m_image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = image.m_format;
-	viewInfo.subresourceRange.aspectMask = aspectFlags;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
+	viewInfo.subresourceRange = subresourceRange;
 
 	if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &image.m_view) != VK_SUCCESS)
 	{
@@ -82,8 +86,7 @@ VkFormat VEngine::VKUtility::findSupportedFormat(const std::vector<VkFormat>& ca
 
 VkCommandBuffer VEngine::VKUtility::beginSingleTimeCommands(VkCommandPool commandPool)
 {
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandPool = commandPool;
 	allocInfo.commandBufferCount = 1;
@@ -91,8 +94,7 @@ VkCommandBuffer VEngine::VKUtility::beginSingleTimeCommands(VkCommandPool comman
 	VkCommandBuffer commandBuffer;
 	vkAllocateCommandBuffers(g_context.m_device, &allocInfo, &commandBuffer);
 
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
@@ -104,8 +106,7 @@ void VEngine::VKUtility::endSingleTimeCommands(VkQueue queue, VkCommandPool comm
 {
 	vkEndCommandBuffer(commandBuffer);
 
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
@@ -125,7 +126,7 @@ void VEngine::VKUtility::copyBuffer(VkQueue queue, VkCommandPool commandPool, VK
 	endSingleTimeCommands(queue, commandPool, commandBuffer);
 }
 
-void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStages, VkPipelineStageFlags destStages)
+void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, const VkImageSubresourceRange &subresourceRange, VkPipelineStageFlags srcStages, VkPipelineStageFlags destStages)
 {
 	VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 	barrier.srcAccessMask = 0;
@@ -135,24 +136,41 @@ void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage i
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;
-	barrier.subresourceRange.aspectMask = aspectMask;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange = subresourceRange;
+	//barrier.subresourceRange.aspectMask = aspectMask;
+	//barrier.subresourceRange.baseMipLevel = 0;
+	//barrier.subresourceRange.levelCount = 1;
+	//barrier.subresourceRange.baseArrayLayer = 0;
+	//barrier.subresourceRange.layerCount = 1;
 
 	switch (oldImageLayout)
 	{
+	case VK_IMAGE_LAYOUT_UNDEFINED:
+		barrier.srcAccessMask = 0;
+		break;
+
+	case VK_IMAGE_LAYOUT_PREINITIALIZED:
+		barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+		break;
+
 	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
 		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		break;
+
+	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		break;
+
+	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		break;
 
 	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		break;
 
-	case VK_IMAGE_LAYOUT_PREINITIALIZED:
-		barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+		barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		break;
 
 	default:
@@ -188,7 +206,7 @@ void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage i
 	vkCmdPipelineBarrier(commandBuffer, srcStages, destStages, 0, 0, NULL, 0, NULL, 1, &barrier);
 }
 
-void VEngine::VKUtility::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
+void VEngine::VKUtility::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize &allocationSize)
 {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -208,6 +226,8 @@ void VEngine::VKUtility::createBuffer(VkDeviceSize size, VkBufferUsageFlags usag
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	allocationSize = allocInfo.allocationSize;
 
 	if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 	{

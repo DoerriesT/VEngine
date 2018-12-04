@@ -162,6 +162,9 @@
     <ClInclude Include="Code\ECS\Component\MeshComponent.h">
       <Filter>Code\ECS\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -232,6 +235,9 @@
     </ClCompile>
     <ClCompile Include="Code\Scene.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

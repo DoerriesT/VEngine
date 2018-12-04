@@ -18,6 +18,26 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 
 	renderSystem.reserveMeshBuffers(vertexSize, indexSize);
 
+	auto getTextureHandle = [&renderSystem, this](const std::string filepath) -> uint32_t
+	{
+		if (filepath.empty())
+		{
+			return 0;
+		}
+
+		auto it = m_textures.find(filepath);
+		if (it != m_textures.end())
+		{
+			return it->second;
+		}
+		else
+		{
+			uint32_t handle = renderSystem.createTexture(filepath.c_str());
+			m_textures[filepath] = handle;
+			return handle;
+		}
+	};
+
 	Mesh mesh;
 	for (auto &subMeshInfo : info["SubMeshes"])
 	{
@@ -36,6 +56,15 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		subMesh.m_material.m_roughnessFactor = subMeshInfo["Material"]["RoughnessFactor"];
 		subMesh.m_material.m_emissiveFactor = glm::vec3(subMeshInfo["Material"]["EmissiveFactor"][0], subMeshInfo["Material"]["EmissiveFactor"][1], subMeshInfo["Material"]["EmissiveFactor"][2]);
 		
+		// textures
+		subMesh.m_material.m_albedoTexture = getTextureHandle(subMeshInfo["Material"]["AlbedoTexture"].get<std::string>());
+		subMesh.m_material.m_normalTexture = getTextureHandle(subMeshInfo["Material"]["NormalTexture"].get<std::string>());
+		subMesh.m_material.m_metallicTexture = getTextureHandle(subMeshInfo["Material"]["MetallicTexture"].get<std::string>());
+		subMesh.m_material.m_roughnessTexture = getTextureHandle(subMeshInfo["Material"]["RoughnessTexture"].get<std::string>());
+		subMesh.m_material.m_occlusionTexture = getTextureHandle(subMeshInfo["Material"]["OcclusionTexture"].get<std::string>());
+		subMesh.m_material.m_emissiveTexture = getTextureHandle(subMeshInfo["Material"]["EmissiveTexture"].get<std::string>());
+		subMesh.m_material.m_displacementTexture = getTextureHandle(subMeshInfo["Material"]["DisplacementTexture"].get<std::string>());
+
 		mesh.m_subMeshes.push_back(subMesh);
 	}
 
@@ -44,6 +73,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 	std::vector<char> meshData = Utility::readBinaryFile(info["MeshFile"].get<std::string>().c_str());
 
 	renderSystem.uploadMeshData((unsigned char *)meshData.data(), vertexSize, (unsigned char *)(meshData.data()) + vertexSize, indexSize);
+	renderSystem.updateTextureData();
 }
 
 void VEngine::Scene::unload(RenderSystem &renderSystem)

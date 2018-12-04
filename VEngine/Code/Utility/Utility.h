@@ -7,5 +7,6 @@ namespace VEngine
 	{
 		std::vector<char> readBinaryFile(const char *filepath);
 		void fatalExit(const char *message, int exitCode);
+		std::string getFileExtension(const std::string &filepath);
 	}
 }

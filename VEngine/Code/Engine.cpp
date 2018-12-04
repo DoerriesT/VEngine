@@ -20,7 +20,7 @@ namespace VEngine
 }
 
 
-VEngine::Engine::Engine(const char * title, IGameLogic & gameLogic)
+VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
 	m_window(std::make_unique<Window>(g_windowWidth, g_windowHeight, title)),
 	m_userInput(std::make_unique<UserInput>()),
@@ -30,13 +30,14 @@ VEngine::Engine::Engine(const char * title, IGameLogic & gameLogic)
 	m_timeDelta(),
 	m_fps(),
 	m_lastFpsMeasure(),
-	m_shutdown(false)
+	m_shutdown(false),
+	m_windowTitle(title)
 {
 }
 
 VEngine::Engine::~Engine()
 {
-	
+
 }
 
 void VEngine::Engine::start()
@@ -99,4 +100,14 @@ void VEngine::Engine::render()
 {
 	m_systemManager->render();
 	m_gameLogic.render();
+
+	double difference = m_time - m_lastFpsMeasure;
+	if (difference > 1.0)
+	{
+		m_fps /= difference;
+		m_window->setTitle(m_windowTitle + " - " + std::to_string(m_fps) + " FPS " + std::to_string(1.0 / m_fps * 1000.0) + " ms");
+		m_lastFpsMeasure = m_time;
+		m_fps = 0.0;
+	}
+	++m_fps;
 }

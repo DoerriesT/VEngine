@@ -160,6 +160,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
     <ClInclude Include="Code\IGameLogic.h" />
     <ClInclude Include="Code\Input\IInputListener.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
     <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Scene.cpp" />

@@ -32,3 +32,8 @@ void VEngine::Utility::fatalExit(const char *message, int exitCode)
 	MessageBox(nullptr, message, nullptr, MB_OK | MB_ICONERROR);
 	exit(exitCode);
 }
+
+std::string VEngine::Utility::getFileExtension(const std::string &filepath)
+{
+	return filepath.substr(filepath.find_last_of('.') + 1);
+}

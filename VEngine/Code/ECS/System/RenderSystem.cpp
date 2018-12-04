@@ -53,6 +53,13 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			drawItem.m_perDrawData.m_albedoFactorMetallic = glm::vec4(subMesh.m_material.m_albedoFactor, subMesh.m_material.m_metallicFactor);
 			drawItem.m_perDrawData.m_emissiveFactorRoughness = glm::vec4(subMesh.m_material.m_emissiveFactor, subMesh.m_material.m_roughnessFactor);
 			drawItem.m_perDrawData.m_modelMatrix = transformationComponent.m_transformation;
+			drawItem.m_perDrawData.m_albedoTexture = subMesh.m_material.m_albedoTexture;
+			drawItem.m_perDrawData.m_normalTexture = subMesh.m_material.m_normalTexture;
+			drawItem.m_perDrawData.m_metallicTexture = subMesh.m_material.m_metallicTexture;
+			drawItem.m_perDrawData.m_roughnessTexture = subMesh.m_material.m_roughnessTexture;
+			drawItem.m_perDrawData.m_occlusionTexture = subMesh.m_material.m_occlusionTexture;
+			drawItem.m_perDrawData.m_emissiveTexture = subMesh.m_material.m_emissiveTexture;
+			drawItem.m_perDrawData.m_displacementTexture = subMesh.m_material.m_displacementTexture;
 			drawLists.m_opaqueItems.push_back(drawItem);
 		}
 	});
@@ -105,6 +112,16 @@ void VEngine::RenderSystem::reserveMeshBuffers(uint64_t vertexSize, uint64_t ind
 void VEngine::RenderSystem::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
 {
 	m_renderer->uploadMeshData(vertices, vertexSize, indices, indexSize);
+}
+
+uint32_t VEngine::RenderSystem::createTexture(const char *filepath)
+{
+	return m_renderer->loadTexture(filepath);
+}
+
+void VEngine::RenderSystem::updateTextureData()
+{
+	m_renderer->updateTextureData();
 }
 
 void VEngine::RenderSystem::setCameraEntity(const Entity *cameraEntity)

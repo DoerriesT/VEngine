@@ -22,7 +22,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\lion.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/lion_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -33,9 +33,9 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/lion_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.9,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -61,7 +61,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\background.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/background_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -72,9 +72,9 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/background_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.9,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -113,7 +113,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.5,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -139,7 +139,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\vase_plant.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/vase_plant_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -152,7 +152,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.3,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -178,7 +178,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_arch_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/arch_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -189,10 +189,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/arch_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/arch_r.dds"
             },
             "Max": [
                 9.83434581756592,
@@ -217,7 +217,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\spnza_bricks_a_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/bricks_a_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -228,10 +228,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/bricks_a_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/bricks_a_r.dds"
             },
             "Max": [
                 18.0819110870361,
@@ -256,7 +256,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_ceiling_a_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/ceiling_a_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -269,8 +269,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/ceiling_a_r.dds"
             },
             "Max": [
                 13.6370038986206,
@@ -295,7 +295,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\chain_texture.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/chain_texture_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -304,11 +304,11 @@
                     0.0
                 ],
                 "EmissiveTexture": "",
-                "MetallicFactor": 0.0,
+                "MetallicFactor": 1.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/chain_texture_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.7,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -334,7 +334,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_column_a_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/column_a_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -345,10 +345,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/column_a_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/column_a_r.dds"
             },
             "Max": [
                 9.87102890014648,
@@ -373,7 +373,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_column_b_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/column_b_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -384,10 +384,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/column_b_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/column_b_r.dds"
             },
             "Max": [
                 9.68906021118164,
@@ -412,7 +412,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_column_c_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/column_c_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -423,10 +423,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/column_c_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/column_c_r.dds"
             },
             "Max": [
                 13.6477069854736,
@@ -451,7 +451,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_details_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/details_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -464,8 +464,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/details_r.dds"
             },
             "Max": [
                 13.7702312469482,
@@ -490,7 +490,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_fabric_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/fabric_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -503,8 +503,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
             },
             "Max": [
                 3.44849896430969,
@@ -529,7 +529,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_curtain_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/curtain_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -542,7 +542,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 1.0,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -568,7 +568,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_fabric_blue_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/fabric_blue_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -581,8 +581,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
             },
             "Max": [
                 7.1035099029541,
@@ -607,7 +607,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_fabric_green_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/fabric_green_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -620,8 +620,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
             },
             "Max": [
                 7.13455486297607,
@@ -646,7 +646,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_curtain_green_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/curtain_green_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -659,7 +659,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 1.0,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -685,7 +685,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_curtain_blue_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/curtain_blue_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -698,7 +698,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 1.0,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -724,7 +724,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_flagpole_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/flagpole_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -737,8 +737,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/flagpole_r.dds"
             },
             "Max": [
                 8.91793060302734,
@@ -763,7 +763,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_floor_a_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/floor_a_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -776,8 +776,8 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/floor_a_r.dds"
             },
             "Max": [
                 13.6371974945068,
@@ -802,7 +802,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_thorn_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/thorn_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -813,10 +813,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/thorn_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/thorn_r.dds"
             },
             "Max": [
                 6.12725782394409,
@@ -841,7 +841,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\sponza_roof_diff.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/roof_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -854,7 +854,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.5,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -880,7 +880,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\vase_dif.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/vase_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -891,9 +891,9 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/vase_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.9,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -919,7 +919,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\vase_hanging.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/vase_hanging_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -932,7 +932,7 @@
                 "MetallicTexture": "",
                 "NormalTexture": "",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
+                "RoughnessFactor": 0.7,
                 "RoughnessTexture": ""
             },
             "Max": [
@@ -958,7 +958,7 @@
                     1.0,
                     1.0
                 ],
-                "AlbedoTexture": "textures\\vase_round.tga",
+                "AlbedoTexture": "Resources/Textures/Sponza/vase_round_a.dds",
                 "Alpha": 0,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
@@ -969,10 +969,10 @@
                 "EmissiveTexture": "",
                 "MetallicFactor": 0.0,
                 "MetallicTexture": "",
-                "NormalTexture": "",
+                "NormalTexture": "Resources/Textures/Sponza/vase_round_n.dds",
                 "OcclusionTexture": "",
-                "RoughnessFactor": 0.0,
-                "RoughnessTexture": ""
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": "Resources/Textures/Sponza/vase_round_r.dds"
             },
             "Max": [
                 9.20794582366943,

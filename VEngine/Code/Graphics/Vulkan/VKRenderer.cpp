@@ -4,11 +4,9 @@
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
-#include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
-#include "Graphics/Camera/Camera.h"
 #include "Graphics/RenderParams.h"
 #include "Graphics/DrawItem.h"
+#include "VKTextureLoader.h"
 
 extern VEngine::VKContext g_context;
 
@@ -25,6 +23,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_width = width;
 	m_height = height;
 	m_renderResources.reset(new VKRenderResources());
+	m_textureLoader.reset(new VKTextureLoader());
 	m_swapChain.reset(new VKSwapChain());
 	m_forwardPipeline.reset(new VKForwardPipeline());
 
@@ -94,8 +93,10 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createFramebuffer(width, height, m_mainRenderPass);
 	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
 	m_renderResources->createCommandBuffers();
+	m_renderResources->createDummyTexture();
+	m_renderResources->createDescriptors();
 
-	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources->m_mainUniformBuffer.m_buffer, 0, sizeof(RenderParams), m_renderResources->m_perFrameDataSize, m_renderResources->m_perDrawDataSize);
+	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 
 }
 
@@ -144,11 +145,7 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 	{
 		m_forwardPipeline->recordCommandBuffer(
 			m_mainRenderPass,
-			m_renderResources->m_mainFramebuffer,
-			m_renderResources->m_forwardCommandBuffer,
-			m_renderResources->m_vertexBuffer,
-			m_renderResources->m_indexBuffer,
-			m_renderResources->m_perDrawDataSize,
+			m_renderResources.get(),
 			drawLists.m_opaqueItems);
 
 		// main
@@ -230,13 +227,42 @@ void VEngine::VKRenderer::render()
 		imageBlitRegion.dstSubresource.layerCount = 1;
 		imageBlitRegion.dstOffsets[1] = blitSize;
 
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
 		VkCommandBuffer blitCommandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 		{
-			VKUtility::setImageLayout(blitCommandBuffer, m_swapChain->getImage(imageIndex), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			VKUtility::setImageLayout(
+				blitCommandBuffer, 
+				m_swapChain->getImage(imageIndex), 
+				VK_IMAGE_LAYOUT_UNDEFINED, 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				subresourceRange,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
+				VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-			vkCmdBlitImage(blitCommandBuffer, m_renderResources->m_colorAttachment.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_swapChain->getImage(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlitRegion, VK_FILTER_NEAREST);
+			vkCmdBlitImage(
+				blitCommandBuffer, 
+				m_renderResources->m_colorAttachment.m_image, 
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				m_swapChain->getImage(imageIndex), 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				1, 
+				&imageBlitRegion, 
+				VK_FILTER_NEAREST);
 
-			VKUtility::setImageLayout(blitCommandBuffer, m_swapChain->getImage(imageIndex), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+			VKUtility::setImageLayout(
+				blitCommandBuffer, 
+				m_swapChain->getImage(imageIndex), 
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 
+				subresourceRange,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, 
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 		}
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, blitCommandBuffer);
 
@@ -273,4 +299,19 @@ void VEngine::VKRenderer::reserveMeshBuffers(uint64_t vertexSize, uint64_t index
 void VEngine::VKRenderer::uploadMeshData(const unsigned char * vertices, uint64_t vertexSize, const unsigned char * indices, uint64_t indexSize)
 {
 	m_renderResources->uploadMeshData(vertices, vertexSize, indices, indexSize);
+}
+
+uint32_t VEngine::VKRenderer::loadTexture(const char *filepath)
+{
+	return m_textureLoader->load(filepath);
+}
+
+void VEngine::VKRenderer::freeTexture(uint32_t id)
+{
+	m_textureLoader->free(id);
+}
+
+void VEngine::VKRenderer::updateTextureData()
+{
+	m_renderResources->updateTextureArray(m_textureLoader->getTextures());
 }

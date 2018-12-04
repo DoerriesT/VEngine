@@ -31,6 +31,7 @@ namespace VEngine
 		VkDevice m_device;
 		VkPhysicalDevice m_physicalDevice;
 		VkPhysicalDeviceFeatures m_features;
+		VkPhysicalDeviceFeatures m_enabledFeatures;
 		VkPhysicalDeviceProperties m_properties;
 		VkQueue m_graphicsQueue;
 		VkQueue m_presentQueue;
@@ -47,5 +48,6 @@ namespace VEngine
 
 		void init(GLFWwindow *windowHandle);
 		void shutdown();
+		void querySupportedFormats();
 	};
 }
