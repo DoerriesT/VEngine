@@ -138,24 +138,24 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 
 	// per draw data
 	{
-		PerDrawData *perDrawData = (PerDrawData *)(((unsigned char *)data) + m_renderResources->m_perFrameDataSize);
+		unsigned char *perDrawData = ((unsigned char *)data) + m_renderResources->m_perFrameDataSize;
 
 		for (const DrawItem &item : drawLists.m_opaqueItems)
 		{
-			*perDrawData = item.m_perDrawData;
-			++perDrawData;
+			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+			perDrawData += m_renderResources->m_perDrawDataSize;
 		}
 
 		for (const DrawItem &item : drawLists.m_maskedItems)
 		{
-			*perDrawData = item.m_perDrawData;
-			++perDrawData;
+			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+			perDrawData += m_renderResources->m_perDrawDataSize;
 		}
 
 		for (const DrawItem &item : drawLists.m_blendedItems)
 		{
-			*perDrawData = item.m_perDrawData;
-			++perDrawData;
+			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+			perDrawData += m_renderResources->m_perDrawDataSize;
 		}
 	}
 
