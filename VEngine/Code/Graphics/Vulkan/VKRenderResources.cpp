@@ -261,9 +261,9 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = g_context.m_graphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = 2;
+		allocInfo.commandBufferCount = 3;
 
-		VkCommandBuffer cmdBufs[] = { m_depthPrepassCommandBuffer, m_forwardCommandBuffer };
+		VkCommandBuffer cmdBufs[] = { m_depthPrepassCommandBuffer, m_depthPrepassAlphaMaskCommandBuffer, m_forwardCommandBuffer };
 
 		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
 		{
@@ -271,7 +271,8 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 
 		m_depthPrepassCommandBuffer = cmdBufs[0];
-		m_forwardCommandBuffer = cmdBufs[1];
+		m_depthPrepassAlphaMaskCommandBuffer = cmdBufs[1];
+		m_forwardCommandBuffer = cmdBufs[2];
 	}
 
 }

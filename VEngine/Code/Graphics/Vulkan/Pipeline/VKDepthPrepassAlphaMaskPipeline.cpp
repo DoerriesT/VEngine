@@ -1,4 +1,4 @@
-#include "VKDepthPrepassPipeline.h"
+#include "VKDepthPrepassAlphaMaskPipeline.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKShaderModule.h"
 #include "Utility/Utility.h"
@@ -12,24 +12,30 @@
 
 extern VEngine::VKContext g_context;
 
-VEngine::VKDepthPrepassPipeline::VKDepthPrepassPipeline()
+VEngine::VKDepthPrepassAlphaMaskPipeline::VKDepthPrepassAlphaMaskPipeline()
 {
 }
 
-VEngine::VKDepthPrepassPipeline::~VKDepthPrepassPipeline()
+VEngine::VKDepthPrepassAlphaMaskPipeline::~VKDepthPrepassAlphaMaskPipeline()
 {
 }
 
-void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources)
+void VEngine::VKDepthPrepassAlphaMaskPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources * renderResources)
 {
 	VKShaderModule vertShaderModule("Resources/Shaders/depthPrepass_vert.spv");
+	VKShaderModule fragShaderModule("Resources/Shaders/depthPrepass_frag.spv");
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 	vertShaderStageInfo.module = vertShaderModule.get();
 	vertShaderStageInfo.pName = "main";
 
-	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo };
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule.get();
+	fragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 	VkVertexInputBindingDescription bindingDescription = {};
 	bindingDescription.binding = 0;
@@ -101,7 +107,7 @@ void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int heig
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	VkDescriptorSetLayout layouts[] = { renderResources->m_entityDataDescriptorSetLayout };
+	VkDescriptorSetLayout layouts[] = { renderResources->m_entityDataDescriptorSetLayout , renderResources->m_textureDescriptorSetLayout };
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
@@ -113,7 +119,7 @@ void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int heig
 	}
 
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-	pipelineInfo.stageCount = 1;
+	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = shaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -124,7 +130,7 @@ void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int heig
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.layout = m_pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 0;
+	pipelineInfo.subpass = 1;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
@@ -133,37 +139,39 @@ void VEngine::VKDepthPrepassPipeline::init(unsigned int width, unsigned int heig
 	}
 }
 
-void VEngine::VKDepthPrepassPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources * renderResources, const std::vector<DrawItem>& drawItems)
+void VEngine::VKDepthPrepassAlphaMaskPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, uint32_t previousOffset, const std::vector<DrawItem> &drawItems)
 {
-	vkResetCommandBuffer(renderResources->m_depthPrepassCommandBuffer, 0);
+	vkResetCommandBuffer(renderResources->m_depthPrepassAlphaMaskCommandBuffer, 0);
 
 	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
 	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 0;
+	inheritanceInfo.subpass = 1;
 	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 	beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-	vkBeginCommandBuffer(renderResources->m_depthPrepassCommandBuffer, &beginInfo);
+	vkBeginCommandBuffer(renderResources->m_depthPrepassAlphaMaskCommandBuffer, &beginInfo);
 	{
-		vkCmdBindPipeline(renderResources->m_depthPrepassCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		vkCmdBindPipeline(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		vkCmdBindIndexBuffer(renderResources->m_depthPrepassCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_depthPrepassAlphaMaskCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdBindDescriptorSets(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
 		for (size_t i = 0; i < drawItems.size(); ++i)
 		{
 			const DrawItem &item = drawItems[i];
-			vkCmdBindVertexBuffers(renderResources->m_depthPrepassCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+			vkCmdBindVertexBuffers(renderResources->m_depthPrepassAlphaMaskCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
-			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-			vkCmdBindDescriptorSets(renderResources->m_depthPrepassCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_entityDataDescriptorSet, 1, &dynamicOffset);
+			uint32_t dynamicOffset = previousOffset + static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
+			vkCmdBindDescriptorSets(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_entityDataDescriptorSet, 1, &dynamicOffset);
 
-			vkCmdDrawIndexed(renderResources->m_depthPrepassCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+			vkCmdDrawIndexed(renderResources->m_depthPrepassAlphaMaskCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}
 	}
-	if (vkEndCommandBuffer(renderResources->m_depthPrepassCommandBuffer) != VK_SUCCESS)
+	if (vkEndCommandBuffer(renderResources->m_depthPrepassAlphaMaskCommandBuffer) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to record command buffer!", -1);
 	}

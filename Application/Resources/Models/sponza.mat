@@ -140,7 +140,7 @@
                     1.0
                 ],
                 "AlbedoTexture": "Resources/Textures/Sponza/vase_plant_a.dds",
-                "Alpha": 0,
+                "Alpha": 1,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
                     0.0,
@@ -296,7 +296,7 @@
                     1.0
                 ],
                 "AlbedoTexture": "Resources/Textures/Sponza/chain_texture_a.dds",
-                "Alpha": 0,
+                "Alpha": 1,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
                     0.0,
@@ -803,7 +803,7 @@
                     1.0
                 ],
                 "AlbedoTexture": "Resources/Textures/Sponza/thorn_a.dds",
-                "Alpha": 0,
+                "Alpha": 1,
                 "DisplacementTexture": "",
                 "EmissiveFactor": [
                     0.0,

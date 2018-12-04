@@ -2,6 +2,7 @@
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
 #include "Pipeline/VKDepthPrepassPipeline.h"
+#include "Pipeline/VKDepthPrepassAlphaMaskPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
@@ -27,6 +28,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_textureLoader.reset(new VKTextureLoader());
 	m_swapChain.reset(new VKSwapChain());
 	m_depthPrepassPipeline.reset(new VKDepthPrepassPipeline());
+	m_depthPrepassAlphaMaskPipeline.reset(new VKDepthPrepassAlphaMaskPipeline());
 	m_forwardPipeline.reset(new VKForwardPipeline());
 
 	m_renderResources->init(width, height);
@@ -68,6 +70,12 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		depthSubpass.pColorAttachments = nullptr;
 		depthSubpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+		VkSubpassDescription depthMaskedSubpass = {};
+		depthMaskedSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		depthMaskedSubpass.colorAttachmentCount = 0;
+		depthMaskedSubpass.pColorAttachments = nullptr;
+		depthMaskedSubpass.pDepthStencilAttachment = &depthAttachmentRef;
+
 		VkSubpassDescription forwardSubpass = {};
 		forwardSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		forwardSubpass.colorAttachmentCount = 1;
@@ -76,7 +84,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 		VkSubpassDependency colorDependency = {};
 		colorDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		colorDependency.dstSubpass = 1;
+		colorDependency.dstSubpass = 2;
 		colorDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		colorDependency.srcAccessMask = 0;
 		colorDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -84,16 +92,32 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 		VkSubpassDependency depthDependency = {};
 		depthDependency.srcSubpass = 0;
-		depthDependency.dstSubpass = 1;
+		depthDependency.dstSubpass = 2;
 		depthDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		depthDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		depthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		depthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
+		VkSubpassDependency depthDepthDependency = {};
+		depthDepthDependency.srcSubpass = 0;
+		depthDepthDependency.dstSubpass = 1;
+		depthDepthDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depthDepthDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		depthDepthDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		depthDepthDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency depthMaskedDependency = {};
+		depthMaskedDependency.srcSubpass = 1;
+		depthMaskedDependency.dstSubpass = 2;
+		depthMaskedDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depthMaskedDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		depthMaskedDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		depthMaskedDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+
 		VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
 
-		VkSubpassDescription subpasses[] = { depthSubpass , forwardSubpass };
-		VkSubpassDependency dependencies[] = { colorDependency , depthDependency };
+		VkSubpassDescription subpasses[] = { depthSubpass, depthMaskedSubpass ,forwardSubpass };
+		VkSubpassDependency dependencies[] = { colorDependency , depthDepthDependency, depthDependency, depthMaskedDependency };
 
 		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(attachments[0]));
@@ -116,6 +140,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createDescriptors();
 
 	m_depthPrepassPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
+	m_depthPrepassAlphaMaskPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 
 }
@@ -161,7 +186,7 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 
 	vkUnmapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory);
 
-	
+
 	VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), g_context.m_imageAvailableSemaphore, VK_NULL_HANDLE, &m_swapChainImageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -177,7 +202,8 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 	// record commandbuffers
 	{
 		m_depthPrepassPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
-		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
+		m_depthPrepassAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems.size() * m_renderResources->m_perDrawDataSize, drawLists.m_maskedItems);
+		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_allItems);
 
 		// main
 		{
@@ -200,9 +226,18 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 				renderPassInfo.pClearValues = clearValues;
 
 				vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_depthPrepassCommandBuffer);
-				vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-				vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
+				{
+					// depth prepass
+					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_depthPrepassCommandBuffer);
+
+					// depth prepass alpha mask
+					vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_depthPrepassAlphaMaskCommandBuffer);
+
+					// forward pass
+					vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
+				}
 				vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
 
 				VkOffset3D blitSize;

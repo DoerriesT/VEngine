@@ -134,7 +134,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.layout = m_pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 1;
+	pipelineInfo.subpass = 2;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
@@ -149,7 +149,7 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 
 	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
 	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 1;
+	inheritanceInfo.subpass = 2;
 	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };

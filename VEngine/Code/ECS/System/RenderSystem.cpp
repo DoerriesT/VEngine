@@ -60,9 +60,36 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			drawItem.m_perDrawData.m_occlusionTexture = subMesh.m_material.m_occlusionTexture;
 			drawItem.m_perDrawData.m_emissiveTexture = subMesh.m_material.m_emissiveTexture;
 			drawItem.m_perDrawData.m_displacementTexture = subMesh.m_material.m_displacementTexture;
-			drawLists.m_opaqueItems.push_back(drawItem);
+
+			switch (subMesh.m_material.m_alpha)
+			{
+			case Material::Alpha::OPAQUE:
+				drawLists.m_opaqueItems.push_back(drawItem);
+				break;
+			case Material::Alpha::MASKED:
+				drawLists.m_maskedItems.push_back(drawItem);
+				break;
+			case Material::Alpha::BLENDED:
+				drawLists.m_blendedItems.push_back(drawItem);
+				break;
+			default:
+				assert(false);
+			}
 		}
 	});
+
+	for (auto &item : drawLists.m_opaqueItems)
+	{
+		drawLists.m_allItems.push_back(item);
+	}
+	for (auto &item : drawLists.m_maskedItems)
+	{
+		drawLists.m_allItems.push_back(item);
+	}
+	for (auto &item : drawLists.m_blendedItems)
+	{
+		drawLists.m_allItems.push_back(item);
+	}
 
 	if (m_cameraEntity)
 	{
