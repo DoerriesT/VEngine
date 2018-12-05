@@ -109,16 +109,32 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
     return mat3( T * -invmax, B * -invmax, N );
 }
 
+vec3 accurateLinearToSRGB(in vec3 linearCol)
+{
+	vec3 sRGBLo = linearCol * 12.92;
+	vec3 sRGBHi = (pow(abs(linearCol), vec3(1.0/2.4)) * 1.055) - 0.055;
+	vec3 sRGB = mix(sRGBLo, sRGBHi, vec3(greaterThan(linearCol, vec3(0.0031308))));
+	return sRGB;
+}
+
+vec3 accurateSRGBToLinear(in vec3 sRGBCol)
+{
+	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
+	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
+	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
+	return linearRGB;
+}
+
 const vec3 lightDir = normalize(vec3(0.1, 3.0, -1.0));
 const float ALPHA_CUTOFF = 0.9;
 const float MIP_SCALE = 0.25;
 
 void main() 
 {
-	vec4 albedo = vec4(uPerDrawData.albedoFactorMetallic.rgb, 1.0);
+	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
 	if (uPerDrawData.albedoTexture != 0)
 	{
-		albedo *= texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
+		albedo *= accurateSRGBToLinear(texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgb);
 	}
 		
 	vec3 N = normalize(vNormal);
@@ -160,5 +176,6 @@ void main()
 	kD *= 1.0 - metallic;
 
 	oFragColor = vec4((kD * albedo.rgb / PI + specular) * vec3(5.0) * NdotL, 1.0);
+	oFragColor.rgb = accurateLinearToSRGB(oFragColor.rgb);
 }
 
