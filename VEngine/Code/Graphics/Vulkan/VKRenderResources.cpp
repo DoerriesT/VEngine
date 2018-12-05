@@ -34,7 +34,7 @@ void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_
 			vkDestroyBuffer(g_context.m_device, m_indexBuffer.m_buffer, nullptr);
 			vkFreeMemory(g_context.m_device, m_vertexBuffer.m_memory, nullptr);
 		}
-		printf("VertexSize: %d\nIndexSize: %d\n", uint32_t(vertexSize), uint32_t(indexSize));
+
 		uint32_t typebits = 0;
 
 		// vertex buffer
@@ -133,7 +133,7 @@ void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, u
 	vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
 }
 
-void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture *> textures)
+void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture *> &textures)
 {
 	VkDescriptorImageInfo descriptorImageInfos[TEXTURE_ARRAY_SIZE];
 

@@ -24,6 +24,7 @@ std::vector<char> VEngine::Utility::readBinaryFile(const char *filepath)
 	{
 		std::string msg = "Failed to read file " + std::string(filepath) + "!";
 		fatalExit(msg.c_str(), -1);
+		return {};
 	}
 }
 

@@ -18,7 +18,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 
 	renderSystem.reserveMeshBuffers(vertexSize, indexSize);
 
-	auto getTextureHandle = [&renderSystem, this](const std::string filepath) -> uint32_t
+	auto getTextureHandle = [&renderSystem, this](const std::string &filepath) -> uint32_t
 	{
 		if (filepath.empty())
 		{
@@ -47,7 +47,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		subMesh.m_vertexSize = subMeshInfo["VertexSize"];
 		subMesh.m_indexOffset = subMeshInfo["IndexOffset"];
 		subMesh.m_indexSize = subMeshInfo["IndexSize"];
-		subMesh.m_indexCount = subMesh.m_indexSize / sizeof(uint32_t);
+		subMesh.m_indexCount = subMesh.m_indexSize / 4;
 		subMesh.m_min = glm::vec3(subMeshInfo["Min"][0], subMeshInfo["Min"][1], subMeshInfo["Min"][2]);
 		subMesh.m_max = glm::vec3(subMeshInfo["Max"][0], subMeshInfo["Max"][1], subMeshInfo["Max"][2]);
 		subMesh.m_material.m_alpha = Material::Alpha(subMeshInfo["Material"]["Alpha"]);
@@ -72,7 +72,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 
 	std::vector<char> meshData = Utility::readBinaryFile(info["MeshFile"].get<std::string>().c_str());
 
-	renderSystem.uploadMeshData((unsigned char *)meshData.data(), vertexSize, (unsigned char *)(meshData.data()) + vertexSize, indexSize);
+	renderSystem.uploadMeshData((unsigned char *)meshData.data(), vertexSize, (unsigned char *)(meshData.data()) + static_cast<size_t>(vertexSize), indexSize);
 	renderSystem.updateTextureData();
 }
 

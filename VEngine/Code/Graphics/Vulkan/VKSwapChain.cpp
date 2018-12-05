@@ -8,6 +8,9 @@
 extern VEngine::VKContext g_context;
 
 VEngine::VKSwapChain::VKSwapChain()
+	:m_swapChain(),
+	m_imageFormat(),
+	m_extent()
 {
 }
 
@@ -108,11 +111,9 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
-	
+	uint32_t queueFamilyIndices[] = { g_context.m_queueFamilyIndices.m_graphicsFamily , g_context.m_queueFamilyIndices.m_presentFamily };
 	if (g_context.m_queueFamilyIndices.m_graphicsFamily != g_context.m_queueFamilyIndices.m_presentFamily)
 	{
-		uint32_t queueFamilyIndices[] = { g_context.m_queueFamilyIndices.m_graphicsFamily , g_context.m_queueFamilyIndices.m_presentFamily };
-
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -133,7 +134,7 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 	}
 
 	vkGetSwapchainImagesKHR(g_context.m_device, m_swapChain, &imageCount, nullptr);
-	m_images.resize(imageCount);
+	m_images.resize(static_cast<size_t>(imageCount));
 	vkGetSwapchainImagesKHR(g_context.m_device, m_swapChain, &imageCount, m_images.data());
 
 	m_imageFormat = surfaceFormat.format;

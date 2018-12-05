@@ -2,6 +2,8 @@
 #include "Utility/ContainerUtility.h"
 
 VEngine::EntityManager::EntityManager()
+	:m_nextFreeEntityId(),
+	m_nextFreeComponentIndex()
 {
 }
 

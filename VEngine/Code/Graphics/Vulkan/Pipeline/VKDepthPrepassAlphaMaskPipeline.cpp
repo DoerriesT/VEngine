@@ -13,6 +13,8 @@
 extern VEngine::VKContext g_context;
 
 VEngine::VKDepthPrepassAlphaMaskPipeline::VKDepthPrepassAlphaMaskPipeline()
+	:m_pipeline(),
+	m_pipelineLayout()
 {
 }
 

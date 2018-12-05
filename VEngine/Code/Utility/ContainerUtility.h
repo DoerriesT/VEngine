@@ -13,11 +13,11 @@ namespace VEngine
 		template<typename T>
 		inline bool find(const std::vector<T> &v, const T &item, int &position)
 		{
-			auto position = std::find(v.cbegin(), v.cend(), item);
+			auto it = std::find(v.cbegin(), v.cend(), item);
 
-			if (position < v.cend())
+			if (it < v.cend())
 			{
-				position = (int)(position - v.cbegin());
+				position = (int)(it - v.cbegin());
 				return true;
 			}
 			return false;

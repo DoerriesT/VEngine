@@ -51,7 +51,7 @@ namespace VEngine
 		void resize(unsigned int width, unsigned int height);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
-		void updateTextureArray(const std::vector<VKTexture *> textures);
+		void updateTextureArray(const std::vector<VKTexture *> &textures);
 
 	private:
 		explicit VKRenderResources();

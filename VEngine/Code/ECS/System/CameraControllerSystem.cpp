@@ -9,6 +9,7 @@ VEngine::CameraControllerSystem::CameraControllerSystem(EntityManager & entityMa
 	:m_entityManager(entityManager),
 	m_userInput(userInput),
 	m_grabMouse(grabMouse),
+	m_grabbedMouse(),
 	m_mouseHistory(),
 	m_mouseSmoothFactor()
 {

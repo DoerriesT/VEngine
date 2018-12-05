@@ -63,7 +63,7 @@ namespace VEngine
 			uint32_t glfwExtensionCount = 0;
 			const char** glfwExtensions;
 			glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-			std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+			std::vector<const char*> extensions(glfwExtensions, glfwExtensions + static_cast<size_t>(glfwExtensionCount));
 
 #if ENABLE_VALIDATION_LAYERS
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -205,7 +205,7 @@ namespace VEngine
 
 					if (formatCount != 0)
 					{
-						details.m_formats.resize(formatCount);
+						details.m_formats.resize(static_cast<size_t>(formatCount));
 						vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface, &formatCount, details.m_formats.data());
 					}
 
@@ -214,7 +214,7 @@ namespace VEngine
 
 					if (presentModeCount != 0)
 					{
-						details.m_presentModes.resize(presentModeCount);
+						details.m_presentModes.resize(static_cast<size_t>(presentModeCount));
 						vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface, &presentModeCount, details.m_presentModes.data());
 					}
 
@@ -298,7 +298,7 @@ namespace VEngine
 
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_graphicsFamily, 0, &m_graphicsQueue);
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_presentFamily, 0, &m_presentQueue);
-			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_presentFamily, 0, &m_computeQueue);
+			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_computeFamily, 0, &m_computeQueue);
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_transferFamily, 0, &m_transferQueue);
 		}
 

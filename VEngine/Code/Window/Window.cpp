@@ -12,7 +12,8 @@ void VEngine::keyCallback(GLFWwindow *window, int key, int scancode, int action,
 void VEngine::charCallback(GLFWwindow *window, unsigned int codepoint);
 
 VEngine::Window::Window(unsigned int width, unsigned int height, const std::string &title)
-	:m_width(width),
+	:m_windowHandle(),
+	m_width(width),
 	m_height(height),
 	m_title(title)
 {

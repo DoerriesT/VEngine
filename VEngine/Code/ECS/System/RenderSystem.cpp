@@ -17,6 +17,7 @@ namespace VEngine
 
 VEngine::RenderSystem::RenderSystem(EntityManager &entityManager)
 	:m_entityManager(entityManager),
+	m_cameraEntity(),
 	m_renderParams()
 {
 }

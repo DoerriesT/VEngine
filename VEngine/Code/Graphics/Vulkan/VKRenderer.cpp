@@ -13,6 +13,10 @@
 extern VEngine::VKContext g_context;
 
 VEngine::VKRenderer::VKRenderer()
+	:m_width(),
+	m_height(),
+	m_swapChainImageIndex(),
+	m_mainRenderPass()
 {
 }
 
@@ -202,7 +206,7 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 	// record commandbuffers
 	{
 		m_depthPrepassPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems);
-		m_depthPrepassAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_opaqueItems.size() * m_renderResources->m_perDrawDataSize, drawLists.m_maskedItems);
+		m_depthPrepassAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), static_cast<uint32_t>(drawLists.m_opaqueItems.size() * m_renderResources->m_perDrawDataSize), drawLists.m_maskedItems);
 		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists.m_allItems);
 
 		// main

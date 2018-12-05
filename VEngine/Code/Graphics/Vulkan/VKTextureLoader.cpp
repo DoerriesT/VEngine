@@ -11,6 +11,7 @@
 extern VEngine::VKContext g_context;
 
 VEngine::VKTextureLoader::VKTextureLoader()
+	:m_nextId()
 {
 }
 
@@ -46,10 +47,10 @@ uint32_t VEngine::VKTextureLoader::load(const char *filepath)
 		VKTexture texture = {};
 		texture.m_id = id;
 		texture.m_imageData.m_format = VkFormat(gliTex.format());
-		texture.m_width = gliTex.extent().x;
-		texture.m_height = gliTex.extent().y;
-		texture.m_layers = gliTex.layers();
-		texture.m_levels = gliTex.levels();
+		texture.m_width = static_cast<unsigned int>(gliTex.extent().x);
+		texture.m_height = static_cast<unsigned int>(gliTex.extent().y);
+		texture.m_layers = static_cast<unsigned int>(gliTex.layers());
+		texture.m_levels = static_cast<unsigned int>(gliTex.levels());
 
 		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		VkMemoryRequirements memReqs = {};
@@ -75,7 +76,7 @@ uint32_t VEngine::VKTextureLoader::load(const char *filepath)
 		{
 			VkBufferImageCopy bufferCopyRegion = {};
 			bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			bufferCopyRegion.imageSubresource.mipLevel = level;
+			bufferCopyRegion.imageSubresource.mipLevel = static_cast<uint32_t>(level);
 			bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
 			bufferCopyRegion.imageSubresource.layerCount = 1;
 			bufferCopyRegion.imageExtent.width = static_cast<uint32_t>(gliTex[level].extent().x);
@@ -152,7 +153,7 @@ uint32_t VEngine::VKTextureLoader::load(const char *filepath)
 		samplerCreateInfo.mipLodBias = 0.0f;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = texture.m_levels;
+		samplerCreateInfo.maxLod = static_cast<float>(texture.m_levels);
 		samplerCreateInfo.maxAnisotropy = g_context.m_enabledFeatures.samplerAnisotropy ? g_context.m_properties.limits.maxSamplerAnisotropy : 1.0f;
 		samplerCreateInfo.anisotropyEnable = g_context.m_enabledFeatures.samplerAnisotropy;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
