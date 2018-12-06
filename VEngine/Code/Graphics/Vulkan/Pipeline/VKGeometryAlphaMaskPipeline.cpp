@@ -166,6 +166,7 @@ void VEngine::VKGeometryAlphaMaskPipeline::recordCommandBuffer(VkRenderPass rend
 	beginInfo.pInheritanceInfo = &inheritanceInfo;
 
 	vkBeginCommandBuffer(renderResources->m_geometryAlphaMaskCommandBuffer, &beginInfo);
+	if (drawLists.m_maskedItems.size())
 	{
 		vkCmdBindPipeline(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
@@ -174,12 +175,13 @@ void VEngine::VKGeometryAlphaMaskPipeline::recordCommandBuffer(VkRenderPass rend
 		vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
 		vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
+		uint32_t itemOffset = static_cast<uint32_t>(drawLists.m_opaqueItems.size());
 		for (size_t i = 0; i < drawLists.m_maskedItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_maskedItems[i];
 			vkCmdBindVertexBuffers(renderResources->m_geometryAlphaMaskCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
-			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * (i + drawLists.m_opaqueItems.size()));
+			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * (i + itemOffset));
 			vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(renderResources->m_geometryAlphaMaskCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);

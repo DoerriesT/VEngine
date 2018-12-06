@@ -133,6 +133,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		VkAttachmentReference forwardAttachmentRefs[] =
 		{
 			{ 5, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+			{ 4, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
 		};
 
 		VkSubpassDescription geometrySubpass = {};
@@ -155,13 +156,13 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		lightingSubpass.pColorAttachments = lightingAttachmentRefs;
 		lightingSubpass.pDepthStencilAttachment = nullptr;
 
-		//VkSubpassDescription forwardSubpass = {};
-		//forwardSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		//forwardSubpass.colorAttachmentCount = 1;
-		//forwardSubpass.pColorAttachments = forwardAttachmentRefs;
-		//forwardSubpass.pDepthStencilAttachment = &depthAttachmentRef;
+		VkSubpassDescription forwardSubpass = {};
+		forwardSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		forwardSubpass.colorAttachmentCount = sizeof(forwardAttachmentRefs) / sizeof(forwardAttachmentRefs[0]);;
+		forwardSubpass.pColorAttachments = forwardAttachmentRefs;
+		forwardSubpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-		VkSubpassDependency dependencies[3];
+		VkSubpassDependency dependencies[4];
 
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
@@ -211,7 +212,23 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 		dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		VkSubpassDescription subpasses[] = { geometrySubpass, geometryAlphaMaskSubpass, lightingSubpass/*, forwardSubpass*/ };
+		dependencies[3].srcSubpass = 2;
+		dependencies[3].dstSubpass = 3;
+		dependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+			| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[3].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+			| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[3].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		VkSubpassDescription subpasses[] = { geometrySubpass, geometryAlphaMaskSubpass, lightingSubpass, forwardSubpass };
 
 		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachmentDescriptions) / sizeof(attachmentDescriptions[0]));
@@ -236,7 +253,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_geometryPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	m_geometryAlphaMaskPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	m_lightingPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
-	//m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
+	m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 
 }
 
@@ -299,7 +316,7 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 		m_geometryPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
 		m_geometryAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
 		m_lightingPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get());
-		//m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
+		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
 
 		// main
 		{
@@ -336,8 +353,8 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_lightingCommandBuffer);
 
 					// forward pass
-					//vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-					//vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
+					vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
 				}
 				vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
 
