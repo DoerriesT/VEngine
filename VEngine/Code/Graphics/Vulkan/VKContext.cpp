@@ -236,7 +236,8 @@ namespace VEngine
 					&& extensionsSupported
 					&& swapChainAdequate
 					&& supportedFeatures.samplerAnisotropy
-					&& supportedFeatures.textureCompressionBC)
+					&& supportedFeatures.textureCompressionBC
+					&& supportedFeatures.independentBlend)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices = 
@@ -278,6 +279,7 @@ namespace VEngine
 			VkPhysicalDeviceFeatures deviceFeatures = {};
 			deviceFeatures.samplerAnisotropy = VK_TRUE;
 			deviceFeatures.textureCompressionBC = VK_TRUE;
+			deviceFeatures.independentBlend = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
 
