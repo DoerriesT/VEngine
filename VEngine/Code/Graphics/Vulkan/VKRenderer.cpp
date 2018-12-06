@@ -2,6 +2,7 @@
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
 #include "Pipeline/VKGeometryPipeline.h"
+#include "Pipeline/VKGeometryAlphaMaskPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
@@ -32,6 +33,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_textureLoader.reset(new VKTextureLoader());
 	m_swapChain.reset(new VKSwapChain());
 	m_geometryPipeline.reset(new VKGeometryPipeline());
+	m_geometryAlphaMaskPipeline.reset(new VKGeometryAlphaMaskPipeline()),
 	m_lightingPipeline.reset(new VKLightingPipeline());
 	m_forwardPipeline.reset(new VKForwardPipeline());
 
@@ -139,6 +141,12 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		geometrySubpass.pColorAttachments = geometryAttachmentRefs;
 		geometrySubpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+		VkSubpassDescription geometryAlphaMaskSubpass = {};
+		geometryAlphaMaskSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		geometryAlphaMaskSubpass.colorAttachmentCount = sizeof(geometryAttachmentRefs) / sizeof(geometryAttachmentRefs[0]);
+		geometryAlphaMaskSubpass.pColorAttachments = geometryAttachmentRefs;
+		geometryAlphaMaskSubpass.pDepthStencilAttachment = &depthAttachmentRef;
+
 		VkSubpassDescription lightingSubpass = {};
 		lightingSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		lightingSubpass.inputAttachmentCount = sizeof(lightingInputRefs) / sizeof(lightingInputRefs[0]);
@@ -153,7 +161,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 		//forwardSubpass.pColorAttachments = forwardAttachmentRefs;
 		//forwardSubpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-		VkSubpassDependency dependencies[2];
+		VkSubpassDependency dependencies[3];
 
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
@@ -187,23 +195,23 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		//dependencies[2].srcSubpass = 1;
-		//dependencies[2].dstSubpass = 2;
-		//dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-		//	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-		//	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		//dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-		//	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-		//	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		//dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-		//	| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		//dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-		//	| VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-		//	| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
-		//	| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-		//dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		dependencies[2].srcSubpass = 1;
+		dependencies[2].dstSubpass = 2;
+		dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+			| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+			| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+			| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+			| VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		VkSubpassDescription subpasses[] = { geometrySubpass, lightingSubpass/*, forwardSubpass*/ };
+		VkSubpassDescription subpasses[] = { geometrySubpass, geometryAlphaMaskSubpass, lightingSubpass/*, forwardSubpass*/ };
 
 		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachmentDescriptions) / sizeof(attachmentDescriptions[0]));
@@ -226,6 +234,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createDescriptors();
 
 	m_geometryPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
+	m_geometryAlphaMaskPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	m_lightingPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 	//m_forwardPipeline->init(width, height, m_mainRenderPass, m_renderResources.get());
 
@@ -288,6 +297,7 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 	// record commandbuffers
 	{
 		m_geometryPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
+		m_geometryAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
 		m_lightingPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get());
 		//m_forwardPipeline->recordCommandBuffer(m_mainRenderPass, m_renderResources.get(), drawLists);
 
@@ -316,6 +326,10 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 				{
 					// geometry pass
 					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_geometryCommandBuffer);
+
+					// geometry alpha mask pass
+					vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_geometryAlphaMaskCommandBuffer);
 
 					// lighting pass
 					vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);

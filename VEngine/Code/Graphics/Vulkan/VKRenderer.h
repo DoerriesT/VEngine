@@ -8,6 +8,7 @@ namespace VEngine
 	class VKTextureLoader;
 	class VKSwapChain;
 	class VKGeometryPipeline;
+	class VKGeometryAlphaMaskPipeline;
 	class VKLightingPipeline;
 	class VKForwardPipeline;
 	struct RenderParams;
@@ -37,6 +38,7 @@ namespace VEngine
 
 		VkRenderPass m_mainRenderPass;
 		std::unique_ptr<VKGeometryPipeline> m_geometryPipeline;
+		std::unique_ptr<VKGeometryAlphaMaskPipeline> m_geometryAlphaMaskPipeline;
 		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;
 		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
 	};

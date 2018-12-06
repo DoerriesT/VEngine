@@ -29,6 +29,7 @@ namespace VEngine
 		VkFramebuffer m_mainFramebuffer;
 		VkCommandBuffer m_mainCommandBuffer;
 		VkCommandBuffer m_geometryCommandBuffer;
+		VkCommandBuffer m_geometryAlphaMaskCommandBuffer;
 		VkCommandBuffer m_lightingCommandBuffer;
 		VkCommandBuffer m_forwardCommandBuffer;
 		VkDescriptorPool m_descriptorPool;

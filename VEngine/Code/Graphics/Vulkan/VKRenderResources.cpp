@@ -288,14 +288,14 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 	}
 
-	// prepass / geometry / forward 
+	// geometry / lighting / forward 
 	{
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = g_context.m_graphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = 3;
+		allocInfo.commandBufferCount = 4;
 
-		VkCommandBuffer cmdBufs[] = { m_geometryCommandBuffer, m_lightingCommandBuffer, m_forwardCommandBuffer };
+		VkCommandBuffer cmdBufs[] = { m_geometryCommandBuffer, m_geometryAlphaMaskCommandBuffer, m_lightingCommandBuffer, m_forwardCommandBuffer };
 
 		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
 		{
@@ -303,8 +303,9 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 
 		m_geometryCommandBuffer = cmdBufs[0];
-		m_lightingCommandBuffer = cmdBufs[1];
-		m_forwardCommandBuffer = cmdBufs[2];
+		m_geometryAlphaMaskCommandBuffer = cmdBufs[1];
+		m_lightingCommandBuffer = cmdBufs[2];
+		m_forwardCommandBuffer = cmdBufs[3];
 	}
 
 }

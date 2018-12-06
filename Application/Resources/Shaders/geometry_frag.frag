@@ -9,7 +9,21 @@
 #define TEXTURE_ARRAY_SIZE (512)
 #endif // TEXTURE_ARRAY_SIZE
 
+#ifndef ALPHA_MASK_ENABLED
+#define ALPHA_MASK_ENABLED 0
+#endif // ALPHA_MASK_ENABLED
+
+#ifndef ALPHA_CUTOFF
+#define ALPHA_CUTOFF (0.9)
+#endif // ALPHA_CUTOFF
+
+#ifndef MIP_SCALE
+#define MIP_SCALE (0.25)
+#endif // MIP_SCALE
+
+#if !ALPHA_MASK_ENABLED
 layout(early_fragment_tests) in;
+#endif // ALPHA_MASK_ENABLED
 
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 1) in vec3 vNormal;
@@ -82,13 +96,31 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
 
 void main() 
 {
+#if ALPHA_MASK_ENABLED
+	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
+	if (uPerDrawData.albedoTexture != 0)
+	{
+		vec4 albedoTexSample = texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
+		albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
+		if(albedoTexSample.a < ALPHA_CUTOFF)
+		{
+			discard;
+		}
+		albedo *= albedoTexSample.rgb;
+	}
+	oAlbedo.rgb = albedo;
+#else
 	oAlbedo.rgb = uPerDrawData.albedoFactorMetallic.rgb;
+#endif // ALPHA_MASK_ENABLED
+	
 	oNormalEmissive.xyz = normalize(vNormal);
 	oMetallicRoughnessOcclusion.x = uPerDrawData.albedoFactorMetallic.w;
 	oMetallicRoughnessOcclusion.y = uPerDrawData.emissiveFactorRoughness.w;
 	oMetallicRoughnessOcclusion.z = 1.0;
 	
+#if !ALPHA_MASK_ENABLED
 	oAlbedo.rgb *= (uPerDrawData.albedoTexture != 0) ? texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgb : vec3(1.0);
+#endif // !ALPHA_MASK_ENABLED
 	
 	oNormalEmissive.xyz = (uPerDrawData.normalTexture != 0) ? 
 	normalize(calculateTBN(oNormalEmissive.xyz, vWorldPos, vTexCoord) * (texture(uTextures[uPerDrawData.normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0)) : oNormalEmissive.xyz;
