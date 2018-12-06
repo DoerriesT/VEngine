@@ -1,4 +1,4 @@
-#include "VKForwardPipeline.h"
+#include "VKGeometryPipeline.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKShaderModule.h"
 #include "Utility/Utility.h"
@@ -12,20 +12,20 @@
 
 extern VEngine::VKContext g_context;
 
-VEngine::VKForwardPipeline::VKForwardPipeline()
+VEngine::VKGeometryPipeline::VKGeometryPipeline()
 	:m_pipeline(),
 	m_pipelineLayout()
 {
 }
 
-VEngine::VKForwardPipeline::~VKForwardPipeline()
+VEngine::VKGeometryPipeline::~VKGeometryPipeline()
 {
 }
 
-void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources)
+void VEngine::VKGeometryPipeline::init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources * renderResources)
 {
-	VKShaderModule vertShaderModule("Resources/Shaders/forward_vert.spv");
-	VKShaderModule fragShaderModule("Resources/Shaders/forward_frag.spv");
+	VKShaderModule vertShaderModule("Resources/Shaders/geometry_vert.spv");
+	VKShaderModule fragShaderModule("Resources/Shaders/geometry_frag.spv");
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -94,26 +94,33 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_FALSE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_EQUAL;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
 	depthStencil.stencilTestEnable = VK_FALSE;
 
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
+	defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	defaultBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendAttachmentState blendAttachments[] = { defaultBlendAttachment , defaultBlendAttachment, defaultBlendAttachment, defaultBlendAttachment };
 
 	VkPipelineColorBlendStateCreateInfo colorBlending = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY;
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.attachmentCount = sizeof(blendAttachments) / sizeof(blendAttachments[0]);
+	colorBlending.pAttachments = blendAttachments;
 	colorBlending.blendConstants[0] = 0.0f;
 	colorBlending.blendConstants[1] = 0.0f;
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	VkDescriptorSetLayout layouts[] = { renderResources->m_perFrameDataDescriptorSetLayout, renderResources->m_perDrawDataDescriptorSetLayout , renderResources->m_textureDescriptorSetLayout };
+	VkDescriptorSetLayout layouts[] = 
+	{ 
+		renderResources->m_perFrameDataDescriptorSetLayout, 
+		renderResources->m_perDrawDataDescriptorSetLayout, 
+		renderResources->m_textureDescriptorSetLayout
+	};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
@@ -136,7 +143,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.layout = m_pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
-	pipelineInfo.subpass = 2;
+	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
@@ -145,40 +152,40 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists)
+void VEngine::VKGeometryPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists)
 {
-	vkResetCommandBuffer(renderResources->m_forwardCommandBuffer, 0);
+	vkResetCommandBuffer(renderResources->m_geometryCommandBuffer, 0);
 
 	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
 	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 2;
+	inheritanceInfo.subpass = 0;
 	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
 
 	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 	beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-	vkBeginCommandBuffer(renderResources->m_forwardCommandBuffer, &beginInfo);
+	vkBeginCommandBuffer(renderResources->m_geometryCommandBuffer, &beginInfo);
 	{
-		//vkCmdBindPipeline(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-		//
-		//vkCmdBindIndexBuffer(renderResources->m_forwardCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
-		//
-		//vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
-		//vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+		vkCmdBindPipeline(renderResources->m_geometryCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		//for (size_t i = 0; i < drawLists.m_allItems.size(); ++i)
-		//{
-		//	const DrawItem &item = drawLists.m_allItems[i];
-		//	vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
-		//
-		//	uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-		//	vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
-		//
-		//	vkCmdDrawIndexed(renderResources->m_forwardCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
-		//}
+		vkCmdBindIndexBuffer(renderResources->m_geometryCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdBindDescriptorSets(renderResources->m_geometryCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_geometryCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+
+		for (size_t i = 0; i < drawLists.m_opaqueItems.size(); ++i)
+		{
+			const DrawItem &item = drawLists.m_opaqueItems[i];
+			vkCmdBindVertexBuffers(renderResources->m_geometryCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+
+			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
+			vkCmdBindDescriptorSets(renderResources->m_geometryCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
+
+			vkCmdDrawIndexed(renderResources->m_geometryCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+		}
 	}
-	if (vkEndCommandBuffer(renderResources->m_forwardCommandBuffer) != VK_SUCCESS)
+	if (vkEndCommandBuffer(renderResources->m_geometryCommandBuffer) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to record command buffer!", -1);
 	}

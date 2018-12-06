@@ -15,8 +15,12 @@ namespace VEngine
 	{
 		friend VKRenderer;
 	public:
-		VKImageData m_colorAttachment;
 		VKImageData m_depthAttachment;
+		VKImageData m_albedoAttachment;
+		VKImageData m_normalAttachment;
+		VKImageData m_materialAttachment;
+		VKImageData m_velocityAttachment;
+		VKImageData m_lightAttachment;
 		VKBufferData m_vertexBuffer;
 		VKBufferData m_indexBuffer;
 		VKBufferData m_mainUniformBuffer;
@@ -24,16 +28,18 @@ namespace VEngine
 		VkDeviceSize m_perDrawDataSize;
 		VkFramebuffer m_mainFramebuffer;
 		VkCommandBuffer m_mainCommandBuffer;
-		VkCommandBuffer m_depthPrepassCommandBuffer;
-		VkCommandBuffer m_depthPrepassAlphaMaskCommandBuffer;
+		VkCommandBuffer m_geometryCommandBuffer;
+		VkCommandBuffer m_lightingCommandBuffer;
 		VkCommandBuffer m_forwardCommandBuffer;
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSetLayout m_perFrameDataDescriptorSetLayout;
 		VkDescriptorSetLayout m_perDrawDataDescriptorSetLayout;
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
+		VkDescriptorSetLayout m_lightingInputDescriptorSetLayout;
 		VkDescriptorSet m_perFrameDataDescriptorSet;
 		VkDescriptorSet m_perDrawDataDescriptorSet;
 		VkDescriptorSet m_textureDescriptorSet;
+		VkDescriptorSet m_lightingInputDescriptorSet;
 		VkSampler m_dummySampler;
 		VkImage m_dummyImage;
 		VkImageView m_dummyImageView;

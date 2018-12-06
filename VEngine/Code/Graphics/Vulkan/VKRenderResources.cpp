@@ -167,7 +167,7 @@ void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture 
 
 void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned int height, VkRenderPass renderPass)
 {
-	VkImageView attachments[] = { m_colorAttachment.m_view, m_depthAttachment.m_view };
+	VkImageView attachments[] = { m_depthAttachment.m_view, m_albedoAttachment.m_view, m_normalAttachment.m_view, m_materialAttachment.m_view, m_velocityAttachment.m_view, m_lightAttachment.m_view };
 
 	VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 	framebufferInfo.renderPass = renderPass;
@@ -191,21 +191,53 @@ VEngine::VKRenderResources::VKRenderResources()
 
 void VEngine::VKRenderResources::createResizableTextures(unsigned int width, unsigned int height)
 {
-	// color attachment
-	{
-		m_colorAttachment.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_colorAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colorAttachment.m_image, m_colorAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_colorAttachment);
-	}
-
 	// depth attachment
 	{
 		m_depthAttachment.m_format = VKUtility::findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_depthAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment.m_image, m_depthAttachment.m_memory);
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment.m_image, m_depthAttachment.m_memory);
 		VKUtility::createImageView({ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 }, m_depthAttachment);
+	}
+
+	// albedo attachment
+	{
+		m_albedoAttachment.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_albedoAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_albedoAttachment.m_image, m_albedoAttachment.m_memory);
+		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_albedoAttachment);
+	}
+
+	// normal attachment
+	{
+		m_normalAttachment.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_normalAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_normalAttachment.m_image, m_normalAttachment.m_memory);
+		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_normalAttachment);
+	}
+
+	// material attachment
+	{
+		m_materialAttachment.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_materialAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_materialAttachment.m_image, m_materialAttachment.m_memory);
+		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_materialAttachment);
+	}
+
+	// velocity attachment
+	{
+		m_velocityAttachment.m_format = VK_FORMAT_R16G16_SFLOAT;
+		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_velocityAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_velocityAttachment.m_image, m_velocityAttachment.m_memory);
+		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_velocityAttachment);
+	}
+
+	// light attachment
+	{
+		m_lightAttachment.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_lightAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_lightAttachment.m_image, m_lightAttachment.m_memory);
+		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_lightAttachment);
 	}
 }
 
@@ -256,22 +288,22 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 	}
 
-	// prepass / forward 
+	// prepass / geometry / forward 
 	{
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = g_context.m_graphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 		allocInfo.commandBufferCount = 3;
 
-		VkCommandBuffer cmdBufs[] = { m_depthPrepassCommandBuffer, m_depthPrepassAlphaMaskCommandBuffer, m_forwardCommandBuffer };
+		VkCommandBuffer cmdBufs[] = { m_geometryCommandBuffer, m_lightingCommandBuffer, m_forwardCommandBuffer };
 
 		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate command buffers!", -1);
 		}
 
-		m_depthPrepassCommandBuffer = cmdBufs[0];
-		m_depthPrepassAlphaMaskCommandBuffer = cmdBufs[1];
+		m_geometryCommandBuffer = cmdBufs[0];
+		m_lightingCommandBuffer = cmdBufs[1];
 		m_forwardCommandBuffer = cmdBufs[2];
 	}
 
@@ -403,6 +435,48 @@ void VEngine::VKRenderResources::createDescriptors()
 				Utility::fatalExit("Failed to create descriptor set layout!", -1);
 			}
 		}
+
+		// lighting input
+		{
+			VkDescriptorSetLayoutBinding lightingInputLayoutBindings[4] = {};
+
+			// depth
+			lightingInputLayoutBindings[0].binding = 0;
+			lightingInputLayoutBindings[0].descriptorCount = 1;
+			lightingInputLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			lightingInputLayoutBindings[0].pImmutableSamplers = nullptr;
+			lightingInputLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			// albedo
+			lightingInputLayoutBindings[1].binding = 1;
+			lightingInputLayoutBindings[1].descriptorCount = 1;
+			lightingInputLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			lightingInputLayoutBindings[1].pImmutableSamplers = nullptr;
+			lightingInputLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			// normal
+			lightingInputLayoutBindings[2].binding = 2;
+			lightingInputLayoutBindings[2].descriptorCount = 1;
+			lightingInputLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			lightingInputLayoutBindings[2].pImmutableSamplers = nullptr;
+			lightingInputLayoutBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			// material
+			lightingInputLayoutBindings[3].binding = 3;
+			lightingInputLayoutBindings[3].descriptorCount = 1;
+			lightingInputLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			lightingInputLayoutBindings[3].pImmutableSamplers = nullptr;
+			lightingInputLayoutBindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = sizeof(lightingInputLayoutBindings) / sizeof(lightingInputLayoutBindings[0]);
+			layoutInfo.pBindings = lightingInputLayoutBindings;
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_lightingInputDescriptorSetLayout) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
 	}
 
 	// create descriptor set pool
@@ -411,13 +485,14 @@ void VEngine::VKRenderResources::createDescriptors()
 		{
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE }
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT , 4 }
 		};
 
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolInfo.poolSizeCount = static_cast<uint32_t>(sizeof(poolSizes) / sizeof(VkDescriptorPoolSize));
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = 3;
+		poolInfo.maxSets = 4;
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -427,14 +502,14 @@ void VEngine::VKRenderResources::createDescriptors()
 
 	// create descriptor sets
 	{
-		VkDescriptorSetLayout layouts[] = { m_perFrameDataDescriptorSetLayout, m_perDrawDataDescriptorSetLayout, m_textureDescriptorSetLayout };
+		VkDescriptorSetLayout layouts[] = { m_perFrameDataDescriptorSetLayout, m_perDrawDataDescriptorSetLayout, m_textureDescriptorSetLayout, m_lightingInputDescriptorSetLayout };
 
 		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.descriptorPool = m_descriptorPool;
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
 		allocInfo.pSetLayouts = layouts;
 
-		VkDescriptorSet sets[] = { m_perFrameDataDescriptorSet, m_perDrawDataDescriptorSet , m_textureDescriptorSet };
+		VkDescriptorSet sets[] = { m_perFrameDataDescriptorSet, m_perDrawDataDescriptorSet , m_textureDescriptorSet, m_lightingInputDescriptorSet };
 
 		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, sets) != VK_SUCCESS)
 		{
@@ -444,6 +519,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		m_perFrameDataDescriptorSet = sets[0];
 		m_perDrawDataDescriptorSet = sets[1];
 		m_textureDescriptorSet = sets[2];
+		m_lightingInputDescriptorSet = sets[3];
 
 		VkDescriptorBufferInfo perFrameBufferInfo = {};
 		perFrameBufferInfo.buffer = m_mainUniformBuffer.m_buffer;
@@ -464,7 +540,31 @@ void VEngine::VKRenderResources::createDescriptors()
 			descriptorImageInfos[i].imageView = m_dummyImageView;
 		}
 
-		VkWriteDescriptorSet descriptorWrites[3] = {};
+		// depth
+		VkDescriptorImageInfo depthDescriptorImageInfo;
+		depthDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+		depthDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		depthDescriptorImageInfo.imageView = m_depthAttachment.m_view;
+
+		// albedo
+		VkDescriptorImageInfo albedoDescriptorImageInfo;
+		albedoDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+		albedoDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		albedoDescriptorImageInfo.imageView = m_albedoAttachment.m_view;
+
+		// normal
+		VkDescriptorImageInfo normalDescriptorImageInfo;
+		normalDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+		normalDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		normalDescriptorImageInfo.imageView = m_normalAttachment.m_view;
+
+		// material
+		VkDescriptorImageInfo materialDescriptorImageInfo;
+		materialDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+		materialDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		materialDescriptorImageInfo.imageView = m_materialAttachment.m_view;
+
+		VkWriteDescriptorSet descriptorWrites[7] = {};
 		{
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = m_perFrameDataDescriptorSet;
@@ -489,6 +589,42 @@ void VEngine::VKRenderResources::createDescriptors()
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[2].descriptorCount = TEXTURE_ARRAY_SIZE;
 			descriptorWrites[2].pImageInfo = descriptorImageInfos;
+
+			// depth
+			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[3].dstSet = m_lightingInputDescriptorSet;
+			descriptorWrites[3].dstBinding = 0;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].pImageInfo = &depthDescriptorImageInfo;
+
+			// albedo
+			descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[4].dstSet = m_lightingInputDescriptorSet;
+			descriptorWrites[4].dstBinding = 1;
+			descriptorWrites[4].dstArrayElement = 0;
+			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			descriptorWrites[4].descriptorCount = 1;
+			descriptorWrites[4].pImageInfo = &albedoDescriptorImageInfo;
+
+			// normal
+			descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[5].dstSet = m_lightingInputDescriptorSet;
+			descriptorWrites[5].dstBinding = 2;
+			descriptorWrites[5].dstArrayElement = 0;
+			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			descriptorWrites[5].descriptorCount = 1;
+			descriptorWrites[5].pImageInfo = &normalDescriptorImageInfo;
+
+			// material
+			descriptorWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[6].dstSet = m_lightingInputDescriptorSet;
+			descriptorWrites[6].dstBinding = 3;
+			descriptorWrites[6].dstArrayElement = 0;
+			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			descriptorWrites[6].descriptorCount = 1;
+			descriptorWrites[6].pImageInfo = &materialDescriptorImageInfo;
 		}
 
 		vkUpdateDescriptorSets(g_context.m_device, static_cast<uint32_t>(sizeof(descriptorWrites) / sizeof(descriptorWrites[0])), descriptorWrites, 0, nullptr);
@@ -497,13 +633,13 @@ void VEngine::VKRenderResources::createDescriptors()
 
 void VEngine::VKRenderResources::deleteResizableTextures()
 {
-	vkDestroyImageView(g_context.m_device, m_colorAttachment.m_view, nullptr);
-	vkDestroyImage(g_context.m_device, m_colorAttachment.m_image, nullptr);
-	vkFreeMemory(g_context.m_device, m_colorAttachment.m_memory, nullptr);
-
-	vkDestroyImageView(g_context.m_device, m_depthAttachment.m_view, nullptr);
-	vkDestroyImage(g_context.m_device, m_depthAttachment.m_image, nullptr);
-	vkFreeMemory(g_context.m_device, m_depthAttachment.m_memory, nullptr);
+	//vkDestroyImageView(g_context.m_device, m_colorAttachment.m_view, nullptr);
+	//vkDestroyImage(g_context.m_device, m_colorAttachment.m_image, nullptr);
+	//vkFreeMemory(g_context.m_device, m_colorAttachment.m_memory, nullptr);
+	//
+	//vkDestroyImageView(g_context.m_device, m_depthAttachment.m_view, nullptr);
+	//vkDestroyImage(g_context.m_device, m_depthAttachment.m_image, nullptr);
+	//vkFreeMemory(g_context.m_device, m_depthAttachment.m_memory, nullptr);
 }
 
 void VEngine::VKRenderResources::deleteAllTextures()

@@ -165,10 +165,10 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassAlphaMaskPipeline.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClInclude>
   </ItemGroup>
@@ -245,10 +245,10 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassPipeline.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKDepthPrepassAlphaMaskPipeline.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
   </ItemGroup>
