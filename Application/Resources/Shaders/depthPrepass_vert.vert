@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform PerFrameData
 	uint frame;
 } uPerFrameData;
 
-layout(set = 0, binding = 1) uniform PerDrawData 
+layout(set = 1, binding = 0) uniform PerDrawData 
 {
     vec4 albedoFactorMetallic;
 	vec4 emissiveFactorRoughness;

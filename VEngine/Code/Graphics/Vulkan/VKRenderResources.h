@@ -28,9 +28,11 @@ namespace VEngine
 		VkCommandBuffer m_depthPrepassAlphaMaskCommandBuffer;
 		VkCommandBuffer m_forwardCommandBuffer;
 		VkDescriptorPool m_descriptorPool;
-		VkDescriptorSetLayout m_entityDataDescriptorSetLayout;
+		VkDescriptorSetLayout m_perFrameDataDescriptorSetLayout;
+		VkDescriptorSetLayout m_perDrawDataDescriptorSetLayout;
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
-		VkDescriptorSet m_entityDataDescriptorSet;
+		VkDescriptorSet m_perFrameDataDescriptorSet;
+		VkDescriptorSet m_perDrawDataDescriptorSet;
 		VkDescriptorSet m_textureDescriptorSet;
 		VkSampler m_dummySampler;
 		VkImage m_dummyImage;

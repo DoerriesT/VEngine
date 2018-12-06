@@ -347,7 +347,7 @@ void VEngine::VKRenderResources::createDescriptors()
 {
 	// create descriptor set layouts
 	{
-		// entity data descriptor set layout
+		// per frame
 		{
 			VkDescriptorSetLayoutBinding perFrameLayoutBinding = {};
 			perFrameLayoutBinding.binding = 0;
@@ -356,20 +356,30 @@ void VEngine::VKRenderResources::createDescriptors()
 			perFrameLayoutBinding.pImmutableSamplers = nullptr;
 			perFrameLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = 1;
+			layoutInfo.pBindings = &perFrameLayoutBinding;
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_perFrameDataDescriptorSetLayout) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+
+		// per draw
+		{
 			VkDescriptorSetLayoutBinding perDrawLayoutBinding = {};
-			perDrawLayoutBinding.binding = 1;
+			perDrawLayoutBinding.binding = 0;
 			perDrawLayoutBinding.descriptorCount = 1;
 			perDrawLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			perDrawLayoutBinding.pImmutableSamplers = nullptr;
 			perDrawLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-			VkDescriptorSetLayoutBinding bindings[] = { perFrameLayoutBinding, perDrawLayoutBinding };
-
 			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-			layoutInfo.bindingCount = static_cast<uint32_t>(sizeof(bindings) / sizeof(bindings[0]));
-			layoutInfo.pBindings = bindings;
+			layoutInfo.bindingCount = 1;
+			layoutInfo.pBindings = &perDrawLayoutBinding;
 
-			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_entityDataDescriptorSetLayout) != VK_SUCCESS)
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_perDrawDataDescriptorSetLayout) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create descriptor set layout!", -1);
 			}
@@ -407,7 +417,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolInfo.poolSizeCount = static_cast<uint32_t>(sizeof(poolSizes) / sizeof(VkDescriptorPoolSize));
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = 2;
+		poolInfo.maxSets = 3;
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -417,22 +427,23 @@ void VEngine::VKRenderResources::createDescriptors()
 
 	// create descriptor sets
 	{
-		VkDescriptorSetLayout layouts[] = { m_entityDataDescriptorSetLayout, m_textureDescriptorSetLayout };
+		VkDescriptorSetLayout layouts[] = { m_perFrameDataDescriptorSetLayout, m_perDrawDataDescriptorSetLayout, m_textureDescriptorSetLayout };
 
 		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.descriptorPool = m_descriptorPool;
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
 		allocInfo.pSetLayouts = layouts;
 
-		VkDescriptorSet sets[] = { m_entityDataDescriptorSet , m_textureDescriptorSet };
+		VkDescriptorSet sets[] = { m_perFrameDataDescriptorSet, m_perDrawDataDescriptorSet , m_textureDescriptorSet };
 
 		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, sets) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate descriptor set!", -1);
 		}
 
-		m_entityDataDescriptorSet = sets[0];
-		m_textureDescriptorSet = sets[1];
+		m_perFrameDataDescriptorSet = sets[0];
+		m_perDrawDataDescriptorSet = sets[1];
+		m_textureDescriptorSet = sets[2];
 
 		VkDescriptorBufferInfo perFrameBufferInfo = {};
 		perFrameBufferInfo.buffer = m_mainUniformBuffer.m_buffer;
@@ -456,7 +467,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		VkWriteDescriptorSet descriptorWrites[3] = {};
 		{
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_entityDataDescriptorSet;
+			descriptorWrites[0].dstSet = m_perFrameDataDescriptorSet;
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -464,8 +475,8 @@ void VEngine::VKRenderResources::createDescriptors()
 			descriptorWrites[0].pBufferInfo = &perFrameBufferInfo;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_entityDataDescriptorSet;
-			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstSet = m_perDrawDataDescriptorSet;
+			descriptorWrites[1].dstBinding = 0;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			descriptorWrites[1].descriptorCount = 1;

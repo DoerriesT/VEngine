@@ -113,7 +113,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	VkDescriptorSetLayout layouts[] = { renderResources->m_entityDataDescriptorSetLayout , renderResources->m_textureDescriptorSetLayout };
+	VkDescriptorSetLayout layouts[] = { renderResources->m_perFrameDataDescriptorSetLayout, renderResources->m_perDrawDataDescriptorSetLayout , renderResources->m_textureDescriptorSetLayout };
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
@@ -164,7 +164,8 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 
 		vkCmdBindIndexBuffer(renderResources->m_forwardCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
 		for (size_t i = 0; i < drawItems.size(); ++i)
 		{
@@ -172,7 +173,7 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-			vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_entityDataDescriptorSet, 1, &dynamicOffset);
+			vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(renderResources->m_forwardCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}

@@ -40,7 +40,7 @@ layout(set = 0, binding = 0) uniform PerFrameData
 	uint frame;
 } uPerFrameData;
 
-layout(set = 0, binding = 1) uniform PerDrawData 
+layout(set = 1, binding = 0) uniform PerDrawData 
 {
     vec4 albedoFactorMetallic;
 	vec4 emissiveFactorRoughness;
@@ -55,7 +55,7 @@ layout(set = 0, binding = 1) uniform PerDrawData
 	uint padding;
 } uPerDrawData;
 
-layout(set = 1, binding = 0) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = 2, binding = 0) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {

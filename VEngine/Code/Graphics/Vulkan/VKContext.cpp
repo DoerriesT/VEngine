@@ -4,6 +4,10 @@
 #include <GLFW/glfw3.h>
 #include <set>
 
+#ifndef ENABLE_VALIDATION_LAYERS
+#define ENABLE_VALIDATION_LAYERS 1
+#endif // ENABLE_VALIDATION_LAYERS
+
 VEngine::VKContext g_context = {};
 
 namespace VEngine

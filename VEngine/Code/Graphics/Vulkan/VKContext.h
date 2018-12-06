@@ -2,10 +2,6 @@
 #include <vulkan\vulkan.h>
 #include <vector>
 
-#ifndef ENABLE_VALIDATION_LAYERS
-#define ENABLE_VALIDATION_LAYERS 1
-#endif // ENABLE_VALIDATION_LAYERS
-
 struct GLFWwindow;
 
 namespace VEngine
