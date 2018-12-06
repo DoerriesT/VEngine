@@ -145,7 +145,7 @@ void VEngine::VKForwardPipeline::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const std::vector<DrawItem> &drawItems)
+void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists)
 {
 	vkResetCommandBuffer(renderResources->m_forwardCommandBuffer, 0);
 
@@ -167,9 +167,9 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
 		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
-		for (size_t i = 0; i < drawItems.size(); ++i)
+		for (size_t i = 0; i < drawLists.m_allItems.size(); ++i)
 		{
-			const DrawItem &item = drawItems[i];
+			const DrawItem &item = drawLists.m_allItems[i];
 			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);

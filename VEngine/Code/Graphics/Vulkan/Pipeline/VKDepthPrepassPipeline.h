@@ -5,7 +5,7 @@
 namespace VEngine
 {
 	struct VKRenderResources;
-	struct DrawItem;
+	struct DrawLists;
 
 	class VKDepthPrepassPipeline
 	{
@@ -17,7 +17,7 @@ namespace VEngine
 		VKDepthPrepassPipeline &operator= (const VKDepthPrepassPipeline &&) = delete;
 		~VKDepthPrepassPipeline();
 		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources);
-		void recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const std::vector<DrawItem> &drawItems);
+		void recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists);
 
 	private:
 		VkPipeline m_pipeline;

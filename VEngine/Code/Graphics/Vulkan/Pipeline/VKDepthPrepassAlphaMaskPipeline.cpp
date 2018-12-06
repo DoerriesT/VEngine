@@ -141,7 +141,7 @@ void VEngine::VKDepthPrepassAlphaMaskPipeline::init(unsigned int width, unsigned
 	}
 }
 
-void VEngine::VKDepthPrepassAlphaMaskPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, uint32_t previousOffset, const std::vector<DrawItem> &drawItems)
+void VEngine::VKDepthPrepassAlphaMaskPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists)
 {
 	vkResetCommandBuffer(renderResources->m_depthPrepassAlphaMaskCommandBuffer, 0);
 
@@ -163,12 +163,12 @@ void VEngine::VKDepthPrepassAlphaMaskPipeline::recordCommandBuffer(VkRenderPass 
 		vkCmdBindDescriptorSets(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
 		vkCmdBindDescriptorSets(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
-		for (size_t i = 0; i < drawItems.size(); ++i)
+		for (size_t i = 0; i < drawLists.m_maskedItems.size(); ++i)
 		{
-			const DrawItem &item = drawItems[i];
+			const DrawItem &item = drawLists.m_maskedItems[i];
 			vkCmdBindVertexBuffers(renderResources->m_depthPrepassAlphaMaskCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
-			uint32_t dynamicOffset = previousOffset + static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
+			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * (i + drawLists.m_opaqueItems.size()));
 			vkCmdBindDescriptorSets(renderResources->m_depthPrepassAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(renderResources->m_depthPrepassAlphaMaskCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
