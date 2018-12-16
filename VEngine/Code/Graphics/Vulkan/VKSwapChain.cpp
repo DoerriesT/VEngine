@@ -5,8 +5,6 @@
 #include "Utility/Utility.h"
 #include "VKUtility.h"
 
-extern VEngine::VKContext g_context;
-
 VEngine::VKSwapChain::VKSwapChain()
 	:m_swapChain(),
 	m_imageFormat(),

@@ -4,6 +4,8 @@
 
 namespace VEngine
 {
+	struct ShadowMapTile;
+
 	struct SpotLightComponent : public Component<SpotLightComponent>
 	{
 		glm::vec3 m_direction;
@@ -12,14 +14,16 @@ namespace VEngine
 		float m_radius;
 		float m_outerAngle;
 		float m_innerAngle;
+		const ShadowMapTile *m_shadowMapTile;
 
-		explicit SpotLightComponent(glm::vec3 direction, glm::vec3 color, float luminousPower, float radius, float outerAngle, float innerAngle)
+		explicit SpotLightComponent(const glm::vec3 &direction, const glm::vec3 &color, float luminousPower, float radius, float outerAngle, float innerAngle)
 			:m_direction(direction),
 			m_color(color),
 			m_luminousPower(luminousPower),
 			m_radius(radius),
 			m_outerAngle(outerAngle),
-			m_innerAngle(innerAngle)
+			m_innerAngle(innerAngle),
+			m_shadowMapTile()
 		{
 		}
 	};

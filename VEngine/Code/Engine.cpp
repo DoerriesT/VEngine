@@ -12,14 +12,6 @@
 #include "ECS/System/CameraControllerSystem.h"
 #include "GlobalVar.h"
 
-extern VEngine::VKContext g_context;
-namespace VEngine
-{
-	extern GlobalVar<unsigned int> g_windowWidth;
-	extern GlobalVar<unsigned int> g_windowHeight;
-}
-
-
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
 	m_window(std::make_unique<Window>(g_windowWidth, g_windowHeight, title)),

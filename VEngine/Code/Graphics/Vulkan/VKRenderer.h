@@ -7,12 +7,16 @@ namespace VEngine
 	struct VKRenderResources;
 	class VKTextureLoader;
 	class VKSwapChain;
+	struct VKShadowRenderPass;
+	struct VKMainRenderPass;
+	class VKShadowPipeline;
 	class VKGeometryPipeline;
 	class VKGeometryAlphaMaskPipeline;
 	class VKLightingPipeline;
 	class VKForwardPipeline;
 	struct RenderParams;
 	struct DrawLists;
+	struct LightData;
 
 	class VKRenderer
 	{
@@ -20,7 +24,7 @@ namespace VEngine
 		explicit VKRenderer();
 		~VKRenderer();
 		void init(unsigned int width, unsigned int height);
-		void update(const RenderParams &renderParams, const DrawLists &drawLists);
+		void update(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData);
 		void render();
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
@@ -36,7 +40,9 @@ namespace VEngine
 		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKSwapChain> m_swapChain;
 
-		VkRenderPass m_mainRenderPass;
+		std::unique_ptr<VKShadowRenderPass> m_shadowRenderPass;
+		std::unique_ptr<VKMainRenderPass> m_mainRenderPass;
+		std::unique_ptr<VKShadowPipeline> m_shadowPipeline;
 		std::unique_ptr<VKGeometryPipeline> m_geometryPipeline;
 		std::unique_ptr<VKGeometryAlphaMaskPipeline> m_geometryAlphaMaskPipeline;
 		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;

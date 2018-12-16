@@ -16,7 +16,7 @@ namespace VEngine
 		VKForwardPipeline &operator= (const VKForwardPipeline &) = delete;
 		VKForwardPipeline &operator= (const VKForwardPipeline &&) = delete;
 		~VKForwardPipeline();
-		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResourcese);
+		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources);
 		void recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists);
 
 	private:

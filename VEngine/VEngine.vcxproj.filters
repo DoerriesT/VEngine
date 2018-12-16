@@ -34,6 +34,9 @@
     <Filter Include="Code\ECS\System">
       <UniqueIdentifier>{5283f8fe-617e-4be1-9b9e-51e43caa3c28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\Vulkan\RenderPass">
+      <UniqueIdentifier>{c7df58f4-2f0c-4254-aba8-058f5cc42102}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -174,6 +177,21 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.h">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.h">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\LightData.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\ECS\Component\DirectionalLightComponent.h">
+      <Filter>Code\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.h">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -256,6 +274,15 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.cpp">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.cpp">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

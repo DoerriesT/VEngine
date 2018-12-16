@@ -8,8 +8,6 @@
 #include "VKContext.h"
 #include "VKUtility.h"
 
-extern VEngine::VKContext g_context;
-
 VEngine::VKTextureLoader::VKTextureLoader()
 	:m_nextId()
 {

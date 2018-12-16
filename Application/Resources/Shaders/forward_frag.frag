@@ -135,7 +135,7 @@ void main()
 	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
 	if (uPerDrawData.albedoTexture != 0)
 	{
-		albedo *= accurateSRGBToLinear(texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgb);
+		albedo *= accurateSRGBToLinear(texture(uTextures[uPerDrawData.albedoTexture], vTexCoord).rgb);
 	}
 		
 	vec3 N = normalize(vNormal);
@@ -143,7 +143,7 @@ void main()
 	if (uPerDrawData.normalTexture != 0)
 	{
 		mat3 TBN = calculateTBN( N, vWorldPos, vTexCoord);
-		vec3 tangentSpaceNormal = texture(uTextures[uPerDrawData.normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0;
+		vec3 tangentSpaceNormal = texture(uTextures[uPerDrawData.normalTexture], vTexCoord).xyz * 2.0 - 1.0;
 		N = normalize(TBN * tangentSpaceNormal);
 	}
 	
@@ -155,9 +155,9 @@ void main()
 	float NdotL = max(dot(N, L), 0.0);
 	
 	float metallic = uPerDrawData.albedoFactorMetallic.w;
-	metallic *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture - 1], vTexCoord).x : 1.0;
+	metallic *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture], vTexCoord).x : 1.0;
 	float roughness = uPerDrawData.emissiveFactorRoughness.w;
-	roughness *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture - 1], vTexCoord).x : 1.0;
+	roughness *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture], vTexCoord).x : 1.0;
 	
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(N, H, roughness);
@@ -176,7 +176,7 @@ void main()
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
 
-	oFragColor = vec4((kD * albedo.rgb / PI + specular) * vec3(5.0) * NdotL, 1.0);
+	oFragColor = vec4((kD * albedo.rgb / PI + specular) * vec3(5.0) * NdotL + 0.1 * albedo, 1.0);
 	oFragColor.rgb = accurateLinearToSRGB(oFragColor.rgb);
 }
 

@@ -10,8 +10,6 @@
 #include "Graphics/RenderParams.h"
 #include "Graphics/Mesh.h"
 
-extern VEngine::VKContext g_context;
-
 VEngine::VKForwardPipeline::VKForwardPipeline()
 	:m_pipeline(),
 	m_pipelineLayout()

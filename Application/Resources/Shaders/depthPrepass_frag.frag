@@ -61,7 +61,7 @@ void main()
 	if (uPerDrawData.albedoTexture != 0)
 	{
 		float alpha = texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).a;
-		alpha *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
+		alpha *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture], vTexCoord).x * MIP_SCALE;
 		if(alpha < ALPHA_CUTOFF)
 		{
 			discard;

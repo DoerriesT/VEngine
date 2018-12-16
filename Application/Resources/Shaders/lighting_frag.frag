@@ -124,6 +124,6 @@ void main()
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
     
-	oFragColor = vec4((kD * albedo / PI + specular) * vec3(5.0) * NdotL, 1.0);
+	oFragColor = vec4((kD * albedo / PI + specular) * vec3(5.0) * NdotL + 0.1 * albedo, 1.0);
 	oFragColor.rgb = accurateLinearToSRGB(oFragColor.rgb);
 }

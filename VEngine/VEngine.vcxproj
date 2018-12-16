@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClInclude Include="Code\ECS\Component\CameraComponent.h" />
     <ClInclude Include="Code\ECS\Component\Component.h" />
+    <ClInclude Include="Code\ECS\Component\DirectionalLightComponent.h" />
     <ClInclude Include="Code\ECS\Component\MeshComponent.h" />
     <ClInclude Include="Code\ECS\Component\PointLightComponent.h" />
     <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
@@ -150,12 +151,16 @@
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
     <ClInclude Include="Code\Graphics\DrawItem.h" />
+    <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImageData.h" />
@@ -191,6 +196,9 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />

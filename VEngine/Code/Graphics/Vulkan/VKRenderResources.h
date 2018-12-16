@@ -21,13 +21,16 @@ namespace VEngine
 		VKImageData m_materialAttachment;
 		VKImageData m_velocityAttachment;
 		VKImageData m_lightAttachment;
+		VKImageData m_shadowTexture;
 		VKBufferData m_vertexBuffer;
 		VKBufferData m_indexBuffer;
 		VKBufferData m_mainUniformBuffer;
 		VkDeviceSize m_perFrameDataSize;
 		VkDeviceSize m_perDrawDataSize;
 		VkFramebuffer m_mainFramebuffer;
+		VkFramebuffer m_shadowFramebuffer;
 		VkCommandBuffer m_mainCommandBuffer;
+		VkCommandBuffer m_shadowsCommandBuffer;
 		VkCommandBuffer m_geometryCommandBuffer;
 		VkCommandBuffer m_geometryAlphaMaskCommandBuffer;
 		VkCommandBuffer m_lightingCommandBuffer;
@@ -41,6 +44,7 @@ namespace VEngine
 		VkDescriptorSet m_perDrawDataDescriptorSet;
 		VkDescriptorSet m_textureDescriptorSet;
 		VkDescriptorSet m_lightingInputDescriptorSet;
+		VkSampler m_shadowSampler;
 		VkSampler m_dummySampler;
 		VkImage m_dummyImage;
 		VkImageView m_dummyImageView;
@@ -52,7 +56,7 @@ namespace VEngine
 		VKRenderResources &operator= (const VKRenderResources &&) = delete;
 		~VKRenderResources();
 		void init(unsigned int width, unsigned int height);
-		void createFramebuffer(unsigned int width, unsigned int height, VkRenderPass renderPass);
+		void createFramebuffer(unsigned int width, unsigned int height, VkRenderPass mainRenderPass, VkRenderPass shadowRenderPass);
 		void createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize);
 		void createCommandBuffers();
 		void createDummyTexture();

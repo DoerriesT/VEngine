@@ -3,8 +3,6 @@
 #include "Graphics/Vulkan/VKContext.h"
 #include "Utility/Utility.h"
 
-extern VEngine::VKContext g_context;
-
 VEngine::VKShaderModule::VKShaderModule(const char *filepath)
 {
 	std::vector<char> code = Utility::readBinaryFile(filepath);

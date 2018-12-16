@@ -2,6 +2,8 @@
 #include "System.h"
 #include <memory>
 #include "Graphics/RenderParams.h"
+#include "Graphics/DrawItem.h"
+#include "Graphics/LightData.h"
 
 namespace VEngine
 {
@@ -29,5 +31,9 @@ namespace VEngine
 		std::unique_ptr<VKRenderer> m_renderer;
 		const Entity *m_cameraEntity;
 		RenderParams m_renderParams;
+		DrawLists m_drawLists;
+		LightData m_lightData;
+
+		void calculateCascadeViewProjectionMatrices(const RenderParams &renderParams, const glm::vec3 &lightDir, float nearPlane, float farPlane, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
 	};
 }

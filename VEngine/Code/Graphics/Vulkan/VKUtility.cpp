@@ -3,9 +3,6 @@
 #include "VKContext.h"
 #include "VKImageData.h"
 
-extern VEngine::VKContext g_context;
-
-
 void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) 
 {
 	VkImageCreateInfo imageInfo = {};

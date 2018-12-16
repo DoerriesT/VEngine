@@ -12,12 +12,6 @@
 #include <GlobalVar.h>
 #include <Scene.h>
 
-namespace VEngine
-{
-	extern GlobalVar<unsigned int> g_windowWidth;
-	extern GlobalVar<unsigned int> g_windowHeight;
-}
-
 class DummyLogic : public VEngine::IGameLogic
 {
 public:

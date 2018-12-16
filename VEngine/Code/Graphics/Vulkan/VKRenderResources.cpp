@@ -4,9 +4,7 @@
 #include "Utility/Utility.h"
 #include "Graphics/RenderParams.h"
 #include "VKTextureLoader.h"
-
-extern VEngine::VKContext g_context;
-
+#include "GlobalVar.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -137,19 +135,23 @@ void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture 
 {
 	VkDescriptorImageInfo descriptorImageInfos[TEXTURE_ARRAY_SIZE];
 
-	for (size_t i = 0; i < TEXTURE_ARRAY_SIZE; ++i)
+	descriptorImageInfos[0].sampler = m_shadowSampler;
+	descriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	descriptorImageInfos[0].imageView = m_shadowTexture.m_view;
+
+	for (size_t i = 0; i < TEXTURE_ARRAY_SIZE - 1; ++i)
 	{
 		if (i < textures.size() && textures[i])
 		{
-			descriptorImageInfos[i].sampler = textures[i]->m_sampler;
-			descriptorImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfos[i].imageView = textures[i]->m_imageData.m_view;
+			descriptorImageInfos[i + 1].sampler = textures[i]->m_sampler;
+			descriptorImageInfos[i + 1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorImageInfos[i + 1].imageView = textures[i]->m_imageData.m_view;
 		}
 		else
 		{
-			descriptorImageInfos[i].sampler = m_dummySampler;
-			descriptorImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfos[i].imageView = m_dummyImageView;
+			descriptorImageInfos[i + 1].sampler = m_dummySampler;
+			descriptorImageInfos[i + 1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorImageInfos[i + 1].imageView = m_dummyImageView;
 		}
 	}
 
@@ -165,21 +167,40 @@ void VEngine::VKRenderResources::updateTextureArray(const std::vector<VKTexture 
 	vkUpdateDescriptorSets(g_context.m_device, 1, &descriptorWrite, 0, nullptr);
 }
 
-void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned int height, VkRenderPass renderPass)
+void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned int height, VkRenderPass mainRenderPass, VkRenderPass shadowRenderPass)
 {
-	VkImageView attachments[] = { m_depthAttachment.m_view, m_albedoAttachment.m_view, m_normalAttachment.m_view, m_materialAttachment.m_view, m_velocityAttachment.m_view, m_lightAttachment.m_view };
-
-	VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-	framebufferInfo.renderPass = renderPass;
-	framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
-	framebufferInfo.pAttachments = attachments;
-	framebufferInfo.width = width;
-	framebufferInfo.height = height;
-	framebufferInfo.layers = 1;
-
-	if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_mainFramebuffer) != VK_SUCCESS)
+	// main fbo
 	{
-		Utility::fatalExit("Failed to create framebuffer!", -1);
+		VkImageView attachments[] = { m_depthAttachment.m_view, m_albedoAttachment.m_view, m_normalAttachment.m_view, m_materialAttachment.m_view, m_velocityAttachment.m_view, m_lightAttachment.m_view };
+
+		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		framebufferInfo.renderPass = mainRenderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = width;
+		framebufferInfo.height = height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_mainFramebuffer) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create framebuffer!", -1);
+		}
+	}
+
+	// shadow fbo
+	{
+		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+		framebufferInfo.renderPass = shadowRenderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = &m_shadowTexture.m_view;
+		framebufferInfo.width = g_shadowAtlasSize;
+		framebufferInfo.height = g_shadowAtlasSize;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_shadowFramebuffer) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create framebuffer!", -1);
+		}
 	}
 }
 
@@ -244,6 +265,59 @@ void VEngine::VKRenderResources::createResizableTextures(unsigned int width, uns
 void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned int height)
 {
 	createResizableTextures(width, height);
+
+	m_shadowTexture.m_format = VK_FORMAT_D16_UNORM;
+	VKUtility::createImage(
+		g_shadowAtlasSize,
+		g_shadowAtlasSize,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		m_shadowTexture.m_format,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_shadowTexture.m_image,
+		m_shadowTexture.m_memory);
+	VKUtility::createImageView({ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 }, m_shadowTexture);
+
+	VkImageSubresourceRange subresourceRange = {};
+	subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	subresourceRange.baseMipLevel = 0;
+	subresourceRange.levelCount = 1;
+	subresourceRange.baseArrayLayer = 0;
+	subresourceRange.layerCount = 1;
+
+	VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+	VKUtility::setImageLayout(
+		cmdBuf,
+		m_shadowTexture.m_image,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		subresourceRange,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
+
+
+	VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.mipLodBias = 0.0f;
+	samplerCreateInfo.compareOp = VK_COMPARE_OP_GREATER;
+	samplerCreateInfo.minLod = 0.0f;
+	samplerCreateInfo.maxLod = 1;
+	samplerCreateInfo.maxAnisotropy = 1.0f;
+	samplerCreateInfo.anisotropyEnable = VK_FALSE;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+	if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_shadowSampler) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to create sampler!", -1);
+	}
 }
 
 void VEngine::VKRenderResources::createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize)
@@ -288,24 +362,25 @@ void VEngine::VKRenderResources::createCommandBuffers()
 		}
 	}
 
-	// geometry / lighting / forward 
+	// shadows / geometry / lighting / forward 
 	{
+		VkCommandBuffer cmdBufs[] = { m_shadowsCommandBuffer, m_geometryCommandBuffer, m_geometryAlphaMaskCommandBuffer, m_lightingCommandBuffer, m_forwardCommandBuffer };
+
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = g_context.m_graphicsCommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = 4;
-
-		VkCommandBuffer cmdBufs[] = { m_geometryCommandBuffer, m_geometryAlphaMaskCommandBuffer, m_lightingCommandBuffer, m_forwardCommandBuffer };
+		allocInfo.commandBufferCount = static_cast<uint32_t>(sizeof(cmdBufs) / sizeof(cmdBufs[0]));
 
 		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate command buffers!", -1);
 		}
 
-		m_geometryCommandBuffer = cmdBufs[0];
-		m_geometryAlphaMaskCommandBuffer = cmdBufs[1];
-		m_lightingCommandBuffer = cmdBufs[2];
-		m_forwardCommandBuffer = cmdBufs[3];
+		m_shadowsCommandBuffer = cmdBufs[0];
+		m_geometryCommandBuffer = cmdBufs[1];
+		m_geometryAlphaMaskCommandBuffer = cmdBufs[2];
+		m_lightingCommandBuffer = cmdBufs[3];
+		m_forwardCommandBuffer = cmdBufs[4];
 	}
 
 }

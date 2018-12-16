@@ -100,8 +100,8 @@ void main()
 	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
 	if (uPerDrawData.albedoTexture != 0)
 	{
-		vec4 albedoTexSample = texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
-		albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
+		vec4 albedoTexSample = texture(uTextures[uPerDrawData.albedoTexture], vTexCoord).rgba;
+		albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture], vTexCoord).x * MIP_SCALE;
 		if(albedoTexSample.a < ALPHA_CUTOFF)
 		{
 			discard;
@@ -119,14 +119,14 @@ void main()
 	oMetallicRoughnessOcclusion.z = 1.0;
 	
 #if !ALPHA_MASK_ENABLED
-	oAlbedo.rgb *= (uPerDrawData.albedoTexture != 0) ? texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgb : vec3(1.0);
+	oAlbedo.rgb *= (uPerDrawData.albedoTexture != 0) ? texture(uTextures[uPerDrawData.albedoTexture], vTexCoord).rgb : vec3(1.0);
 #endif // !ALPHA_MASK_ENABLED
 	
 	oNormalEmissive.xyz = (uPerDrawData.normalTexture != 0) ? 
-	normalize(calculateTBN(oNormalEmissive.xyz, vWorldPos, vTexCoord) * (texture(uTextures[uPerDrawData.normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0)) : oNormalEmissive.xyz;
+	normalize(calculateTBN(oNormalEmissive.xyz, vWorldPos, vTexCoord) * (texture(uTextures[uPerDrawData.normalTexture], vTexCoord).xyz * 2.0 - 1.0)) : oNormalEmissive.xyz;
 	
-	oMetallicRoughnessOcclusion.x *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture - 1], vTexCoord).x : 1.0;
-	oMetallicRoughnessOcclusion.y *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture - 1], vTexCoord).x : 1.0;
-	oMetallicRoughnessOcclusion.z *= (uPerDrawData.occlusionTexture != 0) ? texture(uTextures[uPerDrawData.occlusionTexture - 1], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.x *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.y *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.z *= (uPerDrawData.occlusionTexture != 0) ? texture(uTextures[uPerDrawData.occlusionTexture], vTexCoord).x : 1.0;
 }
 

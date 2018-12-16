@@ -33,6 +33,5 @@ namespace VEngine
 		std::vector<DrawItem> m_opaqueItems;
 		std::vector<DrawItem> m_maskedItems;
 		std::vector<DrawItem> m_blendedItems;
-		std::vector<DrawItem> m_allItems;
 	};
 }

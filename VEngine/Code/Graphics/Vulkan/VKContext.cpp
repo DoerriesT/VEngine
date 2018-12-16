@@ -8,10 +8,10 @@
 #define ENABLE_VALIDATION_LAYERS 1
 #endif // ENABLE_VALIDATION_LAYERS
 
-VEngine::VKContext g_context = {};
-
 namespace VEngine
 {
+	VKContext g_context = {};
+
 	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
 	static const char* const deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
@@ -334,7 +334,8 @@ namespace VEngine
 			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS
-				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS)
+				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS
+				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_shadowsFinishedSemaphore) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create semaphores!", -1);
 			}

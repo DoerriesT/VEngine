@@ -55,4 +55,41 @@ namespace VEngine
 	{
 		return m_value;
 	}
+
+	template<typename Type>
+	class GlobalConst
+	{
+	public:
+		GlobalConst(const Type &value);
+		Type get() const;
+		operator Type() const;
+
+	private:
+		Type m_value;
+	};
+
+	template<typename Type>
+	inline GlobalConst<Type>::GlobalConst(const Type & value)
+		:m_value(value)
+	{
+	}
+
+	template<typename Type>
+	inline Type GlobalConst<Type>::get() const
+	{
+		return m_value;
+	}
+
+	template<typename Type>
+	inline GlobalConst<Type>::operator Type() const
+	{
+		return m_value;
+	}
+
+	extern GlobalVar<unsigned int> g_windowWidth;
+	extern GlobalVar<unsigned int> g_windowHeight;
+	extern GlobalConst<unsigned int> g_shadowAtlasSize;
+	extern GlobalConst<unsigned int> g_shadowAtlasMinTileSize;
+	extern GlobalConst<unsigned int> g_shadowCascadeSize;
+	extern GlobalConst<unsigned int> g_shadowCascadeCount;
 }
