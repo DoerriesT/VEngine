@@ -159,6 +159,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKSkyPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
@@ -197,6 +198,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKSkyPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />

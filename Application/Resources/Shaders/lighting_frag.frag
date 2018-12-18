@@ -145,6 +145,91 @@ vec3 fresnelSchlick(float HdotV, vec3 F0)
 	return F0 + (1.0 - F0) * pow(2.0, power);
 }
 
+vec2 computeReceiverPlaneDepthBias(vec3 texCoordDX, vec3 texCoordDY)
+{
+    vec2 biasUV;
+    biasUV.x = texCoordDY.y * texCoordDX.z - texCoordDX.y * texCoordDY.z;
+    biasUV.y = texCoordDX.x * texCoordDY.z - texCoordDY.x * texCoordDX.z;
+    biasUV *= 1.0 / ((texCoordDX.x * texCoordDY.y) - (texCoordDX.y * texCoordDY.x));
+    return biasUV;
+}
+
+float sampleShadowTexture(in vec2 base_uv, in float u, in float v, in vec2 shadowMapSizeInv, in float depth, in vec2 receiverPlaneDepthBias) 
+{
+    vec2 uv = base_uv + vec2(u, v) * shadowMapSizeInv;
+
+    float z = depth + dot(vec2(u, v) * shadowMapSizeInv, receiverPlaneDepthBias);
+
+	return texture(uShadowTexture, vec3(uv, z)).x;
+}
+
+// based on https://mynameismjp.wordpress.com/2013/09/10/shadow-maps/
+float shadowOptimizedPCF(vec3 shadowPos, vec3 shadowPosDx, vec3 shadowPosDy, vec2 shadowTextureSize, vec2 invShadowTextureSize)
+{
+    float lightDepth = shadowPos.z;
+    vec2 receiverPlaneDepthBias = computeReceiverPlaneDepthBias(shadowPosDx, shadowPosDy);
+
+    // Static depth biasing to make up for incorrect fractional sampling on the shadow map grid
+    float fractionalSamplingError = 2.0 * dot(vec2(1.0, 1.0) * invShadowTextureSize, abs(receiverPlaneDepthBias));
+    lightDepth -= min(fractionalSamplingError, 0.01);
+
+    vec2 uv = shadowPos.xy * shadowTextureSize; // 1 unit - 1 texel
+	
+    vec2 base_uv;
+    base_uv.x = floor(uv.x + 0.5);
+    base_uv.y = floor(uv.y + 0.5);
+
+    float s = (uv.x + 0.5 - base_uv.x);
+    float t = (uv.y + 0.5 - base_uv.y);
+
+    base_uv -= vec2(0.5, 0.5);
+    base_uv *= invShadowTextureSize;
+
+    float sum = 0;
+
+    float uw0 = (5 * s - 6);
+    float uw1 = (11 * s - 28);
+    float uw2 = -(11 * s + 17);
+    float uw3 = -(5 * s + 1);
+
+    float u0 = (4 * s - 5) / uw0 - 3;
+    float u1 = (4 * s - 16) / uw1 - 1;
+    float u2 = -(7 * s + 5) / uw2 + 1;
+    float u3 = -s / uw3 + 3;
+
+    float vw0 = (5 * t - 6);
+    float vw1 = (11 * t - 28);
+    float vw2 = -(11 * t + 17);
+    float vw3 = -(5 * t + 1);
+
+    float v0 = (4 * t - 5) / vw0 - 3;
+    float v1 = (4 * t - 16) / vw1 - 1;
+    float v2 = -(7 * t + 5) / vw2 + 1;
+    float v3 = -t / vw3 + 3;
+
+    sum += uw0 * vw0 * sampleShadowTexture(base_uv, u0, v0, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw1 * vw0 * sampleShadowTexture(base_uv, u1, v0, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw2 * vw0 * sampleShadowTexture(base_uv, u2, v0, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw3 * vw0 * sampleShadowTexture(base_uv, u3, v0, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+
+    sum += uw0 * vw1 * sampleShadowTexture(base_uv, u0, v1, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw1 * vw1 * sampleShadowTexture(base_uv, u1, v1, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw2 * vw1 * sampleShadowTexture(base_uv, u2, v1, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw3 * vw1 * sampleShadowTexture(base_uv, u3, v1, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+
+    sum += uw0 * vw2 * sampleShadowTexture(base_uv, u0, v2, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw1 * vw2 * sampleShadowTexture(base_uv, u1, v2, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw2 * vw2 * sampleShadowTexture(base_uv, u2, v2, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw3 * vw2 * sampleShadowTexture(base_uv, u3, v2, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+
+    sum += uw0 * vw3 * sampleShadowTexture(base_uv, u0, v3, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw1 * vw3 * sampleShadowTexture(base_uv, u1, v3, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw2 * vw3 * sampleShadowTexture(base_uv, u2, v3, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+    sum += uw3 * vw3 * sampleShadowTexture(base_uv, u3, v3, invShadowTextureSize, lightDepth, receiverPlaneDepthBias);
+
+    return sum * 1.0f / 2704;
+}
+
 vec3 evaluateDirectionalLight(
 	inout mat3 viewMatrix,
 	inout vec3 albedo, 
@@ -183,13 +268,13 @@ vec3 evaluateDirectionalLight(
 	{		
 		uint shadowDataOffset = uDirectionalLights.lights[index].shadowDataOffset;
 		vec3 shadowCoord = vec3(2.0);
+		vec2 invShadowTextureSize = 1.0 / textureSize(uShadowTexture, 0).xy;
+		vec4 offsetPos = uPerFrameData.invViewMatrix * vec4(invShadowTextureSize.x * clamp(1.0 - NdotL, 0.0, 1.0) * N + viewSpacePosition, 1.0);
 
 		for (uint i = 0; i < shadowDataCount; ++i)
 		{
 			const vec4 projCoords4 = 
-			uShadowData.data[shadowDataOffset + i].shadowViewProjectionMatrix 
-			* uPerFrameData.invViewMatrix 
-			* vec4(0.1 * L + viewSpacePosition, 1.0);
+			uShadowData.data[shadowDataOffset + i].shadowViewProjectionMatrix * offsetPos;
 			shadowCoord = (projCoords4.xyz / projCoords4.w);
 			shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; 
 			
@@ -199,12 +284,13 @@ vec3 evaluateDirectionalLight(
 			{
 				vec4 scaleBias = uShadowData.data[shadowDataOffset + i].shadowCoordScaleBias;
 				shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
-				//result.xy = shadowCoord.xy;//(i == 0) ? vec3(1.0, 0.0, 0.0) : (i == 1) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
 				break;
 			}
 		}
 
-		float shadow = texture(uShadowTexture, shadowCoord).x;
+		
+		float shadow = shadowOptimizedPCF(shadowCoord, dFdxFine(shadowCoord), dFdyFine(shadowCoord), textureSize(uShadowTexture, 0).xy, invShadowTextureSize);
+		
 		result *= (1.0 - shadow);
 	}
 	return result;
@@ -229,6 +315,12 @@ vec3 accurateSRGBToLinear(in vec3 sRGBCol)
 void main() 
 {
 	float depth = subpassLoad(uDepthTexture).x;
+	
+	if (depth == 1.0)
+	{
+		oFragColor = vec4(vec3(0.529, 0.808, 0.922), 1.0);
+		return;
+	}
 	
 	const vec4 clipSpacePosition = vec4(vec2(vTexCoord) * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition = uPerFrameData.invProjectionMatrix * clipSpacePosition;
