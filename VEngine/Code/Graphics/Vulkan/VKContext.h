@@ -39,7 +39,6 @@ namespace VEngine
 		VkDebugReportCallbackEXT m_debugCallback;
 		VkSemaphore m_imageAvailableSemaphore;
 		VkSemaphore m_renderFinishedSemaphore;
-		VkSemaphore m_shadowsFinishedSemaphore;
 		VKSwapChainSupportDetails m_swapChainSupportDetails;
 		VKQueueFamilyIndices m_queueFamilyIndices;
 

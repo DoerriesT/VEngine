@@ -147,13 +147,31 @@ int main()
 
 			std::string albedoPath = "";
 			std::string normalPath = "";
+			std::string roughnessPath = "";
 			std::string emissivePath = "";
+
+			auto findAndReplace = [](std::string &data, std::string toSearch, std::string replaceStr)
+			{
+				// Get the first occurrence
+				size_t pos = data.find(toSearch);
+
+				// Repeat till end is reached
+				while (pos != std::string::npos)
+				{
+					// Replace this occurrence of Sub String
+					data.replace(pos, toSearch.size(), replaceStr);
+					// Get the next occurrence from the current position
+					pos = data.find(toSearch, pos + toSearch.size());
+				}
+			};
 
 			if (material->GetTextureCount(aiTextureType_DIFFUSE))
 			{
 				aiString path;
 				material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
 				albedoPath = path.C_Str();
+				findAndReplace(albedoPath, "\\", "/");
+				albedoPath = "Resources/Textures/" + albedoPath;
 			}
 
 			if (material->GetTextureCount(aiTextureType_NORMALS))
@@ -161,6 +179,17 @@ int main()
 				aiString path;
 				material->GetTexture(aiTextureType_NORMALS, 0, &path);
 				normalPath = path.C_Str();
+				findAndReplace(normalPath, "\\", "/");
+				normalPath = "Resources/Textures/" + normalPath;
+			}
+
+			if (material->GetTextureCount(aiTextureType_SPECULAR))
+			{
+				aiString path;
+				material->GetTexture(aiTextureType_SPECULAR, 0, &path);
+				roughnessPath = path.C_Str();
+				findAndReplace(roughnessPath, "\\", "/");
+				roughnessPath = "Resources/Textures/" + roughnessPath;
 			}
 
 			if (material->GetTextureCount(aiTextureType_EMISSIVE))
@@ -168,6 +197,8 @@ int main()
 				aiString path;
 				material->GetTexture(aiTextureType_EMISSIVE, 0, &path);
 				emissivePath = path.C_Str();
+				findAndReplace(emissivePath, "\\", "/");
+				emissivePath = "Resources/Textures/" + emissivePath;
 			}
 
 			j["SubMeshes"].push_back(
@@ -189,7 +220,7 @@ int main()
 							{ "AlbedoTexture", albedoPath },
 							{ "NormalTexture", normalPath},
 							{ "MetallicTexture", "" },
-							{ "RoughnessTexture", "" },
+							{ "RoughnessTexture", roughnessPath },
 							{ "OcclusionTexture", "" },
 							{ "EmissiveTexture", emissivePath },
 							{ "DisplacementTexture", "" }

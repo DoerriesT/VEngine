@@ -82,7 +82,7 @@ void VEngine::VKGeometryAlphaMaskPipeline::init(unsigned int width, unsigned int
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -152,41 +152,25 @@ void VEngine::VKGeometryAlphaMaskPipeline::init(unsigned int width, unsigned int
 
 void VEngine::VKGeometryAlphaMaskPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources * renderResources, const DrawLists & drawLists)
 {
-	vkResetCommandBuffer(renderResources->m_geometryAlphaMaskCommandBuffer, 0);
-
-	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
-	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 1;
-	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
-
-	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-	vkBeginCommandBuffer(renderResources->m_geometryAlphaMaskCommandBuffer, &beginInfo);
-	if (drawLists.m_maskedItems.size())
+	if (!drawLists.m_maskedItems.empty())
 	{
-		vkCmdBindPipeline(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		vkCmdBindPipeline(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		vkCmdBindIndexBuffer(renderResources->m_geometryAlphaMaskCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_mainCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
-		vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
 		uint32_t itemOffset = static_cast<uint32_t>(drawLists.m_opaqueItems.size());
 		for (size_t i = 0; i < drawLists.m_maskedItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_maskedItems[i];
-			vkCmdBindVertexBuffers(renderResources->m_geometryAlphaMaskCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+			vkCmdBindVertexBuffers(renderResources->m_mainCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * (i + itemOffset));
-			vkCmdBindDescriptorSets(renderResources->m_geometryAlphaMaskCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
+			vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
-			vkCmdDrawIndexed(renderResources->m_geometryAlphaMaskCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+			vkCmdDrawIndexed(renderResources->m_mainCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}
-	}
-	if (vkEndCommandBuffer(renderResources->m_geometryAlphaMaskCommandBuffer) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to record command buffer!", -1);
 	}
 }

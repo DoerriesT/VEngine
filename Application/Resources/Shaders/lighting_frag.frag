@@ -5,6 +5,10 @@
 #define PI (3.14159265359)
 #endif // PI
 
+#ifndef TEXTURE_ARRAY_SIZE
+#define TEXTURE_ARRAY_SIZE (512)
+#endif // TEXTURE_ARRAY_SIZE
+
 layout(location = 0) in vec2 vTexCoord;
 
 layout(location = 0) out vec4 oFragColor;
@@ -36,6 +40,78 @@ layout(set = 0, binding = 0) uniform PerFrameData
 	vec4 cameraDirection;
 	uint frame;
 } uPerFrameData;
+
+layout(push_constant) uniform PushConsts 
+{
+	uint directionalLightCount;
+} uPushConsts;
+
+struct ShadowData
+{
+	mat4 shadowViewProjectionMatrix;
+	vec4 shadowCoordScaleBias;
+};
+
+struct DirectionalLight
+{
+	vec4 color;
+	vec4 direction;
+	uint shadowDataOffset;
+	uint shadowDataCount;
+};
+
+struct PointLight
+{
+	vec4 positionRadius;
+	vec4 colorInvSqrAttRadius;
+	uint shadowDataOffset;
+	uint shadowDataCount;
+};
+
+struct SpotLight
+{
+	vec4 colorInvSqrAttRadius;
+	vec4 positionAngleScale;
+	vec4 directionAngleOffset;
+	vec4 boundingSphere;
+	uint shadowDataOffset;
+	uint shadowDataCount;
+};
+
+
+layout(std140, set = 2, binding = 0) readonly buffer DirectionalLights 
+{
+	DirectionalLight lights[];
+} uDirectionalLights;
+
+layout(std140, set = 2, binding = 1) readonly buffer PointLights 
+{
+	PointLight lights[];
+} uPointLights;
+
+layout(std140, set = 2, binding = 2) readonly buffer SpotLights 
+{
+	SpotLight lights[];
+} uSpotLights;
+
+layout(std140, set = 2, binding = 3) readonly buffer Shadows 
+{
+	ShadowData data[];
+} uShadowData;
+
+layout(set = 2, binding = 4) uniform sampler2DShadow uShadowTexture;
+
+layout(std140, set = 3, binding = 0) readonly buffer PointLightIndices 
+{
+	uint count;
+	uint indices[];
+} uPointLightIndices;
+
+layout(std140, set = 3, binding = 1) readonly buffer SpotLightIndices 
+{
+	uint count;
+	uint indices[];
+} uSpotLightIndices;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -69,6 +145,71 @@ vec3 fresnelSchlick(float HdotV, vec3 F0)
 	return F0 + (1.0 - F0) * pow(2.0, power);
 }
 
+vec3 evaluateDirectionalLight(
+	inout mat3 viewMatrix,
+	inout vec3 albedo, 
+	inout vec3 N, 
+	inout vec3 F0, 
+	inout vec3 V,
+	inout vec3 viewSpacePosition,
+	inout float NdotV,
+	inout float metallic, 
+	inout float roughness,
+	uint index)
+{
+	vec3 L = viewMatrix * uDirectionalLights.lights[index].direction.xyz;
+	vec3 H = normalize(V + L);
+    
+	float NdotL = max(dot(N, L), 0.0);
+	
+	float NDF = DistributionGGX(N, H, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+	vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    
+	vec3 numerator = NDF * G * F;
+	float denominator = max(4 * NdotV * NdotL, 0.0000001);
+    
+	vec3 specular = numerator / denominator;
+    
+	// because of energy conversion kD and kS must add up to 1.0
+	vec3 kD = vec3(1.0) - F;
+	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
+	kD *= 1.0 - metallic;
+    
+	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLights.lights[index].color.rgb;
+	
+	uint shadowDataCount = uDirectionalLights.lights[index].shadowDataCount;
+	if(shadowDataCount > 0)
+	{		
+		uint shadowDataOffset = uDirectionalLights.lights[index].shadowDataOffset;
+		vec3 shadowCoord = vec3(2.0);
+
+		for (uint i = 0; i < shadowDataCount; ++i)
+		{
+			const vec4 projCoords4 = 
+			uShadowData.data[shadowDataOffset + i].shadowViewProjectionMatrix 
+			* uPerFrameData.invViewMatrix 
+			* vec4(0.1 * L + viewSpacePosition, 1.0);
+			shadowCoord = (projCoords4.xyz / projCoords4.w);
+			shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; 
+			
+			// test if projected coordinate is inside texture
+			// add small guard band at edges to avoid PCF sampling outside texture
+			if(all(greaterThanEqual(shadowCoord.xy, vec2(0.003))) && all(lessThan(shadowCoord.xy, vec2(1.0 - 0.003))))
+			{
+				vec4 scaleBias = uShadowData.data[shadowDataOffset + i].shadowCoordScaleBias;
+				shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
+				//result.xy = shadowCoord.xy;//(i == 0) ? vec3(1.0, 0.0, 0.0) : (i == 1) ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+				break;
+			}
+		}
+
+		float shadow = texture(uShadowTexture, shadowCoord).x;
+		result *= (1.0 - shadow);
+	}
+	return result;
+}
+
 vec3 accurateLinearToSRGB(in vec3 linearCol)
 {
 	vec3 sRGBLo = linearCol * 12.92;
@@ -85,45 +226,30 @@ vec3 accurateSRGBToLinear(in vec3 sRGBCol)
 	return linearRGB;
 }
 
-const vec3 lightDir = normalize(vec3(0.1, 3.0, -1.0));
-
 void main() 
 {
-	vec3 albedo = accurateSRGBToLinear(subpassLoad(uAlbedoTexture).rgb);
-	vec3 N = subpassLoad(uNormalTexture).xyz;
 	float depth = subpassLoad(uDepthTexture).x;
 	
-	const vec4 clipSpacePosition = vec4(vec3(vTexCoord, depth) * 2.0 - 1.0, 1.0);
+	const vec4 clipSpacePosition = vec4(vec2(vTexCoord) * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition = uPerFrameData.invProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
 	
-	vec3 V = -normalize(viewSpacePosition.xyz);
-	vec3 L = mat3(uPerFrameData.viewMatrix) * lightDir;
-	vec3 H = normalize(V + L);
-    
-	float NdotV = max(dot(N, V), 0.0);
-	float NdotL = max(dot(N, L), 0.0);
-	
+	mat3 viewMatrix = mat3(uPerFrameData.viewMatrix);
+	vec3 albedo = accurateSRGBToLinear(subpassLoad(uAlbedoTexture).rgb);
+	vec3 N = subpassLoad(uNormalTexture).xyz;
 	float metallic = subpassLoad(uMetallicRoughnessOcclusionTexture).x;
+	vec3 F0 = mix(vec3(0.04), albedo, metallic);
+	vec3 V = -normalize(viewSpacePosition.xyz);
+	float NdotV = max(dot(N, V), 0.0);
 	float roughness = subpassLoad(uMetallicRoughnessOcclusionTexture).y;
 	
-	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(N, H, roughness);
-	float G = GeometrySmith(NdotV, NdotL, roughness);
+	oFragColor = vec4(0.0, 0.0, 0.0, 1.0);
 	
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    
-	vec3 nominator = NDF * G * F;
-	float denominator = max(4 * NdotV * NdotL, 0.0000001);
-    
-	vec3 specular = nominator / denominator;
-    
-	// because of energy conversion kD and kS must add up to 1.0
-	vec3 kD = vec3(1.0) - F;
-	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
-	kD *= 1.0 - metallic;
-    
-	oFragColor = vec4((kD * albedo / PI + specular) * vec3(5.0) * NdotL + 0.1 * albedo, 1.0);
+	for (uint i = 0; i < uPushConsts.directionalLightCount; ++i)
+	{
+		oFragColor.rgb += evaluateDirectionalLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, i);
+	}
+	oFragColor.rgb += 0.1 * albedo;
+	
 	oFragColor.rgb = accurateLinearToSRGB(oFragColor.rgb);
 }

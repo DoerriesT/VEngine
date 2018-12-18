@@ -127,8 +127,8 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			calculateCascadeViewProjectionMatrices(m_renderParams, glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
 
 			m_lightData.m_shadowData.push_back({ matrices[0], { 0.25f, 0.25f, 0.0f, 0.0f } });
-			m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f, 1.0f, 0.0f } });
-			m_lightData.m_shadowData.push_back({ matrices[2], { 0.25f, 0.25f, 0.0f, 1.0f } });
+			m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f,  0.25f, 0.0f } });
+			m_lightData.m_shadowData.push_back({ matrices[2], { 0.25f, 0.25f, 0.0f,  0.25f } });
 			//m_lightData.m_shadowData.push_back({ matrices[3], { 0.25f, 0.25f, 1.0f, 1.0f } });
 
 			m_lightData.m_shadowJobs.push_back({ matrices[0], 0, 0, 2048 });
@@ -205,71 +205,61 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 		float d = splitLambda * (log - uniform) + uniform;
 		splits[i] = (d - nearPlane) / range;
 	}
-
-	glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, 1600.0f / 900.0f, nearPlane, farPlane);
-	glm::mat4 invViewProjection = glm::inverse(projectionMatrix * renderParams.m_viewMatrix);
+	glm::mat4 vulkanCorrection =
+	{
+		{ 1.0f, 0.0f, 0.0f, 0.0f },
+	{ 0.0f, -1.0f, 0.0f, 0.0f },
+	{ 0.0f, 0.0f, 0.5f, 0.0f },
+	{ 0.0f, 0.0f, 0.5f, 1.0f }
+	};
+	
 
 	// Calculate orthographic projection matrix for each cascade
 	float lastSplitDist = 0.0;
 	for (uint32_t i = 0; i < cascadeCount; i++) 
 	{
-		float splitDist = splits[i];
+		glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, 1600.0f / 900.0f, nearPlane + lastSplitDist * (farPlane - nearPlane), nearPlane + splits[i] * (farPlane - nearPlane));
+		glm::mat4 invProjection = glm::inverse(projectionMatrix);
 
-		glm::vec3 frustumCorners[8] = 
-		{
-			glm::vec3(-1.0f,  1.0f, -1.0f),
-			glm::vec3(1.0f,  1.0f, -1.0f),
-			glm::vec3(1.0f, -1.0f, -1.0f),
-			glm::vec3(-1.0f, -1.0f, -1.0f),
-			glm::vec3(-1.0f,  1.0f,  1.0f),
-			glm::vec3(1.0f,  1.0f,  1.0f),
-			glm::vec3(1.0f, -1.0f,  1.0f),
-			glm::vec3(-1.0f, -1.0f,  1.0f),
-		};
+		glm::vec3 frustumCorners[8];
+		frustumCorners[0] = glm::vec3(-1.0f, -1.0f, -1.0f); // xyz
+		frustumCorners[1] = glm::vec3(1.0f, -1.0f, -1.0f); // Xyz
+		frustumCorners[2] = glm::vec3(-1.0f, 1.0f, -1.0f); // xYz
+		frustumCorners[3] = glm::vec3(1.0f, 1.0f, -1.0f); // XYz
+		frustumCorners[4] = glm::vec3(-1.0f, -1.0f, 1.0f); // xyZ
+		frustumCorners[5] = glm::vec3(1.0f, -1.0f, 1.0f); // XyZ
+		frustumCorners[6] = glm::vec3(-1.0f, 1.0f, 1.0f); // xYZ
+		frustumCorners[7] = glm::vec3(1.0f, 1.0f, 1.0f); // XYZ
 
-		// Project frustum corners into world space
-		for (uint32_t i = 0; i < 8; i++) 
+		glm::vec3 minCorner = glm::vec3(std::numeric_limits<float>::max());
+		glm::vec3 maxCorner = glm::vec3(std::numeric_limits<float>::lowest());
+
+		for (size_t i = 0; i < 8; ++i)
 		{
-			glm::vec4 invCorner = invViewProjection * glm::vec4(frustumCorners[i], 1.0f);
-			frustumCorners[i] = invCorner / invCorner.w;
+			glm::vec4 corner4 = invProjection * glm::vec4(frustumCorners[i], 1.0f);
+			glm::vec3 corner = corner4 /= corner4.w;
+			minCorner = glm::min(minCorner, corner);
+			maxCorner = glm::max(maxCorner, corner);
 		}
 
-		for (uint32_t i = 0; i < 4; i++) 
+		float radius = glm::distance(minCorner, maxCorner) * 0.5f;
+		glm::vec3 sphereCenter = (minCorner + maxCorner) * 0.5f;
+		glm::vec3 target = renderParams.m_invViewMatrix * glm::vec4(sphereCenter, 1.0f);
+
+		glm::vec3 upDir(0.0f, 1.0f, 0.0f);
+
+		// choose different up vector if light direction would be linearly dependent otherwise
+		if (abs(lightDir.x) < 0.001 && abs(lightDir.z) < 0.001)
 		{
-			glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
-			frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
-			frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
+			upDir = glm::vec3(1.0f, 1.0f, 0.0f);
 		}
 
-		// Get frustum center
-		glm::vec3 frustumCenter = glm::vec3(0.0f);
-		for (uint32_t i = 0; i < 8; i++) 
-		{
-			frustumCenter += frustumCorners[i];
-		}
-		frustumCenter /= 8.0f;
+		glm::mat4 lightView = glm::lookAt(target + lightDir * 150.0f, target - lightDir * 150.0f, upDir);
 
-		float radius = 0.0f;
-		for (uint32_t i = 0; i < 8; i++) 
-		{
-			float distance = glm::length(frustumCorners[i] - frustumCenter);
-			radius = glm::max(radius, distance);
-		}
-		radius = std::ceil(radius * 16.0f) / 16.0f;
+		lightView[3].x -= fmodf(lightView[3].x, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].y -= fmodf(lightView[3].y, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
 
-		glm::vec3 maxExtents = glm::vec3(radius);
-		glm::vec3 minExtents = -maxExtents;
-
-		glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter + lightDir * 150.0f, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, 300.0f);
-		glm::mat4 vulkanCorrection =
-		{
-			{ 1.0f, 0.0f, 0.0f, 0.0f },
-			{ 0.0f, -1.0f, 0.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.5f, 0.0f },
-			{ 0.0f, 0.0f, 0.5f, 1.0f }
-		};
-		viewProjectionMatrices[i] = vulkanCorrection * lightOrthoMatrix * lightViewMatrix;
+		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, 300.0f) * lightView;
 
 		lastSplitDist = splits[i];
 	}

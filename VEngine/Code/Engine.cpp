@@ -59,6 +59,11 @@ VEngine::SystemManager & VEngine::Engine::getSystemManager()
 	return *m_systemManager;
 }
 
+VEngine::UserInput &VEngine::Engine::getUserInput()
+{
+	return *m_userInput;
+}
+
 void VEngine::Engine::gameLoop()
 {
 	m_lastFpsMeasure = m_time = glfwGetTime();

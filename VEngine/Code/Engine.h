@@ -23,6 +23,7 @@ namespace VEngine
 		void shutdown();
 		EntityManager &getEntityManager();
 		SystemManager &getSystemManager();
+		UserInput &getUserInput();
 
 	private:
 		IGameLogic &m_gameLogic;

@@ -8,5 +8,6 @@ namespace VEngine
 		VkBuffer m_buffer;
 		VkDeviceMemory m_memory;
 		VkDeviceSize m_size;
+		void *m_mapped;
 	};
 }

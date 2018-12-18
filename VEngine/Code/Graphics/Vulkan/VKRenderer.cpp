@@ -12,6 +12,7 @@
 #include "VKUtility.h"
 #include "Graphics/RenderParams.h"
 #include "Graphics/DrawItem.h"
+#include "Graphics/LightData.h"
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 
@@ -48,9 +49,11 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 	m_renderResources->createFramebuffer(width, height, m_mainRenderPass->m_renderPass, m_shadowRenderPass->m_renderPass);
 	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
+	m_renderResources->createStorageBuffers();
 	m_renderResources->createCommandBuffers();
 	m_renderResources->createDummyTexture();
 	m_renderResources->createDescriptors();
+	m_renderResources->createEvents();
 
 	m_shadowPipeline->init(m_shadowRenderPass->m_renderPass, m_renderResources.get());
 	m_geometryPipeline->init(width, height, m_mainRenderPass->m_renderPass, m_renderResources.get());
@@ -67,40 +70,110 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 		Utility::fatalExit("Exceeded max DrawItem count!", -1);
 	}
 
-	void *data;
-	vkMapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory, 0, m_renderResources->m_mainUniformBuffer.m_size, 0, &data);
-
-	// per frame data
+	// update UBO data
 	{
-		RenderParams *perFrameData = (RenderParams *)data;
-		*perFrameData = renderParams;
+		void *data = m_renderResources->m_mainUniformBuffer.m_mapped;
+
+		// per frame data
+		{
+			RenderParams *perFrameData = (RenderParams *)data;
+			*perFrameData = renderParams;
+		}
+
+		// per draw data
+		{
+			unsigned char *perDrawData = ((unsigned char *)data) + m_renderResources->m_perFrameDataSize;
+
+			for (const DrawItem &item : drawLists.m_opaqueItems)
+			{
+				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+				perDrawData += m_renderResources->m_perDrawDataSize;
+			}
+
+			for (const DrawItem &item : drawLists.m_maskedItems)
+			{
+				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+				perDrawData += m_renderResources->m_perDrawDataSize;
+			}
+
+			for (const DrawItem &item : drawLists.m_blendedItems)
+			{
+				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
+				perDrawData += m_renderResources->m_perDrawDataSize;
+			}
+		}
+
+		VkMappedMemoryRange memoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+		memoryRange.memory = m_renderResources->m_mainUniformBuffer.m_memory;
+		memoryRange.offset = 0;
+		memoryRange.size = m_renderResources->m_perFrameDataSize + (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size() + drawLists.m_blendedItems.size()) * m_renderResources->m_perDrawDataSize;
+		memoryRange.size = (memoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
+
+		vkFlushMappedMemoryRanges(g_context.m_device, 1, &memoryRange);
 	}
 
-	// per draw data
+	// update light data
 	{
-		unsigned char *perDrawData = ((unsigned char *)data) + m_renderResources->m_perFrameDataSize;
+		void *data = m_renderResources->m_lightDataStorageBuffer.m_mapped;
 
-		for (const DrawItem &item : drawLists.m_opaqueItems)
+		// directional lights
 		{
-			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-			perDrawData += m_renderResources->m_perDrawDataSize;
-		}
+			assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
+			assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
+			assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
+			assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
 
-		for (const DrawItem &item : drawLists.m_maskedItems)
-		{
-			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-			perDrawData += m_renderResources->m_perDrawDataSize;
-		}
+			unsigned char *lightBuffer = ((unsigned char *)data);
 
-		for (const DrawItem &item : drawLists.m_blendedItems)
-		{
-			memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-			perDrawData += m_renderResources->m_perDrawDataSize;
+			for (const DirectionalLightData &item : lightData.m_directionalLightData)
+			{
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += m_renderResources->m_directionalLightDataSize;
+			}
+
+
+
+			//for (const PointLightData &item : lightData.m_pointLightData)
+			//{
+			//	memcpy(lightBuffer, &item, sizeof(item));
+			//	lightBuffer += m_renderResources->m_pointLightDataSize;
+			//}
+			//
+			//for (const SpotLightData &item : lightData.m_spotLightData)
+			//{
+			//	memcpy(lightBuffer, &item, sizeof(item));
+			//	lightBuffer += m_renderResources->m_spotLightDataSize;
+			//}
+			//
+
+			size_t shadowDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+				+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
+				+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS;
+			lightBuffer = ((unsigned char *)data) + shadowDataOffset;
+
+			for (const ShadowData &item : lightData.m_shadowData)
+			{
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += m_renderResources->m_shadowDataSize;
+			}
+
+			VkMappedMemoryRange directionalLightMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+			directionalLightMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
+			directionalLightMemoryRange.offset = 0;
+			directionalLightMemoryRange.size = m_renderResources->m_directionalLightDataSize * lightData.m_directionalLightData.size();
+			directionalLightMemoryRange.size = (directionalLightMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
+
+			VkMappedMemoryRange shadowDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+			shadowDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
+			shadowDataMemoryRange.offset = shadowDataOffset - (shadowDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
+			shadowDataMemoryRange.size = m_renderResources->m_shadowDataSize * lightData.m_shadowData.size();
+			shadowDataMemoryRange.size = (shadowDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
+
+			VkMappedMemoryRange ranges[] = { directionalLightMemoryRange , shadowDataMemoryRange };
+
+			vkFlushMappedMemoryRanges(g_context.m_device, sizeof(ranges) / sizeof(ranges[0]), ranges);
 		}
 	}
-
-	vkUnmapMemory(g_context.m_device, m_renderResources->m_mainUniformBuffer.m_memory);
-
 
 	VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), g_context.m_imageAvailableSemaphore, VK_NULL_HANDLE, &m_swapChainImageIndex);
 
@@ -114,14 +187,8 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 		Utility::fatalExit("Failed to acquire swap chain image!", -1);
 	}
 
-	// record commandbuffers
+	// record commandbuffer
 	{
-		m_shadowPipeline->recordCommandBuffer(m_shadowRenderPass->m_renderPass, m_renderResources.get(), drawLists, lightData);
-		m_geometryPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-		m_geometryAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-		m_lightingPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get());
-		m_forwardPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-
 		// main
 		{
 			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -138,9 +205,12 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 					renderPassInfo.renderArea.offset = { 0, 0 };
 					renderPassInfo.renderArea.extent = { g_shadowAtlasSize, g_shadowAtlasSize };
 
-					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-					vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_shadowsCommandBuffer);
+					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+					m_shadowPipeline->recordCommandBuffer(m_shadowRenderPass->m_renderPass, m_renderResources.get(), drawLists, lightData);
 					vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
+
+					// signal shadow event
+					vkCmdSetEvent(m_renderResources->m_mainCommandBuffer, m_renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 				}
 
 				// main render pass
@@ -159,24 +229,27 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 					renderPassInfo.clearValueCount = static_cast<uint32_t>(sizeof(clearValues) / sizeof(clearValues[0]));
 					renderPassInfo.pClearValues = clearValues;
 
-					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 					{
 						// geometry pass
-						vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_geometryCommandBuffer);
+						m_geometryPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
 
 						// geometry alpha mask pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-						vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_geometryAlphaMaskCommandBuffer);
+						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+						m_geometryAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
 
 						// lighting pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-						vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_lightingCommandBuffer);
+						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+						m_lightingPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get());
 
 						// forward pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-						vkCmdExecuteCommands(m_renderResources->m_mainCommandBuffer, 1, &m_renderResources->m_forwardCommandBuffer);
+						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+						m_forwardPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
 					}
 					vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
+
+					// reset shadows finished event
+					vkCmdResetEvent(m_renderResources->m_mainCommandBuffer, m_renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 				}
 
 				// blit

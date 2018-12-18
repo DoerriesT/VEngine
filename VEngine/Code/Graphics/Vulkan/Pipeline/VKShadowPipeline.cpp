@@ -153,24 +153,12 @@ void VEngine::VKShadowPipeline::init(VkRenderPass renderPass, VKRenderResources 
 
 void VEngine::VKShadowPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists, const LightData &lightData)
 {
-	vkResetCommandBuffer(renderResources->m_shadowsCommandBuffer, 0);
-
-	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
-	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 0;
-	inheritanceInfo.framebuffer = renderResources->m_shadowFramebuffer;
-
-	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-	vkBeginCommandBuffer(renderResources->m_shadowsCommandBuffer, &beginInfo);
 	if (drawLists.m_opaqueItems.size() && lightData.m_shadowJobs.size())
 	{
-		vkCmdBindPipeline(renderResources->m_shadowsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		vkCmdBindPipeline(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
 		VkViewport viewport = { 0, 0, g_shadowAtlasSize, g_shadowAtlasSize , 0.0f, 1.0f };
-		vkCmdSetViewport(renderResources->m_shadowsCommandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(renderResources->m_mainCommandBuffer, 0, 1, &viewport);
 
 		// clear the relevant areas in the atlas
 		{
@@ -189,10 +177,10 @@ void VEngine::VKShadowPipeline::recordCommandBuffer(VkRenderPass renderPass, VKR
 				clearRects[i].layerCount = 1;
 			}
 
-			vkCmdClearAttachments(renderResources->m_shadowsCommandBuffer, 1, &clearAttachment, clearRects.size(), clearRects.data());
+			vkCmdClearAttachments(renderResources->m_mainCommandBuffer, 1, &clearAttachment, clearRects.size(), clearRects.data());
 		}
 		
-		vkCmdBindIndexBuffer(renderResources->m_shadowsCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_mainCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (size_t i = 0; i < lightData.m_shadowJobs.size(); ++i)
 		{
@@ -200,25 +188,21 @@ void VEngine::VKShadowPipeline::recordCommandBuffer(VkRenderPass renderPass, VKR
 
 			// set viewport
 			VkViewport viewport = { job.m_offsetX, job.m_offsetY, job.m_size, job.m_size , 0.0f, 1.0f };
-			vkCmdSetViewport(renderResources->m_shadowsCommandBuffer, 0, 1, &viewport);
+			vkCmdSetViewport(renderResources->m_mainCommandBuffer, 0, 1, &viewport);
 
 			const glm::mat4 &viewProjection = job.m_shadowViewProjectionMatrix;
-			vkCmdPushConstants(renderResources->m_shadowsCommandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
+			vkCmdPushConstants(renderResources->m_mainCommandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
 
 			for (size_t i = 0; i < drawLists.m_opaqueItems.size(); ++i)
 			{
 				const DrawItem &item = drawLists.m_opaqueItems[i];
-				vkCmdBindVertexBuffers(renderResources->m_shadowsCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+				vkCmdBindVertexBuffers(renderResources->m_mainCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 				uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-				vkCmdBindDescriptorSets(renderResources->m_shadowsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
+				vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
-				vkCmdDrawIndexed(renderResources->m_shadowsCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+				vkCmdDrawIndexed(renderResources->m_mainCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 			}
 		}
-	}
-	if (vkEndCommandBuffer(renderResources->m_shadowsCommandBuffer) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to record command buffer!", -1);
 	}
 }

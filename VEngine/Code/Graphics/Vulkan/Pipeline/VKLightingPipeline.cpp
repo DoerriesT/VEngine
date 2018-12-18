@@ -96,12 +96,21 @@ void VEngine::VKLightingPipeline::init(unsigned int width, unsigned int height, 
 	VkDescriptorSetLayout layouts[] =
 	{
 		renderResources->m_perFrameDataDescriptorSetLayout,
-		renderResources->m_lightingInputDescriptorSetLayout
+		renderResources->m_lightingInputDescriptorSetLayout,
+		renderResources->m_lightDataDescriptorSetLayout,
+		renderResources->m_lightIndexDescriptorSetLayout
 	};
+
+	VkPushConstantRange pushConstantRange;
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(uint32_t);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));;
 	pipelineLayoutInfo.pSetLayouts = layouts;
+	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
 	if (vkCreatePipelineLayout(g_context.m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
 	{
@@ -131,28 +140,19 @@ void VEngine::VKLightingPipeline::init(unsigned int width, unsigned int height, 
 
 void VEngine::VKLightingPipeline::recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources)
 {
-	vkResetCommandBuffer(renderResources->m_lightingCommandBuffer, 0);
+	vkCmdBindPipeline(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-	VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
-	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 2;
-	inheritanceInfo.framebuffer = renderResources->m_mainFramebuffer;
+	vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_lightingInputDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_lightDataDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, 1, &renderResources->m_lightIndexDescriptorSet, 0, nullptr);
+	
+	uint32_t directionalLightCount = 1;
+	vkCmdPushConstants(renderResources->m_mainCommandBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &directionalLightCount);
 
-	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
+	// wait for shadows
+	vkCmdWaitEvents(renderResources->m_mainCommandBuffer, 1, &renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, nullptr, 0, nullptr, 0, nullptr);
 
-	vkBeginCommandBuffer(renderResources->m_lightingCommandBuffer, &beginInfo);
-	{
-		vkCmdBindPipeline(renderResources->m_lightingCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-
-		vkCmdBindDescriptorSets(renderResources->m_lightingCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
-		vkCmdBindDescriptorSets(renderResources->m_lightingCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_lightingInputDescriptorSet, 0, nullptr);
-
-		vkCmdDraw(renderResources->m_lightingCommandBuffer, 3, 1, 0, 0);
-	}
-	if (vkEndCommandBuffer(renderResources->m_lightingCommandBuffer) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to record command buffer!", -1);
-	}
+	vkCmdDraw(renderResources->m_mainCommandBuffer, 3, 1, 0, 0);
 }

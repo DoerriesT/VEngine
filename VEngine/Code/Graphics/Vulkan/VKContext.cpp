@@ -334,8 +334,7 @@ namespace VEngine
 			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS
-				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS
-				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_shadowsFinishedSemaphore) != VK_SUCCESS)
+				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create semaphores!", -1);
 			}
