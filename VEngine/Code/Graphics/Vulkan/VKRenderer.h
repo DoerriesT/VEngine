@@ -7,9 +7,9 @@ namespace VEngine
 	struct VKRenderResources;
 	class VKTextureLoader;
 	class VKSwapChain;
-	struct VKShadowRenderPass;
-	struct VKGeometryRenderPass;
-	struct VKForwardRenderPass;
+	class VKShadowRenderPass;
+	class VKGeometryRenderPass;
+	class VKForwardRenderPass;
 	class VKShadowPipeline;
 	class VKGeometryPipeline;
 	class VKGeometryAlphaMaskPipeline;
@@ -25,8 +25,7 @@ namespace VEngine
 		explicit VKRenderer();
 		~VKRenderer();
 		void init(unsigned int width, unsigned int height);
-		void update(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData);
-		void render();
+		void render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 		uint32_t loadTexture(const char *filepath);

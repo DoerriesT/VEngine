@@ -1,9 +1,12 @@
 #include "VKShadowRenderPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKContext.h"
+#include "Graphics/Vulkan/Pipeline/VKShadowPipeline.h"
 #include "Utility/Utility.h"
+#include "GlobalVar.h"
 
 VEngine::VKShadowRenderPass::VKShadowRenderPass(VKRenderResources *renderResources)
+	:m_shadowPipeline()
 {
 	VkAttachmentDescription attachmentDescription = {};
 	attachmentDescription.format = renderResources->m_shadowTexture.m_format;
@@ -57,4 +60,59 @@ VEngine::VKShadowRenderPass::VKShadowRenderPass(VKRenderResources *renderResourc
 VEngine::VKShadowRenderPass::~VKShadowRenderPass()
 {
 	vkDestroyRenderPass(g_context.m_device, m_renderPass, nullptr);
+}
+
+VkRenderPass VEngine::VKShadowRenderPass::get()
+{
+	return m_renderPass;
+}
+
+void VEngine::VKShadowRenderPass::record(VKRenderResources *renderResources, const DrawLists &drawLists, const LightData &lightData, uint32_t width, uint32_t height)
+{
+	VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(renderResources->m_shadowsCommandBuffer, &beginInfo);
+	{
+		VkRenderPassBeginInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_renderPass;
+		renderPassInfo.framebuffer = renderResources->m_shadowFramebuffer;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = { g_shadowAtlasSize, g_shadowAtlasSize };
+
+		vkCmdBeginRenderPass(renderResources->m_shadowsCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		{
+			m_shadowPipeline->recordCommandBuffer(m_renderPass, renderResources, drawLists, lightData);
+		}
+		vkCmdEndRenderPass(renderResources->m_shadowsCommandBuffer);
+
+		// signal shadow event
+		vkCmdSetEvent(renderResources->m_shadowsCommandBuffer, renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+	}
+	vkEndCommandBuffer(renderResources->m_shadowsCommandBuffer);
+}
+
+void VEngine::VKShadowRenderPass::submit(VKRenderResources *renderResources)
+{
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submitInfo.waitSemaphoreCount = 0;
+	submitInfo.pWaitSemaphores = nullptr;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &renderResources->m_shadowsCommandBuffer;
+	submitInfo.signalSemaphoreCount = 0;
+	submitInfo.pSignalSemaphores = nullptr;
+
+	if (vkQueueSubmit(g_context.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to submit draw command buffer!", -1);
+	}
+}
+
+void VEngine::VKShadowRenderPass::setPipelines(VKShadowPipeline *shadowPipeline)
+{
+	m_shadowPipeline = shadowPipeline;
 }

@@ -116,7 +116,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 			m_lightData.m_directionalLightData.push_back(
 				{
-					glm::vec4(glm::vec3(5.0f), 1.0f),
+					glm::vec4(glm::vec3(15.0f), 1.0f),
 					glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 1.0f),
 					0,
 					3
@@ -136,8 +136,6 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
 			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
 		}
-
-		m_renderer->update(m_renderParams, m_drawLists, m_lightData);
 	}
 }
 
@@ -145,7 +143,7 @@ void VEngine::RenderSystem::render()
 {
 	if (m_cameraEntity)
 	{
-		m_renderer->render();
+		m_renderer->render(m_renderParams, m_drawLists, m_lightData);
 	}
 }
 
