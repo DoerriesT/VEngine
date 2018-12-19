@@ -16,8 +16,8 @@ namespace VEngine
 		VKLightingPipeline &operator= (const VKLightingPipeline &) = delete;
 		VKLightingPipeline &operator= (const VKLightingPipeline &&) = delete;
 		~VKLightingPipeline();
-		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources);
-		void recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources);
+		void init(VKRenderResources *renderResources);
+		void recordCommandBuffer(VKRenderResources *renderResources, uint32_t width, uint32_t height);
 
 	private:
 		VkPipeline m_pipeline;

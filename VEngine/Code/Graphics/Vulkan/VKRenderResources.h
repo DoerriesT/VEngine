@@ -19,6 +19,7 @@ namespace VEngine
 	{
 		friend VKRenderer;
 	public:
+		// images
 		VKImageData m_depthAttachment;
 		VKImageData m_albedoAttachment;
 		VKImageData m_normalAttachment;
@@ -26,20 +27,37 @@ namespace VEngine
 		VKImageData m_velocityAttachment;
 		VKImageData m_lightAttachment;
 		VKImageData m_shadowTexture;
+		VkImage m_dummyImage;
+		VkImageView m_dummyImageView;
+		VkDeviceMemory m_dummyMemory;
+
+		// buffers
 		VKBufferData m_vertexBuffer;
 		VKBufferData m_indexBuffer;
 		VKBufferData m_mainUniformBuffer;
 		VKBufferData m_lightDataStorageBuffer;
 		VKBufferData m_lightIndexStorageBuffer;
+
+		// sizes
 		VkDeviceSize m_perFrameDataSize;
 		VkDeviceSize m_perDrawDataSize;
 		VkDeviceSize m_directionalLightDataSize;
 		VkDeviceSize m_pointLightDataSize;
 		VkDeviceSize m_spotLightDataSize;
 		VkDeviceSize m_shadowDataSize;
-		VkFramebuffer m_mainFramebuffer;
+
+		// fbos
+		VkFramebuffer m_geometryFillFramebuffer;
 		VkFramebuffer m_shadowFramebuffer;
-		VkCommandBuffer m_mainCommandBuffer;
+		VkFramebuffer m_forwardFramebuffer;
+
+		// cmdbufs
+		VkCommandBuffer m_geometryFillCommandBuffer;
+		VkCommandBuffer m_shadowsCommandBuffer;
+		VkCommandBuffer m_lightingCommandBuffer;
+		VkCommandBuffer m_forwardCommandBuffer;
+
+		// descriptors
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSetLayout m_perFrameDataDescriptorSetLayout;
 		VkDescriptorSetLayout m_perDrawDataDescriptorSetLayout;
@@ -55,11 +73,14 @@ namespace VEngine
 		VkDescriptorSet m_lightDataDescriptorSet;
 		VkDescriptorSet m_cullDataDescriptorSet;
 		VkDescriptorSet m_lightIndexDescriptorSet;
+
+		// samplers
 		VkSampler m_shadowSampler;
+		VkSampler m_linearSampler;
+		VkSampler m_pointSampler;
 		VkSampler m_dummySampler;
-		VkImage m_dummyImage;
-		VkImageView m_dummyImageView;
-		VkDeviceMemory m_dummyMemory;
+		
+		// sync
 		VkEvent m_shadowsFinishedEvent;
 
 		VKRenderResources(const VKRenderResources &) = delete;
@@ -68,7 +89,7 @@ namespace VEngine
 		VKRenderResources &operator= (const VKRenderResources &&) = delete;
 		~VKRenderResources();
 		void init(unsigned int width, unsigned int height);
-		void createFramebuffer(unsigned int width, unsigned int height, VkRenderPass mainRenderPass, VkRenderPass shadowRenderPass);
+		void createFramebuffer(unsigned int width, unsigned int height, VkRenderPass geometryFillRenderPass, VkRenderPass shadowRenderPass, VkRenderPass forwardRenderPass);
 		void createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize);
 		void createStorageBuffers();
 		void createCommandBuffers();

@@ -186,14 +186,14 @@
     <ClInclude Include="Code\ECS\Component\DirectionalLightComponent.h">
       <Filter>Code\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.h">
-      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h">
       <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKSkyPipeline.h">
-      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.h">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.h">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -281,14 +281,14 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKMainRenderPass.cpp">
-      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp">
       <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKSkyPipeline.cpp">
-      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.cpp">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.cpp">
+      <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

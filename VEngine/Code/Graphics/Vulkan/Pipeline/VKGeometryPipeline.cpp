@@ -154,22 +154,22 @@ void VEngine::VKGeometryPipeline::recordCommandBuffer(VkRenderPass renderPass, V
 {
 	if (!drawLists.m_opaqueItems.empty())
 	{
-		vkCmdBindPipeline(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		vkCmdBindPipeline(renderResources->m_geometryFillCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		vkCmdBindIndexBuffer(renderResources->m_mainCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_geometryFillCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
-		vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_geometryFillCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(renderResources->m_geometryFillCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
 
 		for (size_t i = 0; i < drawLists.m_opaqueItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_opaqueItems[i];
-			vkCmdBindVertexBuffers(renderResources->m_mainCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+			vkCmdBindVertexBuffers(renderResources->m_geometryFillCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
-			vkCmdBindDescriptorSets(renderResources->m_mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
+			vkCmdBindDescriptorSets(renderResources->m_geometryFillCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
-			vkCmdDrawIndexed(renderResources->m_mainCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+			vkCmdDrawIndexed(renderResources->m_geometryFillCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}
 	}
 }

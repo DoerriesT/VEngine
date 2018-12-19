@@ -2,7 +2,8 @@
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
 #include "RenderPass/VKShadowRenderPass.h"
-#include "RenderPass/VKMainRenderPass.h"
+#include "RenderPass/VKGeometryRenderPass.h"
+#include "RenderPass/VKForwardRenderPass.h"
 #include "Pipeline/VKShadowPipeline.h"
 #include "Pipeline/VKGeometryPipeline.h"
 #include "Pipeline/VKGeometryAlphaMaskPipeline.h"
@@ -20,7 +21,7 @@ VEngine::VKRenderer::VKRenderer()
 	:m_width(),
 	m_height(),
 	m_swapChainImageIndex(),
-	m_mainRenderPass()
+	m_geometryRenderPass()
 {
 }
 
@@ -37,17 +38,18 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_swapChain.reset(new VKSwapChain());
 	m_shadowPipeline.reset(new VKShadowPipeline());
 	m_geometryPipeline.reset(new VKGeometryPipeline());
-	m_geometryAlphaMaskPipeline.reset(new VKGeometryAlphaMaskPipeline()),
-		m_lightingPipeline.reset(new VKLightingPipeline());
+	m_geometryAlphaMaskPipeline.reset(new VKGeometryAlphaMaskPipeline());
+	m_lightingPipeline.reset(new VKLightingPipeline());
 	m_forwardPipeline.reset(new VKForwardPipeline());
 
 	m_renderResources->init(width, height);
 	m_swapChain->init(width, height);
 
+	m_geometryRenderPass.reset(new VKGeometryRenderPass(m_renderResources.get()));
 	m_shadowRenderPass.reset(new VKShadowRenderPass(m_renderResources.get()));
-	m_mainRenderPass.reset(new VKMainRenderPass(m_renderResources.get()));
+	m_forwardRenderPass.reset(new VKForwardRenderPass(m_renderResources.get()));
 
-	m_renderResources->createFramebuffer(width, height, m_mainRenderPass->m_renderPass, m_shadowRenderPass->m_renderPass);
+	m_renderResources->createFramebuffer(width, height, m_geometryRenderPass->m_renderPass, m_shadowRenderPass->m_renderPass, m_forwardRenderPass->m_renderPass);
 	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
 	m_renderResources->createStorageBuffers();
 	m_renderResources->createCommandBuffers();
@@ -55,11 +57,11 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createDescriptors();
 	m_renderResources->createEvents();
 
+	m_geometryPipeline->init(width, height, m_geometryRenderPass->m_renderPass, m_renderResources.get());
+	m_geometryAlphaMaskPipeline->init(width, height, m_geometryRenderPass->m_renderPass, m_renderResources.get());
 	m_shadowPipeline->init(m_shadowRenderPass->m_renderPass, m_renderResources.get());
-	m_geometryPipeline->init(width, height, m_mainRenderPass->m_renderPass, m_renderResources.get());
-	m_geometryAlphaMaskPipeline->init(width, height, m_mainRenderPass->m_renderPass, m_renderResources.get());
-	m_lightingPipeline->init(width, height, m_mainRenderPass->m_renderPass, m_renderResources.get());
-	m_forwardPipeline->init(width, height, m_mainRenderPass->m_renderPass, m_renderResources.get());
+	m_lightingPipeline->init(m_renderResources.get());
+	m_forwardPipeline->init(width, height, m_forwardRenderPass->m_renderPass, m_renderResources.get());
 
 }
 
@@ -187,123 +189,150 @@ void VEngine::VKRenderer::update(const RenderParams &renderParams, const DrawLis
 		Utility::fatalExit("Failed to acquire swap chain image!", -1);
 	}
 
-	// record commandbuffer
+	// record commandbuffers
 	{
-		// main
+		// geometry fill
 		{
 			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-			vkBeginCommandBuffer(m_renderResources->m_mainCommandBuffer, &beginInfo);
+			vkBeginCommandBuffer(m_renderResources->m_geometryFillCommandBuffer, &beginInfo);
 			{
-				// shadow render pass
+				VkClearValue clearValues[2] = {};
+				clearValues[0].depthStencil = { 1.0f, 0 };
+				clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+
+				VkRenderPassBeginInfo renderPassInfo = {};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				renderPassInfo.renderPass = m_geometryRenderPass->m_renderPass;
+				renderPassInfo.framebuffer = m_renderResources->m_geometryFillFramebuffer;
+				renderPassInfo.renderArea.offset = { 0, 0 };
+				renderPassInfo.renderArea.extent = { m_width, m_height };
+				renderPassInfo.clearValueCount = static_cast<uint32_t>(sizeof(clearValues) / sizeof(clearValues[0]));
+				renderPassInfo.pClearValues = clearValues;
+
+				vkCmdBeginRenderPass(m_renderResources->m_geometryFillCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 				{
-					VkRenderPassBeginInfo renderPassInfo = {};
-					renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-					renderPassInfo.renderPass = m_shadowRenderPass->m_renderPass;
-					renderPassInfo.framebuffer = m_renderResources->m_shadowFramebuffer;
-					renderPassInfo.renderArea.offset = { 0, 0 };
-					renderPassInfo.renderArea.extent = { g_shadowAtlasSize, g_shadowAtlasSize };
+					// geometry pass
+					m_geometryPipeline->recordCommandBuffer(m_geometryRenderPass->m_renderPass, m_renderResources.get(), drawLists);
 
-					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-					m_shadowPipeline->recordCommandBuffer(m_shadowRenderPass->m_renderPass, m_renderResources.get(), drawLists, lightData);
-					vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
-
-					// signal shadow event
-					vkCmdSetEvent(m_renderResources->m_mainCommandBuffer, m_renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+					// geometry alpha mask pass
+					vkCmdNextSubpass(m_renderResources->m_geometryFillCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+					m_geometryAlphaMaskPipeline->recordCommandBuffer(m_geometryRenderPass->m_renderPass, m_renderResources.get(), drawLists);
 				}
-
-				// main render pass
-				{
-					VkClearValue clearValues[2] = {};
-					clearValues[0].depthStencil = { 1.0f, 0 };
-					clearValues[1].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-
-					VkRenderPassBeginInfo renderPassInfo = {};
-					renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-					renderPassInfo.renderPass = m_mainRenderPass->m_renderPass;
-					renderPassInfo.framebuffer = m_renderResources->m_mainFramebuffer;
-					renderPassInfo.renderArea.offset = { 0, 0 };
-					renderPassInfo.renderArea.extent = { m_width, m_height };
-					renderPassInfo.clearValueCount = static_cast<uint32_t>(sizeof(clearValues) / sizeof(clearValues[0]));
-					renderPassInfo.pClearValues = clearValues;
-
-					vkCmdBeginRenderPass(m_renderResources->m_mainCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-					{
-						// geometry pass
-						m_geometryPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-
-						// geometry alpha mask pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-						m_geometryAlphaMaskPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-
-						// lighting pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-						m_lightingPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get());
-
-						// forward pass
-						vkCmdNextSubpass(m_renderResources->m_mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
-						m_forwardPipeline->recordCommandBuffer(m_mainRenderPass->m_renderPass, m_renderResources.get(), drawLists);
-					}
-					vkCmdEndRenderPass(m_renderResources->m_mainCommandBuffer);
-
-					// reset shadows finished event
-					vkCmdResetEvent(m_renderResources->m_mainCommandBuffer, m_renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-				}
-
-				// blit
-				{
-					VkOffset3D blitSize;
-					blitSize.x = m_width;
-					blitSize.y = m_height;
-					blitSize.z = 1;
-
-					VkImageBlit imageBlitRegion = {};
-					imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-					imageBlitRegion.srcSubresource.layerCount = 1;
-					imageBlitRegion.srcOffsets[1] = blitSize;
-					imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-					imageBlitRegion.dstSubresource.layerCount = 1;
-					imageBlitRegion.dstOffsets[1] = blitSize;
-
-					VkImageSubresourceRange subresourceRange = {};
-					subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-					subresourceRange.baseMipLevel = 0;
-					subresourceRange.levelCount = 1;
-					subresourceRange.baseArrayLayer = 0;
-					subresourceRange.layerCount = 1;
-
-					VKUtility::setImageLayout(
-						m_renderResources->m_mainCommandBuffer,
-						m_swapChain->getImage(m_swapChainImageIndex),
-						VK_IMAGE_LAYOUT_UNDEFINED,
-						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-						subresourceRange,
-						VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-						VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-					vkCmdBlitImage(
-						m_renderResources->m_mainCommandBuffer,
-						m_renderResources->m_lightAttachment.m_image,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-						m_swapChain->getImage(m_swapChainImageIndex),
-						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-						1,
-						&imageBlitRegion,
-						VK_FILTER_NEAREST);
-
-					VKUtility::setImageLayout(
-						m_renderResources->m_mainCommandBuffer,
-						m_swapChain->getImage(m_swapChainImageIndex),
-						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-						VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-						subresourceRange,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-				}
+				vkCmdEndRenderPass(m_renderResources->m_geometryFillCommandBuffer);
 			}
-			vkEndCommandBuffer(m_renderResources->m_mainCommandBuffer);
+			vkEndCommandBuffer(m_renderResources->m_geometryFillCommandBuffer);
+		}
+
+		// shadows
+		{
+			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(m_renderResources->m_shadowsCommandBuffer, &beginInfo);
+			{
+				VkRenderPassBeginInfo renderPassInfo = {};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				renderPassInfo.renderPass = m_shadowRenderPass->m_renderPass;
+				renderPassInfo.framebuffer = m_renderResources->m_shadowFramebuffer;
+				renderPassInfo.renderArea.offset = { 0, 0 };
+				renderPassInfo.renderArea.extent = { g_shadowAtlasSize, g_shadowAtlasSize };
+
+				vkCmdBeginRenderPass(m_renderResources->m_shadowsCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				{
+					m_shadowPipeline->recordCommandBuffer(m_shadowRenderPass->m_renderPass, m_renderResources.get(), drawLists, lightData);
+				}
+				vkCmdEndRenderPass(m_renderResources->m_shadowsCommandBuffer);
+
+				// signal shadow event
+				vkCmdSetEvent(m_renderResources->m_shadowsCommandBuffer, m_renderResources->m_shadowsFinishedEvent, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+			}
+			vkEndCommandBuffer(m_renderResources->m_shadowsCommandBuffer);
+		}
+
+		// lighting
+		{
+			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(m_renderResources->m_lightingCommandBuffer, &beginInfo);
+			{
+				m_lightingPipeline->recordCommandBuffer(m_renderResources.get(), m_width, m_height);
+			}
+			vkEndCommandBuffer(m_renderResources->m_lightingCommandBuffer);
+		}
+
+		// forward / blit
+		{
+			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(m_renderResources->m_forwardCommandBuffer, &beginInfo);
+			{
+				VkRenderPassBeginInfo renderPassInfo = {};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+				renderPassInfo.renderPass = m_forwardRenderPass->m_renderPass;
+				renderPassInfo.framebuffer = m_renderResources->m_forwardFramebuffer;
+				renderPassInfo.renderArea.offset = { 0, 0 };
+				renderPassInfo.renderArea.extent = { m_width, m_height };
+
+				vkCmdBeginRenderPass(m_renderResources->m_forwardCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				{
+					m_forwardPipeline->recordCommandBuffer(m_forwardRenderPass->m_renderPass, m_renderResources.get(), drawLists);
+				}
+				vkCmdEndRenderPass(m_renderResources->m_forwardCommandBuffer);
+
+				VkOffset3D blitSize;
+				blitSize.x = m_width;
+				blitSize.y = m_height;
+				blitSize.z = 1;
+
+				VkImageBlit imageBlitRegion = {};
+				imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlitRegion.srcSubresource.layerCount = 1;
+				imageBlitRegion.srcOffsets[1] = blitSize;
+				imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlitRegion.dstSubresource.layerCount = 1;
+				imageBlitRegion.dstOffsets[1] = blitSize;
+
+				VkImageSubresourceRange subresourceRange = {};
+				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				subresourceRange.baseMipLevel = 0;
+				subresourceRange.levelCount = 1;
+				subresourceRange.baseArrayLayer = 0;
+				subresourceRange.layerCount = 1;
+
+				VKUtility::setImageLayout(
+					m_renderResources->m_forwardCommandBuffer,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					subresourceRange,
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+				vkCmdBlitImage(
+					m_renderResources->m_forwardCommandBuffer,
+					m_renderResources->m_lightAttachment.m_image,
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&imageBlitRegion,
+					VK_FILTER_NEAREST);
+
+				VKUtility::setImageLayout(
+					m_renderResources->m_forwardCommandBuffer,
+					m_swapChain->getImage(m_swapChainImageIndex),
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					subresourceRange,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+			}
+			vkEndCommandBuffer(m_renderResources->m_forwardCommandBuffer);
 		}
 	}
 }
@@ -314,12 +343,20 @@ void VEngine::VKRenderer::render()
 	VkSemaphore signalSemaphores[] = { g_context.m_renderFinishedSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
+	VkCommandBuffer cmdBufs[] =
+	{
+		m_renderResources->m_geometryFillCommandBuffer,
+		m_renderResources->m_shadowsCommandBuffer,
+		m_renderResources->m_lightingCommandBuffer,
+		m_renderResources->m_forwardCommandBuffer
+	};
+
 	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_renderResources->m_mainCommandBuffer;
+	submitInfo.commandBufferCount = sizeof(cmdBufs) / sizeof(cmdBufs[0]);
+	submitInfo.pCommandBuffers = cmdBufs;
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 

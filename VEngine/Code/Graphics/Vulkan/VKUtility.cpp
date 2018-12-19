@@ -250,3 +250,12 @@ uint32_t VEngine::VKUtility::findMemoryType(uint32_t typeFilter, VkMemoryPropert
 	Utility::fatalExit("Failed to find suitable memory type!", -1);
 	return 0;
 }
+
+bool VEngine::VKUtility::dispatchComputeHelper(VkCommandBuffer commandBuffer, uint32_t domainX, uint32_t domainY, uint32_t domainZ, uint32_t localSizeX, uint32_t localSizeY, uint32_t localSizeZ)
+{
+	uint32_t numGroupsX = domainX / localSizeX + ((domainX % localSizeX == 0) ? 0 : 1);
+	uint32_t numGroupsY = domainY / localSizeY + ((domainY % localSizeY == 0) ? 0 : 1);
+	uint32_t numGroupsZ = domainZ / localSizeZ + ((domainZ % localSizeZ == 0) ? 0 : 1);
+	vkCmdDispatch(commandBuffer, numGroupsX, numGroupsY, numGroupsZ);
+	return (domainX % localSizeX == 0) && (domainY % localSizeY == 0) && (domainZ % localSizeZ == 0);
+}
