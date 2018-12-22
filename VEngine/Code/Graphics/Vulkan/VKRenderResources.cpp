@@ -439,7 +439,9 @@ void VEngine::VKRenderResources::createStorageBuffers()
 			+ MAX_POINT_LIGHTS * m_pointLightDataSize
 			+ MAX_SPOT_LIGHTS * m_spotLightDataSize
 			+ MAX_SHADOW_DATA * m_shadowDataSize
-			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4) + sizeof(glm::uvec4);
+			+ Z_BIN_SIZE * sizeof(glm::uvec2)
+			+ sizeof(glm::uvec4)
+			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4);
 
 		m_lightDataStorageBuffer.m_size = bufferSize;
 		VKUtility::createBuffer(
@@ -915,19 +917,25 @@ void VEngine::VKRenderResources::createDescriptors()
 		// spot light data
 		VkDescriptorBufferInfo spotLightDataDescriptorBufferInfo = {};
 		spotLightDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		spotLightDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS;
+		spotLightDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS;
 		spotLightDataDescriptorBufferInfo.range = m_spotLightDataSize * MAX_SPOT_LIGHTS;
 
 		// shadow data
 		VkDescriptorBufferInfo shadowDataDescriptorBufferInfo = {};
 		shadowDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		shadowDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS;
+		shadowDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS
+			+ m_spotLightDataSize * MAX_SPOT_LIGHTS;
 		shadowDataDescriptorBufferInfo.range = m_shadowDataSize * MAX_SHADOW_DATA;
 
 		// zbins
 		VkDescriptorBufferInfo zBinsDescriptorBufferInfo = {};
 		zBinsDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		zBinsDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA;
+		zBinsDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS
+			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
+			+ m_shadowDataSize * MAX_SHADOW_DATA;
 		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BIN_SIZE;
 
 		// shadow texture
@@ -939,19 +947,34 @@ void VEngine::VKRenderResources::createDescriptors()
 		// counts
 		VkDescriptorBufferInfo countDataDescriptorBufferInfo = {};
 		countDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		countDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE;
+		countDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS
+			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
+			+ m_shadowDataSize * MAX_SHADOW_DATA
+			+ sizeof(glm::uvec2) * Z_BIN_SIZE;
 		countDataDescriptorBufferInfo.range = sizeof(glm::uvec4);
 
 		// point light cull data
 		VkDescriptorBufferInfo pointLightCullDataDescriptorBufferInfo = {};
 		pointLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		pointLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE + sizeof(glm::uvec4);
+		pointLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS
+			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
+			+ m_shadowDataSize * MAX_SHADOW_DATA
+			+ sizeof(glm::uvec2) * Z_BIN_SIZE
+			+ sizeof(glm::uvec4);
 		pointLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 
 		// spot light cull data
 		VkDescriptorBufferInfo spotLightCullDataDescriptorBufferInfo = {};
 		spotLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE + sizeof(glm::uvec4) + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
+		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+			+ m_pointLightDataSize * MAX_POINT_LIGHTS
+			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
+			+ m_shadowDataSize * MAX_SHADOW_DATA
+			+ sizeof(glm::uvec2) * Z_BIN_SIZE
+			+ sizeof(glm::uvec4)
+			+ sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;
 
 		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);

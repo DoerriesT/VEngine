@@ -170,7 +170,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 			m_lightData.m_directionalLightData.push_back(
 				{
-					glm::vec4(glm::vec3(0.0f), 1.0f),
+					glm::vec4(glm::vec3(10.0f), 1.0f),
 					glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 1.0f),
 					0,
 					3
