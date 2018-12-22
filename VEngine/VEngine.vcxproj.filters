@@ -195,6 +195,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.h">
       <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.h">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -289,6 +292,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.cpp">
       <Filter>Code\Graphics\Vulkan\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -3,12 +3,7 @@
 #include "Graphics/Vulkan/VKShaderModule.h"
 #include "Utility/Utility.h"
 #include "Graphics/Vulkan/VKUtility.h"
-#include <glm/vec3.hpp>
-#include <glm/vec2.hpp>
-#include "Graphics/DrawItem.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
-#include "Graphics/RenderParams.h"
-#include "Graphics/Mesh.h"
 
 VEngine::VKLightingPipeline::VKLightingPipeline()
 {

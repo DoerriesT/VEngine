@@ -135,6 +135,12 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_lightData.m_shadowJobs.push_back({ matrices[1], 2048, 0, 2048 });
 			m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
 			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
+
+			PointLightData plData = {};
+			plData.m_positionRadius = glm::vec4(glm::vec3(m_renderParams.m_viewMatrix * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)), 4.0f);
+			plData.m_colorInvSqrAttRadius = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f / (plData.m_positionRadius.w * plData.m_positionRadius.w));
+
+			m_lightData.m_pointLightData.push_back(plData);
 		}
 	}
 }

@@ -439,7 +439,7 @@ void VEngine::VKRenderResources::createStorageBuffers()
 			+ MAX_POINT_LIGHTS * m_pointLightDataSize
 			+ MAX_SPOT_LIGHTS * m_spotLightDataSize
 			+ MAX_SHADOW_DATA * m_shadowDataSize
-			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4);
+			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4) + sizeof(glm::uvec4) * 2;
 
 		m_lightDataStorageBuffer.m_size = bufferSize;
 		VKUtility::createBuffer(
@@ -455,7 +455,10 @@ void VEngine::VKRenderResources::createStorageBuffers()
 
 	// light index buffer
 	{
-		VkDeviceSize bufferSize = (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(uint32_t);
+		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
+		uint32_t height = 900 / 16 + ((900 % 16 == 0) ? 0 : 1);
+		uint32_t tileCount = width * height;
+		VkDeviceSize bufferSize = (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) / 32 * sizeof(uint32_t) * tileCount;
 
 		m_lightIndexStorageBuffer.m_size = bufferSize;
 		VKUtility::createBuffer(
@@ -474,6 +477,7 @@ void VEngine::VKRenderResources::createCommandBuffers()
 	{
 		VkCommandBuffer cmdBufs[] =
 		{
+			m_tilingCommandBuffer,
 			m_geometryFillCommandBuffer,
 			m_shadowsCommandBuffer,
 			m_lightingCommandBuffer,
@@ -490,10 +494,11 @@ void VEngine::VKRenderResources::createCommandBuffers()
 			Utility::fatalExit("Failed to allocate command buffer!", -1);
 		}
 
-		m_geometryFillCommandBuffer = cmdBufs[0];
-		m_shadowsCommandBuffer = cmdBufs[1];
-		m_lightingCommandBuffer = cmdBufs[2];
-		m_forwardCommandBuffer = cmdBufs[3];
+		m_tilingCommandBuffer = cmdBufs[0];
+		m_geometryFillCommandBuffer = cmdBufs[1];
+		m_shadowsCommandBuffer = cmdBufs[2];
+		m_lightingCommandBuffer = cmdBufs[3];
+		m_forwardCommandBuffer = cmdBufs[4];
 	}
 }
 
@@ -923,17 +928,21 @@ void VEngine::VKRenderResources::createDescriptors()
 		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;
 
+		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
+		uint32_t height = 900 / 16 + ((900 % 16 == 0) ? 0 : 1);
+		uint32_t tileCount = width * height;
+
 		// point light indices
 		VkDescriptorBufferInfo pointLightIndicesDescriptorBufferInfo = {};
 		pointLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.m_buffer;
 		pointLightIndicesDescriptorBufferInfo.offset = 0;
-		pointLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_POINT_LIGHTS;
+		pointLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_POINT_LIGHTS / 32 * tileCount;
 
 		// spot light indices
 		VkDescriptorBufferInfo spotLightIndicesDescriptorBufferInfo = {};
 		spotLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.m_buffer;
-		spotLightIndicesDescriptorBufferInfo.offset = sizeof(uint32_t) * MAX_POINT_LIGHTS;
-		spotLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_SPOT_LIGHTS;
+		spotLightIndicesDescriptorBufferInfo.offset = pointLightIndicesDescriptorBufferInfo.range;
+		spotLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_SPOT_LIGHTS / 32 * tileCount;
 
 		VkWriteDescriptorSet descriptorWrites[14] = {};
 		{

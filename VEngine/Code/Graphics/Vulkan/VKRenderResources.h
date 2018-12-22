@@ -52,6 +52,7 @@ namespace VEngine
 		VkFramebuffer m_forwardFramebuffer;
 
 		// cmdbufs
+		VkCommandBuffer m_tilingCommandBuffer;
 		VkCommandBuffer m_geometryFillCommandBuffer;
 		VkCommandBuffer m_shadowsCommandBuffer;
 		VkCommandBuffer m_lightingCommandBuffer;
