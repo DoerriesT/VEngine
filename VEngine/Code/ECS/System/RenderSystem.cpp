@@ -3,10 +3,13 @@
 #include "ECS/Component/MeshComponent.h"
 #include "ECS/Component/TransformationComponent.h"
 #include "ECS/Component/RenderableComponent.h"
+#include "ECS/Component/PointLightComponent.h"
 #include "ECS/Component/CameraComponent.h"
 #include "Graphics/Vulkan/VKRenderer.h"
 #include "GlobalVar.h"
 #include <glm/ext.hpp>
+#include <glm/vec3.hpp>
+#include <algorithm>
 
 VEngine::RenderSystem::RenderSystem(EntityManager &entityManager)
 	:m_entityManager(entityManager),
@@ -33,90 +36,141 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 	m_drawLists.m_maskedItems.clear();
 	m_drawLists.m_blendedItems.clear();
 
-	// update all transformations and generate draw lists
-	{
-		m_entityManager.each<MeshComponent, TransformationComponent, RenderableComponent>(
-			[this](const Entity *entity, MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
-		{
-			transformationComponent.m_prevTransformation = transformationComponent.m_transformation;
-			transformationComponent.m_transformation = glm::translate(transformationComponent.m_position)
-				* glm::mat4_cast(transformationComponent.m_rotation)
-				* glm::scale(glm::mat4(), glm::vec3(transformationComponent.m_scale));
-
-			for (const auto &subMesh : meshComponent.m_mesh.m_subMeshes)
-			{
-				DrawItem drawItem = {};
-				drawItem.m_vertexOffset = subMesh.m_vertexOffset;
-				drawItem.m_baseIndex = subMesh.m_indexOffset / sizeof(uint32_t);
-				drawItem.m_indexCount = subMesh.m_indexCount;
-				drawItem.m_perDrawData.m_albedoFactorMetallic = glm::vec4(subMesh.m_material.m_albedoFactor, subMesh.m_material.m_metallicFactor);
-				drawItem.m_perDrawData.m_emissiveFactorRoughness = glm::vec4(subMesh.m_material.m_emissiveFactor, subMesh.m_material.m_roughnessFactor);
-				drawItem.m_perDrawData.m_modelMatrix = transformationComponent.m_transformation;
-				drawItem.m_perDrawData.m_albedoTexture = subMesh.m_material.m_albedoTexture;
-				drawItem.m_perDrawData.m_normalTexture = subMesh.m_material.m_normalTexture;
-				drawItem.m_perDrawData.m_metallicTexture = subMesh.m_material.m_metallicTexture;
-				drawItem.m_perDrawData.m_roughnessTexture = subMesh.m_material.m_roughnessTexture;
-				drawItem.m_perDrawData.m_occlusionTexture = subMesh.m_material.m_occlusionTexture;
-				drawItem.m_perDrawData.m_emissiveTexture = subMesh.m_material.m_emissiveTexture;
-				drawItem.m_perDrawData.m_displacementTexture = subMesh.m_material.m_displacementTexture;
-
-				switch (subMesh.m_material.m_alpha)
-				{
-				case Material::Alpha::OPAQUE:
-					m_drawLists.m_opaqueItems.push_back(drawItem);
-					break;
-				case Material::Alpha::MASKED:
-					m_drawLists.m_maskedItems.push_back(drawItem);
-					break;
-				case Material::Alpha::BLENDED:
-					m_drawLists.m_blendedItems.push_back(drawItem);
-					break;
-				default:
-					assert(false);
-				}
-			}
-		});
-	}
+	m_lightData.m_shadowData.clear();
+	m_lightData.m_directionalLightData.clear();
+	m_lightData.m_pointLightData.clear();
+	m_lightData.m_spotLightData.clear();
+	m_lightData.m_shadowJobs.clear();
 
 	if (m_cameraEntity)
 	{
-		CameraComponent *cameraComponent = m_entityManager.getComponent<CameraComponent>(m_cameraEntity);
-		TransformationComponent *transformationComponent = m_entityManager.getComponent<TransformationComponent>(m_cameraEntity);
+		// update render params
+		{
+			CameraComponent *cameraComponent = m_entityManager.getComponent<CameraComponent>(m_cameraEntity);
+			TransformationComponent *transformationComponent = m_entityManager.getComponent<TransformationComponent>(m_cameraEntity);
 
-		glm::mat4 &viewMatrix = cameraComponent->m_viewMatrix;
-		glm::mat4 &projectionMatrix = cameraComponent->m_projectionMatrix;
+			glm::mat4 &viewMatrix = cameraComponent->m_viewMatrix;
+			glm::mat4 &projectionMatrix = cameraComponent->m_projectionMatrix;
 
-		++m_renderParams.m_frame;
-		m_renderParams.m_time = static_cast<float>(time);
-		m_renderParams.m_fovy = cameraComponent->m_fovy;
-		m_renderParams.m_nearPlane = cameraComponent->m_near;
-		m_renderParams.m_farPlane = cameraComponent->m_far;
-		m_renderParams.m_prevViewMatrix = m_renderParams.m_viewMatrix;
-		m_renderParams.m_prevProjectionMatrix = m_renderParams.m_projectionMatrix;
-		m_renderParams.m_prevViewProjectionMatrix = m_renderParams.m_viewProjectionMatrix;
-		m_renderParams.m_prevInvViewMatrix = m_renderParams.m_invViewMatrix;
-		m_renderParams.m_prevInvProjectionMatrix = m_renderParams.m_invProjectionMatrix;
-		m_renderParams.m_prevInvViewProjectionMatrix = m_renderParams.m_invViewProjectionMatrix;
-		m_renderParams.m_viewMatrix = viewMatrix;
-		m_renderParams.m_projectionMatrix = projectionMatrix;
-		m_renderParams.m_viewProjectionMatrix = projectionMatrix * viewMatrix;
-		m_renderParams.m_invViewMatrix = glm::inverse(viewMatrix);
-		m_renderParams.m_invProjectionMatrix = glm::inverse(projectionMatrix);
-		m_renderParams.m_invViewProjectionMatrix = glm::inverse(m_renderParams.m_viewProjectionMatrix);
-		m_renderParams.m_cameraPosition = glm::vec4(transformationComponent->m_position, 1.0f);
-		m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
+			++m_renderParams.m_frame;
+			m_renderParams.m_time = static_cast<float>(time);
+			m_renderParams.m_fovy = cameraComponent->m_fovy;
+			m_renderParams.m_nearPlane = cameraComponent->m_near;
+			m_renderParams.m_farPlane = cameraComponent->m_far;
+			m_renderParams.m_prevViewMatrix = m_renderParams.m_viewMatrix;
+			m_renderParams.m_prevProjectionMatrix = m_renderParams.m_projectionMatrix;
+			m_renderParams.m_prevViewProjectionMatrix = m_renderParams.m_viewProjectionMatrix;
+			m_renderParams.m_prevInvViewMatrix = m_renderParams.m_invViewMatrix;
+			m_renderParams.m_prevInvProjectionMatrix = m_renderParams.m_invProjectionMatrix;
+			m_renderParams.m_prevInvViewProjectionMatrix = m_renderParams.m_invViewProjectionMatrix;
+			m_renderParams.m_viewMatrix = viewMatrix;
+			m_renderParams.m_projectionMatrix = projectionMatrix;
+			m_renderParams.m_viewProjectionMatrix = projectionMatrix * viewMatrix;
+			m_renderParams.m_invViewMatrix = glm::inverse(viewMatrix);
+			m_renderParams.m_invProjectionMatrix = glm::inverse(projectionMatrix);
+			m_renderParams.m_invViewProjectionMatrix = glm::inverse(m_renderParams.m_viewProjectionMatrix);
+			m_renderParams.m_cameraPosition = glm::vec4(transformationComponent->m_position, 1.0f);
+			m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
+		}
+
+
+		// update all transformations and generate draw lists
+		{
+			m_entityManager.each<MeshComponent, TransformationComponent, RenderableComponent>(
+				[this](const Entity *entity, MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
+			{
+				transformationComponent.m_prevTransformation = transformationComponent.m_transformation;
+				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position)
+					* glm::mat4_cast(transformationComponent.m_rotation)
+					* glm::scale(glm::mat4(), glm::vec3(transformationComponent.m_scale));
+
+				for (const auto &subMesh : meshComponent.m_mesh.m_subMeshes)
+				{
+					DrawItem drawItem = {};
+					drawItem.m_vertexOffset = subMesh.m_vertexOffset;
+					drawItem.m_baseIndex = subMesh.m_indexOffset / sizeof(uint32_t);
+					drawItem.m_indexCount = subMesh.m_indexCount;
+					drawItem.m_perDrawData.m_albedoFactorMetallic = glm::vec4(subMesh.m_material.m_albedoFactor, subMesh.m_material.m_metallicFactor);
+					drawItem.m_perDrawData.m_emissiveFactorRoughness = glm::vec4(subMesh.m_material.m_emissiveFactor, subMesh.m_material.m_roughnessFactor);
+					drawItem.m_perDrawData.m_modelMatrix = transformationComponent.m_transformation;
+					drawItem.m_perDrawData.m_albedoTexture = subMesh.m_material.m_albedoTexture;
+					drawItem.m_perDrawData.m_normalTexture = subMesh.m_material.m_normalTexture;
+					drawItem.m_perDrawData.m_metallicTexture = subMesh.m_material.m_metallicTexture;
+					drawItem.m_perDrawData.m_roughnessTexture = subMesh.m_material.m_roughnessTexture;
+					drawItem.m_perDrawData.m_occlusionTexture = subMesh.m_material.m_occlusionTexture;
+					drawItem.m_perDrawData.m_emissiveTexture = subMesh.m_material.m_emissiveTexture;
+					drawItem.m_perDrawData.m_displacementTexture = subMesh.m_material.m_displacementTexture;
+
+					switch (subMesh.m_material.m_alpha)
+					{
+					case Material::Alpha::OPAQUE:
+						m_drawLists.m_opaqueItems.push_back(drawItem);
+						break;
+					case Material::Alpha::MASKED:
+						m_drawLists.m_maskedItems.push_back(drawItem);
+						break;
+					case Material::Alpha::BLENDED:
+						m_drawLists.m_blendedItems.push_back(drawItem);
+						break;
+					default:
+						assert(false);
+					}
+				}
+			});
+		}
 
 		// generate light data
 		{
-			m_lightData.m_shadowData.clear();
-			m_lightData.m_directionalLightData.clear();
-			m_lightData.m_pointLightData.clear();
-			m_lightData.m_spotLightData.clear();
-			m_lightData.m_shadowJobs.clear();
+			m_entityManager.each<TransformationComponent, PointLightComponent, RenderableComponent>(
+				[this](const Entity *entity, TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
+			{
+				PointLightData pl = {};
+				glm::vec3 pos = glm::vec3(m_renderParams.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f));
+				pl.m_positionRadius = glm::vec4(pos, pointLightComponent.m_radius);
+				float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
+				pl.m_colorInvSqrAttRadius = glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius));
+				m_lightData.m_pointLightData.push_back(pl);
+			});
+
+			std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
+				[](const PointLightData &lhs, const PointLightData &rhs)
+			{
+				return (-lhs.m_positionRadius.z - lhs.m_positionRadius.w) < (-rhs.m_positionRadius.z - rhs.m_positionRadius.w);
+			});
+
+			const float binDepth = 1.0f;
+			const unsigned int emptyBin = ((~0 & 0xFFFF) << 16);
+
+			// clear bins
+			for (size_t i = 0; i < m_lightData.m_zBins.size(); ++i)
+			{
+				m_lightData.m_zBins[i].x = emptyBin;
+			}
+
+			// assign lights
+			for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
+			{
+				glm::vec4 &posRadius = m_lightData.m_pointLightData[i].m_positionRadius;
+				float nearestPoint = -posRadius.z - posRadius.w;
+				float furthestPoint = -posRadius.z + posRadius.w;
+
+				size_t minBin = glm::clamp(static_cast<size_t>(nearestPoint / binDepth), size_t(0), size_t(8191));
+				size_t maxBin = glm::clamp(static_cast<size_t>(furthestPoint / binDepth), size_t(0), size_t(8191));
+
+				for (size_t j = minBin; j <= maxBin; ++j)
+				{
+					uint32_t &val = m_lightData.m_zBins[j].x;
+					uint32_t minIndex = (val & 0xFFFF0000) >> 16;
+					uint32_t maxIndex = val & 0xFFFF;
+					minIndex = std::min(minIndex, static_cast<uint32_t>(i));
+					maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
+					val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+				}
+			}
 
 			m_lightData.m_directionalLightData.push_back(
 				{
-					glm::vec4(glm::vec3(15.0f), 1.0f),
+					glm::vec4(glm::vec3(0.0f), 1.0f),
 					glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 1.0f),
 					0,
 					3
@@ -135,12 +189,6 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_lightData.m_shadowJobs.push_back({ matrices[1], 2048, 0, 2048 });
 			m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
 			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
-
-			PointLightData plData = {};
-			plData.m_positionRadius = glm::vec4(glm::vec3(m_renderParams.m_viewMatrix * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)), 4.0f);
-			plData.m_colorInvSqrAttRadius = glm::vec4(0.0f, 10.0f, 0.0f, 1.0f / (plData.m_positionRadius.w * plData.m_positionRadius.w));
-
-			m_lightData.m_pointLightData.push_back(plData);
 		}
 	}
 }
@@ -216,11 +264,11 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 	{ 0.0f, 0.0f, 0.5f, 0.0f },
 	{ 0.0f, 0.0f, 0.5f, 1.0f }
 	};
-	
+
 
 	// Calculate orthographic projection matrix for each cascade
 	float lastSplitDist = 0.0;
-	for (uint32_t i = 0; i < cascadeCount; i++) 
+	for (uint32_t i = 0; i < cascadeCount; i++)
 	{
 		glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, 1600.0f / 900.0f, nearPlane + lastSplitDist * (farPlane - nearPlane), nearPlane + splits[i] * (farPlane - nearPlane));
 		glm::mat4 invProjection = glm::inverse(projectionMatrix);

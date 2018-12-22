@@ -8,9 +8,11 @@
 #include <ECS/Component/MeshComponent.h>
 #include <ECS/Component/RenderableComponent.h>
 #include <ECS/Component/CameraComponent.h>
+#include <ECS/Component/PointLightComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
 #include <Scene.h>
+#include <random>
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -47,4 +49,33 @@ void DummyLogic::init()
 	em.addComponent<VEngine::TransformationComponent>(objectEntity, VEngine::TransformationComponent::Mobility::STATIC);
 	em.addComponent<VEngine::MeshComponent>(objectEntity, scene.m_meshes["Resources/Models/sponza.mat"]);
 	em.addComponent<VEngine::RenderableComponent>(objectEntity);
+
+	std::default_random_engine e;
+	std::uniform_real_distribution<float> px(-14.0f, 14.0f);
+	std::uniform_real_distribution<float> py(0.0f, 10.0f);
+	std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
+	std::uniform_real_distribution<float> c(0.0f, 1.0f);
+
+	for (size_t i = 0; i < 2048; ++i)
+	{
+		const VEngine::Entity *lightEntity = em.createEntity();
+		em.addComponent<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
+		em.addComponent<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 100.0f, 1.0f);
+		em.addComponent<VEngine::RenderableComponent>(lightEntity);
+	}
+	
+	//{
+	//	const VEngine::Entity *lightEntity0 = em.createEntity();
+	//	em.addComponent<VEngine::TransformationComponent>(lightEntity0, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-5.0f, 1.0f, 0.0f));
+	//	em.addComponent<VEngine::PointLightComponent>(lightEntity0, glm::vec3(1.0f, 0.0f, 0.0f), 1000.0f, 2.0f);
+	//	em.addComponent<VEngine::RenderableComponent>(lightEntity0);
+	//}
+	//
+	//{
+	//	const VEngine::Entity *lightEntity1 = em.createEntity();
+	//	em.addComponent<VEngine::TransformationComponent>(lightEntity1, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(5.0f, 1.0f, 0.0f));
+	//	em.addComponent<VEngine::PointLightComponent>(lightEntity1, glm::vec3(0.0f, 1.0f, 0.0f), 1000.0f, 2.0f);
+	//	em.addComponent<VEngine::RenderableComponent>(lightEntity1);
+	//}
+	
 }

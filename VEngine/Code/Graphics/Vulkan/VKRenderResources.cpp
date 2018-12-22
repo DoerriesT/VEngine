@@ -339,7 +339,7 @@ void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned 
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
 	}
-	
+
 	// linear sampler
 	{
 		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
@@ -439,7 +439,7 @@ void VEngine::VKRenderResources::createStorageBuffers()
 			+ MAX_POINT_LIGHTS * m_pointLightDataSize
 			+ MAX_SPOT_LIGHTS * m_spotLightDataSize
 			+ MAX_SHADOW_DATA * m_shadowDataSize
-			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4) + sizeof(glm::uvec4) * 2;
+			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4) + sizeof(glm::uvec4);
 
 		m_lightDataStorageBuffer.m_size = bufferSize;
 		VKUtility::createBuffer(
@@ -668,7 +668,7 @@ void VEngine::VKRenderResources::createDescriptors()
 
 		// light data
 		{
-			VkDescriptorSetLayoutBinding lightDataLayoutBindings[5] = {};
+			VkDescriptorSetLayoutBinding lightDataLayoutBindings[6] = {};
 
 			// directional light data
 			lightDataLayoutBindings[0].binding = 0;
@@ -698,12 +698,19 @@ void VEngine::VKRenderResources::createDescriptors()
 			lightDataLayoutBindings[3].pImmutableSamplers = nullptr;
 			lightDataLayoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-			// shadow texture
+			// zbins
 			lightDataLayoutBindings[4].binding = 4;
 			lightDataLayoutBindings[4].descriptorCount = 1;
-			lightDataLayoutBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			lightDataLayoutBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			lightDataLayoutBindings[4].pImmutableSamplers = nullptr;
 			lightDataLayoutBindings[4].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			// shadow texture
+			lightDataLayoutBindings[5].binding = 5;
+			lightDataLayoutBindings[5].descriptorCount = 1;
+			lightDataLayoutBindings[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			lightDataLayoutBindings[5].pImmutableSamplers = nullptr;
+			lightDataLayoutBindings[5].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 			layoutInfo.bindingCount = sizeof(lightDataLayoutBindings) / sizeof(lightDataLayoutBindings[0]);
@@ -717,21 +724,28 @@ void VEngine::VKRenderResources::createDescriptors()
 
 		// cull data
 		{
-			VkDescriptorSetLayoutBinding cullDataLayoutBindings[2] = {};
+			VkDescriptorSetLayoutBinding cullDataLayoutBindings[3] = {};
 
-			// point light data
+			// counts
 			cullDataLayoutBindings[0].binding = 0;
 			cullDataLayoutBindings[0].descriptorCount = 1;
 			cullDataLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			cullDataLayoutBindings[0].pImmutableSamplers = nullptr;
 			cullDataLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-			// spot light data
+			// point light data
 			cullDataLayoutBindings[1].binding = 1;
 			cullDataLayoutBindings[1].descriptorCount = 1;
 			cullDataLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			cullDataLayoutBindings[1].pImmutableSamplers = nullptr;
 			cullDataLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+			// spot light data
+			cullDataLayoutBindings[2].binding = 2;
+			cullDataLayoutBindings[2].descriptorCount = 1;
+			cullDataLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			cullDataLayoutBindings[2].pImmutableSamplers = nullptr;
+			cullDataLayoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 			layoutInfo.bindingCount = sizeof(cullDataLayoutBindings) / sizeof(cullDataLayoutBindings[0]);
@@ -779,7 +793,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE + 1 + 4 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 8 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
 		};
 
@@ -910,22 +924,34 @@ void VEngine::VKRenderResources::createDescriptors()
 		shadowDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS;
 		shadowDataDescriptorBufferInfo.range = m_shadowDataSize * MAX_SHADOW_DATA;
 
+		// zbins
+		VkDescriptorBufferInfo zBinsDescriptorBufferInfo = {};
+		zBinsDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
+		zBinsDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA;
+		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BIN_SIZE;
+
 		// shadow texture
 		VkDescriptorImageInfo shadowTextureDescriptorImageInfo = {};
 		shadowTextureDescriptorImageInfo.sampler = m_shadowSampler;
 		shadowTextureDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		shadowTextureDescriptorImageInfo.imageView = m_shadowTexture.m_view;
 
+		// counts
+		VkDescriptorBufferInfo countDataDescriptorBufferInfo = {};
+		countDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
+		countDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE;
+		countDataDescriptorBufferInfo.range = sizeof(glm::uvec4);
+
 		// point light cull data
 		VkDescriptorBufferInfo pointLightCullDataDescriptorBufferInfo = {};
 		pointLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		pointLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA;
+		pointLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE + sizeof(glm::uvec4);
 		pointLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 
 		// spot light cull data
 		VkDescriptorBufferInfo spotLightCullDataDescriptorBufferInfo = {};
 		spotLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
+		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS + m_pointLightDataSize * MAX_POINT_LIGHTS + m_spotLightDataSize * MAX_SPOT_LIGHTS + m_shadowDataSize * MAX_SHADOW_DATA + sizeof(glm::uvec2) * Z_BIN_SIZE + sizeof(glm::uvec4) + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;
 
 		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
@@ -944,7 +970,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		spotLightIndicesDescriptorBufferInfo.offset = pointLightIndicesDescriptorBufferInfo.range;
 		spotLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_SPOT_LIGHTS / 32 * tileCount;
 
-		VkWriteDescriptorSet descriptorWrites[14] = {};
+		VkWriteDescriptorSet descriptorWrites[16] = {};
 		{
 			// per frame UBO
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1027,50 +1053,68 @@ void VEngine::VKRenderResources::createDescriptors()
 			descriptorWrites[8].descriptorCount = 1;
 			descriptorWrites[8].pBufferInfo = &shadowDataDescriptorBufferInfo;
 
-			// shadow texture
+			// z bins
 			descriptorWrites[9].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[9].dstSet = m_lightDataDescriptorSet;
 			descriptorWrites[9].dstBinding = 4;
 			descriptorWrites[9].dstArrayElement = 0;
-			descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[9].descriptorCount = 1;
-			descriptorWrites[9].pImageInfo = &shadowTextureDescriptorImageInfo;
+			descriptorWrites[9].pBufferInfo = &zBinsDescriptorBufferInfo;
 
-			// point light cull data
+			// shadow texture
 			descriptorWrites[10].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[10].dstSet = m_cullDataDescriptorSet;
-			descriptorWrites[10].dstBinding = 0;
+			descriptorWrites[10].dstSet = m_lightDataDescriptorSet;
+			descriptorWrites[10].dstBinding = 5;
 			descriptorWrites[10].dstArrayElement = 0;
-			descriptorWrites[10].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[10].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[10].descriptorCount = 1;
-			descriptorWrites[10].pBufferInfo = &pointLightCullDataDescriptorBufferInfo;
+			descriptorWrites[10].pImageInfo = &shadowTextureDescriptorImageInfo;
 
-			// spot light cull data
+			// count data
 			descriptorWrites[11].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[11].dstSet = m_cullDataDescriptorSet;
-			descriptorWrites[11].dstBinding = 1;
+			descriptorWrites[11].dstBinding = 0;
 			descriptorWrites[11].dstArrayElement = 0;
 			descriptorWrites[11].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[11].descriptorCount = 1;
-			descriptorWrites[11].pBufferInfo = &spotLightCullDataDescriptorBufferInfo;
+			descriptorWrites[11].pBufferInfo = &countDataDescriptorBufferInfo;
 
-			// point light indices
+			// point light cull data
 			descriptorWrites[12].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[12].dstSet = m_lightIndexDescriptorSet;
-			descriptorWrites[12].dstBinding = 0;
+			descriptorWrites[12].dstSet = m_cullDataDescriptorSet;
+			descriptorWrites[12].dstBinding = 1;
 			descriptorWrites[12].dstArrayElement = 0;
 			descriptorWrites[12].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[12].descriptorCount = 1;
-			descriptorWrites[12].pBufferInfo = &pointLightIndicesDescriptorBufferInfo;
+			descriptorWrites[12].pBufferInfo = &pointLightCullDataDescriptorBufferInfo;
 
-			// spot light indices
+			// spot light cull data
 			descriptorWrites[13].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[13].dstSet = m_lightIndexDescriptorSet;
-			descriptorWrites[13].dstBinding = 1;
+			descriptorWrites[13].dstSet = m_cullDataDescriptorSet;
+			descriptorWrites[13].dstBinding = 2;
 			descriptorWrites[13].dstArrayElement = 0;
 			descriptorWrites[13].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[13].descriptorCount = 1;
-			descriptorWrites[13].pBufferInfo = &spotLightIndicesDescriptorBufferInfo;
+			descriptorWrites[13].pBufferInfo = &spotLightCullDataDescriptorBufferInfo;
+
+			// point light indices
+			descriptorWrites[14].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[14].dstSet = m_lightIndexDescriptorSet;
+			descriptorWrites[14].dstBinding = 0;
+			descriptorWrites[14].dstArrayElement = 0;
+			descriptorWrites[14].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[14].descriptorCount = 1;
+			descriptorWrites[14].pBufferInfo = &pointLightIndicesDescriptorBufferInfo;
+
+			// spot light indices
+			descriptorWrites[15].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[15].dstSet = m_lightIndexDescriptorSet;
+			descriptorWrites[15].dstBinding = 1;
+			descriptorWrites[15].dstArrayElement = 0;
+			descriptorWrites[15].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[15].descriptorCount = 1;
+			descriptorWrites[15].pBufferInfo = &spotLightIndicesDescriptorBufferInfo;
 		}
 
 		vkUpdateDescriptorSets(g_context.m_device, static_cast<uint32_t>(sizeof(descriptorWrites) / sizeof(descriptorWrites[0])), descriptorWrites, 0, nullptr);

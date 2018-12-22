@@ -2,6 +2,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <vector>
+#include <array>
 
 namespace VEngine
 {
@@ -23,8 +24,8 @@ namespace VEngine
 	{
 		glm::vec4 m_positionRadius;
 		glm::vec4 m_colorInvSqrAttRadius;
-		uint32_t m_shadowDataOffset;
-		uint32_t m_shadowDataCount;
+		//uint32_t m_shadowDataOffset;
+		//uint32_t m_shadowDataCount;
 	};
 
 	struct SpotLightData
@@ -33,8 +34,8 @@ namespace VEngine
 		glm::vec4 m_positionAngleScale;
 		glm::vec4 m_directionAngleOffset;
 		glm::vec4 m_boundingSphere;
-		uint32_t m_shadowDataOffset;
-		uint32_t m_shadowDataCount;
+		//uint32_t m_shadowDataOffset;
+		//uint32_t m_shadowDataCount;
 	};
 
 	struct ShadowJob
@@ -52,5 +53,6 @@ namespace VEngine
 		std::vector<PointLightData> m_pointLightData;
 		std::vector<SpotLightData> m_spotLightData;
 		std::vector<ShadowJob> m_shadowJobs;
+		std::array<glm::uvec2, 8192> m_zBins;
 	};
 }
