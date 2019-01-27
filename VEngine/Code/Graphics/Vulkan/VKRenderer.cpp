@@ -17,6 +17,8 @@
 #include "Graphics/LightData.h"
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
+#include "FrameGraph/FrameGraph.h"
+#include "FrameGraph/Passes.h"
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
@@ -32,6 +34,67 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 {
+	{
+		FrameGraph::Graph graph;
+
+		FrameGraph::ImageDesc shadowDesc = {};
+		shadowDesc.m_name = "ShadowAtlas";
+		shadowDesc.m_initialState = FrameGraph::ImageInitialState::UNDEFINED;
+		shadowDesc.m_width = g_shadowAtlasSize;
+		shadowDesc.m_height = g_shadowAtlasSize;
+		shadowDesc.m_format = VK_FORMAT_D16_UNORM;
+
+		FrameGraph::ImageHandle depthHandle = 0;
+		FrameGraph::ImageHandle albedoHandle = 0;
+		FrameGraph::ImageHandle normalHandle = 0;
+		FrameGraph::ImageHandle materialHandle = 0;
+		FrameGraph::ImageHandle velocityHandle = 0;
+		FrameGraph::ImageHandle lightHandle = 0;
+		FrameGraph::ImageHandle shadowHandle = graph.createImage(shadowDesc);
+
+		FrameGraph::BufferHandle tilingBufHandle = 0;
+
+		FrameGraphPasses::addGBufferFillPass(graph,
+			depthHandle,
+			albedoHandle,
+			normalHandle,
+			materialHandle,
+			velocityHandle);
+
+		FrameGraphPasses::addGBufferFillAlphaPass(graph,
+			depthHandle,
+			albedoHandle,
+			normalHandle,
+			materialHandle,
+			velocityHandle);
+
+		FrameGraphPasses::addTilingPass(graph, tilingBufHandle);
+
+		FrameGraphPasses::addShadowPass(graph, shadowHandle);
+
+		FrameGraphPasses::addLightingPass(graph, 
+			depthHandle, 
+			albedoHandle, 
+			normalHandle, 
+			materialHandle, 
+			shadowHandle, 
+			tilingBufHandle, 
+			lightHandle);
+
+		FrameGraphPasses::addForwardPass(graph, 
+			shadowHandle, 
+			tilingBufHandle, 
+			depthHandle, 
+			velocityHandle, 
+			lightHandle);
+
+		graph.setBackBuffer(lightHandle);
+
+		graph.compile();
+	}
+
+
+
 	m_width = width;
 	m_height = height;
 	m_renderResources.reset(new VKRenderResources());
@@ -138,7 +201,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			size_t spotLightDataOffset = pointLightDataOffset + m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS;
 			size_t shadowDataOffset = spotLightDataOffset + m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS;
 			size_t zBinsOffset = shadowDataOffset + m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA;;
-			size_t countDataOffset = zBinsOffset + Z_BIN_SIZE * sizeof(glm::uvec2);
+			size_t countDataOffset = zBinsOffset + Z_BINS * sizeof(glm::uvec2);
 			size_t pointCullDataOffset = countDataOffset + sizeof(glm::uvec4);
 			size_t spotCullDataOffset = pointCullDataOffset + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 
@@ -241,7 +304,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			VkMappedMemoryRange zBinsDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
 			zBinsDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
 			zBinsDataMemoryRange.offset = zBinsOffset - (zBinsOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			zBinsDataMemoryRange.size = Z_BIN_SIZE * sizeof(glm::uvec2);
+			zBinsDataMemoryRange.size = Z_BINS * sizeof(glm::uvec2);
 			zBinsDataMemoryRange.size = (zBinsDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
 
 			VkMappedMemoryRange countDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
@@ -358,7 +421,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &m_swapChainImageIndex;
 
-	result = vkQueuePresentKHR(g_context.m_presentQueue, &presentInfo);
+	result = vkQueuePresentKHR(g_context.m_graphicsQueue, &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
@@ -369,7 +432,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		Utility::fatalExit("Failed to present swap chain image!", -1);
 	}
 
-	vkQueueWaitIdle(g_context.m_presentQueue);
+	vkQueueWaitIdle(g_context.m_graphicsQueue);
 }
 
 void VEngine::VKRenderer::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
@@ -416,7 +479,7 @@ unsigned char *VEngine::VKRenderer::getSpotLightDataPtr(uint32_t &maxLights, siz
 {
 	maxLights = MAX_SPOT_LIGHTS;
 	itemSize = m_renderResources->m_spotLightDataSize;
-	size_t spotLightDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS 
+	size_t spotLightDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
 		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS;
 	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + spotLightDataOffset;
 }
@@ -425,19 +488,19 @@ unsigned char *VEngine::VKRenderer::getShadowDataPtr(uint32_t &maxShadows, size_
 {
 	maxShadows = MAX_SHADOW_DATA;
 	itemSize = m_renderResources->m_shadowDataSize;
-	size_t shadowDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS 
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS 
+	size_t shadowDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
 		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS;
 	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + shadowDataOffset;
 }
 
-glm::uvec2 *VEngine::VKRenderer::getZBinPtr(uint32_t &bins, uint32_t &binDepth)
+glm::uvec2 *VEngine::VKRenderer::getZBinPtr(uint32_t &bins, float &binDepth)
 {
-	bins = Z_BIN_SIZE;
+	bins = Z_BINS;
 	binDepth = 1.0f;
-	size_t zBinsOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS 
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS 
-		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS 
+	size_t zBinsOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
+		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
+		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
 		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA;
 	return (glm::uvec2 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + zBinsOffset);
 }
@@ -449,7 +512,7 @@ glm::vec4 *VEngine::VKRenderer::getPointLightCullDataPtr(uint32_t &maxLights)
 		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
 		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
 		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA
-		+ Z_BIN_SIZE * sizeof(glm::uvec2)
+		+ Z_BINS * sizeof(glm::uvec2)
 		+ sizeof(glm::uvec4);
 	return (glm::vec4 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + pointCullDataOffset);
 }
@@ -461,7 +524,7 @@ glm::vec4 *VEngine::VKRenderer::getSpotLightCullDataPtr(uint32_t &maxLights)
 		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
 		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
 		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA
-		+ Z_BIN_SIZE * sizeof(glm::uvec2)
+		+ Z_BINS * sizeof(glm::uvec2)
 		+ sizeof(glm::uvec4)
 		+ MAX_POINT_LIGHTS * sizeof(glm::vec4);
 	return (glm::vec4 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + spotCullDataOffset);

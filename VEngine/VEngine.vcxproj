@@ -154,6 +154,8 @@
     <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\Passes.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
@@ -163,15 +165,20 @@
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImageData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKResourceManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc_include.h" />
     <ClInclude Include="Code\IGameLogic.h" />
     <ClInclude Include="Code\Input\IInputListener.h" />
     <ClInclude Include="Code\Input\InputTokens.h" />
@@ -180,7 +187,6 @@
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
     <ClInclude Include="Code\Utility\stb_image.h" />
     <ClInclude Include="Code\Utility\stb_image_write.h" />
-    <ClInclude Include="Code\Utility\tiny_gltf.h" />
     <ClInclude Include="Code\Utility\Utility.h" />
     <ClInclude Include="Code\Window\Window.h" />
   </ItemGroup>
@@ -194,6 +200,8 @@
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\Passes.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
@@ -203,18 +211,21 @@
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKResourceManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp" />
     <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Scene.cpp" />
     <ClCompile Include="Code\Utility\stb_image.cpp" />
     <ClCompile Include="Code\Utility\stb_image_write.cpp" />
-    <ClCompile Include="Code\Utility\tiny_gltf.cpp" />
     <ClCompile Include="Code\Utility\Utility.cpp" />
     <ClCompile Include="Code\Window\Window.cpp" />
   </ItemGroup>

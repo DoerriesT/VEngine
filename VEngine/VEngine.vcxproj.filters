@@ -37,6 +37,9 @@
     <Filter Include="Code\Graphics\Vulkan\RenderPass">
       <UniqueIdentifier>{c7df58f4-2f0c-4254-aba8-058f5cc42102}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\Vulkan\FrameGraph">
+      <UniqueIdentifier>{83870de2-c33c-4ac9-a94d-fc59ee01051b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -73,9 +76,6 @@
       <Filter>Code\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Code\Utility\stb_image_write.h">
-      <Filter>Code\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Utility\tiny_gltf.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Code\Utility\ContainerUtility.h">
@@ -198,6 +198,27 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.h">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h">
+      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\Passes.h">
+      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKResourceManager.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKImage.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc_include.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -228,9 +249,6 @@
       <Filter>Code\Utility</Filter>
     </ClCompile>
     <ClCompile Include="Code\Utility\stb_image_write.cpp">
-      <Filter>Code\Utility</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Utility\tiny_gltf.cpp">
       <Filter>Code\Utility</Filter>
     </ClCompile>
     <ClCompile Include="Code\Input\UserInput.cpp">
@@ -295,6 +313,24 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.cpp">
       <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp">
+      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\Passes.cpp">
+      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKResourceManager.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

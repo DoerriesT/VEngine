@@ -109,8 +109,8 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
-	uint32_t queueFamilyIndices[] = { g_context.m_queueFamilyIndices.m_graphicsFamily , g_context.m_queueFamilyIndices.m_presentFamily };
-	if (g_context.m_queueFamilyIndices.m_graphicsFamily != g_context.m_queueFamilyIndices.m_presentFamily)
+	uint32_t queueFamilyIndices[] = { g_context.m_queueFamilyIndices.m_graphicsFamily, g_context.m_queueFamilyIndices.m_computeFamily };
+	if (g_context.m_queueFamilyIndices.m_graphicsFamily != g_context.m_queueFamilyIndices.m_computeFamily)
 	{
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;

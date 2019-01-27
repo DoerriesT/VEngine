@@ -439,7 +439,7 @@ void VEngine::VKRenderResources::createStorageBuffers()
 			+ MAX_POINT_LIGHTS * m_pointLightDataSize
 			+ MAX_SPOT_LIGHTS * m_spotLightDataSize
 			+ MAX_SHADOW_DATA * m_shadowDataSize
-			+ Z_BIN_SIZE * sizeof(glm::uvec2)
+			+ Z_BINS * sizeof(glm::uvec2)
 			+ sizeof(glm::uvec4)
 			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4);
 
@@ -936,7 +936,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			+ m_pointLightDataSize * MAX_POINT_LIGHTS
 			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
 			+ m_shadowDataSize * MAX_SHADOW_DATA;
-		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BIN_SIZE;
+		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BINS;
 
 		// shadow texture
 		VkDescriptorImageInfo shadowTextureDescriptorImageInfo = {};
@@ -951,7 +951,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			+ m_pointLightDataSize * MAX_POINT_LIGHTS
 			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
 			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BIN_SIZE;
+			+ sizeof(glm::uvec2) * Z_BINS;
 		countDataDescriptorBufferInfo.range = sizeof(glm::uvec4);
 
 		// point light cull data
@@ -961,7 +961,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			+ m_pointLightDataSize * MAX_POINT_LIGHTS
 			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
 			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BIN_SIZE
+			+ sizeof(glm::uvec2) * Z_BINS
 			+ sizeof(glm::uvec4);
 		pointLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 
@@ -972,7 +972,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			+ m_pointLightDataSize * MAX_POINT_LIGHTS
 			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
 			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BIN_SIZE
+			+ sizeof(glm::uvec2) * Z_BINS
 			+ sizeof(glm::uvec4)
 			+ sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;

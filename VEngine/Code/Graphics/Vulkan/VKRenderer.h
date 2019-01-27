@@ -38,7 +38,7 @@ namespace VEngine
 		unsigned char *getPointLightDataPtr(uint32_t &maxLights, size_t &itemSize);
 		unsigned char *getSpotLightDataPtr(uint32_t &maxLights, size_t &itemSize);
 		unsigned char *getShadowDataPtr(uint32_t &maxShadows, size_t &itemSize);
-		glm::uvec2 *getZBinPtr(uint32_t &bins, uint32_t &binDepth);
+		glm::uvec2 *getZBinPtr(uint32_t &bins, float &binDepth);
 		glm::vec4 *getPointLightCullDataPtr(uint32_t &maxLights);
 		glm::vec4 *getSpotLightCullDataPtr(uint32_t &maxLights);
 

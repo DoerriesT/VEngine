@@ -19,5 +19,6 @@ namespace VEngine
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize &allocationSize);
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		bool dispatchComputeHelper(VkCommandBuffer commandBuffer, uint32_t domainX, uint32_t domainY, uint32_t domainZ, uint32_t localSizeX, uint32_t localSizeY, uint32_t localSizeZ);
+		VkImageAspectFlags imageAspectMaskFromFormat(VkFormat format);
 	}
 }

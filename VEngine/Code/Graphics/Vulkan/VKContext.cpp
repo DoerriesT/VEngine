@@ -12,7 +12,7 @@ namespace VEngine
 {
 	VKContext g_context = {};
 
-	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
+	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation"/*, "VK_LAYER_LUNARG_assistant_layer" */};
 	static const char* const deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
@@ -22,7 +22,7 @@ namespace VEngine
 		return VK_FALSE;
 	}
 
-	void VKContext::init(GLFWwindow * windowHandle)
+	void VKContext::init(GLFWwindow *windowHandle)
 	{
 #if ENABLE_VALIDATION_LAYERS
 		// validation layers
@@ -61,7 +61,7 @@ namespace VEngine
 			appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 			appInfo.pEngineName = "No Engine";
 			appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-			appInfo.apiVersion = VK_API_VERSION_1_0;
+			appInfo.apiVersion = VK_API_VERSION_1_1;
 
 			// extensions
 			uint32_t glfwExtensionCount = 0;
@@ -136,7 +136,8 @@ namespace VEngine
 				int graphicsFamilyIndex = -1;
 				int computeFamilyIndex = -1;
 				int transferFamilyIndex = -1;
-				int presentFamilyIndex = -1;
+				VkBool32 graphicsFamilyPresentable = VK_FALSE;
+				VkBool32 computeFamilyPresentable = VK_FALSE;
 				{
 					uint32_t queueFamilyCount = 0;
 					vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
@@ -144,37 +145,61 @@ namespace VEngine
 					std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 					vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-					for (uint32_t i = 0; i < queueFamilyCount; ++i)
+					// find graphics queue
+					for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
 					{
-						auto &queueFamily = queueFamilies[i];
+						auto &queueFamily = queueFamilies[queueFamilyIndex];
 						if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 						{
-							graphicsFamilyIndex = i;
-						}
-
-						if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
-						{
-							computeFamilyIndex = i;
-						}
-
-						if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
-						{
-							transferFamilyIndex = i;
-						}
-
-						VkBool32 presentSupport = false;
-						vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_surface, &presentSupport);
-
-						if (queueFamily.queueCount > 0 && presentSupport)
-						{
-							presentFamilyIndex = i;
-						}
-
-						if (graphicsFamilyIndex >= 0 && presentFamilyIndex >= 0 && computeFamilyIndex >= 0 && transferFamilyIndex >= 0)
-						{
-							break;
+							graphicsFamilyIndex = queueFamilyIndex;
 						}
 					}
+
+					// find compute queue
+					for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
+					{
+						// we're trying to find dedicated queues, so skip the graphics queue
+						if (queueFamilyIndex == graphicsFamilyIndex)
+						{
+							continue;
+						}
+
+						auto &queueFamily = queueFamilies[queueFamilyIndex];
+						if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+						{
+							computeFamilyIndex = queueFamilyIndex;
+						}
+					}
+
+					// find transfer queue
+					for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
+					{
+						// we're trying to find dedicated queues, so skip the graphics/compute queue
+						if (queueFamilyIndex == graphicsFamilyIndex || queueFamilyIndex == computeFamilyIndex)
+						{
+							continue;
+						}
+
+						auto &queueFamily = queueFamilies[queueFamilyIndex];
+						if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+						{
+							transferFamilyIndex = queueFamilyIndex;
+						}
+					}
+
+					// use graphics queue if no dedicated other queues
+					if (computeFamilyIndex == -1)
+					{
+						computeFamilyIndex = graphicsFamilyIndex;
+					}
+					if (transferFamilyIndex == -1)
+					{
+						transferFamilyIndex = graphicsFamilyIndex;
+					}
+
+					// query present support
+					vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, graphicsFamilyIndex, m_surface, &graphicsFamilyPresentable);
+					vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, computeFamilyIndex, m_surface, &computeFamilyPresentable);
 				}
 
 				// test if all required extensions are supported by this physical device
@@ -230,9 +255,10 @@ namespace VEngine
 				vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
 				if (graphicsFamilyIndex >= 0
-					&& presentFamilyIndex >= 0
 					&& computeFamilyIndex >= 0
 					&& transferFamilyIndex >= 0
+					&& graphicsFamilyPresentable
+					&& computeFamilyPresentable
 					&& extensionsSupported
 					&& swapChainAdequate
 					&& supportedFeatures.samplerAnisotropy
@@ -244,9 +270,10 @@ namespace VEngine
 					m_queueFamilyIndices = 
 					{ 
 						static_cast<uint32_t>(graphicsFamilyIndex),  
-						static_cast<uint32_t>(presentFamilyIndex),  
-						static_cast<uint32_t>(computeFamilyIndex ),  
-						static_cast<uint32_t>(transferFamilyIndex )
+						static_cast<uint32_t>(computeFamilyIndex),  
+						static_cast<uint32_t>(transferFamilyIndex),
+						static_cast<bool>(graphicsFamilyPresentable),
+						static_cast<bool>(computeFamilyPresentable)
 					};
 					m_swapChainSupportDetails = swapChainSupportDetails;
 					vkGetPhysicalDeviceProperties(physicalDevice, &m_properties);
@@ -264,7 +291,7 @@ namespace VEngine
 		// create logical device and retrieve queues
 		{
 			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-			std::set<uint32_t> uniqueQueueFamilies = { m_queueFamilyIndices.m_graphicsFamily, m_queueFamilyIndices.m_presentFamily, m_queueFamilyIndices.m_computeFamily, m_queueFamilyIndices.m_transferFamily };
+			std::set<uint32_t> uniqueQueueFamilies = { m_queueFamilyIndices.m_graphicsFamily, m_queueFamilyIndices.m_computeFamily, m_queueFamilyIndices.m_transferFamily };
 
 			float queuePriority = 1.0f;
 			for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -305,7 +332,6 @@ namespace VEngine
 			}
 
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_graphicsFamily, 0, &m_graphicsQueue);
-			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_presentFamily, 0, &m_presentQueue);
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_computeFamily, 0, &m_computeQueue);
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_transferFamily, 0, &m_transferQueue);
 		}
@@ -339,6 +365,29 @@ namespace VEngine
 				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create semaphores!", -1);
+			}
+		}
+
+		// subgroup properties
+		{
+			m_subgroupProperties = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES };
+
+			VkPhysicalDeviceProperties2 physicalDeviceProperties;
+			physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			physicalDeviceProperties.pNext = &m_subgroupProperties;
+
+			vkGetPhysicalDeviceProperties2(m_physicalDevice, &physicalDeviceProperties);
+		}
+
+		// create allocator
+		{
+			VmaAllocatorCreateInfo allocatorInfo = {};
+			allocatorInfo.physicalDevice = m_physicalDevice;
+			allocatorInfo.device = m_device;
+
+			if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create allocator!", -1);
 			}
 		}
 	}
