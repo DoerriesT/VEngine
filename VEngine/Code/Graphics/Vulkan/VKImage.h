@@ -5,8 +5,29 @@
 
 namespace VEngine
 {
-	struct VKImage
+	class VKImage
 	{
+	public:
+		void create(const VkImageCreateInfo &imageCreateInfo, 
+			const VmaAllocationCreateInfo &allocCreateInfo);
+		void destroy();
+		VkImage getImage() const;
+		VkImageType getImageType() const;
+		VkFormat getFormat() const;
+		uint32_t getWidth() const;
+		uint32_t getHeight() const;
+		uint32_t getDepth() const;
+		uint32_t getMipLevels() const;
+		uint32_t getArrayLayers() const;
+		VkSampleCountFlagBits getSamples() const;
+		VkImageTiling getTiling() const;
+		VkSharingMode getSharingMode() const;
+		VmaAllocation getAllocation() const;
+		VkDeviceMemory getDeviceMemory() const;
+		VkDeviceSize getOffset() const;
+		bool isValid() const;
+
+	private:
 		VkImage m_image;
 		VkImageType m_imageType;
 		VkFormat m_format;
@@ -19,13 +40,8 @@ namespace VEngine
 		VkImageTiling m_tiling;
 		VkSharingMode m_sharingMode;
 		VmaAllocation m_allocation;
-		VmaAllocationInfo m_allocationInfo;
-
-		explicit VKImage(const VkImageCreateInfo &imageCreateInfo, const VmaAllocationCreateInfo &allocCreateInfo);
-		VKImage(const VKImage &) = delete;
-		VKImage(const VKImage &&) = delete;
-		VKImage &operator= (const VKImage &) = delete;
-		VKImage &operator= (const VKImage &&) = delete;
-		~VKImage();
+		VkDeviceMemory m_deviceMemory;
+		VkDeviceSize m_offset;
+		bool m_valid;
 	};
 }

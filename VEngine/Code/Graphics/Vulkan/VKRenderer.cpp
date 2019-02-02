@@ -118,9 +118,10 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
 	m_renderResources->createStorageBuffers();
 	m_renderResources->createCommandBuffers();
-	m_renderResources->createDummyTexture();
 	m_renderResources->createDescriptors();
 	m_renderResources->createEvents();
+
+	updateTextureData();
 
 	m_tilingPipeline->init(m_renderResources.get());
 	m_geometryPipeline->init(width, height, m_geometryRenderPass->get(), m_renderResources.get());
@@ -457,7 +458,10 @@ void VEngine::VKRenderer::freeTexture(uint32_t id)
 
 void VEngine::VKRenderer::updateTextureData()
 {
-	m_renderResources->updateTextureArray(m_textureLoader->getTextures());
+	const VkDescriptorImageInfo *imageInfos;
+	size_t count;
+	m_textureLoader->getDescriptorImageInfos(&imageInfos, count);
+	m_renderResources->updateTextureArray(imageInfos, count);
 }
 
 unsigned char *VEngine::VKRenderer::getDirectionalLightDataPtr(uint32_t &maxLights, size_t &itemSize)

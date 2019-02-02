@@ -1,34 +1,38 @@
 #pragma once
-#include <map>
 #include <vector>
-#include <string>
+#include <bitset>
 #include <vulkan/vulkan.h>
-#include "VKImageData.h"
+#include "VKImage.h"
+#include "VKBuffer.h"
+#include "VKRenderResources.h"
 
 namespace VEngine
 {
-	struct VKTexture
-	{
-		uint32_t m_id;
-		VKImageData m_imageData;
-		VkSampler m_sampler;
-		unsigned int m_width;
-		unsigned int m_height;
-		unsigned int m_layers;
-		unsigned int m_levels;
-	};
-
 	class VKTextureLoader
 	{
 	public:
 		explicit VKTextureLoader();
-		uint32_t load(const char *filepath);
-		void free(uint32_t id);
-		std::vector<VKTexture *> getTextures();
+		VKTextureLoader(const VKTextureLoader &) = delete;
+		VKTextureLoader(const VKTextureLoader &&) = delete;
+		VKTextureLoader &operator= (const VKTextureLoader &) = delete;
+		VKTextureLoader &operator= (const VKTextureLoader &&) = delete;
+		~VKTextureLoader();
+		size_t load(const char *filepath);
+		void free(size_t id);
+		void getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count);
 
 	private:
-		std::map<uint32_t, VKTexture> m_idToTexture;
-		uint32_t m_nextId;
-		std::vector<uint32_t> m_freeIds;
+		struct VKTexture
+		{
+			VkImageView m_view;
+			VkSampler m_sampler;
+			VKImage m_image;
+		};
+
+		std::bitset<TEXTURE_ARRAY_SIZE> m_usedSlots;
+		VKBuffer m_stagingBuffer;
+		VKTexture m_dummyTexture;
+		VKTexture m_textures[TEXTURE_ARRAY_SIZE];
+		VkDescriptorImageInfo m_descriptorImageInfos[TEXTURE_ARRAY_SIZE];
 	};
 }

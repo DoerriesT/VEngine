@@ -28,9 +28,6 @@ namespace VEngine
 		VKImageData m_velocityAttachment;
 		VKImageData m_lightAttachment;
 		VKImageData m_shadowTexture;
-		VkImage m_dummyImage;
-		VkImageView m_dummyImageView;
-		VkDeviceMemory m_dummyMemory;
 
 		// buffers
 		VKBufferData m_vertexBuffer;
@@ -80,7 +77,6 @@ namespace VEngine
 		VkSampler m_shadowSampler;
 		VkSampler m_linearSampler;
 		VkSampler m_pointSampler;
-		VkSampler m_dummySampler;
 		
 		// sync
 		VkEvent m_shadowsFinishedEvent;
@@ -95,13 +91,12 @@ namespace VEngine
 		void createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize);
 		void createStorageBuffers();
 		void createCommandBuffers();
-		void createDummyTexture();
 		void createDescriptors();
 		void createEvents();
 		void resize(unsigned int width, unsigned int height);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
-		void updateTextureArray(const std::vector<VKTexture *> &textures);
+		void updateTextureArray(const VkDescriptorImageInfo *data, size_t count);
 
 	private:
 		explicit VKRenderResources();

@@ -82,7 +82,7 @@ void VEngine::VKLightingPipeline::recordCommandBuffer(VKRenderResources *renderR
 	VKUtility::setImageLayout(
 		renderResources->m_lightingCommandBuffer,
 		renderResources->m_lightAttachment.m_image,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_GENERAL,
 		subresourceRange,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,

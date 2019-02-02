@@ -5,19 +5,26 @@
 
 namespace VEngine
 {
-	struct VKBuffer
+	class VKBuffer
 	{
+	public:
+		void create(const VkBufferCreateInfo &bufferCreateInfo, const VmaAllocationCreateInfo &allocCreateInfo);
+		void destroy();
+		VkBuffer getBuffer() const;
+		VkDeviceSize getSize() const;
+		VkSharingMode getSharingMode() const;
+		VmaAllocation getAllocation() const;
+		VkDeviceMemory getDeviceMemory() const;
+		VkDeviceSize getOffset() const;
+		bool isValid() const;
+
+	private:
 		VkBuffer m_buffer;
 		VkDeviceSize m_size;
 		VkSharingMode m_sharingMode;
 		VmaAllocation m_allocation;
-		VmaAllocationInfo m_allocationInfo;
-
-		explicit VKBuffer(const VkBufferCreateInfo &bufferCreateInfo, const VmaAllocationCreateInfo &allocCreateInfo);
-		VKBuffer(const VKBuffer &) = delete;
-		VKBuffer(const VKBuffer &&) = delete;
-		VKBuffer &operator= (const VKBuffer &) = delete;
-		VKBuffer &operator= (const VKBuffer &&) = delete;
-		~VKBuffer();
+		VkDeviceMemory m_deviceMemory;
+		VkDeviceSize m_offset;
+		bool m_valid;
 	};
 }
