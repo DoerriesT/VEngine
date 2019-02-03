@@ -1,6 +1,6 @@
 #pragma once
-#include "VKImageData.h"
-#include "VKBufferData.h"
+#include "VKImage.h"
+#include "VKBuffer.h"
 #include <vector>
 
 #define MAX_UNIFORM_BUFFER_INSTANCE_COUNT (512)
@@ -14,35 +14,41 @@
 namespace VEngine
 {
 	class VKRenderer;
-	struct VKTexture;
 
 	struct VKRenderResources
 	{
 		friend VKRenderer;
 	public:
 		// images
-		VKImageData m_depthAttachment;
-		VKImageData m_albedoAttachment;
-		VKImageData m_normalAttachment;
-		VKImageData m_materialAttachment;
-		VKImageData m_velocityAttachment;
-		VKImageData m_lightAttachment;
-		VKImageData m_shadowTexture;
+		VKImage m_depthAttachment;
+		VKImage m_albedoAttachment;
+		VKImage m_normalAttachment;
+		VKImage m_materialAttachment;
+		VKImage m_velocityAttachment;
+		VKImage m_lightAttachment;
+		VKImage m_shadowTexture;
+
+		// views
+		VkImageView m_depthAttachmentView;
+		VkImageView m_albedoAttachmentView;
+		VkImageView m_normalAttachmentView;
+		VkImageView m_materialAttachmentView;
+		VkImageView m_velocityAttachmentView;
+		VkImageView m_lightAttachmentView;
+		VkImageView m_shadowTextureView;
 
 		// buffers
-		VKBufferData m_vertexBuffer;
-		VKBufferData m_indexBuffer;
-		VKBufferData m_mainUniformBuffer;
-		VKBufferData m_lightDataStorageBuffer;
-		VKBufferData m_lightIndexStorageBuffer;
-
-		// sizes
-		VkDeviceSize m_perFrameDataSize;
-		VkDeviceSize m_perDrawDataSize;
-		VkDeviceSize m_directionalLightDataSize;
-		VkDeviceSize m_pointLightDataSize;
-		VkDeviceSize m_spotLightDataSize;
-		VkDeviceSize m_shadowDataSize;
+		VKBuffer m_vertexBuffer;
+		VKBuffer m_indexBuffer;
+		VKBuffer m_perFrameDataUniformBuffer;
+		VKBuffer m_perDrawDataUniformBuffer;
+		VKBuffer m_directionalLightDataStorageBuffer;
+		VKBuffer m_pointLightDataStorageBuffer;
+		VKBuffer m_spotLightDataStorageBuffer;
+		VKBuffer m_shadowDataStorageBuffer;
+		VKBuffer m_zBinStorageBuffer;
+		VKBuffer m_lightCullDataStorageBuffer;
+		VKBuffer m_lightIndexStorageBuffer;
 
 		// fbos
 		VkFramebuffer m_geometryFillFramebuffer;

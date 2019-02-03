@@ -9,7 +9,7 @@ VEngine::VKShadowRenderPass::VKShadowRenderPass(VKRenderResources *renderResourc
 	:m_shadowPipeline()
 {
 	VkAttachmentDescription attachmentDescription = {};
-	attachmentDescription.format = renderResources->m_shadowTexture.m_format;
+	attachmentDescription.format = renderResources->m_shadowTexture.getFormat();
 	attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

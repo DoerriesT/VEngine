@@ -180,7 +180,7 @@ void VEngine::VKShadowPipeline::recordCommandBuffer(VkRenderPass renderPass, VKR
 			vkCmdClearAttachments(renderResources->m_shadowsCommandBuffer, 1, &clearAttachment, clearRects.size(), clearRects.data());
 		}
 		
-		vkCmdBindIndexBuffer(renderResources->m_shadowsCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_shadowsCommandBuffer, renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		for (size_t i = 0; i < lightData.m_shadowJobs.size(); ++i)
 		{
@@ -193,12 +193,13 @@ void VEngine::VKShadowPipeline::recordCommandBuffer(VkRenderPass renderPass, VKR
 			const glm::mat4 &viewProjection = job.m_shadowViewProjectionMatrix;
 			vkCmdPushConstants(renderResources->m_shadowsCommandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
 
+			VkBuffer vertexBuffer = renderResources->m_vertexBuffer.getBuffer();
 			for (size_t i = 0; i < drawLists.m_opaqueItems.size(); ++i)
 			{
 				const DrawItem &item = drawLists.m_opaqueItems[i];
-				vkCmdBindVertexBuffers(renderResources->m_shadowsCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+				vkCmdBindVertexBuffers(renderResources->m_shadowsCommandBuffer, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 
-				uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * i);
+				uint32_t dynamicOffset = static_cast<uint32_t>(sizeof(PerDrawData) * i);
 				vkCmdBindDescriptorSets(renderResources->m_shadowsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
 				vkCmdDrawIndexed(renderResources->m_shadowsCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);

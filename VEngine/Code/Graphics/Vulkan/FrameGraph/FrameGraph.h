@@ -5,8 +5,8 @@
 #include <cassert>
 #include <algorithm>
 #include <cstdint>
-#include "Graphics/Vulkan/VKImageData.h"
-#include "Graphics/Vulkan/VKBufferData.h"
+#include "Graphics/Vulkan/VKImage.h"
+#include "Graphics/Vulkan/VKBuffer.h"
 #include "Graphics/Vulkan/VKResourceManager.h"
 
 namespace VEngine
@@ -240,14 +240,16 @@ namespace VEngine
 		{
 			friend Graph;
 		public:
-			VKImageData getImageData(ImageHandle handle) const;
-			VKBufferData getBufferData(BufferHandle handle) const;
+			VkImage getImage(ImageHandle handle) const;
+			VkImageView getImageView(ImageHandle handle) const;
+			VkBuffer getBuffer(BufferHandle handle) const;
 
 		private:
 			std::vector<VirtualImage> m_virtualImages;
 			std::vector<VirtualBuffer> m_virtualBuffers;
-			std::vector<VKImageData> m_images;
-			std::vector<VKBufferData> m_buffers;
+			std::vector<VKImage> m_images;
+			std::vector<VkImageView> m_imageViews;
+			std::vector<VKBuffer> m_buffers;
 		};
 
 		class Graph

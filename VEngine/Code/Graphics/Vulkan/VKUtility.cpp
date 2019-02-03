@@ -1,67 +1,6 @@
 #include "VKUtility.h"
 #include "Utility/Utility.h"
 #include "VKContext.h"
-#include "VKImageData.h"
-
-void VEngine::VKUtility::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) 
-{
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = width;
-	imageInfo.extent.height = height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = mipLevels;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = usage;
-	imageInfo.samples = numSamples;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VkImageFormatProperties props;
-	if (vkGetPhysicalDeviceImageFormatProperties(g_context.m_physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.tiling, imageInfo.usage, imageInfo.flags, &props) != VK_SUCCESS)
-	{
-		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(g_context.m_physicalDevice, imageInfo.format, &formatProps);
-		Utility::fatalExit("Requested image format not supported!", -1);
-	}
-
-	if (vkCreateImage(g_context.m_device, &imageInfo, nullptr, &image) != VK_SUCCESS) 
-	{
-		Utility::fatalExit("Failed to create image!", -1);
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(g_context.m_device, image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-	if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) 
-	{
-		Utility::fatalExit("Failed to allocate image memory!", -1);
-	}
-
-	vkBindImageMemory(g_context.m_device, image, imageMemory, 0);
-}
-
-void VEngine::VKUtility::createImageView(const VkImageSubresourceRange &subresourceRange, VKImageData &image)
-{
-	VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-	viewInfo.image = image.m_image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = image.m_format;
-	viewInfo.subresourceRange = subresourceRange;
-
-	if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &image.m_view) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to create image view!", -1);
-	}
-}
 
 VkFormat VEngine::VKUtility::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
@@ -111,16 +50,6 @@ void VEngine::VKUtility::endSingleTimeCommands(VkQueue queue, VkCommandPool comm
 	vkQueueWaitIdle(queue);
 
 	vkFreeCommandBuffers(g_context.m_device, commandPool, 1, &commandBuffer);
-}
-
-void VEngine::VKUtility::copyBuffer(VkQueue queue, VkCommandPool commandPool, VKBufferData srcBuffer, VKBufferData dstBuffer, VkDeviceSize size)
-{
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
-
-	VkBufferCopy copyRegion = { 0, 0, size };
-	vkCmdCopyBuffer(commandBuffer, srcBuffer.m_buffer, dstBuffer.m_buffer, 1, &copyRegion);
-
-	endSingleTimeCommands(queue, commandPool, commandBuffer);
 }
 
 void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, const VkImageSubresourceRange &subresourceRange, VkPipelineStageFlags srcStages, VkPipelineStageFlags destStages)
@@ -203,37 +132,6 @@ void VEngine::VKUtility::setImageLayout(VkCommandBuffer commandBuffer, VkImage i
 	vkCmdPipelineBarrier(commandBuffer, srcStages, destStages, 0, 0, NULL, 0, NULL, 1, &barrier);
 }
 
-void VEngine::VKUtility::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory, VkDeviceSize &allocationSize)
-{
-	VkBufferCreateInfo bufferInfo = {};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = size;
-	bufferInfo.usage = usage;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	if (vkCreateBuffer(g_context.m_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to create buffer!", -1);
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(g_context.m_device, buffer, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-	allocationSize = allocInfo.allocationSize;
-
-	if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to allocate buffer memory!", -1);
-	}
-
-	vkBindBufferMemory(g_context.m_device, buffer, bufferMemory, 0);
-}
-
 uint32_t VEngine::VKUtility::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -297,4 +195,13 @@ VkImageAspectFlags VEngine::VKUtility::imageAspectMaskFromFormat(VkFormat format
 	mask |= (!isDepthFormat && !isStencilFormat) ? VK_IMAGE_ASPECT_COLOR_BIT : 0;
 
 	return mask;
+}
+
+VkDeviceSize VEngine::VKUtility::align(VkDeviceSize in, VkDeviceSize alignment)
+{
+	if (alignment > 0)
+	{
+		in = (in + alignment - 1) & ~(alignment - 1);
+	}
+	return in;
 }

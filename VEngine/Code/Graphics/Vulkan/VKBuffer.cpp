@@ -20,9 +20,12 @@ void VEngine::VKBuffer::create(const VkBufferCreateInfo & bufferCreateInfo, cons
 
 void VEngine::VKBuffer::destroy()
 {
-	vmaDestroyBuffer(g_context.m_allocator, m_buffer, m_allocation);
+	if (m_valid)
+	{
+		vmaDestroyBuffer(g_context.m_allocator, m_buffer, m_allocation);
 
-	m_valid = false;
+		m_valid = false;
+	}
 }
 
 VkBuffer VEngine::VKBuffer::getBuffer() const

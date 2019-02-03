@@ -145,122 +145,132 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	// update UBO data
 	{
-		void *data = m_renderResources->m_mainUniformBuffer.m_mapped;
-
 		// per frame data
 		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_perFrameDataUniformBuffer.getAllocation(), &data);
 			RenderParams *perFrameData = (RenderParams *)data;
 			*perFrameData = renderParams;
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_perFrameDataUniformBuffer.getAllocation());
 		}
 
 		// per draw data
 		{
-			unsigned char *perDrawData = ((unsigned char *)data) + m_renderResources->m_perFrameDataSize;
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation(), &data);
+			unsigned char *perDrawData = ((unsigned char *)data);
 
 			for (const DrawItem &item : drawLists.m_opaqueItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += m_renderResources->m_perDrawDataSize;
+				perDrawData += sizeof(PerDrawData);
 			}
 
 			for (const DrawItem &item : drawLists.m_maskedItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += m_renderResources->m_perDrawDataSize;
+				perDrawData += sizeof(PerDrawData);
 			}
 
 			for (const DrawItem &item : drawLists.m_blendedItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += m_renderResources->m_perDrawDataSize;
+				perDrawData += sizeof(PerDrawData);
 			}
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation());
 		}
-
-		VkMappedMemoryRange memoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-		memoryRange.memory = m_renderResources->m_mainUniformBuffer.m_memory;
-		memoryRange.offset = 0;
-		memoryRange.size = m_renderResources->m_perFrameDataSize + (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size() + drawLists.m_blendedItems.size()) * m_renderResources->m_perDrawDataSize;
-		memoryRange.size = (memoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-		vkFlushMappedMemoryRanges(g_context.m_device, 1, &memoryRange);
 	}
 
 	// update light data
 	{
-		void *data = m_renderResources->m_lightDataStorageBuffer.m_mapped;
+		assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
+		assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
+		assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
+		assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
 
 		// directional lights
 		{
-			assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
-			assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
-			assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
-			assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
-
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_directionalLightDataStorageBuffer.getAllocation(), &data);
 			unsigned char *lightBuffer = ((unsigned char *)data);
 
-			size_t pointLightDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS;
-			size_t spotLightDataOffset = pointLightDataOffset + m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS;
-			size_t shadowDataOffset = spotLightDataOffset + m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS;
-			size_t zBinsOffset = shadowDataOffset + m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA;;
-			size_t countDataOffset = zBinsOffset + Z_BINS * sizeof(glm::uvec2);
-			size_t pointCullDataOffset = countDataOffset + sizeof(glm::uvec4);
-			size_t spotCullDataOffset = pointCullDataOffset + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
-
-			// directional lights
+			for (const DirectionalLightData &item : lightData.m_directionalLightData)
 			{
-				for (const DirectionalLightData &item : lightData.m_directionalLightData)
-				{
-					memcpy(lightBuffer, &item, sizeof(item));
-					lightBuffer += m_renderResources->m_directionalLightDataSize;
-				}
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += sizeof(DirectionalLightData);
 			}
 
-			// point lights
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_directionalLightDataStorageBuffer.getAllocation());
+		}
+
+		// point lights
+		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_pointLightDataStorageBuffer.getAllocation(), &data);
+			unsigned char *lightBuffer = ((unsigned char *)data);
+
+			for (const PointLightData &item : lightData.m_pointLightData)
 			{
-				lightBuffer = ((unsigned char *)data) + pointLightDataOffset;
-				for (const PointLightData &item : lightData.m_pointLightData)
-				{
-					memcpy(lightBuffer, &item, sizeof(item));
-					lightBuffer += m_renderResources->m_pointLightDataSize;
-				}
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += sizeof(PointLightData);
 			}
 
-			// spot lights
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_pointLightDataStorageBuffer.getAllocation());
+		}
+
+		// spot lights
+		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_spotLightDataStorageBuffer.getAllocation(), &data);
+			unsigned char *lightBuffer = ((unsigned char *)data);
+
+			for (const SpotLightData &item : lightData.m_spotLightData)
 			{
-				lightBuffer = ((unsigned char *)data) + spotLightDataOffset;
-				for (const SpotLightData &item : lightData.m_spotLightData)
-				{
-					memcpy(lightBuffer, &item, sizeof(item));
-					lightBuffer += m_renderResources->m_spotLightDataSize;
-				}
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += sizeof(SpotLightData);
 			}
 
-			// shadow data
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_spotLightDataStorageBuffer.getAllocation());
+		}
+
+		// shadow data
+		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_shadowDataStorageBuffer.getAllocation(), &data);
+			unsigned char *lightBuffer = ((unsigned char *)data);
+
+			for (const ShadowData &item : lightData.m_shadowData)
 			{
-				lightBuffer = ((unsigned char *)data) + shadowDataOffset;
-				for (const ShadowData &item : lightData.m_shadowData)
-				{
-					memcpy(lightBuffer, &item, sizeof(item));
-					lightBuffer += m_renderResources->m_shadowDataSize;
-				}
+				memcpy(lightBuffer, &item, sizeof(item));
+				lightBuffer += sizeof(ShadowData);
 			}
 
-			// zbins data
-			{
-				lightBuffer = ((unsigned char *)data) + zBinsOffset;
-				memcpy(lightBuffer, lightData.m_zBins.data(), lightData.m_zBins.size() * sizeof(glm::uvec2));
-			}
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_shadowDataStorageBuffer.getAllocation());
+		}
+
+		// zbins data
+		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_zBinStorageBuffer.getAllocation(), &data);
+			memcpy(data, lightData.m_zBins.data(), lightData.m_zBins.size() * sizeof(glm::uvec2));
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_zBinStorageBuffer.getAllocation());
+		}
+
+		// cull data
+		{
+			void *data;
+			vmaMapMemory(g_context.m_allocator, m_renderResources->m_lightCullDataStorageBuffer.getAllocation(), &data);
+			unsigned char *lightBuffer = ((unsigned char *)data);
 
 			// count data
 			{
-				lightBuffer = ((unsigned char *)data) + countDataOffset;
 				glm::uvec4 counts = glm::uvec4(lightData.m_pointLightData.size(), lightData.m_spotLightData.size(), 0, 0);
 				memcpy(lightBuffer, &counts, sizeof(counts));
+				lightBuffer += sizeof(glm::uvec4);
 			}
 
 			// point light cull data
 			{
-				lightBuffer = ((unsigned char *)data) + pointCullDataOffset;
 				for (const PointLightData &item : lightData.m_pointLightData)
 				{
 					memcpy(lightBuffer, &item.m_positionRadius, sizeof(glm::vec4));
@@ -270,7 +280,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 			// spot light cull data
 			{
-				lightBuffer = ((unsigned char *)data) + spotCullDataOffset;
 				for (const SpotLightData &item : lightData.m_spotLightData)
 				{
 					memcpy(lightBuffer, &item.m_boundingSphere, sizeof(glm::vec4));
@@ -278,66 +287,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 				}
 			}
 
-			VkMappedMemoryRange directionalLightMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			directionalLightMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			directionalLightMemoryRange.offset = 0;
-			directionalLightMemoryRange.size = m_renderResources->m_directionalLightDataSize * lightData.m_directionalLightData.size();
-			directionalLightMemoryRange.size = (directionalLightMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange pointLightMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			pointLightMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			pointLightMemoryRange.offset = pointLightDataOffset - (pointLightDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			pointLightMemoryRange.size = m_renderResources->m_pointLightDataSize * lightData.m_pointLightData.size();
-			pointLightMemoryRange.size = (pointLightMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange spotLightMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			spotLightMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			spotLightMemoryRange.offset = spotLightDataOffset - (spotLightDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			spotLightMemoryRange.size = m_renderResources->m_spotLightDataSize * lightData.m_spotLightData.size();
-			spotLightMemoryRange.size = (spotLightMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange shadowDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			shadowDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			shadowDataMemoryRange.offset = shadowDataOffset - (shadowDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			shadowDataMemoryRange.size = m_renderResources->m_shadowDataSize * lightData.m_shadowData.size();
-			shadowDataMemoryRange.size = (shadowDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange zBinsDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			zBinsDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			zBinsDataMemoryRange.offset = zBinsOffset - (zBinsOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			zBinsDataMemoryRange.size = Z_BINS * sizeof(glm::uvec2);
-			zBinsDataMemoryRange.size = (zBinsDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange countDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			countDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			countDataMemoryRange.offset = countDataOffset - (countDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			countDataMemoryRange.size = sizeof(glm::uvec4);
-			countDataMemoryRange.size = (countDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange pointLightCullDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			pointLightCullDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			pointLightCullDataMemoryRange.offset = pointCullDataOffset - (pointCullDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			pointLightCullDataMemoryRange.size = sizeof(glm::vec4) * lightData.m_pointLightData.size();
-			pointLightCullDataMemoryRange.size = (pointLightCullDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange spotLightCullDataMemoryRange = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-			spotLightCullDataMemoryRange.memory = m_renderResources->m_lightDataStorageBuffer.m_memory;
-			spotLightCullDataMemoryRange.offset = spotCullDataOffset - (spotCullDataOffset % g_context.m_properties.limits.nonCoherentAtomSize);
-			spotLightCullDataMemoryRange.size = sizeof(glm::vec4) * lightData.m_spotLightData.size();
-			spotLightCullDataMemoryRange.size = (spotLightCullDataMemoryRange.size + g_context.m_properties.limits.nonCoherentAtomSize - 1) & ~(g_context.m_properties.limits.nonCoherentAtomSize - 1);
-
-			VkMappedMemoryRange ranges[] =
-			{
-				directionalLightMemoryRange,
-				pointLightMemoryRange,
-				spotLightMemoryRange,
-				shadowDataMemoryRange,
-				zBinsDataMemoryRange,
-				pointLightCullDataMemoryRange,
-				spotLightCullDataMemoryRange
-			};
-
-			vkFlushMappedMemoryRanges(g_context.m_device, sizeof(ranges) / sizeof(ranges[0]), ranges);
+			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_lightCullDataStorageBuffer.getAllocation());
 		}
 	}
 
@@ -462,74 +412,4 @@ void VEngine::VKRenderer::updateTextureData()
 	size_t count;
 	m_textureLoader->getDescriptorImageInfos(&imageInfos, count);
 	m_renderResources->updateTextureArray(imageInfos, count);
-}
-
-unsigned char *VEngine::VKRenderer::getDirectionalLightDataPtr(uint32_t &maxLights, size_t &itemSize)
-{
-	maxLights = MAX_DIRECTIONAL_LIGHTS;
-	itemSize = m_renderResources->m_directionalLightDataSize;
-	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped);
-}
-
-unsigned char *VEngine::VKRenderer::getPointLightDataPtr(uint32_t &maxLights, size_t &itemSize)
-{
-	maxLights = MAX_POINT_LIGHTS;
-	itemSize = m_renderResources->m_pointLightDataSize;
-	size_t pointLightDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS;
-	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + pointLightDataOffset;
-}
-
-unsigned char *VEngine::VKRenderer::getSpotLightDataPtr(uint32_t &maxLights, size_t &itemSize)
-{
-	maxLights = MAX_SPOT_LIGHTS;
-	itemSize = m_renderResources->m_spotLightDataSize;
-	size_t spotLightDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS;
-	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + spotLightDataOffset;
-}
-
-unsigned char *VEngine::VKRenderer::getShadowDataPtr(uint32_t &maxShadows, size_t &itemSize)
-{
-	maxShadows = MAX_SHADOW_DATA;
-	itemSize = m_renderResources->m_shadowDataSize;
-	size_t shadowDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
-		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS;
-	return ((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + shadowDataOffset;
-}
-
-glm::uvec2 *VEngine::VKRenderer::getZBinPtr(uint32_t &bins, float &binDepth)
-{
-	bins = Z_BINS;
-	binDepth = 1.0f;
-	size_t zBinsOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
-		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
-		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA;
-	return (glm::uvec2 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + zBinsOffset);
-}
-
-glm::vec4 *VEngine::VKRenderer::getPointLightCullDataPtr(uint32_t &maxLights)
-{
-	maxLights = MAX_POINT_LIGHTS;
-	size_t pointCullDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
-		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
-		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA
-		+ Z_BINS * sizeof(glm::uvec2)
-		+ sizeof(glm::uvec4);
-	return (glm::vec4 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + pointCullDataOffset);
-}
-
-glm::vec4 *VEngine::VKRenderer::getSpotLightCullDataPtr(uint32_t &maxLights)
-{
-	maxLights = MAX_SPOT_LIGHTS;
-	size_t spotCullDataOffset = m_renderResources->m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-		+ m_renderResources->m_pointLightDataSize * MAX_POINT_LIGHTS
-		+ m_renderResources->m_spotLightDataSize * MAX_SPOT_LIGHTS
-		+ m_renderResources->m_shadowDataSize * MAX_SHADOW_DATA
-		+ Z_BINS * sizeof(glm::uvec2)
-		+ sizeof(glm::uvec4)
-		+ MAX_POINT_LIGHTS * sizeof(glm::vec4);
-	return (glm::vec4 *)(((unsigned char *)m_renderResources->m_lightDataStorageBuffer.m_mapped) + spotCullDataOffset);
 }

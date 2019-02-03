@@ -6,6 +6,7 @@
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 #include "Graphics/LightData.h"
+#include "Graphics/DrawItem.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -25,111 +26,67 @@ void VEngine::VKRenderResources::resize(unsigned int width, unsigned int height)
 
 void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
 {
-	if (m_vertexBuffer.m_size < vertexSize || m_indexBuffer.m_size < indexSize)
+	if (!m_vertexBuffer.isValid() || m_vertexBuffer.getSize() < vertexSize)
 	{
-		if (m_vertexBuffer.m_size > 0 || m_indexBuffer.m_size > 0)
-		{
-			vkDestroyBuffer(g_context.m_device, m_vertexBuffer.m_buffer, nullptr);
-			vkDestroyBuffer(g_context.m_device, m_indexBuffer.m_buffer, nullptr);
-			vkFreeMemory(g_context.m_device, m_vertexBuffer.m_memory, nullptr);
-		}
+		m_vertexBuffer.destroy();
 
-		uint32_t typebits = 0;
+		VkBufferCreateInfo vertexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		vertexBufferInfo.size = vertexSize;
+		vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		// vertex buffer
-		{
-			VkBufferCreateInfo vertexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-			vertexBufferInfo.size = vertexSize;
-			vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-			if (vkCreateBuffer(g_context.m_device, &vertexBufferInfo, nullptr, &m_vertexBuffer.m_buffer) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create buffer!", -1);
-			}
+		m_vertexBuffer.create(vertexBufferInfo, allocCreateInfo);
+	}
 
-			VkMemoryRequirements vertexBufferMemRequirements;
-			vkGetBufferMemoryRequirements(g_context.m_device, m_vertexBuffer.m_buffer, &vertexBufferMemRequirements);
-			m_vertexBuffer.m_size = vertexBufferMemRequirements.size;
+	if (!m_indexBuffer.isValid() || m_indexBuffer.getSize() < vertexSize)
+	{
+		m_indexBuffer.destroy();
 
-			if (vertexBufferMemRequirements.alignment > 0)
-			{
-				m_vertexBuffer.m_size = (m_vertexBuffer.m_size + vertexBufferMemRequirements.alignment - 1) & ~(vertexBufferMemRequirements.alignment - 1);
-			}
+		VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		indexBufferInfo.size = indexSize;
+		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			typebits |= vertexBufferMemRequirements.memoryTypeBits;
-		}
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-		// index buffer
-		{
-			VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-			indexBufferInfo.size = indexSize;
-			indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-			indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-			if (vkCreateBuffer(g_context.m_device, &indexBufferInfo, nullptr, &m_indexBuffer.m_buffer) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create buffer!", -1);
-			}
-
-			VkMemoryRequirements indexBufferMemRequirements;
-			vkGetBufferMemoryRequirements(g_context.m_device, m_indexBuffer.m_buffer, &indexBufferMemRequirements);
-			m_indexBuffer.m_size = indexBufferMemRequirements.size;
-
-			if (indexBufferMemRequirements.alignment > 0)
-			{
-				m_indexBuffer.m_size = (m_indexBuffer.m_size + indexBufferMemRequirements.alignment - 1) & ~(indexBufferMemRequirements.alignment - 1);
-			}
-
-			typebits |= indexBufferMemRequirements.memoryTypeBits;
-		}
-
-
-		VkMemoryAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = m_vertexBuffer.m_size + m_indexBuffer.m_size;
-		allocInfo.memoryTypeIndex = VKUtility::findMemoryType(typebits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &m_vertexBuffer.m_memory) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to allocate buffer memory!", -1);
-		}
-
-		m_indexBuffer.m_memory = m_vertexBuffer.m_memory;
-		vkBindBufferMemory(g_context.m_device, m_vertexBuffer.m_buffer, m_vertexBuffer.m_memory, 0);
-		vkBindBufferMemory(g_context.m_device, m_indexBuffer.m_buffer, m_indexBuffer.m_memory, m_vertexBuffer.m_size);
+		m_indexBuffer.create(indexBufferInfo, allocCreateInfo);
 	}
 }
 
 void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
 {
-	VKBufferData stagingBuffer;
-	stagingBuffer.m_size = vertexSize + indexSize;
-	VKUtility::createBuffer(
-		stagingBuffer.m_size,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer.m_buffer,
-		stagingBuffer.m_memory,
-		stagingBuffer.m_size);
+	VKBuffer stagingBuffer;
+	
+	VkBufferCreateInfo stagingBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	stagingBufferInfo.size = vertexSize + indexSize;
+	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo allocCreateInfo = {};
+	allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+	stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
 
 	void *data;
-	vkMapMemory(g_context.m_device, stagingBuffer.m_memory, 0, stagingBuffer.m_size, 0, &data);
+	vmaMapMemory(g_context.m_allocator, stagingBuffer.getAllocation(), &data);
 	memcpy(data, vertices, (size_t)vertexSize);
 	memcpy(((unsigned char *)data) + vertexSize, indices, (size_t)indexSize);
-	vkUnmapMemory(g_context.m_device, stagingBuffer.m_memory);
+	vmaUnmapMemory(g_context.m_allocator, stagingBuffer.getAllocation());
 
 	VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 	{
 		VkBufferCopy copyRegionVertex = { 0, 0, vertexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.m_buffer, m_vertexBuffer.m_buffer, 1, &copyRegionVertex);
+		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_vertexBuffer.getBuffer(), 1, &copyRegionVertex);
 		VkBufferCopy copyRegionIndex = { vertexSize, 0, indexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.m_buffer, m_indexBuffer.m_buffer, 1, &copyRegionIndex);
+		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_indexBuffer.getBuffer(), 1, &copyRegionIndex);
 	}
 	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
 
-	vkDestroyBuffer(g_context.m_device, stagingBuffer.m_buffer, nullptr);
-	vkFreeMemory(g_context.m_device, stagingBuffer.m_memory, nullptr);
+	stagingBuffer.destroy();
 }
 
 void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo *data, size_t count)
@@ -137,7 +94,7 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 	VkWriteDescriptorSet descriptorWrite = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 	descriptorWrite.dstSet = m_textureDescriptorSet;
 	descriptorWrite.dstBinding = 0;
-	descriptorWrite.dstArrayElement = 1;
+	descriptorWrite.dstArrayElement = 0;
 	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrite.descriptorCount = count < TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : TEXTURE_ARRAY_SIZE;
 	descriptorWrite.pImageInfo = data;
@@ -150,7 +107,7 @@ void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned 
 {
 	// geometry fill fbo
 	{
-		VkImageView attachments[] = { m_depthAttachment.m_view, m_albedoAttachment.m_view, m_normalAttachment.m_view, m_materialAttachment.m_view, m_velocityAttachment.m_view };
+		VkImageView attachments[] = { m_depthAttachmentView, m_albedoAttachmentView, m_normalAttachmentView, m_materialAttachmentView, m_velocityAttachmentView };
 
 		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		framebufferInfo.renderPass = geometryFillRenderPass;
@@ -171,7 +128,7 @@ void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned 
 		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		framebufferInfo.renderPass = shadowRenderPass;
 		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = &m_shadowTexture.m_view;
+		framebufferInfo.pAttachments = &m_shadowTextureView;
 		framebufferInfo.width = g_shadowAtlasSize;
 		framebufferInfo.height = g_shadowAtlasSize;
 		framebufferInfo.layers = 1;
@@ -184,7 +141,7 @@ void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned 
 
 	// forward fbo
 	{
-		VkImageView attachments[] = { m_depthAttachment.m_view, m_velocityAttachment.m_view, m_lightAttachment.m_view };
+		VkImageView attachments[] = { m_depthAttachmentView, m_velocityAttachmentView, m_lightAttachmentView };
 
 		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		framebufferInfo.renderPass = forwardRenderPass;
@@ -211,51 +168,242 @@ void VEngine::VKRenderResources::createResizableTextures(unsigned int width, uns
 {
 	// depth attachment
 	{
-		m_depthAttachment.m_format = VKUtility::findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VKUtility::findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_depthAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment.m_image, m_depthAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 }, m_depthAttachment);
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_depthAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_depthAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_depthAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_depthAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 
 	// albedo attachment
 	{
-		m_albedoAttachment.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_albedoAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_albedoAttachment.m_image, m_albedoAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_albedoAttachment);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_albedoAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_albedoAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_albedoAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_albedoAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 
 	// normal attachment
 	{
-		m_normalAttachment.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_normalAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_normalAttachment.m_image, m_normalAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_normalAttachment);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_normalAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_normalAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_normalAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_normalAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 
 	// material attachment
 	{
-		m_materialAttachment.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_materialAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_materialAttachment.m_image, m_materialAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_materialAttachment);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_materialAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_materialAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_materialAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_materialAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 
 	// velocity attachment
 	{
-		m_velocityAttachment.m_format = VK_FORMAT_R16G16_SFLOAT;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_velocityAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_velocityAttachment.m_image, m_velocityAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_velocityAttachment);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_velocityAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_velocityAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_velocityAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_velocityAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 
 	// light attachment
 	{
-		m_lightAttachment.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		VKUtility::createImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, m_lightAttachment.m_format, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_lightAttachment.m_image, m_lightAttachment.m_memory);
-		VKUtility::createImageView({ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, m_lightAttachment);
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_lightAttachment.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_lightAttachment.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_lightAttachment.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_lightAttachmentView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
 	}
 }
 
@@ -263,37 +411,56 @@ void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned 
 {
 	createResizableTextures(width, height);
 
-	m_shadowTexture.m_format = VK_FORMAT_D16_UNORM;
-	VKUtility::createImage(
-		g_shadowAtlasSize,
-		g_shadowAtlasSize,
-		1,
-		VK_SAMPLE_COUNT_1_BIT,
-		m_shadowTexture.m_format,
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		m_shadowTexture.m_image,
-		m_shadowTexture.m_memory);
-	VKUtility::createImageView({ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 }, m_shadowTexture);
+	// shadow atlas
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_D16_UNORM;
+		imageCreateInfo.extent.width = g_shadowAtlasSize;
+		imageCreateInfo.extent.height = g_shadowAtlasSize;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	VkImageSubresourceRange subresourceRange = {};
-	subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	subresourceRange.baseMipLevel = 0;
-	subresourceRange.levelCount = 1;
-	subresourceRange.baseArrayLayer = 0;
-	subresourceRange.layerCount = 1;
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-	VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-	VKUtility::setImageLayout(
-		cmdBuf,
-		m_shadowTexture.m_image,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		subresourceRange,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
+		m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_shadowTexture.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_shadowTexture.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_shadowTextureView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
+		}
+
+		VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+		VKUtility::setImageLayout(
+			cmdBuf,
+			m_shadowTexture.getImage(),
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			subresourceRange,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
+	}
 
 	// shadow sampler
 	{
@@ -367,71 +534,113 @@ void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned 
 
 void VEngine::VKRenderResources::createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize)
 {
-
-	// Calculate required alignment based on minimum device offset alignment
-	VkDeviceSize minUboAlignment = g_context.m_properties.limits.minUniformBufferOffsetAlignment;
-	m_perFrameDataSize = perFrameSize;
-	m_perDrawDataSize = perDrawSize;
-
-	if (minUboAlignment > 0)
+	// per frame data
 	{
-		m_perFrameDataSize = (m_perFrameDataSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
-		m_perDrawDataSize = (m_perDrawDataSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = perFrameSize;
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_perFrameDataUniformBuffer.create(bufferInfo, allocCreateInfo);
 	}
 
-	VkDeviceSize bufferSize = MAX_UNIFORM_BUFFER_INSTANCE_COUNT * m_perDrawDataSize + m_perFrameDataSize;
+	// per draw data
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = perDrawSize * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	m_mainUniformBuffer.m_size = bufferSize;
-	VKUtility::createBuffer(
-		bufferSize,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-		m_mainUniformBuffer.m_buffer,
-		m_mainUniformBuffer.m_memory,
-		m_mainUniformBuffer.m_size);
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	vkMapMemory(g_context.m_device, m_mainUniformBuffer.m_memory, 0, m_mainUniformBuffer.m_size, 0, &m_mainUniformBuffer.m_mapped);
+		m_perDrawDataUniformBuffer.create(bufferInfo, allocCreateInfo);
+	}
 }
 
 void VEngine::VKRenderResources::createStorageBuffers()
 {
-	// light data buffer
+	// directional light
 	{
-		// Calculate required alignment based on minimum device offset alignment
-		VkDeviceSize minSboAlignment = g_context.m_properties.limits.minStorageBufferOffsetAlignment;
-		m_directionalLightDataSize = sizeof(DirectionalLightData);
-		m_pointLightDataSize = sizeof(PointLightData);
-		m_spotLightDataSize = sizeof(SpotLightData);
-		m_shadowDataSize = sizeof(ShadowData);
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (minSboAlignment > 0)
-		{
-			m_directionalLightDataSize = (m_directionalLightDataSize + minSboAlignment - 1) & ~(minSboAlignment - 1);
-			m_pointLightDataSize = (m_pointLightDataSize + minSboAlignment - 1) & ~(minSboAlignment - 1);
-			m_spotLightDataSize = (m_spotLightDataSize + minSboAlignment - 1) & ~(minSboAlignment - 1);
-			m_shadowDataSize = (m_shadowDataSize + minSboAlignment - 1) & ~(minSboAlignment - 1);
-		}
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-		VkDeviceSize bufferSize =
-			MAX_DIRECTIONAL_LIGHTS * m_directionalLightDataSize
-			+ MAX_POINT_LIGHTS * m_pointLightDataSize
-			+ MAX_SPOT_LIGHTS * m_spotLightDataSize
-			+ MAX_SHADOW_DATA * m_shadowDataSize
-			+ Z_BINS * sizeof(glm::uvec2)
-			+ sizeof(glm::uvec4)
-			+ (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4);
-
-		m_lightDataStorageBuffer.m_size = bufferSize;
-		VKUtility::createBuffer(
-			bufferSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-			m_lightDataStorageBuffer.m_buffer,
-			m_lightDataStorageBuffer.m_memory,
-			m_lightDataStorageBuffer.m_size);
-
-		vkMapMemory(g_context.m_device, m_lightDataStorageBuffer.m_memory, 0, m_lightDataStorageBuffer.m_size, 0, &m_lightDataStorageBuffer.m_mapped);
+		m_directionalLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
 	}
+
+	// point light
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_pointLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
+	}
+
+	// spot light
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_spotLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
+	}
+
+	// shadow data
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(ShadowData) * MAX_SHADOW_DATA;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_shadowDataStorageBuffer.create(bufferInfo, allocCreateInfo);
+	}
+
+	// z bin
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(glm::uvec2) * Z_BINS;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_zBinStorageBuffer.create(bufferInfo, allocCreateInfo);
+	}
+
+	// light cull data
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = sizeof(glm::uvec4) + (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) * sizeof(glm::vec4);
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_lightCullDataStorageBuffer.create(bufferInfo, allocCreateInfo);
+	}
+
 
 	// light index buffer
 	{
@@ -440,14 +649,15 @@ void VEngine::VKRenderResources::createStorageBuffers()
 		uint32_t tileCount = width * height;
 		VkDeviceSize bufferSize = (MAX_SPOT_LIGHTS + MAX_POINT_LIGHTS) / 32 * sizeof(uint32_t) * tileCount;
 
-		m_lightIndexStorageBuffer.m_size = bufferSize;
-		VKUtility::createBuffer(
-			bufferSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			m_lightIndexStorageBuffer.m_buffer,
-			m_lightIndexStorageBuffer.m_memory,
-			m_lightIndexStorageBuffer.m_size);
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = bufferSize;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_lightIndexStorageBuffer.create(bufferInfo, allocCreateInfo);
 	}
 }
 
@@ -528,7 +738,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		{
 			VkDescriptorSetLayoutBinding textureArrayLayoutBinding = {};
 			textureArrayLayoutBinding.binding = 0;
-			textureArrayLayoutBinding.descriptorCount = TEXTURE_ARRAY_SIZE + 1 /*shadow atlas*/;
+			textureArrayLayoutBinding.descriptorCount = TEXTURE_ARRAY_SIZE;
 			textureArrayLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			textureArrayLayoutBinding.pImmutableSamplers = nullptr;
 			textureArrayLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -697,7 +907,7 @@ void VEngine::VKRenderResources::createDescriptors()
 		{
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE + 6 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE + 5 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
 		};
@@ -757,117 +967,96 @@ void VEngine::VKRenderResources::createDescriptors()
 
 		// per frame UBO
 		VkDescriptorBufferInfo perFrameBufferInfo = {};
-		perFrameBufferInfo.buffer = m_mainUniformBuffer.m_buffer;
+		perFrameBufferInfo.buffer = m_perFrameDataUniformBuffer.getBuffer();
 		perFrameBufferInfo.offset = 0;
 		perFrameBufferInfo.range = sizeof(RenderParams);
 
 		// per draw UBO
 		VkDescriptorBufferInfo perDrawBufferInfo = {};
-		perDrawBufferInfo.buffer = m_mainUniformBuffer.m_buffer;
-		perDrawBufferInfo.offset = m_perFrameDataSize;
-		perDrawBufferInfo.range = m_perDrawDataSize;
+		perDrawBufferInfo.buffer = m_perDrawDataUniformBuffer.getBuffer();
+		perDrawBufferInfo.offset = 0;
+		perDrawBufferInfo.range = sizeof(PerDrawData);
 
 		// lighting result image
 		VkDescriptorImageInfo lightingResultDescriptorImageInfo;
 		lightingResultDescriptorImageInfo.sampler = VK_NULL_HANDLE;
 		lightingResultDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		lightingResultDescriptorImageInfo.imageView = m_lightAttachment.m_view;
+		lightingResultDescriptorImageInfo.imageView = m_lightAttachmentView;
 
 		VkDescriptorImageInfo lightingInputdescriptorImageInfos[4];
 
 		// depth
 		lightingInputdescriptorImageInfos[0].sampler = m_pointSampler;
 		lightingInputdescriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[0].imageView = m_depthAttachment.m_view;
+		lightingInputdescriptorImageInfos[0].imageView = m_depthAttachmentView;
 
 		// albedo
 		lightingInputdescriptorImageInfos[1].sampler = m_linearSampler;
 		lightingInputdescriptorImageInfos[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[1].imageView = m_albedoAttachment.m_view;
+		lightingInputdescriptorImageInfos[1].imageView = m_albedoAttachmentView;
 
 		// normal
 		lightingInputdescriptorImageInfos[2].sampler = m_linearSampler;
 		lightingInputdescriptorImageInfos[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[2].imageView = m_normalAttachment.m_view;
+		lightingInputdescriptorImageInfos[2].imageView = m_normalAttachmentView;
 
 		// material
 		lightingInputdescriptorImageInfos[3].sampler = m_linearSampler;
 		lightingInputdescriptorImageInfos[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[3].imageView = m_materialAttachment.m_view;
+		lightingInputdescriptorImageInfos[3].imageView = m_materialAttachmentView;
 
 		// directional light data
 		VkDescriptorBufferInfo directionalLightDataDescriptorBufferInfo = {};
-		directionalLightDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
+		directionalLightDataDescriptorBufferInfo.buffer = m_directionalLightDataStorageBuffer.getBuffer();
 		directionalLightDataDescriptorBufferInfo.offset = 0;
-		directionalLightDataDescriptorBufferInfo.range = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS;
+		directionalLightDataDescriptorBufferInfo.range = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
 
 		// point light data
 		VkDescriptorBufferInfo pointLightDataDescriptorBufferInfo = {};
-		pointLightDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		pointLightDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS;
-		pointLightDataDescriptorBufferInfo.range = m_pointLightDataSize * MAX_POINT_LIGHTS;
+		pointLightDataDescriptorBufferInfo.buffer = m_pointLightDataStorageBuffer.getBuffer();
+		pointLightDataDescriptorBufferInfo.offset = 0;
+		pointLightDataDescriptorBufferInfo.range = sizeof(PointLightData) * MAX_POINT_LIGHTS;
 
 		// spot light data
 		VkDescriptorBufferInfo spotLightDataDescriptorBufferInfo = {};
-		spotLightDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		spotLightDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS;
-		spotLightDataDescriptorBufferInfo.range = m_spotLightDataSize * MAX_SPOT_LIGHTS;
+		spotLightDataDescriptorBufferInfo.buffer = m_spotLightDataStorageBuffer.getBuffer();
+		spotLightDataDescriptorBufferInfo.offset = 0;
+		spotLightDataDescriptorBufferInfo.range = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
 
 		// shadow data
 		VkDescriptorBufferInfo shadowDataDescriptorBufferInfo = {};
-		shadowDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		shadowDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS
-			+ m_spotLightDataSize * MAX_SPOT_LIGHTS;
-		shadowDataDescriptorBufferInfo.range = m_shadowDataSize * MAX_SHADOW_DATA;
+		shadowDataDescriptorBufferInfo.buffer = m_shadowDataStorageBuffer.getBuffer();
+		shadowDataDescriptorBufferInfo.offset = 0;
+		shadowDataDescriptorBufferInfo.range = sizeof(ShadowData) * MAX_SHADOW_DATA;
 
 		// zbins
 		VkDescriptorBufferInfo zBinsDescriptorBufferInfo = {};
-		zBinsDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		zBinsDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS
-			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
-			+ m_shadowDataSize * MAX_SHADOW_DATA;
+		zBinsDescriptorBufferInfo.buffer = m_zBinStorageBuffer.getBuffer();
+		zBinsDescriptorBufferInfo.offset = 0;
 		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BINS;
 
 		// shadow texture
 		VkDescriptorImageInfo shadowTextureDescriptorImageInfo = {};
 		shadowTextureDescriptorImageInfo.sampler = m_shadowSampler;
 		shadowTextureDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		shadowTextureDescriptorImageInfo.imageView = m_shadowTexture.m_view;
+		shadowTextureDescriptorImageInfo.imageView = m_shadowTextureView;
 
 		// counts
 		VkDescriptorBufferInfo countDataDescriptorBufferInfo = {};
-		countDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		countDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS
-			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
-			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BINS;
+		countDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
+		countDataDescriptorBufferInfo.offset = 0;
 		countDataDescriptorBufferInfo.range = sizeof(glm::uvec4);
 
 		// point light cull data
 		VkDescriptorBufferInfo pointLightCullDataDescriptorBufferInfo = {};
-		pointLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		pointLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS
-			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
-			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BINS
-			+ sizeof(glm::uvec4);
+		pointLightCullDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
+		pointLightCullDataDescriptorBufferInfo.offset = sizeof(glm::uvec4);
 		pointLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 
 		// spot light cull data
 		VkDescriptorBufferInfo spotLightCullDataDescriptorBufferInfo = {};
-		spotLightCullDataDescriptorBufferInfo.buffer = m_lightDataStorageBuffer.m_buffer;
-		spotLightCullDataDescriptorBufferInfo.offset = m_directionalLightDataSize * MAX_DIRECTIONAL_LIGHTS
-			+ m_pointLightDataSize * MAX_POINT_LIGHTS
-			+ m_spotLightDataSize * MAX_SPOT_LIGHTS
-			+ m_shadowDataSize * MAX_SHADOW_DATA
-			+ sizeof(glm::uvec2) * Z_BINS
-			+ sizeof(glm::uvec4)
-			+ sizeof(glm::vec4) * MAX_POINT_LIGHTS;
+		spotLightCullDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
+		spotLightCullDataDescriptorBufferInfo.offset = sizeof(glm::uvec4) + sizeof(glm::vec4) * MAX_POINT_LIGHTS;
 		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;
 
 		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
@@ -876,22 +1065,17 @@ void VEngine::VKRenderResources::createDescriptors()
 
 		// point light indices
 		VkDescriptorBufferInfo pointLightIndicesDescriptorBufferInfo = {};
-		pointLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.m_buffer;
+		pointLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.getBuffer();
 		pointLightIndicesDescriptorBufferInfo.offset = 0;
 		pointLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_POINT_LIGHTS / 32 * tileCount;
 
 		// spot light indices
 		VkDescriptorBufferInfo spotLightIndicesDescriptorBufferInfo = {};
-		spotLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.m_buffer;
+		spotLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.getBuffer();
 		spotLightIndicesDescriptorBufferInfo.offset = pointLightIndicesDescriptorBufferInfo.range;
 		spotLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_SPOT_LIGHTS / 32 * tileCount;
 
-		VkDescriptorImageInfo shadowAtlasDescriptorImageInfo = {};
-		shadowAtlasDescriptorImageInfo.sampler = m_shadowSampler;
-		shadowAtlasDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		shadowAtlasDescriptorImageInfo.imageView = m_shadowTexture.m_view;
-
-		VkWriteDescriptorSet descriptorWrites[16] = {};
+		VkWriteDescriptorSet descriptorWrites[15] = {};
 		{
 			// per frame UBO
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1027,15 +1211,6 @@ void VEngine::VKRenderResources::createDescriptors()
 			descriptorWrites[14].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[14].descriptorCount = 1;
 			descriptorWrites[14].pBufferInfo = &spotLightIndicesDescriptorBufferInfo;
-
-			// shadow atlas
-			descriptorWrites[15].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[15].dstSet = m_textureDescriptorSet;
-			descriptorWrites[15].dstBinding = 0;
-			descriptorWrites[15].dstArrayElement = 0;
-			descriptorWrites[15].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[15].descriptorCount = 1;
-			descriptorWrites[15].pImageInfo = &shadowAtlasDescriptorImageInfo;
 		}
 
 		vkUpdateDescriptorSets(g_context.m_device, static_cast<uint32_t>(sizeof(descriptorWrites) / sizeof(descriptorWrites[0])), descriptorWrites, 0, nullptr);

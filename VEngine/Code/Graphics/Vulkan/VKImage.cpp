@@ -28,9 +28,12 @@ void VEngine::VKImage::create(const VkImageCreateInfo & imageCreateInfo, const V
 
 void VEngine::VKImage::destroy()
 {
-	vmaDestroyImage(g_context.m_allocator, m_image, m_allocation);
+	if (m_valid)
+	{
+		vmaDestroyImage(g_context.m_allocator, m_image, m_allocation);
 
-	m_valid = false;
+		m_valid = false;
+	}
 }
 
 VkImage VEngine::VKImage::getImage() const

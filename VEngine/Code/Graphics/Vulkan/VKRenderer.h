@@ -34,13 +34,6 @@ namespace VEngine
 		uint32_t loadTexture(const char *filepath);
 		void freeTexture(uint32_t id);
 		void updateTextureData();
-		unsigned char *getDirectionalLightDataPtr(uint32_t &maxLights, size_t &itemSize);
-		unsigned char *getPointLightDataPtr(uint32_t &maxLights, size_t &itemSize);
-		unsigned char *getSpotLightDataPtr(uint32_t &maxLights, size_t &itemSize);
-		unsigned char *getShadowDataPtr(uint32_t &maxShadows, size_t &itemSize);
-		glm::uvec2 *getZBinPtr(uint32_t &bins, float &binDepth);
-		glm::vec4 *getPointLightCullDataPtr(uint32_t &maxLights);
-		glm::vec4 *getSpotLightCullDataPtr(uint32_t &maxLights);
 
 	private:
 		unsigned int m_width;

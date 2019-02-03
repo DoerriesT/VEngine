@@ -161,18 +161,20 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 	{
 		vkCmdBindPipeline(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 		
-		vkCmdBindIndexBuffer(renderResources->m_forwardCommandBuffer, renderResources->m_indexBuffer.m_buffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(renderResources->m_forwardCommandBuffer, renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 		
 		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &renderResources->m_perFrameDataDescriptorSet, 0, nullptr);
 		vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &renderResources->m_textureDescriptorSet, 0, nullptr);
-
+		
+		VkBuffer vertexBuffer = renderResources->m_vertexBuffer.getBuffer();
 		uint32_t itemOffset = static_cast<uint32_t>(drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size());
 		for (size_t i = 0; i < drawLists.m_blendedItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_blendedItems[i];
-			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &renderResources->m_vertexBuffer.m_buffer, &item.m_vertexOffset);
+			
+			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 		
-			uint32_t dynamicOffset = static_cast<uint32_t>(renderResources->m_perDrawDataSize * (i + itemOffset));
+			uint32_t dynamicOffset = static_cast<uint32_t>(sizeof(PerDrawData) * (i + itemOffset));
 			vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 		
 			vkCmdDrawIndexed(renderResources->m_forwardCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);

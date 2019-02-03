@@ -370,7 +370,7 @@ void Graph::addBlitPass(const char * name, QueueType queue, ImageHandle srcHandl
 
 	pass.m_recordCommands = [=](VkCommandBuffer cmdBuf, const ResourceRegistry &registry)
 	{
-		vkCmdBlitImage(cmdBuf, registry.getImageData(srcHandle).m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, registry.getImageData(dstHandle).m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data(), filter);
+		vkCmdBlitImage(cmdBuf, registry.getImage(srcHandle), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, registry.getImage(dstHandle), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data(), filter);
 	};
 	pass.m_queue = queue;
 }
@@ -688,80 +688,53 @@ void Graph::createResources()
 			}
 
 			// create image
-			VKImageData imageData = {};
+			VKImage image = {};
 			{
-				VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-				imageInfo.flags = 0;
-				imageInfo.imageType = VK_IMAGE_TYPE_2D;
-				imageInfo.format = img.m_desc.m_format;
-				imageInfo.extent.width = img.m_desc.m_width;
-				imageInfo.extent.height = img.m_desc.m_height;
-				imageInfo.extent.depth = 1;
-				imageInfo.mipLevels = img.m_desc.m_levels;
-				imageInfo.arrayLayers = 1;
-				imageInfo.samples = VkSampleCountFlagBits(img.m_desc.m_samples);
-				imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-				imageInfo.usage = usageFlags;
-				imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-				imageInfo.queueFamilyIndexCount = 0;
-				imageInfo.pQueueFamilyIndices = nullptr;
-				imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+				imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+				imageCreateInfo.format = img.m_desc.m_format;
+				imageCreateInfo.extent.width = img.m_desc.m_width;
+				imageCreateInfo.extent.height = img.m_desc.m_height;
+				imageCreateInfo.extent.depth = 1;
+				imageCreateInfo.mipLevels = img.m_desc.m_levels;
+				imageCreateInfo.arrayLayers = 1;
+				imageCreateInfo.samples = VkSampleCountFlagBits(img.m_desc.m_samples);
+				imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+				imageCreateInfo.usage = usageFlags;
+				imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+				imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-				imageData.m_format = img.m_desc.m_format;
+				VmaAllocationCreateInfo allocCreateInfo = {};
+				allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-				VkImageFormatProperties props;
-				if (vkGetPhysicalDeviceImageFormatProperties(g_context.m_physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.tiling, imageInfo.usage, imageInfo.flags, &props) != VK_SUCCESS)
-				{
-					VkFormatProperties formatProps;
-					vkGetPhysicalDeviceFormatProperties(g_context.m_physicalDevice, imageInfo.format, &formatProps);
-					Utility::fatalExit("Requested image format not supported!", -1);
-				}
-				
-				if (vkCreateImage(g_context.m_device, &imageInfo, nullptr, &imageData.m_image) != VK_SUCCESS)
-				{
-					Utility::fatalExit("Failed to create image!", -1);
-				}
-				
-				VkMemoryRequirements memRequirements;
-				vkGetImageMemoryRequirements(g_context.m_device, imageData.m_image, &memRequirements);
-				
-				VkMemoryAllocateInfo allocInfo = {};
-				allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-				allocInfo.allocationSize = memRequirements.size;
-				allocInfo.memoryTypeIndex = VKUtility::findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-				
-				printf("Alloc RT: %d\n", memRequirements.size);
-				
-				if (vkAllocateMemory(g_context.m_device, &allocInfo, nullptr, &imageData.m_memory) != VK_SUCCESS)
-				{
-					Utility::fatalExit("Failed to allocate image memory!", -1);
-				}
-				
-				vkBindImageMemory(g_context.m_device, imageData.m_image, imageData.m_memory, 0);
+
+				image.create(imageCreateInfo, allocCreateInfo);
 			}
 
 			// create image view
+			VkImageView imageView;
 			{
 				VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-				viewInfo.image = imageData.m_image;
+				viewInfo.image = image.getImage();
 				viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-				viewInfo.format = imageData.m_format;
+				viewInfo.format = image.getFormat();
 				viewInfo.subresourceRange =
 				{
-					VKUtility::imageAspectMaskFromFormat(imageData.m_format),
+					VKUtility::imageAspectMaskFromFormat(viewInfo.format),
 					0,
 					VK_REMAINING_MIP_LEVELS ,
 					0,
 					1
 				};
 
-				if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &imageData.m_view) != VK_SUCCESS)
+				if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
 				{
 					Utility::fatalExit("Failed to create image view!", -1);
 				}
 			}
 
-			m_resourceRegistry.m_images.push_back(imageData);
+			m_resourceRegistry.m_images.push_back(image);
+			m_resourceRegistry.m_imageViews.push_back(imageView);
 			img.m_resourceIndex = m_resourceRegistry.m_images.size() - 1;
 		}
 	}
@@ -771,7 +744,34 @@ void Graph::createResources()
 		auto &buf = m_resourceRegistry.m_virtualBuffers[i];
 		if (buf.m_refCount)
 		{
-			m_resourceRegistry.m_buffers.push_back({ nullptr, nullptr, 0, 0, nullptr });
+			VkBufferUsageFlags usageFlags = 0;
+
+			// what usage flags do we need?
+			for (auto &stage : buf.m_stages)
+			{
+				Pass &pass = m_passes[stage.m_passIndex];
+				if (pass.m_refCount)
+				{
+					usageFlags |= stage.m_usage;
+				}
+			}
+
+			// create buffer
+			VKBuffer buffer = {};
+			{
+				VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+				bufferCreateInfo.size = buf.m_desc.m_size;
+				bufferCreateInfo.usage = usageFlags;
+				bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+				VmaAllocationCreateInfo allocCreateInfo = {};
+				allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+
+				buffer.create(bufferCreateInfo, allocCreateInfo);
+			}
+
+			m_resourceRegistry.m_buffers.push_back(buffer);
 			buf.m_resourceIndex = m_resourceRegistry.m_buffers.size() - 1;
 		}
 	}
@@ -816,10 +816,10 @@ void Graph::createVirtualBarriers()
 					imageBarrier.m_newLayout = stage.m_layout;
 					imageBarrier.m_srcQueueFamilyIndex = queueIndexFromQueueType(previousPass.m_queue);
 					imageBarrier.m_dstQueueFamilyIndex = queueIndexFromQueueType(currentPass.m_queue);
-					imageBarrier.m_image = m_resourceRegistry.m_images[img.m_resourceIndex].m_image;
+					imageBarrier.m_image = m_resourceRegistry.m_images[img.m_resourceIndex].getImage();
 					imageBarrier.m_subresourceRange =
 					{
-						VKUtility::imageAspectMaskFromFormat(m_resourceRegistry.m_images[img.m_resourceIndex].m_format),
+						VKUtility::imageAspectMaskFromFormat(m_resourceRegistry.m_images[img.m_resourceIndex].getFormat()),
 						0,
 						VK_REMAINING_MIP_LEVELS ,
 						0,
@@ -890,9 +890,9 @@ void Graph::createVirtualBarriers()
 					bufferBarrier.m_dstAccessMask = stage.m_accessMask;
 					bufferBarrier.m_srcQueueFamilyIndex = queueIndexFromQueueType(previousPass.m_queue);
 					bufferBarrier.m_dstQueueFamilyIndex = queueIndexFromQueueType(currentPass.m_queue);
-					bufferBarrier.m_buffer = m_resourceRegistry.m_buffers[buf.m_resourceIndex].m_buffer;
-					bufferBarrier.m_offset = m_resourceRegistry.m_buffers[buf.m_resourceIndex].m_offset;
-					bufferBarrier.m_size = m_resourceRegistry.m_buffers[buf.m_resourceIndex].m_size;
+					bufferBarrier.m_buffer = m_resourceRegistry.m_buffers[buf.m_resourceIndex].getBuffer();
+					bufferBarrier.m_offset = 0;
+					bufferBarrier.m_size = m_resourceRegistry.m_buffers[buf.m_resourceIndex].getSize();
 
 					// add dependency
 					currentPass.m_bufferBarriers.push_back({ previousStage->m_passIndex, bufferBarrier });
@@ -967,7 +967,7 @@ void Graph::createRenderPasses()
 
 						for (auto &attachmentHandle : pass.m_colorAttachments)
 						{
-							if (m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)attachmentHandle - 1].m_resourceIndex].m_image == imageBarrier.second.m_image)
+							if (m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)attachmentHandle - 1].m_resourceIndex].getImage() == imageBarrier.second.m_image)
 							{
 								imageIsAttachment = true;
 								break;
@@ -976,7 +976,7 @@ void Graph::createRenderPasses()
 
 						if (pass.m_depthStencilAttachment)
 						{
-							if (m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)pass.m_depthStencilAttachment - 1].m_resourceIndex].m_image == imageBarrier.second.m_image)
+							if (m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)pass.m_depthStencilAttachment - 1].m_resourceIndex].getImage() == imageBarrier.second.m_image)
 							{
 								imageIsAttachment = true;
 							}
@@ -1121,12 +1121,12 @@ void Graph::createRenderPasses()
 			std::vector<VkImageView> framebufferAttachments;
 			for (auto handle : pass.m_colorAttachments)
 			{
-				framebufferAttachments.push_back(m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)handle - 1].m_resourceIndex].m_view);
+				framebufferAttachments.push_back(m_resourceRegistry.m_imageViews[m_resourceRegistry.m_virtualImages[(size_t)handle - 1].m_resourceIndex]);
 			}
 
 			if (pass.m_depthStencilAttachment)
 			{
-				framebufferAttachments.push_back(m_resourceRegistry.m_images[m_resourceRegistry.m_virtualImages[(size_t)pass.m_depthStencilAttachment - 1].m_resourceIndex].m_view);
+				framebufferAttachments.push_back(m_resourceRegistry.m_imageViews[m_resourceRegistry.m_virtualImages[(size_t)pass.m_depthStencilAttachment - 1].m_resourceIndex]);
 			}
 
 			VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
@@ -1405,12 +1405,17 @@ uint32_t Graph::queueIndexFromQueueType(QueueType queueType)
 	return 0;
 }
 
-VEngine::VKImageData ResourceRegistry::getImageData(ImageHandle handle) const
+VkImage VEngine::FrameGraph::ResourceRegistry::getImage(ImageHandle handle) const
 {
-	return m_images[m_virtualImages[(size_t) handle - 1].m_resourceIndex];
+	return m_images[m_virtualImages[(size_t)handle - 1].m_resourceIndex].getImage();
 }
 
-VEngine::VKBufferData ResourceRegistry::getBufferData(BufferHandle handle) const
+VkImageView VEngine::FrameGraph::ResourceRegistry::getImageView(ImageHandle handle) const
 {
-	return m_buffers[m_virtualBuffers[(size_t)handle - 1].m_resourceIndex];
+	return m_imageViews[m_virtualImages[(size_t)handle - 1].m_resourceIndex];
+}
+
+VkBuffer VEngine::FrameGraph::ResourceRegistry::getBuffer(BufferHandle handle) const
+{
+	return m_buffers[m_virtualBuffers[(size_t)handle - 1].m_resourceIndex].getBuffer();
 }

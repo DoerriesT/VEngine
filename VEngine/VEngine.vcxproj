@@ -166,10 +166,8 @@
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\VKBufferData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\VKImageData.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKResourceManager.h" />

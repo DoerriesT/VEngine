@@ -12,7 +12,7 @@ VEngine::VKGeometryRenderPass::VKGeometryRenderPass(VKRenderResources *renderRes
 	VkAttachmentDescription attachmentDescriptions[5] = {};
 
 	// depth
-	attachmentDescriptions[0].format = renderResources->m_depthAttachment.m_format;
+	attachmentDescriptions[0].format = renderResources->m_depthAttachment.getFormat();
 	attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -22,7 +22,7 @@ VEngine::VKGeometryRenderPass::VKGeometryRenderPass(VKRenderResources *renderRes
 	attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// albedo
-	attachmentDescriptions[1].format = renderResources->m_albedoAttachment.m_format;
+	attachmentDescriptions[1].format = renderResources->m_albedoAttachment.getFormat();
 	attachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -32,7 +32,7 @@ VEngine::VKGeometryRenderPass::VKGeometryRenderPass(VKRenderResources *renderRes
 	attachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// normal
-	attachmentDescriptions[2].format = renderResources->m_normalAttachment.m_format;
+	attachmentDescriptions[2].format = renderResources->m_normalAttachment.getFormat();
 	attachmentDescriptions[2].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[2].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescriptions[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -42,7 +42,7 @@ VEngine::VKGeometryRenderPass::VKGeometryRenderPass(VKRenderResources *renderRes
 	attachmentDescriptions[2].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// material
-	attachmentDescriptions[3].format = renderResources->m_materialAttachment.m_format;
+	attachmentDescriptions[3].format = renderResources->m_materialAttachment.getFormat();
 	attachmentDescriptions[3].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[3].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescriptions[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -52,7 +52,7 @@ VEngine::VKGeometryRenderPass::VKGeometryRenderPass(VKRenderResources *renderRes
 	attachmentDescriptions[3].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// velocity
-	attachmentDescriptions[4].format = renderResources->m_velocityAttachment.m_format;
+	attachmentDescriptions[4].format = renderResources->m_velocityAttachment.getFormat();
 	attachmentDescriptions[4].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[4].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescriptions[4].storeOp = VK_ATTACHMENT_STORE_OP_STORE;

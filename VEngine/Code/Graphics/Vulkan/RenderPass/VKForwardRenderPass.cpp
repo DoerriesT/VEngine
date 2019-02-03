@@ -11,7 +11,7 @@ VEngine::VKForwardRenderPass::VKForwardRenderPass(VKRenderResources *renderResou
 	VkAttachmentDescription attachmentDescriptions[3] = {};
 
 	// depth
-	attachmentDescriptions[0].format = renderResources->m_depthAttachment.m_format;
+	attachmentDescriptions[0].format = renderResources->m_depthAttachment.getFormat();
 	attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -21,7 +21,7 @@ VEngine::VKForwardRenderPass::VKForwardRenderPass(VKRenderResources *renderResou
 	attachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// velocity
-	attachmentDescriptions[1].format = renderResources->m_velocityAttachment.m_format;
+	attachmentDescriptions[1].format = renderResources->m_velocityAttachment.getFormat();
 	attachmentDescriptions[1].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	attachmentDescriptions[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -31,7 +31,7 @@ VEngine::VKForwardRenderPass::VKForwardRenderPass(VKRenderResources *renderResou
 	attachmentDescriptions[1].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	// light
-	attachmentDescriptions[2].format = renderResources->m_lightAttachment.m_format;
+	attachmentDescriptions[2].format = renderResources->m_lightAttachment.getFormat();
 	attachmentDescriptions[2].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachmentDescriptions[2].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	attachmentDescriptions[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -150,7 +150,7 @@ void VEngine::VKForwardRenderPass::record(VKRenderResources *renderResources, co
 
 		vkCmdBlitImage(
 			renderResources->m_forwardCommandBuffer,
-			renderResources->m_lightAttachment.m_image,
+			renderResources->m_lightAttachment.getImage(),
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			swapChainImage,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
