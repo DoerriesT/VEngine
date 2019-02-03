@@ -160,22 +160,24 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			vmaMapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation(), &data);
 			unsigned char *perDrawData = ((unsigned char *)data);
 
+			size_t itemOffset = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
+
 			for (const DrawItem &item : drawLists.m_opaqueItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += sizeof(PerDrawData);
+				perDrawData += itemOffset;
 			}
 
 			for (const DrawItem &item : drawLists.m_maskedItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += sizeof(PerDrawData);
+				perDrawData += itemOffset;
 			}
 
 			for (const DrawItem &item : drawLists.m_blendedItems)
 			{
 				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += sizeof(PerDrawData);
+				perDrawData += itemOffset;
 			}
 			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation());
 		}

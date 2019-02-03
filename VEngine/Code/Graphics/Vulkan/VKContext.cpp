@@ -258,7 +258,7 @@ namespace VEngine
 					&& computeFamilyIndex >= 0
 					&& transferFamilyIndex >= 0
 					&& graphicsFamilyPresentable
-					&& computeFamilyPresentable
+					//&& computeFamilyPresentable
 					&& extensionsSupported
 					&& swapChainAdequate
 					&& supportedFeatures.samplerAnisotropy

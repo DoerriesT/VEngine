@@ -168,13 +168,14 @@ void VEngine::VKForwardPipeline::recordCommandBuffer(VkRenderPass renderPass, VK
 		
 		VkBuffer vertexBuffer = renderResources->m_vertexBuffer.getBuffer();
 		uint32_t itemOffset = static_cast<uint32_t>(drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size());
+		size_t itemSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
 		for (size_t i = 0; i < drawLists.m_blendedItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_blendedItems[i];
 			
 			vkCmdBindVertexBuffers(renderResources->m_forwardCommandBuffer, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 		
-			uint32_t dynamicOffset = static_cast<uint32_t>(sizeof(PerDrawData) * (i + itemOffset));
+			uint32_t dynamicOffset = static_cast<uint32_t>(itemSize * (i + itemOffset));
 			vkCmdBindDescriptorSets(renderResources->m_forwardCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 		
 			vkCmdDrawIndexed(renderResources->m_forwardCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);

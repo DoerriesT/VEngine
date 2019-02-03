@@ -163,12 +163,13 @@ void VEngine::VKGeometryAlphaMaskPipeline::recordCommandBuffer(VkRenderPass rend
 
 		VkBuffer vertexBuffer = renderResources->m_vertexBuffer.getBuffer();
 		uint32_t itemOffset = static_cast<uint32_t>(drawLists.m_opaqueItems.size());
+		size_t itemSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
 		for (size_t i = 0; i < drawLists.m_maskedItems.size(); ++i)
 		{
 			const DrawItem &item = drawLists.m_maskedItems[i];
 			vkCmdBindVertexBuffers(renderResources->m_geometryFillCommandBuffer, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 
-			uint32_t dynamicOffset = static_cast<uint32_t>(sizeof(PerDrawData) * (i + itemOffset));
+			uint32_t dynamicOffset = static_cast<uint32_t>(itemSize * (i + itemOffset));
 			vkCmdBindDescriptorSets(renderResources->m_geometryFillCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &renderResources->m_perDrawDataDescriptorSet, 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(renderResources->m_geometryFillCommandBuffer, item.m_indexCount, 1, item.m_baseIndex, 0, 0);

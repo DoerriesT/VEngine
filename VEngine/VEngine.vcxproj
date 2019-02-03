@@ -78,11 +78,11 @@
     <LibraryPath>.\..\Libraries\lib\32\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.97.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
     <LibraryPath>.\..\Libraries\lib\64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.85.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
+    <IncludePath>.\..\VEngine\Code;C:\Libraries\C++\VulkanSDK\1.1.97.0\Include;.\..\Libraries\include;$(IncludePath)</IncludePath>
     <LibraryPath>.\..\Libraries\lib\64\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
