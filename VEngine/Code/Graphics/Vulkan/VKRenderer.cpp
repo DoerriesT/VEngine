@@ -1,13 +1,9 @@
 #include "VKRenderer.h"
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
-#include "RenderPass/VKShadowRenderPass.h"
-#include "RenderPass/VKGeometryRenderPass.h"
-#include "RenderPass/VKForwardRenderPass.h"
 #include "Pipeline/VKTilingPipeline.h"
 #include "Pipeline/VKShadowPipeline.h"
 #include "Pipeline/VKGeometryPipeline.h"
-#include "Pipeline/VKGeometryAlphaMaskPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
 #include "Utility/Utility.h"
@@ -18,13 +14,18 @@
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 #include "FrameGraph/FrameGraph.h"
-#include "FrameGraph/Passes.h"
+#include "Pass/VKHostWritePass.h"
+#include "Pass/VKGeometryPass.h"
+#include "Pass/VKShadowPass.h"
+#include "Pass/VKTilingPass.h"
+#include "Pass/VKLightingPass.h"
+#include "Pass/VKForwardPass.h"
+#include "Pass/VKBlitPass.h"
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
 	m_height(),
-	m_swapChainImageIndex(),
-	m_geometryRenderPass()
+	m_swapChainImageIndex()
 {
 }
 
@@ -34,106 +35,20 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 {
-	{
-		FrameGraph::Graph graph;
-
-		FrameGraph::ImageDesc shadowDesc = {};
-		shadowDesc.m_name = "ShadowAtlas";
-		shadowDesc.m_initialState = FrameGraph::ImageInitialState::UNDEFINED;
-		shadowDesc.m_width = g_shadowAtlasSize;
-		shadowDesc.m_height = g_shadowAtlasSize;
-		shadowDesc.m_format = VK_FORMAT_D16_UNORM;
-
-		FrameGraph::ImageHandle depthHandle = 0;
-		FrameGraph::ImageHandle albedoHandle = 0;
-		FrameGraph::ImageHandle normalHandle = 0;
-		FrameGraph::ImageHandle materialHandle = 0;
-		FrameGraph::ImageHandle velocityHandle = 0;
-		FrameGraph::ImageHandle lightHandle = 0;
-		FrameGraph::ImageHandle shadowHandle = graph.createImage(shadowDesc);
-
-		FrameGraph::BufferHandle tilingBufHandle = 0;
-
-		FrameGraphPasses::addGBufferFillPass(graph,
-			depthHandle,
-			albedoHandle,
-			normalHandle,
-			materialHandle,
-			velocityHandle);
-
-		FrameGraphPasses::addGBufferFillAlphaPass(graph,
-			depthHandle,
-			albedoHandle,
-			normalHandle,
-			materialHandle,
-			velocityHandle);
-
-		FrameGraphPasses::addTilingPass(graph, tilingBufHandle);
-
-		FrameGraphPasses::addShadowPass(graph, shadowHandle);
-
-		FrameGraphPasses::addLightingPass(graph, 
-			depthHandle, 
-			albedoHandle, 
-			normalHandle, 
-			materialHandle, 
-			shadowHandle, 
-			tilingBufHandle, 
-			lightHandle);
-
-		FrameGraphPasses::addForwardPass(graph, 
-			shadowHandle, 
-			tilingBufHandle, 
-			depthHandle, 
-			velocityHandle, 
-			lightHandle);
-
-		graph.setBackBuffer(lightHandle);
-
-		graph.compile();
-	}
-
-
-
 	m_width = width;
 	m_height = height;
-	m_renderResources.reset(new VKRenderResources());
-	m_textureLoader.reset(new VKTextureLoader());
-	m_swapChain.reset(new VKSwapChain());
-	m_tilingPipeline.reset(new VKTilingPipeline());
-	m_shadowPipeline.reset(new VKShadowPipeline());
-	m_geometryPipeline.reset(new VKGeometryPipeline());
-	m_geometryAlphaMaskPipeline.reset(new VKGeometryAlphaMaskPipeline());
-	m_lightingPipeline.reset(new VKLightingPipeline());
-	m_forwardPipeline.reset(new VKForwardPipeline());
-
-	m_renderResources->init(width, height);
+	m_renderResources = std::make_unique<VKRenderResources>();
+	m_textureLoader = std::make_unique<VKTextureLoader>();
+	m_swapChain = std::make_unique<VKSwapChain>();
 	m_swapChain->init(width, height);
-
-	m_geometryRenderPass.reset(new VKGeometryRenderPass(m_renderResources.get()));
-	m_shadowRenderPass.reset(new VKShadowRenderPass(m_renderResources.get()));
-	m_forwardRenderPass.reset(new VKForwardRenderPass(m_renderResources.get()));
-
-	m_renderResources->createFramebuffer(width, height, m_geometryRenderPass->get(), m_shadowRenderPass->get(), m_forwardRenderPass->get());
-	m_renderResources->createUniformBuffer(sizeof(RenderParams), sizeof(PerDrawData));
-	m_renderResources->createStorageBuffers();
-	m_renderResources->createCommandBuffers();
-	m_renderResources->createDescriptors();
-	m_renderResources->createEvents();
+	m_renderResources->init(width, height);
 
 	updateTextureData();
 
-	m_tilingPipeline->init(m_renderResources.get());
-	m_geometryPipeline->init(width, height, m_geometryRenderPass->get(), m_renderResources.get());
-	m_geometryAlphaMaskPipeline->init(width, height, m_geometryRenderPass->get(), m_renderResources.get());
-	m_shadowPipeline->init(m_shadowRenderPass->get(), m_renderResources.get());
-	m_lightingPipeline->init(m_renderResources.get());
-	m_forwardPipeline->init(width, height, m_forwardRenderPass->get(), m_renderResources.get());
-
-	m_geometryRenderPass->setPipelines(m_geometryPipeline.get(), m_geometryAlphaMaskPipeline.get());
-	m_shadowRenderPass->setPipelines(m_shadowPipeline.get());
-	m_forwardRenderPass->setPipelines(m_forwardPipeline.get());
-
+	for (size_t i = 0; i < 2; ++i)
+	{
+		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator);
+	}
 }
 
 void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData)
@@ -143,249 +58,403 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		Utility::fatalExit("Exceeded max DrawItem count!", -1);
 	}
 
-	// update UBO data
+	assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
+	assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
+	assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
+	assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
+
+	size_t frameIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
+
+	FrameGraph::Graph &graph = *m_frameGraphs[frameIndex];
+
+	size_t waitSemaphoreIndex = (renderParams.m_frame - 1) % FRAMES_IN_FLIGHT;
+	size_t signalSemaphoreIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
+
+	size_t alignedPerDrawDataSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
+
+	// buffer descriptions
+	FrameGraph::BufferDescription perFrameDataBufferDesc = {};
+	perFrameDataBufferDesc.m_name = "Per Frame Data Buffer";
+	perFrameDataBufferDesc.m_concurrent = true;
+	perFrameDataBufferDesc.m_clear = false;
+	perFrameDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	perFrameDataBufferDesc.m_size = sizeof(RenderParams);
+	perFrameDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription perDrawDataBufferDesc = {};
+	perDrawDataBufferDesc.m_name = "Per Draw Data Buffer";
+	perDrawDataBufferDesc.m_concurrent = true;
+	perDrawDataBufferDesc.m_clear = false;
+	perDrawDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	perDrawDataBufferDesc.m_size = alignedPerDrawDataSize * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
+	perDrawDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription directionalLightDataBufferDesc = {};
+	directionalLightDataBufferDesc.m_name = "DirectionalLight Data Buffer";
+	directionalLightDataBufferDesc.m_concurrent = true;
+	directionalLightDataBufferDesc.m_clear = false;
+	directionalLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	directionalLightDataBufferDesc.m_size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
+	directionalLightDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription pointLightDataBufferDesc = {};
+	pointLightDataBufferDesc.m_name = "PointLight Data Buffer";
+	pointLightDataBufferDesc.m_concurrent = true;
+	pointLightDataBufferDesc.m_clear = false;
+	pointLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	pointLightDataBufferDesc.m_size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
+	pointLightDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription spotLightDataBufferDesc = {};
+	spotLightDataBufferDesc.m_name = "SpotLight Data Buffer";
+	spotLightDataBufferDesc.m_concurrent = true;
+	spotLightDataBufferDesc.m_clear = false;
+	spotLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	spotLightDataBufferDesc.m_size = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
+	spotLightDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription shadowDataBufferDesc = {};
+	shadowDataBufferDesc.m_name = "Shadow Data Buffer";
+	shadowDataBufferDesc.m_concurrent = true;
+	shadowDataBufferDesc.m_clear = false;
+	shadowDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	shadowDataBufferDesc.m_size = sizeof(ShadowData) * MAX_SHADOW_DATA;
+	shadowDataBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription pointLightZBinsBufferDesc = {};
+	pointLightZBinsBufferDesc.m_name = "Z-Bin Buffer";
+	pointLightZBinsBufferDesc.m_concurrent = true;
+	pointLightZBinsBufferDesc.m_clear = false;
+	pointLightZBinsBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	pointLightZBinsBufferDesc.m_size = sizeof(uint32_t) * Z_BINS;
+	pointLightZBinsBufferDesc.m_hostVisible = true;
+
+	FrameGraph::BufferDescription pointLightCullDataBufferDesc = {};
+	pointLightCullDataBufferDesc.m_name = "Light Cull Data Buffer";
+	pointLightCullDataBufferDesc.m_concurrent = true;
+	pointLightCullDataBufferDesc.m_clear = false;
+	pointLightCullDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
+	pointLightCullDataBufferDesc.m_size = MAX_POINT_LIGHTS * sizeof(glm::vec4);
+	pointLightCullDataBufferDesc.m_hostVisible = true;
+	
+
+	// passes
+	VKHostWritePass perFrameDataWritePass(perFrameDataBufferDesc, "Per Frame Data Write Pass", (unsigned char *)&renderParams, 
+		0, 0, sizeof(renderParams), sizeof(renderParams), sizeof(renderParams), 1);
+
+	VKHostWritePass perDrawDataWritePassOpaque(perDrawDataBufferDesc, "Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(), 
+		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_opaqueItems.size());
+
+	VKHostWritePass perDrawDataWritePassMasked(perDrawDataBufferDesc, "Per Draw Data Write Pass (Masked)", (unsigned char *)drawLists.m_maskedItems.data(),
+		offsetof(DrawItem, m_perDrawData), drawLists.m_opaqueItems.size() * alignedPerDrawDataSize, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_maskedItems.size());
+	
+	VKHostWritePass perDrawDataWritePassBlended(perDrawDataBufferDesc, "Per Draw Data Write Pass (Blended)", (unsigned char *)drawLists.m_blendedItems.data(),
+		offsetof(DrawItem, m_perDrawData), (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size()) * alignedPerDrawDataSize, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_blendedItems.size());
+
+	VKHostWritePass directionalLightDataWritePass(directionalLightDataBufferDesc, "Directional Light Data Write Pass", (unsigned char *)lightData.m_directionalLightData.data(),
+		0, 0, lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size(), 1);
+
+	VKHostWritePass pointLightDataWritePass(pointLightDataBufferDesc, "Point Light Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
+		0, 0, lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size(), 1);
+
+	VKHostWritePass spotLightDataWritePass(spotLightDataBufferDesc, "Spot Light Data Write Pass", (unsigned char *)lightData.m_spotLightData.data(),
+		0, 0, lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size(), 1);
+
+	VKHostWritePass shadowDataWritePass(shadowDataBufferDesc, "Shadow Data Write Pass", (unsigned char *)lightData.m_shadowData.data(),
+		0, 0, lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size(), 1);
+
+	VKHostWritePass pointLightZBinsWritePass(pointLightZBinsBufferDesc, "Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
+		0, 0, lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size(), 1);
+
+	VKHostWritePass pointLightCullDataWritePass(pointLightCullDataBufferDesc, "Point Light Cull Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
+		offsetof(PointLightData, m_positionRadius), 0, sizeof(glm::vec4), sizeof(glm::vec4), sizeof(PointLightData), lightData.m_pointLightData.size());
+
+	VKGeometryPass geometryPass(m_renderResources->m_geometryPipeline->getPipeline(), m_renderResources->m_geometryPipeline->getLayout(), m_renderResources.get(),
+		m_width, m_height, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
+
+	VKGeometryPass geometryAlphaMaskedPass(m_renderResources->m_geometryAlphaMaskedPipeline->getPipeline(), m_renderResources->m_geometryAlphaMaskedPipeline->getLayout(), m_renderResources.get(),
+		m_width, m_height, frameIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
+
+	VKShadowPass shadowPass(m_renderResources->m_shadowPipeline->getPipeline(), m_renderResources->m_shadowPipeline->getLayout(), m_renderResources.get(),
+		g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
+
+	VKTilingPass tilingPass(m_renderResources->m_tilingPipeline->getPipeline(), m_renderResources->m_tilingPipeline->getLayout(), m_renderResources.get(),
+		m_width, m_height, frameIndex, lightData.m_pointLightData.size());
+
+	VKLightingPass lightingPass(m_renderResources->m_lightingPipeline->getPipeline(), m_renderResources->m_lightingPipeline->getLayout(), m_renderResources.get(),
+		m_width, m_height, frameIndex);
+
+	VkOffset3D blitSize;
+	blitSize.x = m_width;
+	blitSize.y = m_height;
+	blitSize.z = 1;
+
+	VkImageBlit imageBlitRegion = {};
+	imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageBlitRegion.srcSubresource.layerCount = 1;
+	imageBlitRegion.srcOffsets[1] = blitSize;
+	imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageBlitRegion.dstSubresource.layerCount = 1;
+	imageBlitRegion.dstOffsets[1] = blitSize;
+
+	VKBlitPass blitPass("Blit Pass", 1, &imageBlitRegion, VK_FILTER_NEAREST);
+
+
+	graph.reset();
+
+	FrameGraph::BufferHandle perFrameDataBufferHandle = 0;
+	FrameGraph::BufferHandle perDrawDataBufferHandle = 0;
+	FrameGraph::BufferHandle directionalLightDataBufferHandle = 0;
+	FrameGraph::BufferHandle pointLightDataBufferHandle = 0;
+	FrameGraph::BufferHandle spotLightDataBufferHandle = 0;
+	FrameGraph::BufferHandle shadowDataBufferHandle = 0;
+	FrameGraph::BufferHandle pointLightZBinsBufferHandle = 0;
+	FrameGraph::BufferHandle pointLightCullDataBufferHandle = 0;
+	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
+	FrameGraph::ImageHandle depthTextureHandle = 0;
+	FrameGraph::ImageHandle albedoTextureHandle = 0;
+	FrameGraph::ImageHandle normalTextureHandle = 0;
+	FrameGraph::ImageHandle materialTextureHandle = 0;
+	FrameGraph::ImageHandle velocityTextureHandle = 0;
+	FrameGraph::ImageHandle lightTextureHandle = 0;
+	FrameGraph::ImageHandle shadowTextureHandle = 0;
+	FrameGraph::ImageHandle swapchainTextureHandle = 0;
+
+	// import resources
 	{
-		// per frame data
+		// shadow atlas
 		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_perFrameDataUniformBuffer.getAllocation(), &data);
-			RenderParams *perFrameData = (RenderParams *)data;
-			*perFrameData = renderParams;
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_perFrameDataUniformBuffer.getAllocation());
-		}
+			FrameGraph::ImageDescription desc = {};
+			desc.m_name = "Shadow Atlas";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = g_shadowAtlasSize;
+			desc.m_height = g_shadowAtlasSize;
+			desc.m_format = m_renderResources->m_shadowTexture.getFormat();
 
-		// per draw data
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation(), &data);
-			unsigned char *perDrawData = ((unsigned char *)data);
 
-			size_t itemOffset = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
-
-			for (const DrawItem &item : drawLists.m_opaqueItems)
-			{
-				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += itemOffset;
-			}
-
-			for (const DrawItem &item : drawLists.m_maskedItems)
-			{
-				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += itemOffset;
-			}
-
-			for (const DrawItem &item : drawLists.m_blendedItems)
-			{
-				memcpy(perDrawData, &item.m_perDrawData, sizeof(item.m_perDrawData));
-				perDrawData += itemOffset;
-			}
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_perDrawDataUniformBuffer.getAllocation());
+			shadowTextureHandle = graph.importImage(desc,
+				m_renderResources->m_shadowTexture.getImage(),
+				m_renderResources->m_shadowTextureView,
+				&m_renderResources->m_shadowTextureLayout,
+				renderParams.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[waitSemaphoreIndex], // on first frame we dont wait
+				m_renderResources->m_shadowTextureSemaphores[signalSemaphoreIndex]);
 		}
 	}
 
-	// update light data
+	// host write passes
+	perFrameDataWritePass.addToGraph(graph, perFrameDataBufferHandle);
+	//if (!drawLists.m_opaqueItems.empty())
 	{
-		assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
-		assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
-		assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
-		assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
-
-		// directional lights
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_directionalLightDataStorageBuffer.getAllocation(), &data);
-			unsigned char *lightBuffer = ((unsigned char *)data);
-
-			for (const DirectionalLightData &item : lightData.m_directionalLightData)
-			{
-				memcpy(lightBuffer, &item, sizeof(item));
-				lightBuffer += sizeof(DirectionalLightData);
-			}
-
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_directionalLightDataStorageBuffer.getAllocation());
-		}
-
-		// point lights
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_pointLightDataStorageBuffer.getAllocation(), &data);
-			unsigned char *lightBuffer = ((unsigned char *)data);
-
-			for (const PointLightData &item : lightData.m_pointLightData)
-			{
-				memcpy(lightBuffer, &item, sizeof(item));
-				lightBuffer += sizeof(PointLightData);
-			}
-
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_pointLightDataStorageBuffer.getAllocation());
-		}
-
-		// spot lights
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_spotLightDataStorageBuffer.getAllocation(), &data);
-			unsigned char *lightBuffer = ((unsigned char *)data);
-
-			for (const SpotLightData &item : lightData.m_spotLightData)
-			{
-				memcpy(lightBuffer, &item, sizeof(item));
-				lightBuffer += sizeof(SpotLightData);
-			}
-
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_spotLightDataStorageBuffer.getAllocation());
-		}
-
-		// shadow data
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_shadowDataStorageBuffer.getAllocation(), &data);
-			unsigned char *lightBuffer = ((unsigned char *)data);
-
-			for (const ShadowData &item : lightData.m_shadowData)
-			{
-				memcpy(lightBuffer, &item, sizeof(item));
-				lightBuffer += sizeof(ShadowData);
-			}
-
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_shadowDataStorageBuffer.getAllocation());
-		}
-
-		// zbins data
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_zBinStorageBuffer.getAllocation(), &data);
-			memcpy(data, lightData.m_zBins.data(), lightData.m_zBins.size() * sizeof(glm::uvec2));
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_zBinStorageBuffer.getAllocation());
-		}
-
-		// cull data
-		{
-			void *data;
-			vmaMapMemory(g_context.m_allocator, m_renderResources->m_lightCullDataStorageBuffer.getAllocation(), &data);
-			unsigned char *lightBuffer = ((unsigned char *)data);
-
-			// count data
-			{
-				glm::uvec4 counts = glm::uvec4(lightData.m_pointLightData.size(), lightData.m_spotLightData.size(), 0, 0);
-				memcpy(lightBuffer, &counts, sizeof(counts));
-				lightBuffer += sizeof(glm::uvec4);
-			}
-
-			// point light cull data
-			{
-				for (const PointLightData &item : lightData.m_pointLightData)
-				{
-					memcpy(lightBuffer, &item.m_positionRadius, sizeof(glm::vec4));
-					lightBuffer += sizeof(glm::vec4);
-				}
-			}
-
-			// spot light cull data
-			{
-				for (const SpotLightData &item : lightData.m_spotLightData)
-				{
-					memcpy(lightBuffer, &item.m_boundingSphere, sizeof(glm::vec4));
-					lightBuffer += sizeof(glm::vec4);
-				}
-			}
-
-			vmaUnmapMemory(g_context.m_allocator, m_renderResources->m_lightCullDataStorageBuffer.getAllocation());
-		}
+		perDrawDataWritePassOpaque.addToGraph(graph, perDrawDataBufferHandle);
+	}
+	//if (!drawLists.m_maskedItems.empty())
+	{
+		perDrawDataWritePassMasked.addToGraph(graph, perDrawDataBufferHandle);
+	}
+	//if (!drawLists.m_blendedItems.empty())
+	{
+		//perDrawDataWritePassBlended.addToGraph(graph, perDrawDataBufferHandle);
+	}
+	//if (!lightData.m_directionalLightData.empty())
+	{
+		directionalLightDataWritePass.addToGraph(graph, directionalLightDataBufferHandle);
+	}
+	//if (!lightData.m_pointLightData.empty())
+	{
+		pointLightDataWritePass.addToGraph(graph, pointLightDataBufferHandle);
+		pointLightZBinsWritePass.addToGraph(graph, pointLightZBinsBufferHandle);
+		pointLightCullDataWritePass.addToGraph(graph, pointLightCullDataBufferHandle);
+	}
+	//if (!lightData.m_spotLightData.empty())
+	{
+		spotLightDataWritePass.addToGraph(graph, spotLightDataBufferHandle);
+	}
+	//if (!lightData.m_shadowData.empty())
+	{
+		shadowDataWritePass.addToGraph(graph, shadowDataBufferHandle);
 	}
 
-	// tiling
+	// draw opaque geometry to gbuffer
+	if (!drawLists.m_opaqueItems.empty())
 	{
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(m_renderResources->m_tilingCommandBuffer, &beginInfo);
-		{
-			m_tilingPipeline->recordCommandBuffer(m_renderResources.get(), m_width, m_height);
-		}
-		vkEndCommandBuffer(m_renderResources->m_tilingCommandBuffer);
-
-		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_renderResources->m_tilingCommandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		if (vkQueueSubmit(g_context.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to submit draw command buffer!", -1);
-		}
+		geometryPass.addToGraph(graph,
+			perFrameDataBufferHandle,
+			perDrawDataBufferHandle,
+			depthTextureHandle,
+			albedoTextureHandle,
+			normalTextureHandle,
+			materialTextureHandle,
+			velocityTextureHandle);
 	}
 
-	m_geometryRenderPass->record(m_renderResources.get(), drawLists, m_width, m_height);
-	m_geometryRenderPass->submit(m_renderResources.get());
-	m_shadowRenderPass->record(m_renderResources.get(), drawLists, lightData, m_width, m_height);
-	m_shadowRenderPass->submit(m_renderResources.get());
-
-	// lighting
+	// draw opaque alpha masked geometry to gbuffer
+	if (!drawLists.m_maskedItems.empty())
 	{
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		geometryAlphaMaskedPass.addToGraph(graph,
+			perFrameDataBufferHandle,
+			perDrawDataBufferHandle,
+			depthTextureHandle,
+			albedoTextureHandle,
+			normalTextureHandle,
+			materialTextureHandle,
+			velocityTextureHandle);
+	}
 
-		vkBeginCommandBuffer(m_renderResources->m_lightingCommandBuffer, &beginInfo);
+	// draw shadows
+	if (!lightData.m_shadowJobs.empty())
+	{
+		shadowPass.addToGraph(graph,
+			perFrameDataBufferHandle,
+			perDrawDataBufferHandle,
+			shadowTextureHandle);
+	}
+
+	// cull lights to tiles
+	{
+		tilingPass.addToGraph(graph,
+			perFrameDataBufferHandle,
+			pointLightCullDataBufferHandle,
+			pointLightBitMaskBufferHandle);
+	}
+
+	// light gbuffer
+	{
+		lightingPass.addToGraph(graph,
+			perFrameDataBufferHandle,
+			directionalLightDataBufferHandle,
+			pointLightDataBufferHandle,
+			spotLightDataBufferHandle,
+			shadowDataBufferHandle,
+			pointLightZBinsBufferHandle,
+			pointLightBitMaskBufferHandle,
+			depthTextureHandle,
+			albedoTextureHandle,
+			normalTextureHandle,
+			materialTextureHandle,
+			shadowTextureHandle,
+			lightTextureHandle);
+	}
+
+	// draw blended items
+	//if (!drawLists.m_blendedItems.empty())
+	//{
+	//	m_forwardPipeline->addPass(graph,
+	//		perFrameDataBufferHandle,
+	//		perDrawDataBufferHandle,
+	//		tiledLightBufferHandle,
+	//		shadowTextureHandle,
+	//		depthTextureHandle,
+	//		lightTextureHandle,
+	//		velocityTextureHandle,
+	//		m_renderResources.get(),
+	//		drawLists);
+	//}
+
+	// get swapchain image
+	{
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_lightingPipeline->recordCommandBuffer(m_renderResources.get(), m_width, m_height);
+			m_swapChain->recreate(m_width, m_height);
+			return;
 		}
-		vkEndCommandBuffer(m_renderResources->m_lightingCommandBuffer);
-
-		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-		submitInfo.waitSemaphoreCount = 0;
-		submitInfo.pWaitSemaphores = nullptr;
-		submitInfo.pWaitDstStageMask = nullptr;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_renderResources->m_lightingCommandBuffer;
-		submitInfo.signalSemaphoreCount = 0;
-		submitInfo.pSignalSemaphores = nullptr;
-
-		if (vkQueueSubmit(g_context.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
-			Utility::fatalExit("Failed to submit draw command buffer!", -1);
+			Utility::fatalExit("Failed to acquire swap chain image!", -1);
 		}
+
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "Swapchain Image";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_swapChain->getExtent().width;
+		desc.m_height = m_swapChain->getExtent().height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = m_swapChain->getImageFormat();
+
+		swapchainTextureHandle = graph.importImage(desc,
+			m_swapChain->getImage(m_swapChainImageIndex),
+			m_swapChain->getImageView(m_swapChainImageIndex),
+			&m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex],
+			m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex],
+			m_renderResources->m_swapChainRenderFinishedSemaphores[frameIndex]);
 	}
 
-	VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), g_context.m_imageAvailableSemaphore, VK_NULL_HANDLE, &m_swapChainImageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	// blit to swapchain image
 	{
-		m_swapChain->recreate(m_width, m_height);
-		return;
+		VkOffset3D blitSize;
+		blitSize.x = m_width;
+		blitSize.y = m_height;
+		blitSize.z = 1;
+
+		VkImageBlit imageBlitRegion = {};
+		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.srcSubresource.layerCount = 1;
+		imageBlitRegion.srcOffsets[1] = blitSize;
+		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlitRegion.dstSubresource.layerCount = 1;
+		imageBlitRegion.dstOffsets[1] = blitSize;
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
 	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+
+	//m_testPipeline->addPass(graph,
+	//	perFrameDataBufferHandle,
+	//	perDrawDataBufferHandle,
+	//	depthTextureHandle,
+	//	swapchainTextureHandle,
+	//	frameIndex,
+	//	m_renderResources.get(),
+	//	drawLists);
+
+	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle));
+
+	VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 	{
-		Utility::fatalExit("Failed to acquire swap chain image!", -1);
+		VkImageMemoryBarrier imageBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+		imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageBarrier.dstAccessMask = 0;
+		imageBarrier.oldLayout = m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex];
+		imageBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.image = m_swapChain->getImage(m_swapChainImageIndex);
+		imageBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, 1 };
+
+		vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
+		m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
+	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
 
-	m_forwardRenderPass->record(m_renderResources.get(), drawLists, m_swapChain->getImage(m_swapChainImageIndex), m_width, m_height);
-	m_forwardRenderPass->submit(m_renderResources.get());
-
-	VkSwapchainKHR swapChains[] = { m_swapChain->get() };
+	VkSwapchainKHR swapChain = m_swapChain->get();
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &g_context.m_renderFinishedSemaphore;
+	presentInfo.pWaitSemaphores = &m_renderResources->m_swapChainRenderFinishedSemaphores[frameIndex];
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
+	presentInfo.pSwapchains = &swapChain;
 	presentInfo.pImageIndices = &m_swapChainImageIndex;
 
-	result = vkQueuePresentKHR(g_context.m_graphicsQueue, &presentInfo);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	if (vkQueuePresentKHR(g_context.m_graphicsQueue, &presentInfo) != VK_SUCCESS)
 	{
-		m_swapChain->recreate(m_width, m_height);
+		Utility::fatalExit("Failed to present!", -1);
 	}
-	else if (result != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to present swap chain image!", -1);
-	}
-
-	vkQueueWaitIdle(g_context.m_graphicsQueue);
 }
 
 void VEngine::VKRenderer::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)

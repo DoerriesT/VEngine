@@ -5,9 +5,10 @@
 #include <cassert>
 #include <algorithm>
 #include <cstdint>
-#include "Graphics/Vulkan/VKImage.h"
-#include "Graphics/Vulkan/VKBuffer.h"
-#include "Graphics/Vulkan/VKResourceManager.h"
+#include <variant>
+#include <bitset>
+#include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
+#include "Graphics/Vulkan/vk_mem_alloc_include.h"
 
 namespace VEngine
 {
@@ -15,275 +16,274 @@ namespace VEngine
 	{
 		typedef struct ImageHandle_t* ImageHandle;
 		typedef struct BufferHandle_t* BufferHandle;
+		typedef struct ResourceHandle_t* ResourceHandle;
+
+		class PassBuilder;
+		class ResourceRegistry;
+
+		class Pass
+		{
+		public:
+			virtual void record(VkCommandBuffer cmdBuf, const ResourceRegistry &registry) = 0;
+		};
 
 		enum class QueueType
 		{
+			NONE = 0,
 			GRAPHICS = 1 << 0,
 			COMPUTE = 1 << 1,
-			TRANSFER = 1 << 2
+			TRANSFER = 1 << 2,
 		};
 
 		enum class PassType
 		{
 			GRAPHICS,
 			COMPUTE,
-			BLIT
+			BLIT,
+			HOST_ACCESS,
+			CLEAR
 		};
 
-		enum class ImageInitialState
+		union ClearValue
 		{
-			UNDEFINED, CLEAR
+			VkClearValue m_imageClearValue;
+			uint32_t m_bufferClearValue;
 		};
 
-		enum class ImageAccessType
+		struct ImageDescription
 		{
-			DEPTH_STENCIL,
-			TEXTURE,
-			TEXTURE_LOCAL,
-			STORAGE_IMAGE,
-			BLIT
-		};
-
-		enum class BufferAccessType
-		{
-			STORAGE_BUFFER,
-			UNIFORM_BUFFER,
-			VERTEX_BUFFER,
-			INDEX_BUFFER,
-			INDIRECT_BUFFER
-		};
-
-		struct ImageDesc
-		{
-			const char *m_name;
-			ImageInitialState m_initialState = ImageInitialState::UNDEFINED;
-			uint32_t m_width;
-			uint32_t m_height;
+			const char *m_name = "";
+			bool m_concurrent = false;
+			bool m_clear = false;
+			ClearValue m_clearValue;
+			uint32_t m_width = 0;
+			uint32_t m_height = 0;
 			uint32_t m_layers = 1;
 			uint32_t m_levels = 1;
 			uint32_t m_samples = 1;
-			VkFormat m_format;
+			VkFormat m_format = VK_FORMAT_UNDEFINED;
 		};
 
-		struct BufferDesc
+		struct BufferDescription
 		{
-			const char *m_name;
+			const char *m_name = "";
+			bool m_concurrent = false;
+			bool m_clear = false;
+			ClearValue m_clearValue;
 			VkDeviceSize m_size = 0;
-			VkMemoryPropertyFlags m_propertyFlags;
+			bool m_hostVisible = false;
 		};
 
-		struct ImageResourceStage
-		{
-			uint32_t m_passIndex;
-			ImageAccessType m_accessType;
-			bool m_write;
-			VkImageUsageFlags m_usage;
-			VkPipelineStageFlags m_stageMask;
-			VkAccessFlags m_accessMask;
-			VkImageLayout m_layout;
-		};
-
-		struct BufferResourceStage
-		{
-			uint32_t m_passIndex;
-			BufferAccessType m_accessType;
-			bool m_write;
-			VkBufferUsageFlags m_usage;
-			VkPipelineStageFlags m_stageMask;
-			VkAccessFlags m_accessMask;
-		};
-
-
-
-		struct VirtualImage
-		{
-			ImageDesc m_desc;
-			uint32_t m_queues = 0;
-			size_t m_refCount = 0;
-			size_t m_resourceIndex = 0;
-			std::vector<ImageResourceStage> m_stages;
-		};
-
-		struct VirtualBuffer
-		{
-			BufferDesc m_desc;
-			uint32_t m_queues = 0;
-			size_t m_refCount = 0;
-			size_t m_resourceIndex = 0;
-			std::vector<BufferResourceStage> m_stages;
-		};
-
-		struct ExecutionBarrier
-		{
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-		};
-
-		struct MemoryBarrier
-		{
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-			VkAccessFlags m_srcAccessMask;
-			VkAccessFlags m_dstAccessMask;
-		};
-
-		struct BufferBarrier
-		{
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-			VkAccessFlags m_srcAccessMask;
-			VkAccessFlags m_dstAccessMask;
-			uint32_t m_srcQueueFamilyIndex;
-			uint32_t m_dstQueueFamilyIndex;
-			VkBuffer m_buffer;
-			VkDeviceSize m_offset;
-			VkDeviceSize m_size;
-		};
-
-		struct ImageBarrier
-		{
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-			VkAccessFlags m_srcAccessMask;
-			VkAccessFlags m_dstAccessMask;
-			VkImageLayout m_oldLayout;
-			VkImageLayout m_newLayout;
-			uint32_t m_srcQueueFamilyIndex;
-			uint32_t m_dstQueueFamilyIndex;
-			VkImage m_image;
-			VkImageSubresourceRange m_subresourceRange;
-			bool m_renderPassInternal = false;
-		};
-
-		struct PipelineBarrier
-		{
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-			VkDependencyFlags m_dependencyFlags;
-			VkMemoryBarrier m_memoryBarrier;
-			std::vector<VkBufferMemoryBarrier> m_bufferBarriers;
-			std::vector<VkImageMemoryBarrier> m_imageBarriers;
-		};
-
-		struct WaitEvents
-		{
-			std::vector<VkEvent> m_events;
-			VkPipelineStageFlags m_srcStageMask;
-			VkPipelineStageFlags m_dstStageMask;
-			VkMemoryBarrier m_memoryBarrier;
-			std::vector<VkBufferMemoryBarrier> m_bufferBarriers;
-			std::vector<VkImageMemoryBarrier> m_imageBarriers;
-		};
-
-		class ResourceRegistry;
 		class Graph;
-
-		struct Pass
-		{
-			const char *m_name;
-			PassType m_passType = PassType::GRAPHICS;
-			QueueType m_queue = QueueType::GRAPHICS;
-			uint32_t m_width = 0;
-			uint32_t m_height = 0;
-			std::function<void(VkCommandBuffer, const ResourceRegistry&)> m_recordCommands;
-			ImageHandle m_depthStencilAttachment;
-			std::vector<ImageHandle> m_colorAttachments;
-			std::vector<ImageHandle> m_readImages;
-			std::vector<ImageHandle> m_writeImages;
-			std::vector<BufferHandle> m_readBuffers;
-			std::vector<BufferHandle> m_writeBuffers;
-			size_t m_refCount = 0;
-			std::vector<std::pair<size_t, ExecutionBarrier>> m_executionBarriers;
-			std::vector<std::pair<size_t, MemoryBarrier>> m_memoryBarriers;
-			std::vector<std::pair<size_t, BufferBarrier>> m_bufferBarriers;
-			std::vector<std::pair<size_t, ImageBarrier>> m_imageBarriers;
-			std::vector<VkSemaphore> m_semaphores;
-			PipelineBarrier m_pipelineBarrier;
-			PipelineBarrier m_endPipelineBarrier;
-			WaitEvents m_waitEvents;
-			VkPipelineStageFlags m_eventStageMask = 0;
-			VkEvent m_event = VK_NULL_HANDLE;
-			VkSemaphore m_semaphore = VK_NULL_HANDLE;
-			VkRenderPass m_renderPassHandle = VK_NULL_HANDLE;
-			VkFramebuffer m_framebufferHandle = VK_NULL_HANDLE;
-		};
 
 		class PassBuilder
 		{
-			friend class Graph;
 		public:
-			explicit PassBuilder(Graph &graph, Pass &pass, uint32_t passIndex);
+			explicit PassBuilder(Graph &graph, size_t passIndex);
 			void setDimensions(uint32_t width, uint32_t height);
 			void readDepthStencil(ImageHandle handle);
-			void readInputAttachment(ImageHandle handle, uint32_t index);
-			void readTexture(ImageHandle handle, VkPipelineStageFlags stageFlags, bool local = false, uint32_t baseMipLevel = 0, uint32_t levelCount = 1);
-			void readStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, bool local = false);
-			void readStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
-			void readUniformBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
+			void readInputAttachment(ImageHandle handle, uint32_t index, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readTexture(ImageHandle handle, VkPipelineStageFlags stageFlags, VkSampler sampler, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readUniformBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readUniformBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
 			void readVertexBuffer(BufferHandle handle);
 			void readIndexBuffer(BufferHandle handle);
 			void readIndirectBuffer(BufferHandle handle);
+			void readImageTransfer(ImageHandle handle);
 			void writeDepthStencil(ImageHandle handle);
-			void writeColorAttachment(ImageHandle handle, uint32_t index, bool read = false);
-			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags);
-			void writeStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
-			ImageHandle createImage(const ImageDesc &imageDesc);
-			BufferHandle createBuffer(const BufferDesc &bufferDesc);
+			void writeColorAttachment(ImageHandle handle, uint32_t index);
+			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void writeStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void writeStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void writeImageTransfer(ImageHandle handle);
+			void writeBufferFromHost(BufferHandle handle);
+			ImageHandle createImage(const ImageDescription &imageDesc);
+			BufferHandle createBuffer(const BufferDescription &bufferDesc);
 
 		private:
-			Graph & m_graph;
-			Pass &m_pass;
-			uint32_t m_passIndex;
+			Graph &m_graph;
+			size_t m_passIndex;
 		};
 
 		class ResourceRegistry
 		{
-			friend Graph;
 		public:
+			explicit ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VmaAllocation *allocations);
 			VkImage getImage(ImageHandle handle) const;
 			VkImageView getImageView(ImageHandle handle) const;
 			VkBuffer getBuffer(BufferHandle handle) const;
+			const VmaAllocation &getAllocation(ResourceHandle handle) const;
+			const VmaAllocation &getAllocation(ImageHandle handle) const;
+			const VmaAllocation &getAllocation(BufferHandle handle) const;
+			void *mapMemory(BufferHandle handle) const;
+			void unmapMemory(BufferHandle handle) const;
 
 		private:
-			std::vector<VirtualImage> m_virtualImages;
-			std::vector<VirtualBuffer> m_virtualBuffers;
-			std::vector<VKImage> m_images;
-			std::vector<VkImageView> m_imageViews;
-			std::vector<VKBuffer> m_buffers;
+			const VkImage *m_images;
+			const VkImageView *m_imageViews;
+			const VkBuffer *m_buffers;
+			const VmaAllocation *m_allocations;
 		};
 
 		class Graph
 		{
+			friend class PassBuilder;
 		public:
-			void addGraphicsPass(const char *name, const std::function<std::function<void(VkCommandBuffer, const ResourceRegistry&)>(PassBuilder &)> &setup);
-			void addComputePass(const char *name, QueueType queue, const std::function<std::function<void(VkCommandBuffer, const ResourceRegistry&)>(PassBuilder &)> &setup);
-			void addBlitPass(const char *name, QueueType queue, ImageHandle srcHandle, ImageHandle dstHandle, const std::vector<VkImageBlit> &regions, VkFilter filter);
-			void addResourceStage(ImageHandle handle, const ImageResourceStage &imageResourceStage);
-			void addResourceStage(BufferHandle handle, const BufferResourceStage &bufferResourceStage);
-			void setBackBuffer(ImageHandle handle);
-			void setPresentParams(VkSwapchainKHR *swapChain, uint32_t swapChainImageIndex, QueueType queue, VkSemaphore waitSemaphore);
-			void compile();
-			void execute();
-			ImageHandle createImage(const ImageDesc &imageDesc);
-			BufferHandle createBuffer(const BufferDesc &bufferDesc);
+			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator);
+			Graph(const Graph &) = delete;
+			Graph(const Graph &&) = delete;
+			Graph &operator= (const Graph &) = delete;
+			Graph &operator= (const Graph &&) = delete;
+			~Graph();
+			PassBuilder addPass(const char *name, PassType passType, QueueType queueType, Pass *pass);
+			void execute(ResourceHandle finalResourceHandle);
+			void reset();
+			ImageHandle createImage(const ImageDescription &imageDescription);
+			BufferHandle createBuffer(const BufferDescription &bufferDescription);
+			ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
 
 		private:
-			ResourceRegistry m_resourceRegistry;
-			VKResourceManager m_resourceManager;
-			std::vector<Pass> m_passes;
-			ImageHandle m_backBufferHandle;
-			VkSwapchainKHR *m_swapChain;
-			uint32_t m_swapChainImageIndex;
-			QueueType m_presentQueue;
-			VkSemaphore m_backBufferWaitSemaphore = VK_NULL_HANDLE;
+			enum
+			{
+				MAX_RESOURCES = 128,
+				MAX_PASSES = 64,
+				MAX_COLOR_ATTACHMENTS = 8,
+				MAX_WAIT_SEMAPHORES = 8,
+				MAX_SIGNAL_SEMAPHORES = 8,
+				MAX_WAIT_EVENTS = 8,
+				MAX_SIGNAL_EVENTS = 8,
+				MAX_DESCRIPTOR_SETS = 64,
+				MAX_DESCRIPTOR_WRITES = 256,
+				MAX_RESOURCE_BARRIERS = 16,
+			};
 
-			void cull();
+			struct ResourceDescription
+			{
+				uint32_t m_width = 0;
+				uint32_t m_height = 0;
+				uint32_t m_layers = 1;
+				uint32_t m_levels = 1;
+				uint32_t m_samples = 1;
+				VkFormat m_format = VK_FORMAT_UNDEFINED;
+				VkDeviceSize m_size = 0;
+				bool m_hostVisible = false;
+			};
+
+			struct FramebufferInfo
+			{
+				uint32_t m_width = 0;
+				uint32_t m_height = 0;
+				ImageHandle m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
+				ImageHandle m_depthStencilAttachment = 0;
+			};
+
+			struct ResourceUsage
+			{
+				VkPipelineStageFlags m_stageMask;
+				VkAccessFlags m_accessMask;
+				VkFlags m_usageFlags; // either VkBufferUsageFlags or VkImageUsageFlags
+				VkImageLayout m_imageLayout;
+			};
+
+			struct SyncBits
+			{
+				size_t m_waitSemaphoreCount;
+				size_t m_signalSemaphoreCount;
+				size_t m_waitEventCount;
+				size_t m_releaseCount;
+				size_t m_resourceBarrierCount;
+				std::bitset<MAX_PASSES + MAX_RESOURCES * 2> m_waitSemaphores;
+				std::bitset<MAX_PASSES + MAX_RESOURCES * 2> m_signalSemaphores;
+				std::bitset<MAX_PASSES> m_waitEvents;
+				std::bitset<MAX_RESOURCES> m_releaseResources;
+				std::bitset<MAX_RESOURCES> m_barrierResources;
+				VkPipelineStageFlags m_waitEventsSrcStageMask = 0;
+				VkAccessFlags m_memoryBarrierSrcAccessMask = 0;
+				VkAccessFlags m_memoryBarrierDstAccessMask = 0;
+			};
+
+			struct DescriptorWrite
+			{
+				size_t m_descriptorSetIndex;
+				size_t m_resourceIndex;
+				size_t m_binding;
+				size_t m_arrayIndex;
+				VkDescriptorType m_descriptorType;
+				VkSampler m_sampler;
+				VkImageLayout m_imageLayout;
+				VkDeviceSize m_dynamicBufferSize;
+			};
+
+			VKSyncPrimitiveAllocator &m_syncPrimitiveAllocator;
+			const char *m_resourceNames[MAX_RESOURCES];
+			const char *m_passNames[MAX_PASSES];
+			VkImageLayout *m_externalLayouts[MAX_RESOURCES];
+			Pass *m_passes[MAX_PASSES];
+			ClearValue m_clearValues[MAX_RESOURCES];
+			PassType m_passTypes[MAX_PASSES];
+			QueueType m_queueType[MAX_PASSES];
+			ResourceDescription m_resourceDescriptions[MAX_RESOURCES];
+
+			///////////////////////////////////////////////////
+			// everything below needs to be reset before use //
+			///////////////////////////////////////////////////
+
+			VkCommandPool m_graphicsCommandPool;
+			VkCommandPool m_computeCommandPool;
+			VkCommandPool m_transferCommandPool;
+			size_t m_resourceCount = 0;
+			size_t m_passCount = 0;
+			size_t m_descriptorSetCount = 0;
+			size_t m_descriptorWriteCount = 0;
+			// each element holds a bitset that specifies if the resource is read/written in the pass
+			std::bitset<MAX_PASSES> m_writeResources[MAX_RESOURCES];
+			std::bitset<MAX_PASSES> m_readResources[MAX_RESOURCES];
+			std::bitset<MAX_PASSES> m_accessedResources[MAX_RESOURCES];
+			std::bitset<MAX_PASSES> m_attachmentResources[MAX_RESOURCES];
+			std::bitset<MAX_PASSES> m_accessedDescriptorSets[MAX_DESCRIPTOR_SETS];
+			std::bitset<MAX_PASSES> m_culledPasses;
+			std::bitset<MAX_RESOURCES> m_culledResources;
+			std::bitset<MAX_RESOURCES> m_concurrentResources;
+			std::bitset<MAX_RESOURCES> m_externalResources;
+			std::bitset<MAX_RESOURCES> m_imageResources;
+			std::bitset<MAX_RESOURCES> m_clearResources;
+			FramebufferInfo m_framebufferInfo[MAX_PASSES];
+			ResourceUsage m_resourceUsages[MAX_RESOURCES][MAX_PASSES];
+			VkFence m_fence = 0;
+			// (n < MAX_PASSES) holds internal semaphores
+			// (n >= MAX_PASSES) even indices hold wait, odd indices signal semaphores for imported resources
+			VkSemaphore m_semaphores[MAX_PASSES + MAX_RESOURCES * 2];
+			VkEvent m_events[MAX_PASSES];
+			VkImage m_images[MAX_RESOURCES];
+			VkImageView m_imageViews[MAX_RESOURCES];
+			VkBuffer m_buffers[MAX_RESOURCES];
+			VmaAllocation m_allocations[MAX_RESOURCES];
+			std::pair<VkRenderPass, VkFramebuffer> m_renderpassFramebufferHandles[MAX_PASSES];
+			VkPipelineStageFlags m_passStageMasks[MAX_PASSES];
+			VkDescriptorSet m_descriptorSets[MAX_DESCRIPTOR_SETS];
+			DescriptorWrite m_descriptorWrites[MAX_DESCRIPTOR_WRITES];
+
+			void cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
+			void createClearPasses(size_t *firstResourceUses);
 			void createResources();
-			void createVirtualBarriers();
-			void createRenderPasses();
-			void createPhysicalBarriers();
+			void createRenderPasses(size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
+			void createSynchronization(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits);
+			void writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets);
+			void recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle);
 			uint32_t queueIndexFromQueueType(QueueType queueType);
+			void addDescriptorWrite(size_t passIndex,
+				size_t resourceIndex,
+				VkDescriptorSet set,
+				uint32_t binding,
+				uint32_t arrayElement,
+				VkDescriptorType type,
+				VkImageLayout imageLayout,
+				VkSampler sampler,
+				VkDeviceSize dynamicBufferSize);
 		};
 	}
-
 }

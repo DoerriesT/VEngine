@@ -1,11 +1,15 @@
 #version 450
 
 #define MAX_POINT_LIGHT_WORDS 2048
-#define MAX_SPOT_LIGHT_WORDS 2048
 #define TILE_SIZE (16)
 #define NUM_THREADS (TILE_SIZE * TILE_SIZE)
 
 layout (local_size_x = TILE_SIZE, local_size_y = TILE_SIZE, local_size_z = 1) in;
+
+layout(push_constant) uniform PushConsts 
+{
+	uint pointLightCount;
+} uPushConsts;
 
 layout(set = 0, binding = 0) uniform PerFrameData 
 {
@@ -35,25 +39,10 @@ layout(set = 1, binding = 0) buffer PointLightBitMask
 	uint mask[];
 } uPointLightBitMask;
 
-layout(set = 1, binding = 1) buffer SpotLightBitMask 
-{
-	uint mask[];
-} uSpotLightBitMask;
-
-layout(set = 2, binding = 0) readonly buffer Counts 
-{
-	uvec4 counts; // point / spot / padding / padding
-} uCounts;
-
-layout(set = 2, binding = 1) readonly buffer PointLightCullData 
+layout(set = 2, binding = 0) readonly buffer PointLightCullData 
 {
 	vec4 spheres[];
 } uPointLightCullData;
-
-layout(set = 2, binding = 2) readonly buffer SpotLightCullData 
-{
-	vec4 spheres[];
-} uSpotLightCullData;
 
 struct Ray
 {
@@ -116,12 +105,12 @@ void main()
 	barrier();
 	
 	uint localIndex = gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x;
-	uint pointLightCount = uCounts.counts.x;
+	uint pointLightCount = uPushConsts.pointLightCount;
 	uint totalWords = pointLightCount / 32 + ((pointLightCount % 32 == 0) ? 0 : 1);
 	
 	for (uint word = localIndex; word < totalWords; word += NUM_THREADS)
 	{
-		for (uint i = word * 32; i < uCounts.counts.x && i < word * 32 + 32; ++i)
+		for (uint i = word * 32; i < pointLightCount && i < word * 32 + 32; ++i)
 		{
 			vec4 p = uPointLightCullData.spheres[i];
 			
@@ -136,22 +125,6 @@ void main()
 		}
 	}
 	
-	// loop over the lights and do a sphere vs. frustum intersection test
-	//for (uint i = gl_LocalInvocationID.x + gl_LocalInvocationID.y * gl_WorkGroupSize.x; 
-	//	i < uSpotLightCullData.count.x; i += NUM_THREADS)
-	//{
-	//	vec4 p = uSpotLightCullData.spheres[i];
-	//	
-	//	// Test if sphere is intersecting or inside frustum
-	//	if ((getSignedDistanceFromPlane(p.xyz, frustum[0]) < p.w) &&
-	//		(getSignedDistanceFromPlane(p.xyz, frustum[1]) < p.w) &&
-	//		(getSignedDistanceFromPlane(p.xyz, frustum[2]) < p.w) &&
-	//		(getSignedDistanceFromPlane(p.xyz, frustum[3]) < p.w))
-	//	{
-	//		uSpotLightBitMask.mask[tileOffset * MAX_SPOT_LIGHT_WORDS + i / 32] |= 1 << (i % 32);
-	//	}
-	//}
-	
 	memoryBarrierShared();
 	barrier();
 	
@@ -160,7 +133,7 @@ void main()
 		uint tileOffset = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
 		for (uint i = 0; i < MAX_POINT_LIGHT_WORDS; ++i)
 		{
-			uPointLightBitMask.mask[tileOffset * MAX_SPOT_LIGHT_WORDS + i] = pointLightMaskLds[i];
+			uPointLightBitMask.mask[tileOffset * MAX_POINT_LIGHT_WORDS + i] = pointLightMaskLds[i];
 		}
 	}
 }

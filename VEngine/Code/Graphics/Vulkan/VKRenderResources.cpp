@@ -7,409 +7,28 @@
 #include "GlobalVar.h"
 #include "Graphics/LightData.h"
 #include "Graphics/DrawItem.h"
+#include "VKSyncPrimitiveAllocator.h"
+#include "Pipeline/VKGeometryPipeline.h"
+#include "Pipeline/VKShadowPipeline.h"
+#include "Pipeline/VKTilingPipeline.h"
+#include "Pipeline/VKLightingPipeline.h"
+#include "Pipeline/VKForwardPipeline.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
-	deleteAllTextures();
+
 }
 
 void VEngine::VKRenderResources::init(unsigned int width, unsigned int height)
 {
-	createAllTextures(width, height);
-}
+	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
 
-void VEngine::VKRenderResources::resize(unsigned int width, unsigned int height)
-{
-	deleteResizableTextures();
-	createResizableTextures(width, height);
-}
-
-void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
-{
-	if (!m_vertexBuffer.isValid() || m_vertexBuffer.getSize() < vertexSize)
+	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
 	{
-		m_vertexBuffer.destroy();
-
-		VkBufferCreateInfo vertexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		vertexBufferInfo.size = vertexSize;
-		vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_vertexBuffer.create(vertexBufferInfo, allocCreateInfo);
+		m_shadowTextureSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
+		m_swapChainImageAvailableSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
+		m_swapChainRenderFinishedSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
 	}
-
-	if (!m_indexBuffer.isValid() || m_indexBuffer.getSize() < vertexSize)
-	{
-		m_indexBuffer.destroy();
-
-		VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		indexBufferInfo.size = indexSize;
-		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_indexBuffer.create(indexBufferInfo, allocCreateInfo);
-	}
-}
-
-void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
-{
-	VKBuffer stagingBuffer;
-	
-	VkBufferCreateInfo stagingBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	stagingBufferInfo.size = vertexSize + indexSize;
-	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VmaAllocationCreateInfo allocCreateInfo = {};
-	allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-	stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
-
-	void *data;
-	vmaMapMemory(g_context.m_allocator, stagingBuffer.getAllocation(), &data);
-	memcpy(data, vertices, (size_t)vertexSize);
-	memcpy(((unsigned char *)data) + vertexSize, indices, (size_t)indexSize);
-	vmaUnmapMemory(g_context.m_allocator, stagingBuffer.getAllocation());
-
-	VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-	{
-		VkBufferCopy copyRegionVertex = { 0, 0, vertexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_vertexBuffer.getBuffer(), 1, &copyRegionVertex);
-		VkBufferCopy copyRegionIndex = { vertexSize, 0, indexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_indexBuffer.getBuffer(), 1, &copyRegionIndex);
-	}
-	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
-
-	stagingBuffer.destroy();
-}
-
-void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo *data, size_t count)
-{
-	VkWriteDescriptorSet descriptorWrite = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-	descriptorWrite.dstSet = m_textureDescriptorSet;
-	descriptorWrite.dstBinding = 0;
-	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrite.descriptorCount = count < TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : TEXTURE_ARRAY_SIZE;
-	descriptorWrite.pImageInfo = data;
-
-	vkQueueWaitIdle(g_context.m_graphicsQueue);
-	vkUpdateDescriptorSets(g_context.m_device, 1, &descriptorWrite, 0, nullptr);
-}
-
-void VEngine::VKRenderResources::createFramebuffer(unsigned int width, unsigned int height, VkRenderPass geometryFillRenderPass, VkRenderPass shadowRenderPass, VkRenderPass forwardRenderPass)
-{
-	// geometry fill fbo
-	{
-		VkImageView attachments[] = { m_depthAttachmentView, m_albedoAttachmentView, m_normalAttachmentView, m_materialAttachmentView, m_velocityAttachmentView };
-
-		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		framebufferInfo.renderPass = geometryFillRenderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = width;
-		framebufferInfo.height = height;
-		framebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_geometryFillFramebuffer) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create framebuffer!", -1);
-		}
-	}
-
-	// shadow fbo
-	{
-		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		framebufferInfo.renderPass = shadowRenderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = &m_shadowTextureView;
-		framebufferInfo.width = g_shadowAtlasSize;
-		framebufferInfo.height = g_shadowAtlasSize;
-		framebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_shadowFramebuffer) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create framebuffer!", -1);
-		}
-	}
-
-	// forward fbo
-	{
-		VkImageView attachments[] = { m_depthAttachmentView, m_velocityAttachmentView, m_lightAttachmentView };
-
-		VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		framebufferInfo.renderPass = forwardRenderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(VkImageView));
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = width;
-		framebufferInfo.height = height;
-		framebufferInfo.layers = 1;
-
-		if (vkCreateFramebuffer(g_context.m_device, &framebufferInfo, nullptr, &m_forwardFramebuffer) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create framebuffer!", -1);
-		}
-	}
-}
-
-VEngine::VKRenderResources::VKRenderResources()
-	:m_vertexBuffer(),
-	m_indexBuffer()
-{
-}
-
-void VEngine::VKRenderResources::createResizableTextures(unsigned int width, unsigned int height)
-{
-	// depth attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VKUtility::findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_depthAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_depthAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_depthAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_depthAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-
-	// albedo attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_albedoAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_albedoAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_albedoAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_albedoAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-
-	// normal attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_normalAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_normalAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_normalAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_normalAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-
-	// material attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_materialAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_materialAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_materialAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_materialAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-
-	// velocity attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R16G16_SFLOAT;
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_velocityAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_velocityAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_velocityAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_velocityAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-
-	// light attachment
-	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		imageCreateInfo.extent.width = width;
-		imageCreateInfo.extent.height = height;
-		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_lightAttachment.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_lightAttachment.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_lightAttachment.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_lightAttachmentView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-	}
-}
-
-void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned int height)
-{
-	createResizableTextures(width, height);
 
 	// shadow atlas
 	{
@@ -449,17 +68,6 @@ void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned 
 		{
 			Utility::fatalExit("Failed to create image view!", -1);
 		}
-
-		VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-		VKUtility::setImageLayout(
-			cmdBuf,
-			m_shadowTexture.getImage(),
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			subresourceRange,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
 	}
 
 	// shadow sampler
@@ -530,173 +138,7 @@ void VEngine::VKRenderResources::createAllTextures(unsigned int width, unsigned 
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
 	}
-}
 
-void VEngine::VKRenderResources::createUniformBuffer(VkDeviceSize perFrameSize, VkDeviceSize perDrawSize)
-{
-	// per frame data
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = perFrameSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_perFrameDataUniformBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// per draw data
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = VKUtility::align(perDrawSize, g_context.m_properties.limits.minUniformBufferOffsetAlignment) * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_perDrawDataUniformBuffer.create(bufferInfo, allocCreateInfo);
-	}
-}
-
-void VEngine::VKRenderResources::createStorageBuffers()
-{
-	// directional light
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_directionalLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// point light
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_pointLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// spot light
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_spotLightDataStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// shadow data
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = sizeof(ShadowData) * MAX_SHADOW_DATA;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_shadowDataStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// z bin
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = sizeof(glm::uvec2) * Z_BINS;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_zBinStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-	// light cull data
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = VKUtility::align(sizeof(glm::uvec4), g_context.m_properties.limits.minStorageBufferOffsetAlignment)
-			+ VKUtility::align(MAX_POINT_LIGHTS * sizeof(glm::vec4), g_context.m_properties.limits.minStorageBufferOffsetAlignment)
-			+ MAX_SPOT_LIGHTS * sizeof(glm::vec4);
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_lightCullDataStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-
-
-	// light index buffer
-	{
-		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
-		uint32_t height = 900 / 16 + ((900 % 16 == 0) ? 0 : 1);
-		uint32_t tileCount = width * height;
-		VkDeviceSize bufferSize = VKUtility::align(MAX_POINT_LIGHTS / 32 * sizeof(uint32_t) * tileCount, g_context.m_properties.limits.minStorageBufferOffsetAlignment)
-			+ MAX_SPOT_LIGHTS / 32 * sizeof(uint32_t) * tileCount;
-
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = bufferSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		m_lightIndexStorageBuffer.create(bufferInfo, allocCreateInfo);
-	}
-}
-
-void VEngine::VKRenderResources::createCommandBuffers()
-{
-	// main
-	{
-		VkCommandBuffer cmdBufs[] =
-		{
-			m_tilingCommandBuffer,
-			m_geometryFillCommandBuffer,
-			m_shadowsCommandBuffer,
-			m_lightingCommandBuffer,
-			m_forwardCommandBuffer
-		};
-
-		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-		allocInfo.commandPool = g_context.m_graphicsCommandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = sizeof(cmdBufs) / sizeof(cmdBufs[0]);
-
-		if (vkAllocateCommandBuffers(g_context.m_device, &allocInfo, cmdBufs) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to allocate command buffer!", -1);
-		}
-
-		m_tilingCommandBuffer = cmdBufs[0];
-		m_geometryFillCommandBuffer = cmdBufs[1];
-		m_shadowsCommandBuffer = cmdBufs[2];
-		m_lightingCommandBuffer = cmdBufs[3];
-		m_forwardCommandBuffer = cmdBufs[4];
-	}
-}
-
-void VEngine::VKRenderResources::createDescriptors()
-{
 	// create descriptor set layouts
 	{
 		// per frame
@@ -816,7 +258,7 @@ void VEngine::VKRenderResources::createDescriptors()
 			lightDataLayoutBindings[3].pImmutableSamplers = nullptr;
 			lightDataLayoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-			// zbins
+			// point light zbins
 			lightDataLayoutBindings[4].binding = 4;
 			lightDataLayoutBindings[4].descriptorCount = 1;
 			lightDataLayoutBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -842,28 +284,14 @@ void VEngine::VKRenderResources::createDescriptors()
 
 		// cull data
 		{
-			VkDescriptorSetLayoutBinding cullDataLayoutBindings[3] = {};
+			VkDescriptorSetLayoutBinding cullDataLayoutBindings[1] = {};
 
-			// counts
+			// point light data
 			cullDataLayoutBindings[0].binding = 0;
 			cullDataLayoutBindings[0].descriptorCount = 1;
 			cullDataLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			cullDataLayoutBindings[0].pImmutableSamplers = nullptr;
 			cullDataLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-			// point light data
-			cullDataLayoutBindings[1].binding = 1;
-			cullDataLayoutBindings[1].descriptorCount = 1;
-			cullDataLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			cullDataLayoutBindings[1].pImmutableSamplers = nullptr;
-			cullDataLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-			// spot light data
-			cullDataLayoutBindings[2].binding = 2;
-			cullDataLayoutBindings[2].descriptorCount = 1;
-			cullDataLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			cullDataLayoutBindings[2].pImmutableSamplers = nullptr;
-			cullDataLayoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 			layoutInfo.bindingCount = sizeof(cullDataLayoutBindings) / sizeof(cullDataLayoutBindings[0]);
@@ -875,29 +303,22 @@ void VEngine::VKRenderResources::createDescriptors()
 			}
 		}
 
-		// light index data
+		// light bit mask data
 		{
-			VkDescriptorSetLayoutBinding lightIndexDataLayoutBindings[2] = {};
+			VkDescriptorSetLayoutBinding lightIndexDataLayoutBindings[1] = {};
 
-			// point light indices
+			// point light bit mask
 			lightIndexDataLayoutBindings[0].binding = 0;
 			lightIndexDataLayoutBindings[0].descriptorCount = 1;
 			lightIndexDataLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			lightIndexDataLayoutBindings[0].pImmutableSamplers = nullptr;
 			lightIndexDataLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-			// spot light indices
-			lightIndexDataLayoutBindings[1].binding = 1;
-			lightIndexDataLayoutBindings[1].descriptorCount = 1;
-			lightIndexDataLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			lightIndexDataLayoutBindings[1].pImmutableSamplers = nullptr;
-			lightIndexDataLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
 			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 			layoutInfo.bindingCount = sizeof(lightIndexDataLayoutBindings) / sizeof(lightIndexDataLayoutBindings[0]);
 			layoutInfo.pBindings = lightIndexDataLayoutBindings;
 
-			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_lightIndexDescriptorSetLayout) != VK_SUCCESS)
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_lightBitMaskDescriptorSetLayout) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create descriptor set layout!", -1);
 			}
@@ -908,17 +329,17 @@ void VEngine::VKRenderResources::createDescriptors()
 	{
 		VkDescriptorPoolSize poolSizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE + 5 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 1 * FRAMES_IN_FLIGHT },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , 1 * FRAMES_IN_FLIGHT },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , TEXTURE_ARRAY_SIZE + 5 * FRAMES_IN_FLIGHT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 * FRAMES_IN_FLIGHT },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 * FRAMES_IN_FLIGHT }
 		};
 
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolInfo.poolSizeCount = static_cast<uint32_t>(sizeof(poolSizes) / sizeof(VkDescriptorPoolSize));
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = 7;
+		poolInfo.maxSets = 7 * FRAMES_IN_FLIGHT;
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -932,312 +353,149 @@ void VEngine::VKRenderResources::createDescriptors()
 		{
 			m_perFrameDataDescriptorSetLayout,
 			m_perDrawDataDescriptorSetLayout,
-			m_textureDescriptorSetLayout,
 			m_lightingInputDescriptorSetLayout,
 			m_lightDataDescriptorSetLayout,
 			m_cullDataDescriptorSetLayout,
-			m_lightIndexDescriptorSetLayout
+			m_lightBitMaskDescriptorSetLayout
 		};
 
 		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.descriptorPool = m_descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
-		allocInfo.pSetLayouts = layouts;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &m_textureDescriptorSetLayout;
 
-		VkDescriptorSet sets[] =
-		{
-			m_perFrameDataDescriptorSet,
-			m_perDrawDataDescriptorSet ,
-			m_textureDescriptorSet,
-			m_lightingInputDescriptorSet,
-			m_lightDataDescriptorSet,
-			m_cullDataDescriptorSet,
-			m_lightIndexDescriptorSet
-		};
-
-		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, sets) != VK_SUCCESS)
+		// allocate textures descriptor set
+		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, &m_textureDescriptorSet) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate descriptor set!", -1);
 		}
 
-		m_perFrameDataDescriptorSet = sets[0];
-		m_perDrawDataDescriptorSet = sets[1];
-		m_textureDescriptorSet = sets[2];
-		m_lightingInputDescriptorSet = sets[3];
-		m_lightDataDescriptorSet = sets[4];
-		m_cullDataDescriptorSet = sets[5];
-		m_lightIndexDescriptorSet = sets[6];
 
-		// per frame UBO
-		VkDescriptorBufferInfo perFrameBufferInfo = {};
-		perFrameBufferInfo.buffer = m_perFrameDataUniformBuffer.getBuffer();
-		perFrameBufferInfo.offset = 0;
-		perFrameBufferInfo.range = sizeof(RenderParams);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(sizeof(layouts) / sizeof(layouts[0]));
+		allocInfo.pSetLayouts = layouts;
 
-		// per draw UBO
-		VkDescriptorBufferInfo perDrawBufferInfo = {};
-		perDrawBufferInfo.buffer = m_perDrawDataUniformBuffer.getBuffer();
-		perDrawBufferInfo.offset = 0;
-		perDrawBufferInfo.range = sizeof(PerDrawData);
-
-		// lighting result image
-		VkDescriptorImageInfo lightingResultDescriptorImageInfo;
-		lightingResultDescriptorImageInfo.sampler = VK_NULL_HANDLE;
-		lightingResultDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		lightingResultDescriptorImageInfo.imageView = m_lightAttachmentView;
-
-		VkDescriptorImageInfo lightingInputdescriptorImageInfos[4];
-
-		// depth
-		lightingInputdescriptorImageInfos[0].sampler = m_pointSampler;
-		lightingInputdescriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[0].imageView = m_depthAttachmentView;
-
-		// albedo
-		lightingInputdescriptorImageInfos[1].sampler = m_linearSampler;
-		lightingInputdescriptorImageInfos[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[1].imageView = m_albedoAttachmentView;
-
-		// normal
-		lightingInputdescriptorImageInfos[2].sampler = m_linearSampler;
-		lightingInputdescriptorImageInfos[2].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[2].imageView = m_normalAttachmentView;
-
-		// material
-		lightingInputdescriptorImageInfos[3].sampler = m_linearSampler;
-		lightingInputdescriptorImageInfos[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		lightingInputdescriptorImageInfos[3].imageView = m_materialAttachmentView;
-
-		// directional light data
-		VkDescriptorBufferInfo directionalLightDataDescriptorBufferInfo = {};
-		directionalLightDataDescriptorBufferInfo.buffer = m_directionalLightDataStorageBuffer.getBuffer();
-		directionalLightDataDescriptorBufferInfo.offset = 0;
-		directionalLightDataDescriptorBufferInfo.range = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
-
-		// point light data
-		VkDescriptorBufferInfo pointLightDataDescriptorBufferInfo = {};
-		pointLightDataDescriptorBufferInfo.buffer = m_pointLightDataStorageBuffer.getBuffer();
-		pointLightDataDescriptorBufferInfo.offset = 0;
-		pointLightDataDescriptorBufferInfo.range = sizeof(PointLightData) * MAX_POINT_LIGHTS;
-
-		// spot light data
-		VkDescriptorBufferInfo spotLightDataDescriptorBufferInfo = {};
-		spotLightDataDescriptorBufferInfo.buffer = m_spotLightDataStorageBuffer.getBuffer();
-		spotLightDataDescriptorBufferInfo.offset = 0;
-		spotLightDataDescriptorBufferInfo.range = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
-
-		// shadow data
-		VkDescriptorBufferInfo shadowDataDescriptorBufferInfo = {};
-		shadowDataDescriptorBufferInfo.buffer = m_shadowDataStorageBuffer.getBuffer();
-		shadowDataDescriptorBufferInfo.offset = 0;
-		shadowDataDescriptorBufferInfo.range = sizeof(ShadowData) * MAX_SHADOW_DATA;
-
-		// zbins
-		VkDescriptorBufferInfo zBinsDescriptorBufferInfo = {};
-		zBinsDescriptorBufferInfo.buffer = m_zBinStorageBuffer.getBuffer();
-		zBinsDescriptorBufferInfo.offset = 0;
-		zBinsDescriptorBufferInfo.range = sizeof(glm::uvec2) * Z_BINS;
-
-		// shadow texture
-		VkDescriptorImageInfo shadowTextureDescriptorImageInfo = {};
-		shadowTextureDescriptorImageInfo.sampler = m_shadowSampler;
-		shadowTextureDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		shadowTextureDescriptorImageInfo.imageView = m_shadowTextureView;
-
-		// counts
-		VkDescriptorBufferInfo countDataDescriptorBufferInfo = {};
-		countDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
-		countDataDescriptorBufferInfo.offset = 0;
-		countDataDescriptorBufferInfo.range = sizeof(glm::uvec4);
-
-		// point light cull data
-		VkDescriptorBufferInfo pointLightCullDataDescriptorBufferInfo = {};
-		pointLightCullDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
-		pointLightCullDataDescriptorBufferInfo.offset = VKUtility::align(sizeof(glm::uvec4), g_context.m_properties.limits.minStorageBufferOffsetAlignment);
-		pointLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_POINT_LIGHTS;
-
-		// spot light cull data
-		VkDescriptorBufferInfo spotLightCullDataDescriptorBufferInfo = {};
-		spotLightCullDataDescriptorBufferInfo.buffer = m_lightCullDataStorageBuffer.getBuffer();
-		spotLightCullDataDescriptorBufferInfo.offset = VKUtility::align(pointLightCullDataDescriptorBufferInfo.offset + sizeof(glm::vec4) * MAX_POINT_LIGHTS, g_context.m_properties.limits.minStorageBufferOffsetAlignment);
-		spotLightCullDataDescriptorBufferInfo.range = sizeof(glm::vec4) * MAX_SPOT_LIGHTS;
-
-		uint32_t width = 1600 / 16 + ((1600 % 16 == 0) ? 0 : 1);
-		uint32_t height = 900 / 16 + ((900 % 16 == 0) ? 0 : 1);
-		uint32_t tileCount = width * height;
-
-		// point light indices
-		VkDescriptorBufferInfo pointLightIndicesDescriptorBufferInfo = {};
-		pointLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.getBuffer();
-		pointLightIndicesDescriptorBufferInfo.offset = 0;
-		pointLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_POINT_LIGHTS / 32 * tileCount;
-
-		// spot light indices
-		VkDescriptorBufferInfo spotLightIndicesDescriptorBufferInfo = {};
-		spotLightIndicesDescriptorBufferInfo.buffer = m_lightIndexStorageBuffer.getBuffer();
-		spotLightIndicesDescriptorBufferInfo.offset = VKUtility::align(pointLightIndicesDescriptorBufferInfo.range, g_context.m_properties.limits.minStorageBufferOffsetAlignment);
-		spotLightIndicesDescriptorBufferInfo.range = sizeof(uint32_t) * MAX_SPOT_LIGHTS / 32 * tileCount;
-
-		VkWriteDescriptorSet descriptorWrites[15] = {};
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
 		{
-			// per frame UBO
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_perFrameDataDescriptorSet;
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &perFrameBufferInfo;
+			VkDescriptorSet sets[] =
+			{
+				m_perFrameDataDescriptorSets[i],
+				m_perDrawDataDescriptorSets[i],
+				m_lightingInputDescriptorSets[i],
+				m_lightDataDescriptorSets[i],
+				m_cullDataDescriptorSets[i],
+				m_lightBitMaskDescriptorSets[i],
+			};
 
-			// per draw UBO
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_perDrawDataDescriptorSet;
-			descriptorWrites[1].dstBinding = 0;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &perDrawBufferInfo;
+			if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, sets) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to allocate descriptor set!", -1);
+			}
 
-			// lighting result
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = m_lightingInputDescriptorSet;
-			descriptorWrites[2].dstBinding = 0;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &lightingResultDescriptorImageInfo;
-
-			// lighting inputs
-			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[3].dstSet = m_lightingInputDescriptorSet;
-			descriptorWrites[3].dstBinding = 1;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[3].descriptorCount = 4;
-			descriptorWrites[3].pImageInfo = lightingInputdescriptorImageInfos;
-
-			// directional light data
-			descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[4].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[4].dstBinding = 0;
-			descriptorWrites[4].dstArrayElement = 0;
-			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].descriptorCount = 1;
-			descriptorWrites[4].pBufferInfo = &directionalLightDataDescriptorBufferInfo;
-
-			// point light data
-			descriptorWrites[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[5].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[5].dstBinding = 1;
-			descriptorWrites[5].dstArrayElement = 0;
-			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].descriptorCount = 1;
-			descriptorWrites[5].pBufferInfo = &pointLightDataDescriptorBufferInfo;
-
-			// spot light data
-			descriptorWrites[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[6].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[6].dstBinding = 2;
-			descriptorWrites[6].dstArrayElement = 0;
-			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[6].descriptorCount = 1;
-			descriptorWrites[6].pBufferInfo = &spotLightDataDescriptorBufferInfo;
-
-			// shadow data
-			descriptorWrites[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[7].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[7].dstBinding = 3;
-			descriptorWrites[7].dstArrayElement = 0;
-			descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[7].descriptorCount = 1;
-			descriptorWrites[7].pBufferInfo = &shadowDataDescriptorBufferInfo;
-
-			// z bins
-			descriptorWrites[8].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[8].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[8].dstBinding = 4;
-			descriptorWrites[8].dstArrayElement = 0;
-			descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[8].descriptorCount = 1;
-			descriptorWrites[8].pBufferInfo = &zBinsDescriptorBufferInfo;
-
-			// shadow texture
-			descriptorWrites[9].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[9].dstSet = m_lightDataDescriptorSet;
-			descriptorWrites[9].dstBinding = 5;
-			descriptorWrites[9].dstArrayElement = 0;
-			descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[9].descriptorCount = 1;
-			descriptorWrites[9].pImageInfo = &shadowTextureDescriptorImageInfo;
-
-			// count data
-			descriptorWrites[10].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[10].dstSet = m_cullDataDescriptorSet;
-			descriptorWrites[10].dstBinding = 0;
-			descriptorWrites[10].dstArrayElement = 0;
-			descriptorWrites[10].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[10].descriptorCount = 1;
-			descriptorWrites[10].pBufferInfo = &countDataDescriptorBufferInfo;
-
-			// point light cull data
-			descriptorWrites[11].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[11].dstSet = m_cullDataDescriptorSet;
-			descriptorWrites[11].dstBinding = 1;
-			descriptorWrites[11].dstArrayElement = 0;
-			descriptorWrites[11].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[11].descriptorCount = 1;
-			descriptorWrites[11].pBufferInfo = &pointLightCullDataDescriptorBufferInfo;
-
-			// spot light cull data
-			descriptorWrites[12].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[12].dstSet = m_cullDataDescriptorSet;
-			descriptorWrites[12].dstBinding = 2;
-			descriptorWrites[12].dstArrayElement = 0;
-			descriptorWrites[12].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[12].descriptorCount = 1;
-			descriptorWrites[12].pBufferInfo = &spotLightCullDataDescriptorBufferInfo;
-
-			// point light indices
-			descriptorWrites[13].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[13].dstSet = m_lightIndexDescriptorSet;
-			descriptorWrites[13].dstBinding = 0;
-			descriptorWrites[13].dstArrayElement = 0;
-			descriptorWrites[13].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[13].descriptorCount = 1;
-			descriptorWrites[13].pBufferInfo = &pointLightIndicesDescriptorBufferInfo;
-
-			// spot light indices
-			descriptorWrites[14].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[14].dstSet = m_lightIndexDescriptorSet;
-			descriptorWrites[14].dstBinding = 1;
-			descriptorWrites[14].dstArrayElement = 0;
-			descriptorWrites[14].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[14].descriptorCount = 1;
-			descriptorWrites[14].pBufferInfo = &spotLightIndicesDescriptorBufferInfo;
+			m_perFrameDataDescriptorSets[i] = sets[0];
+			m_perDrawDataDescriptorSets[i] = sets[1];
+			m_lightingInputDescriptorSets[i] = sets[2];
+			m_lightDataDescriptorSets[i] = sets[3];
+			m_cullDataDescriptorSets[i] = sets[4];
+			m_lightBitMaskDescriptorSets[i] = sets[5];
 		}
+	}
 
-		vkUpdateDescriptorSets(g_context.m_device, static_cast<uint32_t>(sizeof(descriptorWrites) / sizeof(descriptorWrites[0])), descriptorWrites, 0, nullptr);
+	// create pipelines
+	{
+		m_geometryPipeline = std::make_unique<VKGeometryPipeline>(g_context.m_device, this, false);
+		m_geometryAlphaMaskedPipeline = std::make_unique<VKGeometryPipeline>(g_context.m_device, this, true);
+		m_shadowPipeline = std::make_unique<VKShadowPipeline>(g_context.m_device, this);
+		m_tilingPipeline = std::make_unique<VKTilingPipeline>(g_context.m_device, this);
+		m_lightingPipeline = std::make_unique<VKLightingPipeline>(g_context.m_device, this);
+		m_forwardPipeline = std::make_unique<VKForwardPipeline>(g_context.m_device, this);
 	}
 }
 
-void VEngine::VKRenderResources::createEvents()
+void VEngine::VKRenderResources::resize(unsigned int width, unsigned int height)
 {
-	VkEventCreateInfo createInfo = { VK_STRUCTURE_TYPE_EVENT_CREATE_INFO };
-	vkCreateEvent(g_context.m_device, &createInfo, nullptr, &m_shadowsFinishedEvent);
 }
 
-void VEngine::VKRenderResources::deleteResizableTextures()
+void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
 {
-	//vkDestroyImageView(g_context.m_device, m_colorAttachment.m_view, nullptr);
-	//vkDestroyImage(g_context.m_device, m_colorAttachment.m_image, nullptr);
-	//vkFreeMemory(g_context.m_device, m_colorAttachment.m_memory, nullptr);
-	//
-	//vkDestroyImageView(g_context.m_device, m_depthAttachment.m_view, nullptr);
-	//vkDestroyImage(g_context.m_device, m_depthAttachment.m_image, nullptr);
-	//vkFreeMemory(g_context.m_device, m_depthAttachment.m_memory, nullptr);
+	if (!m_vertexBuffer.isValid() || m_vertexBuffer.getSize() < vertexSize)
+	{
+		m_vertexBuffer.destroy();
+
+		VkBufferCreateInfo vertexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		vertexBufferInfo.size = vertexSize;
+		vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_vertexBuffer.create(vertexBufferInfo, allocCreateInfo);
+	}
+
+	if (!m_indexBuffer.isValid() || m_indexBuffer.getSize() < vertexSize)
+	{
+		m_indexBuffer.destroy();
+
+		VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		indexBufferInfo.size = indexSize;
+		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		m_indexBuffer.create(indexBufferInfo, allocCreateInfo);
+	}
 }
 
-void VEngine::VKRenderResources::deleteAllTextures()
+void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
 {
-	deleteResizableTextures();
+	VKBuffer stagingBuffer;
+
+	VkBufferCreateInfo stagingBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	stagingBufferInfo.size = vertexSize + indexSize;
+	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo allocCreateInfo = {};
+	allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+	stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
+
+	void *data;
+	vmaMapMemory(g_context.m_allocator, stagingBuffer.getAllocation(), &data);
+	memcpy(data, vertices, (size_t)vertexSize);
+	memcpy(((unsigned char *)data) + vertexSize, indices, (size_t)indexSize);
+	vmaUnmapMemory(g_context.m_allocator, stagingBuffer.getAllocation());
+
+	VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+	{
+		VkBufferCopy copyRegionVertex = { 0, 0, vertexSize };
+		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_vertexBuffer.getBuffer(), 1, &copyRegionVertex);
+		VkBufferCopy copyRegionIndex = { vertexSize, 0, indexSize };
+		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_indexBuffer.getBuffer(), 1, &copyRegionIndex);
+	}
+	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
+
+	stagingBuffer.destroy();
+}
+
+void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo *data, size_t count)
+{
+	VkWriteDescriptorSet descriptorWrite = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	descriptorWrite.dstSet = m_textureDescriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrite.descriptorCount = count < TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : TEXTURE_ARRAY_SIZE;
+	descriptorWrite.pImageInfo = data;
+
+	vkQueueWaitIdle(g_context.m_graphicsQueue);
+	vkUpdateDescriptorSets(g_context.m_device, 1, &descriptorWrite, 0, nullptr);
+}
+
+VEngine::VKRenderResources::VKRenderResources()
+	:m_vertexBuffer(),
+	m_indexBuffer()
+{
 }

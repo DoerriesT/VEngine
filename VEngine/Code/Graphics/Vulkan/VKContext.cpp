@@ -12,7 +12,7 @@ namespace VEngine
 {
 	VKContext g_context = {};
 
-	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation"/*, "VK_LAYER_LUNARG_assistant_layer" */};
+	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_assistant_layer"};
 	static const char* const deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)

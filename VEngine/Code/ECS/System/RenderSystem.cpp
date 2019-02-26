@@ -52,7 +52,6 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			glm::mat4 &viewMatrix = cameraComponent->m_viewMatrix;
 			glm::mat4 &projectionMatrix = cameraComponent->m_projectionMatrix;
 
-			++m_renderParams.m_frame;
 			m_renderParams.m_time = static_cast<float>(time);
 			m_renderParams.m_fovy = cameraComponent->m_fovy;
 			m_renderParams.m_nearPlane = cameraComponent->m_near;
@@ -144,7 +143,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			// clear bins
 			for (size_t i = 0; i < m_lightData.m_zBins.size(); ++i)
 			{
-				m_lightData.m_zBins[i].x = emptyBin;
+				m_lightData.m_zBins[i] = emptyBin;
 			}
 
 			// assign lights
@@ -159,7 +158,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 				for (size_t j = minBin; j <= maxBin; ++j)
 				{
-					uint32_t &val = m_lightData.m_zBins[j].x;
+					uint32_t &val = m_lightData.m_zBins[j];
 					uint32_t minIndex = (val & 0xFFFF0000) >> 16;
 					uint32_t maxIndex = val & 0xFFFF;
 					minIndex = std::min(minIndex, static_cast<uint32_t>(i));
@@ -198,6 +197,7 @@ void VEngine::RenderSystem::render()
 	if (m_cameraEntity)
 	{
 		m_renderer->render(m_renderParams, m_drawLists, m_lightData);
+		++m_renderParams.m_frame;
 	}
 }
 

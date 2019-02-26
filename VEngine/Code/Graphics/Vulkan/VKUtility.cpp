@@ -158,11 +158,8 @@ bool VEngine::VKUtility::dispatchComputeHelper(VkCommandBuffer commandBuffer, ui
 	return (domainX % localSizeX == 0) && (domainY % localSizeY == 0) && (domainZ % localSizeZ == 0);
 }
 
-VkImageAspectFlags VEngine::VKUtility::imageAspectMaskFromFormat(VkFormat format)
+bool VEngine::VKUtility::isDepthFormat(VkFormat format)
 {
-	bool isDepthFormat = false;
-	bool isStencilFormat = false;
-
 	switch (format)
 	{
 	case VK_FORMAT_D16_UNORM:
@@ -170,29 +167,40 @@ VkImageAspectFlags VEngine::VKUtility::imageAspectMaskFromFormat(VkFormat format
 	case VK_FORMAT_D16_UNORM_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-		isDepthFormat = true;
+		return true;
 		break;
 	default:
 		break;
 	}
+	return false;
+}
 
+bool VEngine::VKUtility::isStencilFormat(VkFormat format)
+{
 	switch (format)
 	{
 	case VK_FORMAT_S8_UINT:
 	case VK_FORMAT_D16_UNORM_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
-		isStencilFormat = true;
+		return true;
 		break;
 	default:
 		break;
 	}
+	return false;
+}
+
+VkImageAspectFlags VEngine::VKUtility::imageAspectMaskFromFormat(VkFormat format)
+{
+	bool depthFormat = isDepthFormat(format);
+	bool stencilFormat = isStencilFormat(format);
 
 	VkImageAspectFlags mask = 0;
 
-	mask |= isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
-	mask |= isStencilFormat ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
-	mask |= (!isDepthFormat && !isStencilFormat) ? VK_IMAGE_ASPECT_COLOR_BIT : 0;
+	mask |= depthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+	mask |= stencilFormat ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
+	mask |= (!depthFormat && !stencilFormat) ? VK_IMAGE_ASPECT_COLOR_BIT : 0;
 
 	return mask;
 }

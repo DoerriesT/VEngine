@@ -53,6 +53,6 @@ namespace VEngine
 		std::vector<PointLightData> m_pointLightData;
 		std::vector<SpotLightData> m_spotLightData;
 		std::vector<ShadowJob> m_shadowJobs;
-		std::array<glm::uvec2, 8192> m_zBins;
+		std::array<uint32_t, 8192> m_zBins;
 	};
 }

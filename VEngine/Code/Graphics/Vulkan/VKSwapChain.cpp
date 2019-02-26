@@ -107,7 +107,7 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	uint32_t queueFamilyIndices[] = { g_context.m_queueFamilyIndices.m_graphicsFamily, g_context.m_queueFamilyIndices.m_computeFamily };
 	if (g_context.m_queueFamilyIndices.m_graphicsFamily != g_context.m_queueFamilyIndices.m_computeFamily)
@@ -193,6 +193,11 @@ VkImage VEngine::VKSwapChain::getImage(size_t index) const
 {
 	assert(index < m_images.size());
 	return m_images[index];
+}
+
+VkImageView VEngine::VKSwapChain::getImageView(size_t index) const
+{
+	return m_imageViews[index];
 }
 
 std::size_t VEngine::VKSwapChain::getImageCount() const

@@ -1,25 +1,24 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <vector>
 
 namespace VEngine
 {
 	struct VKRenderResources;
-	struct DrawLists;
 
 	class VKGeometryPipeline
 	{
 	public:
-		explicit VKGeometryPipeline();
+		explicit VKGeometryPipeline(VkDevice device, VKRenderResources *renderResources, bool alphaMasked);
 		VKGeometryPipeline(const VKGeometryPipeline &) = delete;
 		VKGeometryPipeline(const VKGeometryPipeline &&) = delete;
 		VKGeometryPipeline &operator= (const VKGeometryPipeline &) = delete;
 		VKGeometryPipeline &operator= (const VKGeometryPipeline &&) = delete;
 		~VKGeometryPipeline();
-		void init(unsigned int width, unsigned int height, VkRenderPass renderPass, VKRenderResources *renderResources);
-		void recordCommandBuffer(VkRenderPass renderPass, VKRenderResources *renderResources, const DrawLists &drawLists);
-
+		VkPipeline getPipeline() const;
+		VkPipelineLayout getLayout() const;
+		
 	private:
+		VkDevice m_device;
 		VkPipeline m_pipeline;
 		VkPipelineLayout m_pipelineLayout;
 	};

@@ -9,42 +9,9 @@
 #define NORMAL_TEXTURE_INDEX 2
 #define MRO_TEXTURE_INDEX 3
 #define MAX_POINT_LIGHT_WORDS 2048
-#define MAX_SPOT_LIGHT_WORDS 2048
 #define TILE_SIZE 16
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-layout(set = 0, binding = 0, rgba16f) uniform writeonly image2D uResultImage;
-
-layout(set = 0, binding = 1) uniform sampler2D uTextures[4];
-
-layout(set = 1, binding = 0) uniform PerFrameData 
-{
-	float time;
-	float fovy;
-	float nearPlane;
-	float farPlane;
-	mat4 viewMatrix;
-	mat4 projectionMatrix;
-	mat4 viewProjectionMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjectionMatrix;
-	mat4 invViewProjectionMatrix;
-	mat4 prevViewMatrix;
-	mat4 prevProjectionMatrix;
-	mat4 prevViewProjectionMatrix;
-	mat4 prevInvViewMatrix;
-	mat4 prevInvProjectionMatrix;
-	mat4 prevInvViewProjectionMatrix;
-	vec4 cameraPosition;
-	vec4 cameraDirection;
-	uint frame;
-} uPerFrameData;
-
-layout(push_constant) uniform PushConsts 
-{
-	uint directionalLightCount;
-} uPushConsts;
 
 struct ShadowData
 {
@@ -78,6 +45,37 @@ struct SpotLight
 	//uint shadowDataCount;
 };
 
+layout(push_constant) uniform PushConsts 
+{
+	uint directionalLightCount;
+} uPushConsts;
+
+layout(set = 0, binding = 0) uniform PerFrameData 
+{
+	float time;
+	float fovy;
+	float nearPlane;
+	float farPlane;
+	mat4 viewMatrix;
+	mat4 projectionMatrix;
+	mat4 viewProjectionMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjectionMatrix;
+	mat4 invViewProjectionMatrix;
+	mat4 prevViewMatrix;
+	mat4 prevProjectionMatrix;
+	mat4 prevViewProjectionMatrix;
+	mat4 prevInvViewMatrix;
+	mat4 prevInvProjectionMatrix;
+	mat4 prevInvViewProjectionMatrix;
+	vec4 cameraPosition;
+	vec4 cameraDirection;
+	uint frame;
+} uPerFrameData;
+
+layout(set = 1, binding = 0, rgba16f) uniform writeonly image2D uResultImage;
+
+layout(set = 1, binding = 1) uniform sampler2D uTextures[4];
 
 layout(set = 2, binding = 0) readonly buffer DirectionalLights 
 {
@@ -99,10 +97,10 @@ layout(set = 2, binding = 3) readonly buffer Shadows
 	ShadowData data[];
 } uShadowData;
 
-layout(set = 2, binding = 4) readonly buffer ZBins 
+layout(set = 2, binding = 4) readonly buffer PointLightZBins 
 {
-	uvec2 bins[];
-} uZBins;
+	uint bins[];
+} uPointLightZBins;
 
 layout(set = 2, binding = 5) uniform sampler2DShadow uShadowTexture;
 
@@ -110,11 +108,6 @@ layout(set = 3, binding = 0) buffer PointLightBitMask
 {
 	uint mask[];
 } uPointLightBitMask;
-
-layout(set = 3, binding = 1) buffer SpotLightBitMask 
-{
-	uint mask[];
-} uSpotLightBitMask;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -397,38 +390,44 @@ void main()
 	
 	vec3 result = vec3(0.0);
 	
+	// ambient
+	result += 0.1 * albedo;
+	
+	// directional lights
 	for (uint i = 0; i < uPushConsts.directionalLightCount; ++i)
 	{
 		result += evaluateDirectionalLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, i);
 	}
-	result += 0.1 * albedo;
 	
-	uint wordMin = 0;
-	uint wordMax = MAX_POINT_LIGHT_WORDS - 1;
-	
-	uint address = getTileAddress() * MAX_POINT_LIGHT_WORDS;
-	uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
-	uint zBinData = uZBins.bins[zBinAddress].x;
-	uint minIndex = (zBinData & 0xFFFF0000) >> 16;
-	uint maxIndex = zBinData & 0xFFFF;
-	wordMin = minIndex / 32;
-	wordMax = maxIndex / 32;
-	
-	uint count = 0;
-	for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+	// point lights
 	{
-		uint mask = uPointLightBitMask.mask[address + wordIndex];
+		uint wordMin = 0;
+		uint wordMax = MAX_POINT_LIGHT_WORDS - 1;
 		
-		while (mask != 0)
+		uint address = getTileAddress() * MAX_POINT_LIGHT_WORDS;
+		uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
+		uint zBinData = uPointLightZBins.bins[zBinAddress];
+		uint minIndex = (zBinData & 0xFFFF0000) >> 16;
+		uint maxIndex = zBinData & 0xFFFF;
+		wordMin = minIndex / 32;
+		wordMax = maxIndex / 32;
+		
+		uint count = 0;
+		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint bitIndex = findLSB(mask);
-			uint index = 32 * wordIndex + bitIndex;
-			mask ^= (1 << bitIndex);
-			if (index >= minIndex && index <= maxIndex)
+			uint mask = uPointLightBitMask.mask[address + wordIndex];
+			
+			while (mask != 0)
 			{
-				result += evaluatePointLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, index);
+				uint bitIndex = findLSB(mask);
+				uint index = 32 * wordIndex + bitIndex;
+				mask ^= (1 << bitIndex);
+				if (index >= minIndex && index <= maxIndex)
+				{
+					result += evaluatePointLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, index);
+				}
+				++count;
 			}
-			++count;
 		}
 	}
 	

@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
+#include <bitset>
 
 namespace VEngine
 {
@@ -92,6 +93,40 @@ namespace VEngine
 				std::swap(v.back(), *it);
 				v.erase(--v.end());
 			}
+		}
+
+		template<size_t BITS>
+		inline size_t findNextSetBit(const std::bitset<BITS> &bits, size_t startPos)
+		{
+			size_t nextSetBit = startPos;
+
+			while (++startPos < BITS)
+			{
+				if (bits[startPos])
+				{
+					nextSetBit = startPos;
+					break;
+				}
+			}
+
+			return nextSetBit;
+		}
+
+		template<size_t BITS>
+		inline size_t findPreviousSetBit(const std::bitset<BITS> &bits, size_t startPos)
+		{
+			size_t previousSetBit = startPos;
+
+			while (startPos-- > 0)
+			{
+				if (bits[startPos])
+				{
+					previousSetBit = startPos;
+					break;
+				}
+			}
+
+			return previousSetBit;
 		}
 	}
 }

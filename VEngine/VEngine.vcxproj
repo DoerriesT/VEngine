@@ -91,6 +91,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -99,6 +101,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -109,6 +113,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -123,6 +129,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -155,24 +163,26 @@
     <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\Passes.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKForwardPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTilingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\VKResourceManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
     <ClInclude Include="Code\Graphics\Vulkan\vk_mem_alloc.h" />
@@ -199,24 +209,26 @@
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\Passes.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKForwardPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTilingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryAlphaMaskPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKForwardRenderPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKGeometryRenderPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\RenderPass\VKShadowRenderPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\VKResourceManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\vk_mem_alloc.cpp" />

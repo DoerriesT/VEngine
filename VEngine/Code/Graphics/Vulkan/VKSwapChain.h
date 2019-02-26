@@ -19,6 +19,7 @@ namespace VEngine
 		VkFormat getImageFormat() const;
 		VkSwapchainKHR get() const;
 		VkImage getImage(size_t index) const;
+		VkImageView getImageView(size_t index) const;
 		size_t getImageCount() const;
 
 	private:
