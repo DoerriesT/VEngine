@@ -1876,8 +1876,6 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 	{
 		assert(cmdBufs[i] == VK_NULL_HANDLE);
 	}
-
-	vkDeviceWaitIdle(g_context.m_device);
 }
 
 uint32_t Graph::queueIndexFromQueueType(QueueType queueType)
