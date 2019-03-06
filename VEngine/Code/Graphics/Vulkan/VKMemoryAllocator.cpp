@@ -623,7 +623,7 @@ void VEngine::VKMemoryAllocator::destroy()
 VkResult VEngine::VKMemoryAllocator::findMemoryTypeIndex(uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties, VkMemoryPropertyFlags preferredProperties, uint32_t &memoryTypeIndex)
 {
 	memoryTypeIndex = ~uint32_t(0);
-	uint32_t bestResultBitCount = 0;
+	int bestResultBitCount = -1;
 
 	for (uint32_t memoryIndex = 0; memoryIndex < m_memoryProperties.memoryTypeCount; ++memoryIndex)
 	{
@@ -644,7 +644,7 @@ VkResult VEngine::VKMemoryAllocator::findMemoryTypeIndex(uint32_t memoryTypeBits
 			}
 
 			// only some bits are present -> count them
-			uint32_t bitCount = 0;
+			int bitCount = 0;
 			for (uint32_t bit = 0; bit < 32; ++bit)
 			{
 				bitCount += (presentBits & (1 << bit)) >> bit;
