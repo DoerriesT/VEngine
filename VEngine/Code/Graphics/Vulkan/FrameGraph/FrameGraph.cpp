@@ -368,6 +368,28 @@ Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator)
 	{
 		Utility::fatalExit("Failed to create Command Pool!", -1);
 	}
+
+	VkCommandBufferAllocateInfo cmdBufAllocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+	cmdBufAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufAllocInfo.commandBufferCount = MAX_PASSES;
+
+	cmdBufAllocInfo.commandPool = m_graphicsCommandPool;
+	if (vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, m_commandBuffers[0]) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to allocate command buffers!", -1);
+	}
+
+	cmdBufAllocInfo.commandPool = m_computeCommandPool;
+	if (vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, m_commandBuffers[1]) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to allocate command buffers!", -1);
+	}
+
+	cmdBufAllocInfo.commandPool = m_transferCommandPool;
+	if (vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, m_commandBuffers[2]) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to allocate command buffers!", -1);
+	}
 }
 
 Graph::~Graph()
@@ -475,15 +497,19 @@ void Graph::reset()
 		{
 			if (m_imageResources[i])
 			{
-				vmaDestroyImage(g_context.m_allocator, m_images[i], m_allocations[i]);
+				g_context.m_allocator.destroyImage(m_images[i], m_allocations[i]);
 				vkDestroyImageView(g_context.m_device, m_imageViews[i], nullptr);
 			}
 			else
 			{
-				vmaDestroyBuffer(g_context.m_allocator, m_buffers[i], m_allocations[i]);
+				g_context.m_allocator.destroyBuffer(m_buffers[i], m_allocations[i]);
 			}
+			assert(m_allocationCount);
+			--m_allocationCount;
 		}
 	}
+
+	assert(m_allocationCount == 0);
 
 	// destroy renderpasses and framebuffers
 	for (size_t i = 0; i < m_passCount; ++i)
@@ -507,6 +533,9 @@ void Graph::reset()
 	vkResetCommandPool(g_context.m_device, m_transferCommandPool, 0);
 
 	// zero out data
+	m_graphicsCommandBufferCount = 0;
+	m_computeCommandBufferCount = 0;
+	m_transferCommandBufferCount = 0;
 	m_resourceCount = 0;
 	m_passCount = 0;
 	m_descriptorSetCount = 0;
@@ -852,14 +881,15 @@ void Graph::createResources()
 				imageCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 				imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-				VmaAllocationCreateInfo allocCreateInfo = {};
-				allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-				VmaAllocationInfo allocInfo = {};
-				if (vmaCreateImage(g_context.m_allocator, &imageCreateInfo, &allocCreateInfo, &m_images[resourceIndex], &m_allocations[resourceIndex], nullptr) != VK_SUCCESS)
+				VKAllocationCreateInfo allocCreateInfo = {};
+				allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+				
+				if (g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[resourceIndex], m_allocations[resourceIndex]) != VK_SUCCESS)
 				{
 					Utility::fatalExit("Failed to create image!", -1);
 				}
+
+				++m_allocationCount;
 			}
 
 			// create image view
@@ -896,14 +926,16 @@ void Graph::createResources()
 				bufferCreateInfo.queueFamilyIndexCount = queueFamilyCount;
 				bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 
-				VmaAllocationCreateInfo allocCreateInfo = {};
-				allocCreateInfo.usage = desc.m_hostVisible ? VMA_MEMORY_USAGE_CPU_TO_GPU : VMA_MEMORY_USAGE_GPU_ONLY;
+				VKAllocationCreateInfo allocCreateInfo = {};
+				allocCreateInfo.m_requiredFlags = desc.m_hostVisible ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+				allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-				VmaAllocationInfo allocInfo = {};
-				if (vmaCreateBuffer(g_context.m_allocator, &bufferCreateInfo, &allocCreateInfo, &m_buffers[resourceIndex], &m_allocations[resourceIndex], &allocInfo) != VK_SUCCESS)
+				if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_buffers[resourceIndex], m_allocations[resourceIndex]) != VK_SUCCESS)
 				{
 					Utility::fatalExit("Failed to create buffer!", -1);
 				}
+
+				++m_allocationCount;
 			}
 		}
 	}
@@ -1509,24 +1541,16 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			}
 
 			// get new command buffer
-			VkCommandBufferAllocateInfo cmdBufAllocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-			cmdBufAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			cmdBufAllocInfo.commandBufferCount = 1;
-
-
 			switch (m_queueType[passIndex])
 			{
 			case QueueType::GRAPHICS:
-				cmdBufAllocInfo.commandPool = m_graphicsCommandPool;
-				vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, cmdBuf);
+				*cmdBuf = m_commandBuffers[0][m_graphicsCommandBufferCount++];
 				break;
 			case QueueType::COMPUTE:
-				cmdBufAllocInfo.commandPool = m_computeCommandPool;
-				vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, cmdBuf);
+				*cmdBuf = m_commandBuffers[1][m_computeCommandBufferCount++];
 				break;
 			case QueueType::TRANSFER:
-				cmdBufAllocInfo.commandPool = m_transferCommandPool;
-				vkAllocateCommandBuffers(g_context.m_device, &cmdBufAllocInfo, cmdBuf);
+				*cmdBuf = m_commandBuffers[2][m_transferCommandBufferCount++];
 				break;
 			case QueueType::NONE:
 				assert(false);
@@ -1939,7 +1963,7 @@ void Graph::addDescriptorWrite(size_t passIndex, size_t resourceIndex, VkDescrip
 	}
 }
 
-ResourceRegistry::ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VmaAllocation *allocations)
+VEngine::FrameGraph::ResourceRegistry::ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VEngine::VKAllocationHandle *allocations)
 	:m_images(images),
 	m_imageViews(views),
 	m_buffers(buffers),
@@ -1962,17 +1986,17 @@ VkBuffer ResourceRegistry::getBuffer(BufferHandle handle) const
 	return m_buffers[(size_t)handle - 1];
 }
 
-const VmaAllocation &ResourceRegistry::getAllocation(ResourceHandle handle) const
+const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(ResourceHandle handle) const
 {
 	return m_allocations[(size_t)handle - 1];
 }
 
-const VmaAllocation &ResourceRegistry::getAllocation(ImageHandle handle) const
+const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(ImageHandle handle) const
 {
 	return m_allocations[(size_t)handle - 1];
 }
 
-const VmaAllocation &ResourceRegistry::getAllocation(BufferHandle handle) const
+const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(BufferHandle handle) const
 {
 	return m_allocations[(size_t)handle - 1];
 }
@@ -1980,11 +2004,11 @@ const VmaAllocation &ResourceRegistry::getAllocation(BufferHandle handle) const
 void *ResourceRegistry::mapMemory(BufferHandle handle) const
 {
 	void *data;
-	vmaMapMemory(g_context.m_allocator, m_allocations[(size_t)handle - 1], &data);
+	g_context.m_allocator.mapMemory(m_allocations[(size_t)handle - 1], &data);
 	return data;
 }
 
 void ResourceRegistry::unmapMemory(BufferHandle handle) const
 {
-	vmaUnmapMemory(g_context.m_allocator, m_allocations[(size_t)handle - 1]);
+	g_context.m_allocator.unmapMemory(m_allocations[(size_t)handle - 1]);
 }

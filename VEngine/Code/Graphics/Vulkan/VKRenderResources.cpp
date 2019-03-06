@@ -46,8 +46,8 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height)
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
 
@@ -426,8 +426,8 @@ void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_
 		vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_vertexBuffer.create(vertexBufferInfo, allocCreateInfo);
 	}
@@ -441,8 +441,8 @@ void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_
 		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_indexBuffer.create(indexBufferInfo, allocCreateInfo);
 	}
@@ -457,16 +457,16 @@ void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, u
 	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VmaAllocationCreateInfo allocCreateInfo = {};
-	allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+	VKAllocationCreateInfo allocCreateInfo = {};
+	allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
 
 	void *data;
-	vmaMapMemory(g_context.m_allocator, stagingBuffer.getAllocation(), &data);
+	g_context.m_allocator.mapMemory(stagingBuffer.getAllocation(), &data);
 	memcpy(data, vertices, (size_t)vertexSize);
 	memcpy(((unsigned char *)data) + vertexSize, indices, (size_t)indexSize);
-	vmaUnmapMemory(g_context.m_allocator, stagingBuffer.getAllocation());
+	g_context.m_allocator.unmapMemory(stagingBuffer.getAllocation());
 
 	VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 	{

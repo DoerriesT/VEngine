@@ -8,7 +8,7 @@
 #include <variant>
 #include <bitset>
 #include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
-#include "Graphics/Vulkan/vk_mem_alloc_include.h"
+#include "Graphics/Vulkan/VKMemoryAllocator.h"
 
 namespace VEngine
 {
@@ -111,13 +111,13 @@ namespace VEngine
 		class ResourceRegistry
 		{
 		public:
-			explicit ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VmaAllocation *allocations);
+			explicit ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VKAllocationHandle *allocations);
 			VkImage getImage(ImageHandle handle) const;
 			VkImageView getImageView(ImageHandle handle) const;
 			VkBuffer getBuffer(BufferHandle handle) const;
-			const VmaAllocation &getAllocation(ResourceHandle handle) const;
-			const VmaAllocation &getAllocation(ImageHandle handle) const;
-			const VmaAllocation &getAllocation(BufferHandle handle) const;
+			const VKAllocationHandle &getAllocation(ResourceHandle handle) const;
+			const VKAllocationHandle &getAllocation(ImageHandle handle) const;
+			const VKAllocationHandle &getAllocation(BufferHandle handle) const;
 			void *mapMemory(BufferHandle handle) const;
 			void unmapMemory(BufferHandle handle) const;
 
@@ -125,7 +125,7 @@ namespace VEngine
 			const VkImage *m_images;
 			const VkImageView *m_imageViews;
 			const VkBuffer *m_buffers;
-			const VmaAllocation *m_allocations;
+			const VKAllocationHandle *m_allocations;
 		};
 
 		class Graph
@@ -227,6 +227,8 @@ namespace VEngine
 			PassType m_passTypes[MAX_PASSES];
 			QueueType m_queueType[MAX_PASSES];
 			ResourceDescription m_resourceDescriptions[MAX_RESOURCES];
+			VkCommandBuffer m_commandBuffers[3][MAX_PASSES];
+			size_t m_allocationCount = 0;
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //
@@ -235,6 +237,9 @@ namespace VEngine
 			VkCommandPool m_graphicsCommandPool;
 			VkCommandPool m_computeCommandPool;
 			VkCommandPool m_transferCommandPool;
+			size_t m_graphicsCommandBufferCount = 0;
+			size_t m_computeCommandBufferCount = 0;
+			size_t m_transferCommandBufferCount = 0;
 			size_t m_resourceCount = 0;
 			size_t m_passCount = 0;
 			size_t m_descriptorSetCount = 0;
@@ -261,7 +266,7 @@ namespace VEngine
 			VkImage m_images[MAX_RESOURCES];
 			VkImageView m_imageViews[MAX_RESOURCES];
 			VkBuffer m_buffers[MAX_RESOURCES];
-			VmaAllocation m_allocations[MAX_RESOURCES];
+			VKAllocationHandle m_allocations[MAX_RESOURCES];
 			std::pair<VkRenderPass, VkFramebuffer> m_renderpassFramebufferHandles[MAX_PASSES];
 			VkPipelineStageFlags m_passStageMasks[MAX_PASSES];
 			VkDescriptorSet m_descriptorSets[MAX_DESCRIPTOR_SETS];

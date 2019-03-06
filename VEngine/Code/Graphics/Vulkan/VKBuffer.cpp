@@ -2,19 +2,20 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 
-void VEngine::VKBuffer::create(const VkBufferCreateInfo & bufferCreateInfo, const VmaAllocationCreateInfo & allocCreateInfo)
+void VEngine::VKBuffer::create(const VkBufferCreateInfo &bufferCreateInfo, const VKAllocationCreateInfo &allocCreateInfo)
 {
 	m_size = bufferCreateInfo.size;
 	m_sharingMode = bufferCreateInfo.sharingMode;
 
-	VmaAllocationInfo allocInfo = {};
-	if (vmaCreateBuffer(g_context.m_allocator, &bufferCreateInfo, &allocCreateInfo, &m_buffer, &m_allocation, &allocInfo) != VK_SUCCESS)
+	if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_buffer, m_allocation) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to create buffer!", -1);
 	}
 
-	m_deviceMemory = allocInfo.deviceMemory;
-	m_offset = allocInfo.offset;
+	VKAllocationInfo allocInfo = g_context.m_allocator.getAllocationInfo(m_allocation);
+
+	m_deviceMemory = allocInfo.m_memory;
+	m_offset = allocInfo.m_offset;
 	m_valid = true;
 }
 
@@ -22,7 +23,7 @@ void VEngine::VKBuffer::destroy()
 {
 	if (m_valid)
 	{
-		vmaDestroyBuffer(g_context.m_allocator, m_buffer, m_allocation);
+		g_context.m_allocator.destroyBuffer(m_buffer, m_allocation);
 
 		m_valid = false;
 	}
@@ -43,7 +44,7 @@ VkSharingMode VEngine::VKBuffer::getSharingMode() const
 	return m_sharingMode;
 }
 
-VmaAllocation VEngine::VKBuffer::getAllocation() const
+VEngine::VKAllocationHandle VEngine::VKBuffer::getAllocation() const
 {
 	return m_allocation;
 }

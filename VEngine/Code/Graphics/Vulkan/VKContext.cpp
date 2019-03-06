@@ -380,16 +380,7 @@ namespace VEngine
 		}
 
 		// create allocator
-		{
-			VmaAllocatorCreateInfo allocatorInfo = {};
-			allocatorInfo.physicalDevice = m_physicalDevice;
-			allocatorInfo.device = m_device;
-
-			if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create allocator!", -1);
-			}
-		}
+		m_allocator.init(m_device, m_physicalDevice);
 	}
 
 	void VKContext::shutdown()

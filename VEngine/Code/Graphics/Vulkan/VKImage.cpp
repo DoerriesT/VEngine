@@ -2,7 +2,7 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 
-void VEngine::VKImage::create(const VkImageCreateInfo & imageCreateInfo, const VmaAllocationCreateInfo & allocCreateInfo)
+void VEngine::VKImage::create(const VkImageCreateInfo & imageCreateInfo, const VKAllocationCreateInfo & allocCreateInfo)
 {
 	m_imageType = imageCreateInfo.imageType;
 	m_format = imageCreateInfo.format;
@@ -15,14 +15,15 @@ void VEngine::VKImage::create(const VkImageCreateInfo & imageCreateInfo, const V
 	m_tiling = imageCreateInfo.tiling;
 	m_sharingMode = imageCreateInfo.sharingMode;
 	
-	VmaAllocationInfo allocInfo = {};
-	if (vmaCreateImage(g_context.m_allocator, &imageCreateInfo, &allocCreateInfo, &m_image, &m_allocation, nullptr) != VK_SUCCESS)
+	if (g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_image, m_allocation) != VK_SUCCESS)
 	{
 		Utility::fatalExit("Failed to create image!", -1);
 	}
 
-	m_deviceMemory = allocInfo.deviceMemory;
-	m_offset = allocInfo.offset;
+	VKAllocationInfo allocInfo = g_context.m_allocator.getAllocationInfo(m_allocation);
+
+	m_deviceMemory = allocInfo.m_memory;
+	m_offset = allocInfo.m_offset;
 	m_valid = true;
 }
 
@@ -30,7 +31,7 @@ void VEngine::VKImage::destroy()
 {
 	if (m_valid)
 	{
-		vmaDestroyImage(g_context.m_allocator, m_image, m_allocation);
+		g_context.m_allocator.destroyImage(m_image, m_allocation);
 
 		m_valid = false;
 	}
@@ -91,7 +92,7 @@ VkSharingMode VEngine::VKImage::getSharingMode() const
 	return m_sharingMode;
 }
 
-VmaAllocation VEngine::VKImage::getAllocation() const
+VEngine::VKAllocationHandle VEngine::VKImage::getAllocation() const
 {
 	return m_allocation;
 }

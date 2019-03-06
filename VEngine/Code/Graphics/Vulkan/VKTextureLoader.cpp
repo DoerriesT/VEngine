@@ -24,8 +24,9 @@ VEngine::VKTextureLoader::VKTextureLoader()
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+		allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_stagingBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
@@ -46,10 +47,9 @@ VEngine::VKTextureLoader::VKTextureLoader()
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		
-
 		m_dummyTexture.m_image.create(imageCreateInfo, allocCreateInfo);
 
 		VkImageSubresourceRange subresourceRange = {};
@@ -172,9 +172,9 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 	// copy image data to staging buffer
 	{
 		void *data;
-		vmaMapMemory(g_context.m_allocator, m_stagingBuffer.getAllocation(), &data);
+		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), &data);
 		memcpy(data, gliTex.data(), gliTex.size());
-		vmaUnmapMemory(g_context.m_allocator, m_stagingBuffer.getAllocation());
+		g_context.m_allocator.unmapMemory(m_stagingBuffer.getAllocation());
 	}
 
 	// create image
@@ -194,9 +194,8 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		texture.m_image.create(imageCreateInfo, allocCreateInfo);
 	}

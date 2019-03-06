@@ -1,15 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <vulkan/vulkan.h>
-#include "vk_mem_alloc_include.h"
+#include "VKMemoryAllocator.h"
 
 namespace VEngine
 {
 	class VKImage
 	{
 	public:
-		void create(const VkImageCreateInfo &imageCreateInfo, 
-			const VmaAllocationCreateInfo &allocCreateInfo);
+		void create(const VkImageCreateInfo &imageCreateInfo, const VKAllocationCreateInfo &allocCreateInfo);
 		void destroy();
 		VkImage getImage() const;
 		VkImageType getImageType() const;
@@ -22,7 +21,7 @@ namespace VEngine
 		VkSampleCountFlagBits getSamples() const;
 		VkImageTiling getTiling() const;
 		VkSharingMode getSharingMode() const;
-		VmaAllocation getAllocation() const;
+		VKAllocationHandle getAllocation() const;
 		VkDeviceMemory getDeviceMemory() const;
 		VkDeviceSize getOffset() const;
 		bool isValid() const;
@@ -39,7 +38,7 @@ namespace VEngine
 		VkSampleCountFlagBits m_samples;
 		VkImageTiling m_tiling;
 		VkSharingMode m_sharingMode;
-		VmaAllocation m_allocation;
+		VKAllocationHandle m_allocation;
 		VkDeviceMemory m_deviceMemory;
 		VkDeviceSize m_offset;
 		bool m_valid;

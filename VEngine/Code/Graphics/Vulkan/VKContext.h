@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan\vulkan.h>
 #include <vector>
-#include "vk_mem_alloc_include.h"
+#include "VKMemoryAllocator.h"
 
 struct GLFWwindow;
 
@@ -43,7 +43,7 @@ namespace VEngine
 		VkSemaphore m_renderFinishedSemaphore;
 		VKSwapChainSupportDetails m_swapChainSupportDetails;
 		VKQueueFamilyIndices m_queueFamilyIndices;
-		VmaAllocator m_allocator;
+		VKMemoryAllocator m_allocator;
 
 		void init(GLFWwindow *windowHandle);
 		void shutdown();
