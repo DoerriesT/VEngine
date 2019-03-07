@@ -4,8 +4,6 @@
 #include "Utility/Utility.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKUtility.h"
-#include <GLFW/glfw3.h>
-#include <iostream>
 #include "Utility/ContainerUtility.h"
 #include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
 
@@ -504,12 +502,8 @@ void Graph::reset()
 			{
 				g_context.m_allocator.destroyBuffer(m_buffers[i], m_allocations[i]);
 			}
-			assert(m_allocationCount);
-			--m_allocationCount;
 		}
 	}
-
-	assert(m_allocationCount == 0);
 
 	// destroy renderpasses and framebuffers
 	for (size_t i = 0; i < m_passCount; ++i)
@@ -888,8 +882,6 @@ void Graph::createResources()
 				{
 					Utility::fatalExit("Failed to create image!", -1);
 				}
-
-				++m_allocationCount;
 			}
 
 			// create image view
@@ -934,8 +926,6 @@ void Graph::createResources()
 				{
 					Utility::fatalExit("Failed to create buffer!", -1);
 				}
-
-				++m_allocationCount;
 			}
 		}
 	}

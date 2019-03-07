@@ -228,7 +228,6 @@ namespace VEngine
 			QueueType m_queueType[MAX_PASSES];
 			ResourceDescription m_resourceDescriptions[MAX_RESOURCES];
 			VkCommandBuffer m_commandBuffers[3][MAX_PASSES];
-			size_t m_allocationCount = 0;
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //

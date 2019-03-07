@@ -45,7 +45,7 @@ namespace VEngine
 		class VKMemoryPool
 		{
 		public:
-			void init(VkDevice device, uint32_t memoryType, VkDeviceSize pageSize, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize);
+			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize);
 			VkResult alloc(VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo);
 			void free(VKAllocationInfo allocationInfo);
 			VkResult mapMemory(size_t blockIndex, VkDeviceSize offset, void **data);
@@ -75,7 +75,7 @@ namespace VEngine
 			VkDevice m_device;
 			uint32_t m_memoryType;
 			std::bitset<MAX_BLOCKS> m_allocatedBlocks;
-			VkDeviceSize m_pageSize;
+			VkDeviceSize m_bufferImageGranularity;
 			VkDeviceSize m_splitSizeThreshold;
 			VkDeviceSize m_preferredBlockSize;
 			VkDeviceSize m_blockSizes[MAX_BLOCKS];
