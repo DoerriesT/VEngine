@@ -13,13 +13,14 @@
 #include "Pipeline/VKTilingPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
+#include "Pipeline/VKMemoryHeapDebugPipeline.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
 
 }
 
-void VEngine::VKRenderResources::init(unsigned int width, unsigned int height)
+void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, VkFormat swapchainFormat)
 {
 	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
 
@@ -408,6 +409,7 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height)
 		m_tilingPipeline = std::make_unique<VKTilingPipeline>(g_context.m_device, this);
 		m_lightingPipeline = std::make_unique<VKLightingPipeline>(g_context.m_device, this);
 		m_forwardPipeline = std::make_unique<VKForwardPipeline>(g_context.m_device, this);
+		m_memoryHeapDebugPipeline = std::make_unique<VKMemoryHeapDebugPipeline>(g_context.m_device, swapchainFormat);
 	}
 }
 

@@ -172,11 +172,13 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTilingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
@@ -218,11 +220,13 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTilingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKShadowPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKTilingPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />

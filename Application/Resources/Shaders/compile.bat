@@ -7,5 +7,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c forward_frag.frag -o forward_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c shadows_vert.vert -o shadows_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c tiling_comp.comp -o tiling_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c tonemap_comp.comp -o tonemap_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c memoryHeapDebug_vert.vert -o memoryHeapDebug_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c memoryHeapDebug_frag.frag -o memoryHeapDebug_frag.spv
 
 pause

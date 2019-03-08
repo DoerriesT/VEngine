@@ -26,6 +26,26 @@ namespace VEngine
 		void *m_poolData;
 	};
 
+	struct VKMemorySpanDebugInfo
+	{
+		enum class State
+		{
+			FREE,
+			USED,
+			WASTED
+		};
+		size_t m_offset;
+		size_t m_size;
+		State m_state;
+	};
+
+	struct VKMemoryBlockDebugInfo
+	{
+		uint32_t m_memoryType;
+		size_t m_allocationSize;
+		std::vector<VKMemorySpanDebugInfo> m_spans;
+	};
+
 	class VKMemoryAllocator
 	{
 	public:
@@ -39,17 +59,29 @@ namespace VEngine
 		VkResult mapMemory(VKAllocationHandle allocationHandle, void **data);
 		void unmapMemory(VKAllocationHandle allocationHandle);
 		VKAllocationInfo getAllocationInfo(VKAllocationHandle allocationHandle);
+		std::vector<VKMemoryBlockDebugInfo> getDebugInfo();
+		size_t getMaximumBlockSize();
+		size_t getFreeMemorySize();
+		size_t getUsedMemorySize();
+		size_t getWastedMemorySize();
 		void destroy();
 
 	private:
+		enum 
+		{
+			MAX_BLOCK_SIZE = 256 * 1024 * 1024
+		};
+
 		class VKMemoryPool
 		{
 		public:
-			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize);
+			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize,
+				VkDeviceSize *usedMemorySize,VkDeviceSize *freeMemorySize,VkDeviceSize *wastedMemorySize);
 			VkResult alloc(VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo);
 			void free(VKAllocationInfo allocationInfo);
 			VkResult mapMemory(size_t blockIndex, VkDeviceSize offset, void **data);
 			void unmapMemory(size_t blockIndex);
+			void getDebugInfo(std::vector<VKMemoryBlockDebugInfo> &result);
 			void destroy();
 
 		private:
@@ -69,7 +101,8 @@ namespace VEngine
 				Span *m_nextPhysical;
 				VkDeviceSize m_offset;
 				VkDeviceSize m_size;
-				bool m_used;
+				VkDeviceSize m_usedOffset;
+				VkDeviceSize m_usedSize;
 			};
 
 			VkDevice m_device;
@@ -87,6 +120,9 @@ namespace VEngine
 			size_t m_allocationCounts[MAX_BLOCKS];
 			void *m_mappedPtr[MAX_BLOCKS];
 			size_t m_mapCount[MAX_BLOCKS];
+			VkDeviceSize *m_usedMemorySize;
+			VkDeviceSize *m_freeMemorySize;
+			VkDeviceSize *m_wastedMemorySize;
 			StaticObjectPool<Span, 256> m_spanPool;
 
 			// returns indices of the list holding memory blocks that lie in the same size class as requestedSize.
@@ -108,6 +144,9 @@ namespace VEngine
 		VkDeviceSize m_pageSize;
 		VkDeviceSize m_heapSizeLimits[VK_MAX_MEMORY_HEAPS];
 		VKMemoryPool m_pools[VK_MAX_MEMORY_TYPES];
+		VkDeviceSize m_usedMemorySize;
+		VkDeviceSize m_freeMemorySize;
+		VkDeviceSize m_wastedMemorySize;
 		std::vector<VKAllocationInfo> m_allocationInfos;
 		std::vector<size_t> m_freeAllocationInfos;
 

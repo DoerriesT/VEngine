@@ -2,7 +2,8 @@
 #include "Utility/Utility.h"
 #include <cassert>
 
-void VEngine::VKMemoryAllocator::VKMemoryPool::init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize)
+void VEngine::VKMemoryAllocator::VKMemoryPool::init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize, 
+	VkDeviceSize *usedMemorySize, VkDeviceSize *freeMemorySize, VkDeviceSize *wastedMemorySize)
 {
 	m_device = device;
 	m_memoryType = memoryType;
@@ -10,6 +11,9 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::init(VkDevice device, uint32_t me
 	m_preferredBlockSize = preferredBlockSize;
 	m_splitSizeThreshold = splitSizeThreshold;
 	m_preferredBlockSize = preferredBlockSize;
+	m_usedMemorySize = usedMemorySize;
+	m_freeMemorySize = freeMemorySize;
+	m_wastedMemorySize = wastedMemorySize;
 
 	m_allocatedBlocks = 0;
 	memset(m_blockSizes, 0, sizeof(m_blockSizes));
@@ -91,6 +95,8 @@ VkResult VEngine::VKMemoryAllocator::VKMemoryPool::alloc(VkDeviceSize size, VkDe
 		m_secondLevelBitsets[blockIndex][firstLevelIndex] |= 1 << secondLevelIndex;
 		m_firstLevelBitsets[blockIndex] |= 1 << firstLevelIndex;
 
+		(*m_freeMemorySize) += memoryAllocateInfo.allocationSize;
+
 		// try to allocate from new block
 		return allocateFromBlock(blockIndex, size, alignment, allocationInfo);
 	}
@@ -102,10 +108,14 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::free(VKAllocationInfo allocationI
 	assert(!span->m_next);
 	assert(!span->m_previous);
 
+	(*m_usedMemorySize) -= span->m_usedSize;
+	(*m_freeMemorySize) += span->m_size;
+	(*m_wastedMemorySize) -= (span->m_usedOffset - span->m_offset) + (span->m_offset + span->m_size - span->m_usedOffset - span->m_usedSize);
+
 	// is next physical span also free? -> merge
 	{
 		Span *nextPhysical = span->m_nextPhysical;
-		if (nextPhysical && !nextPhysical->m_used)
+		if (nextPhysical && nextPhysical->m_usedSize == 0)
 		{
 			// remove next physical span from free list
 			size_t firstLevelIndex = 0;
@@ -128,7 +138,7 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::free(VKAllocationInfo allocationI
 	// is previous physical span also free? -> merge
 	{
 		Span *previousPhysical = span->m_previousPhysical;
-		if (previousPhysical && !previousPhysical->m_used)
+		if (previousPhysical && previousPhysical->m_usedSize == 0)
 		{
 			// remove previous physical span from free list
 			size_t firstLevelIndex = 0;
@@ -164,6 +174,8 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::free(VKAllocationInfo allocationI
 	{
 		vkFreeMemory(m_device, m_memory[allocationInfo.m_blockIndex], nullptr);
 		m_allocatedBlocks[allocationInfo.m_blockIndex] = false;
+
+		(*m_freeMemorySize) -= m_blockSizes[allocationInfo.m_blockIndex];
 		m_blockSizes[allocationInfo.m_blockIndex] = 0;
 	}
 }
@@ -194,6 +206,69 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::unmapMemory(size_t blockIndex)
 	{
 		vkUnmapMemory(m_device, m_memory[blockIndex]);
 		m_mappedPtr[blockIndex] = nullptr;
+	}
+}
+
+void VEngine::VKMemoryAllocator::VKMemoryPool::getDebugInfo(std::vector<VKMemoryBlockDebugInfo> &result)
+{
+	for (size_t blockIndex = 0; blockIndex < MAX_BLOCKS; ++blockIndex)
+	{
+		if (m_allocatedBlocks[blockIndex])
+		{
+			result.push_back({ m_memoryType, m_blockSizes[blockIndex] });
+			std::vector<VKMemorySpanDebugInfo> &spanInfos = result.back().m_spans;
+
+			Span *span = m_firstPhysicalSpan[blockIndex];
+			while (span)
+			{
+				// span is free
+				if (span->m_usedSize == 0)
+				{
+					VKMemorySpanDebugInfo spanInfo;
+					spanInfo.m_offset = span->m_offset;
+					spanInfo.m_size = span->m_size;
+					spanInfo.m_state = VKMemorySpanDebugInfo::State::FREE;
+
+					spanInfos.push_back(spanInfo);
+				}
+				else
+				{
+					// wasted size at start of suballocation
+					if (span->m_usedOffset > span->m_offset)
+					{
+						VKMemorySpanDebugInfo spanInfo;
+						spanInfo.m_offset = span->m_offset;
+						spanInfo.m_size = span->m_usedOffset - span->m_offset;
+						spanInfo.m_state = VKMemorySpanDebugInfo::State::WASTED;
+
+						spanInfos.push_back(spanInfo);
+					}
+
+					// used space of suballocation
+					{
+						VKMemorySpanDebugInfo spanInfo;
+						spanInfo.m_offset = span->m_usedOffset;
+						spanInfo.m_size = span->m_usedSize;
+						spanInfo.m_state = VKMemorySpanDebugInfo::State::USED;
+
+						spanInfos.push_back(spanInfo);
+					}
+
+					// wasted space at end of suballocation
+					if (span->m_offset + span->m_size > span->m_usedOffset + span->m_usedSize)
+					{
+						VKMemorySpanDebugInfo spanInfo;
+						spanInfo.m_offset = span->m_usedOffset + span->m_usedSize;
+						spanInfo.m_size = span->m_offset + span->m_size - span->m_usedOffset - span->m_usedSize;
+						spanInfo.m_state = VKMemorySpanDebugInfo::State::WASTED;
+
+						spanInfos.push_back(spanInfo);
+					}
+				}
+
+				span = span->m_nextPhysical;
+			}
+		}
 	}
 }
 
@@ -383,6 +458,14 @@ VkResult VEngine::VKMemoryAllocator::VKMemoryPool::allocateFromBlock(size_t bloc
 	allocationInfo.m_blockIndex = blockIndex;
 	allocationInfo.m_poolData = freeSpan;
 
+	// update span usage
+	freeSpan->m_usedOffset = allocationInfo.m_offset;
+	freeSpan->m_usedSize = size;
+
+	(*m_usedMemorySize) += size;
+	(*m_freeMemorySize) -= size + (freeSpan->m_usedOffset - freeSpan->m_offset) + (freeSpan->m_offset + freeSpan->m_size - freeSpan->m_usedOffset - freeSpan->m_usedSize);
+	(*m_wastedMemorySize) += (freeSpan->m_usedOffset - freeSpan->m_offset) + (freeSpan->m_offset + freeSpan->m_size - freeSpan->m_usedOffset - freeSpan->m_usedSize);
+
 	return VK_SUCCESS;
 }
 
@@ -395,7 +478,8 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::addSpanToFreeList(Span *span, siz
 	// link span and previous head and mark span as free
 	span->m_previous = nullptr;
 	span->m_next = head;
-	span->m_used = false;
+	span->m_usedOffset = 0;
+	span->m_usedSize = 0;
 	if (head)
 	{
 		assert(!head->m_previous);
@@ -441,7 +525,8 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::removeSpanFromFreeList(Span *span
 	// remove previous and next pointers in span and mark it as used
 	span->m_next = nullptr;
 	span->m_previous = nullptr;
-	span->m_used = true;
+	span->m_usedOffset = span->m_offset;
+	span->m_usedSize = span->m_size;
 }
 
 void VEngine::VKMemoryAllocator::init(VkDevice device, VkPhysicalDevice physicalDevice)
@@ -454,10 +539,13 @@ void VEngine::VKMemoryAllocator::init(VkDevice device, VkPhysicalDevice physical
 	m_bufferImageGranularity = deviceProperties.limits.bufferImageGranularity;
 	m_nonCoherentAtomSize = deviceProperties.limits.nonCoherentAtomSize;
 	m_pageSize = m_bufferImageGranularity < 16 ? 16 : m_bufferImageGranularity;
+	m_usedMemorySize = 0;
+	m_freeMemorySize = 0;
+	m_wastedMemorySize = 0;
 
 	for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
 	{
-		m_pools[i].init(m_device, i, m_bufferImageGranularity, m_pageSize, 256 * 1024 * 1024);
+		m_pools[i].init(m_device, i, m_bufferImageGranularity, m_pageSize, MAX_BLOCK_SIZE, &m_usedMemorySize, &m_freeMemorySize, &m_wastedMemorySize);
 	}
 }
 
@@ -603,6 +691,37 @@ void VEngine::VKMemoryAllocator::unmapMemory(VKAllocationHandle allocationHandle
 VEngine::VKAllocationInfo VEngine::VKMemoryAllocator::getAllocationInfo(VKAllocationHandle allocationHandle)
 {
 	return m_allocationInfos[(size_t)allocationHandle - 1];
+}
+
+std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::VKMemoryAllocator::getDebugInfo()
+{
+	std::vector<VKMemoryBlockDebugInfo> result;
+
+	for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+	{
+		m_pools[i].getDebugInfo(result);
+	}
+	return result;
+}
+
+size_t VEngine::VKMemoryAllocator::getMaximumBlockSize()
+{
+	return MAX_BLOCK_SIZE;
+}
+
+size_t VEngine::VKMemoryAllocator::getFreeMemorySize()
+{
+	return size_t(m_freeMemorySize);
+}
+
+size_t VEngine::VKMemoryAllocator::getUsedMemorySize()
+{
+	return size_t(m_usedMemorySize);
+}
+
+size_t VEngine::VKMemoryAllocator::getWastedMemorySize()
+{
+	return size_t(m_wastedMemorySize);
 }
 
 void VEngine::VKMemoryAllocator::destroy()

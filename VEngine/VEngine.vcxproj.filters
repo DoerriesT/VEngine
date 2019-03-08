@@ -219,6 +219,12 @@
     <ClInclude Include="Code\Utility\ObjectPool.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.h">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -337,6 +343,12 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

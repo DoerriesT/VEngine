@@ -22,11 +22,10 @@ namespace VEngine
 	class VKTilingPipeline;
 	class VKLightingPipeline;
 	class VKForwardPipeline;
+	class VKMemoryHeapDebugPipeline;
 
 	struct VKRenderResources
 	{
-	public:
-
 		// images
 		VKImage m_shadowTexture;
 
@@ -75,6 +74,7 @@ namespace VEngine
 		std::unique_ptr<VKTilingPipeline> m_tilingPipeline;
 		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;
 		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
+		std::unique_ptr<VKMemoryHeapDebugPipeline> m_memoryHeapDebugPipeline;
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 
@@ -84,7 +84,7 @@ namespace VEngine
 		VKRenderResources &operator= (const VKRenderResources &) = delete;
 		VKRenderResources &operator= (const VKRenderResources &&) = delete;
 		~VKRenderResources();
-		void init(unsigned int width, unsigned int height);
+		void init(unsigned int width, unsigned int height, VkFormat swapchainFormat);
 		void resize(unsigned int width, unsigned int height);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);

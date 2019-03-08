@@ -6,6 +6,7 @@
 #include "Pipeline/VKGeometryPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
+#include "Pipeline/VKMemoryHeapDebugPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
 #include "Graphics/RenderParams.h"
@@ -21,6 +22,7 @@
 #include "Pass/VKLightingPass.h"
 #include "Pass/VKForwardPass.h"
 #include "Pass/VKBlitPass.h"
+#include "Pass/VKMemoryHeapDebugPass.h"
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
@@ -41,7 +43,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_textureLoader = std::make_unique<VKTextureLoader>();
 	m_swapChain = std::make_unique<VKSwapChain>();
 	m_swapChain->init(width, height);
-	m_renderResources->init(width, height);
+	m_renderResources->init(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
 
 	updateTextureData();
 
@@ -183,6 +185,9 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	VKLightingPass lightingPass(m_renderResources->m_lightingPipeline->getPipeline(), m_renderResources->m_lightingPipeline->getLayout(), m_renderResources.get(),
 		m_width, m_height, frameIndex);
+
+	VKMemoryHeapDebugPass memoryHeapDebugPass(m_renderResources->m_memoryHeapDebugPipeline->getPipeline(), m_renderResources->m_memoryHeapDebugPipeline->getLayout(), m_width, m_height,
+		0.0f, 0.0f, 1.0f, 1.0f);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
@@ -336,6 +341,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			shadowTextureHandle,
 			lightTextureHandle);
 	}
+
+	memoryHeapDebugPass.addToGraph(graph, lightTextureHandle);
 
 	// draw blended items
 	//if (!drawLists.m_blendedItems.empty())
