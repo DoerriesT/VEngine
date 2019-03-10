@@ -72,6 +72,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	size_t frameIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
 
 	FrameGraph::Graph &graph = *m_frameGraphs[frameIndex];
+	graph.reset();
 
 	size_t waitSemaphoreIndex = (renderParams.m_frame - 1) % FRAMES_IN_FLIGHT;
 	size_t signalSemaphoreIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
@@ -193,12 +194,56 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKMemoryHeapDebugPass memoryHeapDebugPass(m_renderResources->m_memoryHeapDebugPipeline->getPipeline(), m_renderResources->m_memoryHeapDebugPipeline->getLayout(), m_width, m_height,
 		0.0f, 0.0f, 1.0f, 1.0f);
 
-	VKTextPass::String textPassString;
-	textPassString.m_chars = "Hello World!";
-	textPassString.m_positionX = 0;
-	textPassString.m_positionY = 0;
+	FrameGraph::PassTimingInfo timingInfos[128];
+	size_t timingInfoCount;
 
-	VKTextPass textPass(m_renderResources->m_textPipeline->getPipeline(), m_renderResources->m_textPipeline->getLayout(), m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, 1, &textPassString);
+	graph.getTimingInfo(timingInfoCount, timingInfos);
+
+	VKTextPass::String timingInfoStrings[128];
+	std::string timingInfoStringData[128];
+
+	float totalPassOnly = 0.0f;
+	float totalSyncOnly = 0.0f;
+	float total = 0.0f;
+
+	for (size_t i = 0; i < timingInfoCount; ++i)
+	{
+		timingInfoStringData[i] = std::to_string(timingInfos[i].m_passTimeWithSync) + "ms Pass+Sync   "
+			+ std::to_string(timingInfos[i].m_passTime) + "ms Pass-Only   " 
+			+ std::to_string(timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) + "ms Sync Only   "
+			+ std::to_string(((timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) / timingInfos[i].m_passTimeWithSync) * 100.0f) + "% Sync of total Pass Time   "
+			+ timingInfos[i].m_passName;
+		timingInfoStrings[i].m_chars = timingInfoStringData[i].c_str();
+		timingInfoStrings[i].m_positionX = 0;
+		timingInfoStrings[i].m_positionY = i * 20;
+
+		totalPassOnly += timingInfos[i].m_passTime;
+		totalSyncOnly += timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime;
+		total += timingInfos[i].m_passTimeWithSync;
+	}
+
+	timingInfoStringData[timingInfoCount] = std::to_string(totalPassOnly) + "ms Total Pass-Only";
+	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	timingInfoStrings[timingInfoCount].m_positionX = 0;
+	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	++timingInfoCount;
+	timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly) + "ms Total Sync-Only";
+	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	timingInfoStrings[timingInfoCount].m_positionX = 0;
+	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	++timingInfoCount;
+	timingInfoStringData[timingInfoCount] = std::to_string(total) + "ms Total";
+	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	timingInfoStrings[timingInfoCount].m_positionX = 0;
+	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	++timingInfoCount;
+	timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly / total * 100.0f) + "% Sync of total time";
+	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	timingInfoStrings[timingInfoCount].m_positionX = 0;
+	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	++timingInfoCount;
+
+	VKTextPass textPass(m_renderResources->m_textPipeline->getPipeline(), m_renderResources->m_textPipeline->getLayout(), m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
@@ -214,9 +259,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	imageBlitRegion.dstOffsets[1] = blitSize;
 
 	VKBlitPass blitPass("Blit Pass", 1, &imageBlitRegion, VK_FILTER_NEAREST);
-
-
-	graph.reset();
 
 	FrameGraph::BufferHandle perFrameDataBufferHandle = 0;
 	FrameGraph::BufferHandle perDrawDataBufferHandle = 0;

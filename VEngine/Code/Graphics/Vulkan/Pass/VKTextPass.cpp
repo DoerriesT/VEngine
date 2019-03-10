@@ -75,37 +75,48 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 			}
 			else
 			{
-				struct PushConsts
+				// we can skip rendering spaces
+				if (*c != ' ')
 				{
-					float scaleBias[4];
-					float color[4];
-					float texCoordOffset[2];
-					float texCoordSize[2];
-					uint32_t atlasTextureIndex;
-				} pushConsts;
+					struct PushConsts
+					{
+						float scaleBias[4];
+						float color[4];
+						float texCoordOffset[2];
+						float texCoordSize[2];
+						uint32_t atlasTextureIndex;
+					} pushConsts;
 
-				pushConsts.scaleBias[0] = charScaleX;
-				pushConsts.scaleBias[1] = charScaleY;
-				pushConsts.scaleBias[2] = offsetX * invWidth;
-				pushConsts.scaleBias[3] = offsetY * invHeight;
+					pushConsts.scaleBias[0] = charScaleX;
+					pushConsts.scaleBias[1] = charScaleY;
+					pushConsts.scaleBias[2] = offsetX * invWidth;
+					pushConsts.scaleBias[3] = offsetY * invHeight;
 
-				pushConsts.color[0] = 1.0f;
-				pushConsts.color[1] = 1.0f;
-				pushConsts.color[2] = 1.0f;
-				pushConsts.color[3] = 1.0f;
+					pushConsts.color[0] = 1.0f;
+					pushConsts.color[1] = 1.0f;
+					pushConsts.color[2] = 0.0f;
+					pushConsts.color[3] = 1.0f;
 
-				size_t atlasIndex = *c - 32; // atlas starts at symbol 32
-				pushConsts.texCoordOffset[0] = ((atlasIndex % symbolsPerRow) * symbolWidth) * invAtlasWidth;
-				pushConsts.texCoordOffset[1] = ((atlasIndex / symbolsPerRow) * symbolHeight) * invAtlasHeight;
-				pushConsts.texCoordSize[0] = texCoordSizeX;
-				pushConsts.texCoordSize[1] = texCoordSizeY;
+					size_t atlasIndex = *c - 32; // atlas starts at symbol 32
+					pushConsts.texCoordOffset[0] = ((atlasIndex % symbolsPerRow) * symbolWidth) * invAtlasWidth;
+					pushConsts.texCoordOffset[1] = ((atlasIndex / symbolsPerRow) * symbolHeight) * invAtlasHeight;
+					pushConsts.texCoordSize[0] = texCoordSizeX;
+					pushConsts.texCoordSize[1] = texCoordSizeY;
 
-				pushConsts.atlasTextureIndex = m_atlasTextureIndex;
+					pushConsts.atlasTextureIndex = m_atlasTextureIndex;
 
-				vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
-				vkCmdDraw(cmdBuf, 6, 1, 0, 0);
+					vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+					vkCmdDraw(cmdBuf, 6, 1, 0, 0);
+				}
 
 				offsetX += static_cast<size_t>(symbolWidth * scaleX);
+
+				if (offsetX + static_cast<size_t>(symbolWidth * scaleX) > m_width)
+				{
+					offsetY += static_cast<size_t>(symbolHeight * scaleY);
+					offsetX = str.m_positionX;
+				}
+				
 			}
 
 			++c;

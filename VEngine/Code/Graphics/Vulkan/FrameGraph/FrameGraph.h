@@ -74,6 +74,13 @@ namespace VEngine
 			bool m_hostVisible = false;
 		};
 
+		struct PassTimingInfo
+		{
+			const char *m_passName;
+			float m_passTime;
+			float m_passTimeWithSync;
+		};
+
 		class Graph;
 
 		class PassBuilder
@@ -145,6 +152,7 @@ namespace VEngine
 			BufferHandle createBuffer(const BufferDescription &bufferDescription);
 			ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
 			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+			void getTimingInfo(size_t &count, PassTimingInfo *data);
 
 		private:
 			enum
@@ -218,6 +226,14 @@ namespace VEngine
 				VkDeviceSize m_dynamicBufferSize;
 			};
 
+			struct TimestampQueryIndices
+			{
+				uint32_t m_beforeSync;
+				uint32_t m_beforePass;
+				uint32_t m_afterPass;
+				uint32_t m_afterSync;
+			};
+
 			VKSyncPrimitiveAllocator &m_syncPrimitiveAllocator;
 			const char *m_resourceNames[MAX_RESOURCES];
 			const char *m_passNames[MAX_PASSES];
@@ -228,11 +244,14 @@ namespace VEngine
 			QueueType m_queueType[MAX_PASSES];
 			ResourceDescription m_resourceDescriptions[MAX_RESOURCES];
 			VkCommandBuffer m_commandBuffers[3][MAX_PASSES];
+			bool m_recordTimings = true;
+			size_t m_timingInfoCount = 0;
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //
 			///////////////////////////////////////////////////
 
+			VkQueryPool m_queryPool;
 			VkCommandPool m_graphicsCommandPool;
 			VkCommandPool m_computeCommandPool;
 			VkCommandPool m_transferCommandPool;
@@ -243,6 +262,7 @@ namespace VEngine
 			size_t m_passCount = 0;
 			size_t m_descriptorSetCount = 0;
 			size_t m_descriptorWriteCount = 0;
+			size_t m_timestampQueryCount = 0;
 			// each element holds a bitset that specifies if the resource is read/written in the pass
 			std::bitset<MAX_PASSES> m_writeResources[MAX_RESOURCES];
 			std::bitset<MAX_PASSES> m_readResources[MAX_RESOURCES];
@@ -270,6 +290,7 @@ namespace VEngine
 			VkPipelineStageFlags m_passStageMasks[MAX_PASSES];
 			VkDescriptorSet m_descriptorSets[MAX_DESCRIPTOR_SETS];
 			DescriptorWrite m_descriptorWrites[MAX_DESCRIPTOR_WRITES];
+			PassTimingInfo m_timingInfos[MAX_PASSES];
 
 			void cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
 			void createClearPasses(size_t *firstResourceUses);

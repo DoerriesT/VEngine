@@ -388,6 +388,15 @@ Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator)
 	{
 		Utility::fatalExit("Failed to allocate command buffers!", -1);
 	}
+
+	VkQueryPoolCreateInfo queryPoolCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
+	queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+	queryPoolCreateInfo.queryCount = MAX_PASSES * 4;
+
+	if (vkCreateQueryPool(g_context.m_device, &queryPoolCreateInfo, nullptr, &m_queryPool) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to create query pool!", -1);
+	}
 }
 
 Graph::~Graph()
@@ -400,6 +409,8 @@ Graph::~Graph()
 	vkDestroyCommandPool(g_context.m_device, m_graphicsCommandPool, nullptr);
 	vkDestroyCommandPool(g_context.m_device, m_computeCommandPool, nullptr);
 	vkDestroyCommandPool(g_context.m_device, m_transferCommandPool, nullptr);
+
+	vkDestroyQueryPool(g_context.m_device, m_queryPool, nullptr);
 }
 
 PassBuilder VEngine::FrameGraph::Graph::addPass(const char *name, PassType passType, QueueType queueType, Pass *pass)
@@ -521,6 +532,36 @@ void Graph::reset()
 		m_syncPrimitiveAllocator.freeFence(m_fence);
 	}
 
+	if (m_recordTimings && m_timestampQueryCount)
+	{
+		m_timingInfoCount = 0;
+		size_t currentQueryCount = 0;
+
+		for (size_t i = 0; i < m_passCount; ++i)
+		{
+			if (m_culledPasses[i] && m_queueType[i] == QueueType::GRAPHICS)
+			{
+				uint64_t data[4];
+				if (vkGetQueryPoolResults(g_context.m_device, m_queryPool, currentQueryCount, 4, sizeof(data), data, sizeof(data[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT) != VK_SUCCESS)
+				{
+					assert(false);
+				}
+
+				m_timingInfos[m_timingInfoCount] =
+				{
+					m_passNames[i],
+					static_cast<float>((data[2] - data[1]) * (g_context.m_properties.limits.timestampPeriod * (1.0 / 1e6))),
+					static_cast<float>((data[3] - data[0]) * (g_context.m_properties.limits.timestampPeriod * (1.0 / 1e6))),
+				};
+
+				++m_timingInfoCount;
+				currentQueryCount += 4;
+			}
+		}
+
+		assert(currentQueryCount == m_timestampQueryCount);
+	}
+
 	// reset commandpool
 	vkResetCommandPool(g_context.m_device, m_graphicsCommandPool, 0);
 	vkResetCommandPool(g_context.m_device, m_computeCommandPool, 0);
@@ -534,6 +575,7 @@ void Graph::reset()
 	m_passCount = 0;
 	m_descriptorSetCount = 0;
 	m_descriptorWriteCount = 0;
+	m_timestampQueryCount = 0;
 	memset(&m_writeResources, 0, sizeof(m_writeResources));
 	memset(&m_readResources, 0, sizeof(m_readResources));
 	memset(&m_accessedResources, 0, sizeof(m_accessedResources));
@@ -633,6 +675,15 @@ BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkB
 	m_semaphores[MAX_PASSES + resourceIndex * 2 + 1] = signalSemaphore;
 
 	return BufferHandle(resourceIndex + 1);
+}
+
+void VEngine::FrameGraph::Graph::getTimingInfo(size_t &count, PassTimingInfo *data)
+{
+	count = m_timingInfoCount;
+	if (m_timingInfoCount)
+	{
+		memcpy(data, m_timingInfos, m_timingInfoCount * sizeof(PassTimingInfo));
+	}
 }
 
 void Graph::cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle)
@@ -877,7 +928,7 @@ void Graph::createResources()
 
 				VKAllocationCreateInfo allocCreateInfo = {};
 				allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-				
+
 				if (g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[resourceIndex], m_allocations[resourceIndex]) != VK_SUCCESS)
 				{
 					Utility::fatalExit("Failed to create image!", -1);
@@ -1557,6 +1608,13 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			vkBeginCommandBuffer(*cmdBuf, &beginInfo);
 		}
 
+		// record timestamp before sync
+		if (m_recordTimings && m_queueType[passIndex] == QueueType::GRAPHICS)
+		{
+			vkCmdResetQueryPool(*cmdBuf, m_queryPool, m_timestampQueryCount, 4);
+			vkCmdWriteTimestamp(*cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_timestampQueryCount++);
+		}
+
 		// handle resource barriers
 		{
 			VkImageMemoryBarrier imageBarriers[MAX_RESOURCE_BARRIERS];
@@ -1682,7 +1740,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 
 			if (m_framebufferInfo[passIndex].m_depthStencilAttachment)
 			{
-				clearValues[attachmentCount] = m_clearValues[(size_t)m_framebufferInfo[passIndex].m_depthStencilAttachment-1].m_imageClearValue;
+				clearValues[attachmentCount] = m_clearValues[(size_t)m_framebufferInfo[passIndex].m_depthStencilAttachment - 1].m_imageClearValue;
 			}
 
 
@@ -1695,6 +1753,12 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			renderPassInfo.pClearValues = clearValues;
 
 			vkCmdBeginRenderPass(*cmdBuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
+		// record timestamp before actual work
+		if (m_recordTimings && m_queueType[passIndex] == QueueType::GRAPHICS)
+		{
+			vkCmdWriteTimestamp(*cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_timestampQueryCount++);
 		}
 
 		// record commands
@@ -1740,6 +1804,12 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 					}
 				}
 			}
+		}
+
+		// record timestamp after actual work
+		if (m_recordTimings && m_queueType[passIndex] == QueueType::GRAPHICS)
+		{
+			vkCmdWriteTimestamp(*cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_timestampQueryCount++);
 		}
 
 		// end renderpass
@@ -1810,6 +1880,12 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 		if (m_events[passIndex] != VK_NULL_HANDLE)
 		{
 			vkCmdSetEvent(*cmdBuf, m_events[passIndex], m_passStageMasks[passIndex]);
+		}
+
+		// record timestamp after sync
+		if (m_recordTimings && m_queueType[passIndex] == QueueType::GRAPHICS)
+		{
+			vkCmdWriteTimestamp(*cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_timestampQueryCount++);
 		}
 
 		// if we need to signal, end command buffer and submit
