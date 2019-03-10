@@ -7,6 +7,7 @@
 #include "Pipeline/VKLightingPipeline.h"
 #include "Pipeline/VKForwardPipeline.h"
 #include "Pipeline/VKMemoryHeapDebugPipeline.h"
+#include "Pipeline/VKTextPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
 #include "Graphics/RenderParams.h"
@@ -23,6 +24,7 @@
 #include "Pass/VKForwardPass.h"
 #include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
+#include "Pass/VKTextPass.h"
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
@@ -44,6 +46,8 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_swapChain = std::make_unique<VKSwapChain>();
 	m_swapChain->init(width, height);
 	m_renderResources->init(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
+
+	m_fontAtlasTextureIndex = m_textureLoader->load("Resources/Textures/fontConsolas.dds");
 
 	updateTextureData();
 
@@ -188,6 +192,13 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	VKMemoryHeapDebugPass memoryHeapDebugPass(m_renderResources->m_memoryHeapDebugPipeline->getPipeline(), m_renderResources->m_memoryHeapDebugPipeline->getLayout(), m_width, m_height,
 		0.0f, 0.0f, 1.0f, 1.0f);
+
+	VKTextPass::String textPassString;
+	textPassString.m_chars = "Hello World!";
+	textPassString.m_positionX = 0;
+	textPassString.m_positionY = 0;
+
+	VKTextPass textPass(m_renderResources->m_textPipeline->getPipeline(), m_renderResources->m_textPipeline->getLayout(), m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, 1, &textPassString);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
@@ -342,7 +353,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			lightTextureHandle);
 	}
 
-	memoryHeapDebugPass.addToGraph(graph, lightTextureHandle);
+	//memoryHeapDebugPass.addToGraph(graph, lightTextureHandle);
+	textPass.addToGraph(graph, lightTextureHandle);
 
 	// draw blended items
 	//if (!drawLists.m_blendedItems.empty())

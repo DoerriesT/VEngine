@@ -23,6 +23,7 @@ namespace VEngine
 	class VKLightingPipeline;
 	class VKForwardPipeline;
 	class VKMemoryHeapDebugPipeline;
+	class VKTextPipeline;
 
 	struct VKRenderResources
 	{
@@ -75,6 +76,7 @@ namespace VEngine
 		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;
 		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
 		std::unique_ptr<VKMemoryHeapDebugPipeline> m_memoryHeapDebugPipeline;
+		std::unique_ptr<VKTextPipeline> m_textPipeline;
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 

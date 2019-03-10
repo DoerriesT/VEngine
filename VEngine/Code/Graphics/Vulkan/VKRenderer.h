@@ -32,6 +32,7 @@ namespace VEngine
 		unsigned int m_width;
 		unsigned int m_height;
 		uint32_t m_swapChainImageIndex;
+		uint32_t m_fontAtlasTextureIndex;
 
 		std::unique_ptr<FrameGraph::Graph> m_frameGraphs[2];
 		std::unique_ptr<VKRenderResources> m_renderResources;
