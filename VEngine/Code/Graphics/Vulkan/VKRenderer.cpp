@@ -1,12 +1,6 @@
 #include "VKRenderer.h"
 #include "VKSwapChain.h"
 #include "VKRenderResources.h"
-#include "Pipeline/VKTilingPipeline.h"
-#include "Pipeline/VKShadowPipeline.h"
-#include "Pipeline/VKGeometryPipeline.h"
-#include "Pipeline/VKLightingPipeline.h"
-#include "Pipeline/VKMemoryHeapDebugPipeline.h"
-#include "Pipeline/VKTextPipeline.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
 #include "Graphics/RenderParams.h"
@@ -303,10 +297,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	//if (!drawLists.m_maskedItems.empty())
 	{
 		perDrawDataWritePassMasked.addToGraph(graph, perDrawDataBufferHandle);
-	}
-	//if (!drawLists.m_blendedItems.empty())
-	{
-		//perDrawDataWritePassBlended.addToGraph(graph, perDrawDataBufferHandle);
 	}
 	//if (!lightData.m_directionalLightData.empty())
 	{

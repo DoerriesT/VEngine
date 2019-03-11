@@ -9,12 +9,6 @@
 #include "Graphics/DrawItem.h"
 #include "VKSyncPrimitiveAllocator.h"
 #include "VKPipelineManager.h"
-#include "Pipeline/VKGeometryPipeline.h"
-#include "Pipeline/VKShadowPipeline.h"
-#include "Pipeline/VKTilingPipeline.h"
-#include "Pipeline/VKLightingPipeline.h"
-#include "Pipeline/VKMemoryHeapDebugPipeline.h"
-#include "Pipeline/VKTextPipeline.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -401,17 +395,6 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 			m_cullDataDescriptorSets[i] = sets[4];
 			m_lightBitMaskDescriptorSets[i] = sets[5];
 		}
-	}
-
-	// create pipelines
-	{
-		m_geometryPipeline = std::make_unique<VKGeometryPipeline>(g_context.m_device, this, false);
-		m_geometryAlphaMaskedPipeline = std::make_unique<VKGeometryPipeline>(g_context.m_device, this, true);
-		m_shadowPipeline = std::make_unique<VKShadowPipeline>(g_context.m_device, this);
-		m_tilingPipeline = std::make_unique<VKTilingPipeline>(g_context.m_device, this);
-		m_lightingPipeline = std::make_unique<VKLightingPipeline>(g_context.m_device, this);
-		m_memoryHeapDebugPipeline = std::make_unique<VKMemoryHeapDebugPipeline>(g_context.m_device, swapchainFormat);
-		m_textPipeline = std::make_unique<VKTextPipeline>(g_context.m_device, this, swapchainFormat);
 	}
 }
 

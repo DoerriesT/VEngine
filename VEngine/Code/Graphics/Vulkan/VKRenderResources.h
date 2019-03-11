@@ -18,13 +18,6 @@ namespace VEngine
 	class VKRenderer;
 	class VKSyncPrimitiveAllocator;
 	class VKPipelineManager;
-	class VKGeometryPipeline;
-	class VKShadowPipeline;
-	class VKTilingPipeline;
-	class VKLightingPipeline;
-	class VKForwardPipeline;
-	class VKMemoryHeapDebugPipeline;
-	class VKTextPipeline;
 
 	struct VKRenderResources
 	{
@@ -68,15 +61,6 @@ namespace VEngine
 		VkSemaphore m_shadowTextureSemaphores[FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainImageAvailableSemaphores[FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainRenderFinishedSemaphores[FRAMES_IN_FLIGHT];
-
-		// pipelines
-		std::unique_ptr<VKGeometryPipeline> m_geometryPipeline;
-		std::unique_ptr<VKGeometryPipeline> m_geometryAlphaMaskedPipeline;
-		std::unique_ptr<VKShadowPipeline> m_shadowPipeline;
-		std::unique_ptr<VKTilingPipeline> m_tilingPipeline;
-		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;
-		std::unique_ptr<VKMemoryHeapDebugPipeline> m_memoryHeapDebugPipeline;
-		std::unique_ptr<VKTextPipeline> m_textPipeline;
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 		std::unique_ptr<VKPipelineManager> m_pipelineManager;
