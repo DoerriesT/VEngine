@@ -15,8 +15,7 @@ namespace VEngine
 			size_t m_positionY;
 		};
 
-		explicit VKTextPass(VkPipeline pipeline,
-			VkPipelineLayout pipelineLayout,
+		explicit VKTextPass(
 			VKRenderResources *renderResources,
 			uint32_t width,
 			uint32_t height,
@@ -25,16 +24,15 @@ namespace VEngine
 			const String *strings);
 
 		void addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 		VKRenderResources *m_renderResources;
 		uint32_t m_width;
 		uint32_t m_height;
 		uint32_t m_atlasTextureIndex;
 		size_t m_stringCount;
 		const String *m_strings;
+		VKGraphicsPipelineDescription m_pipelineDesc;
 	};
 }

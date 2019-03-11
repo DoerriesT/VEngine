@@ -10,7 +10,7 @@ namespace VEngine
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::ImageHandle srcImage,
 			FrameGraph::ImageHandle dstImage);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
 		FrameGraph::ImageHandle m_srcImage = 0;

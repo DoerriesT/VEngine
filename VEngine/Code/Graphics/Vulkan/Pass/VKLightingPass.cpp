@@ -2,19 +2,25 @@
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
 
-VEngine::VKLightingPass::VKLightingPass(VkPipeline pipeline,
-	VkPipelineLayout pipelineLayout,
+VEngine::VKLightingPass::VKLightingPass(
 	VKRenderResources *renderResources,
 	uint32_t width,
 	uint32_t height,
 	size_t resourceIndex)
-	:m_pipeline(pipeline),
-	m_pipelineLayout(pipelineLayout),
-	m_renderResources(renderResources),
+	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_resourceIndex(resourceIndex)
 {
+	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/lighting_comp.spv");
+	
+	m_pipelineDesc.m_layout.m_setLayoutCount = 4;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_perFrameDataDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[1] = m_renderResources->m_lightingInputDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[2] = m_renderResources->m_lightDataDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[3] = m_renderResources->m_lightBitMaskDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t) };
 }
 
 void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
@@ -32,7 +38,7 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::ImageHandle shadowTextureHandle,
 	FrameGraph::ImageHandle &lightTextureHandle)
 {
-	auto builder = graph.addPass("Lighting Pass", FrameGraph::PassType::COMPUTE, FrameGraph::QueueType::GRAPHICS, this);
+	auto builder = graph.addComputePass("Lighting Pass", this, &m_pipelineDesc, FrameGraph::QueueType::GRAPHICS);
 
 	if (!lightTextureHandle)
 	{
@@ -92,17 +98,17 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
 }
 
 
-void VEngine::VKLightingPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry)
+void VEngine::VKLightingPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0, 1, &m_renderResources->m_perFrameDataDescriptorSets[m_resourceIndex], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 1, 1, &m_renderResources->m_lightingInputDescriptorSets[m_resourceIndex], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 2, 1, &m_renderResources->m_lightDataDescriptorSets[m_resourceIndex], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 3, 1, &m_renderResources->m_lightBitMaskDescriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_perFrameDataDescriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 1, 1, &m_renderResources->m_lightingInputDescriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 2, 1, &m_renderResources->m_lightDataDescriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 3, 1, &m_renderResources->m_lightBitMaskDescriptorSets[m_resourceIndex], 0, nullptr);
 
 	uint32_t directionalLightCount = 1;
-	vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &directionalLightCount);
+	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &directionalLightCount);
 
 	VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 8, 8, 1);
 }

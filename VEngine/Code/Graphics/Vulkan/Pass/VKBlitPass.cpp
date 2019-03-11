@@ -12,7 +12,7 @@ void VEngine::VKBlitPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::ImageHandle srcImage, 
 	FrameGraph::ImageHandle dstImage)
 {
-	auto builder = graph.addPass(m_name, FrameGraph::PassType::BLIT, FrameGraph::QueueType::GRAPHICS, this);
+	auto builder = graph.addGenericPass(m_name, this, FrameGraph::QueueType::GRAPHICS);
 
 	builder.readImageTransfer(srcImage);
 	builder.writeImageTransfer(dstImage);
@@ -21,7 +21,7 @@ void VEngine::VKBlitPass::addToGraph(FrameGraph::Graph &graph,
 	m_dstImage = dstImage;
 }
 
-void VEngine::VKBlitPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry)
+void VEngine::VKBlitPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
 	vkCmdBlitImage(cmdBuf,
 		registry.getImage(m_srcImage),

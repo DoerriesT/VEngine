@@ -8,8 +8,7 @@ namespace VEngine
 	class VKTilingPass : FrameGraph::Pass
 	{
 	public:
-		explicit VKTilingPass(VkPipeline pipeline,
-			VkPipelineLayout pipelineLayout,
+		explicit VKTilingPass(
 			VKRenderResources *renderResources,
 			uint32_t width,
 			uint32_t height,
@@ -20,15 +19,14 @@ namespace VEngine
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
 			FrameGraph::BufferHandle pointLightCullDataBufferHandle,
 			FrameGraph::BufferHandle &pointLightBitMaskBufferHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 		VKRenderResources *m_renderResources;
 		uint32_t m_width;
 		uint32_t m_height;
 		size_t m_resourceIndex;
 		uint32_t m_pointLightCount;
+		VKComputePipelineDescription m_pipelineDesc;
 	};
 }

@@ -9,9 +9,7 @@ namespace VEngine
 	class VKGeometryPass : FrameGraph::Pass
 	{
 	public:
-		explicit VKGeometryPass(VkPipeline pipeline,
-			VkPipelineLayout pipelineLayout,
-			VKRenderResources *renderResources,
+		explicit VKGeometryPass(VKRenderResources *renderResources,
 			uint32_t width,
 			uint32_t height,
 			size_t resourceIndex,
@@ -28,11 +26,9 @@ namespace VEngine
 			FrameGraph::ImageHandle &normalTextureHandle,
 			FrameGraph::ImageHandle &materialTextureHandle,
 			FrameGraph::ImageHandle &velocityTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 		VKRenderResources *m_renderResources;
 		uint32_t m_width;
 		uint32_t m_height;
@@ -41,5 +37,6 @@ namespace VEngine
 		const DrawItem *m_drawItems;
 		uint32_t m_drawItemBufferOffset;
 		bool m_alphaMasked;
+		VKGraphicsPipelineDescription m_pipelineDesc;
 	};
 }

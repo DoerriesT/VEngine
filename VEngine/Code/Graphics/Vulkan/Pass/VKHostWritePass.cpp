@@ -25,7 +25,7 @@ VEngine::VKHostWritePass::VKHostWritePass(const FrameGraph::BufferDescription &b
 
 void VEngine::VKHostWritePass::addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle &bufferHandle)
 {
-	auto builder = graph.addPass(m_name, FrameGraph::PassType::HOST_ACCESS, FrameGraph::QueueType::NONE, this);
+	auto builder = graph.addHostAccessPass(m_name, this);
 	
 	if (!bufferHandle)
 	{
@@ -37,7 +37,7 @@ void VEngine::VKHostWritePass::addToGraph(FrameGraph::Graph &graph, FrameGraph::
 	m_bufferHandle = bufferHandle;
 }
 
-void VEngine::VKHostWritePass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry)
+void VEngine::VKHostWritePass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
 	assert(m_bufferDescription.m_size >= m_dstOffset + m_count * m_dstItemSize);
 

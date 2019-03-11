@@ -17,6 +17,7 @@ namespace VEngine
 {
 	class VKRenderer;
 	class VKSyncPrimitiveAllocator;
+	class VKPipelineManager;
 	class VKGeometryPipeline;
 	class VKShadowPipeline;
 	class VKTilingPipeline;
@@ -74,11 +75,11 @@ namespace VEngine
 		std::unique_ptr<VKShadowPipeline> m_shadowPipeline;
 		std::unique_ptr<VKTilingPipeline> m_tilingPipeline;
 		std::unique_ptr<VKLightingPipeline> m_lightingPipeline;
-		std::unique_ptr<VKForwardPipeline> m_forwardPipeline;
 		std::unique_ptr<VKMemoryHeapDebugPipeline> m_memoryHeapDebugPipeline;
 		std::unique_ptr<VKTextPipeline> m_textPipeline;
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
+		std::unique_ptr<VKPipelineManager> m_pipelineManager;
 
 		explicit VKRenderResources();
 		VKRenderResources(const VKRenderResources &) = delete;

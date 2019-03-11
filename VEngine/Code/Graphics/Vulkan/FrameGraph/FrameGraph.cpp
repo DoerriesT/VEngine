@@ -343,8 +343,9 @@ BufferHandle PassBuilder::createBuffer(const BufferDescription &bufferDesc)
 	return m_graph.createBuffer(bufferDesc);
 }
 
-Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator)
-	:m_syncPrimitiveAllocator(syncPrimitiveAllocator)
+Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator, VEngine::VKPipelineManager &pipelineManager)
+	:m_syncPrimitiveAllocator(syncPrimitiveAllocator),
+	m_pipelineManager(pipelineManager)
 {
 	VkCommandPoolCreateInfo poolCreateInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -413,44 +414,74 @@ Graph::~Graph()
 	vkDestroyQueryPool(g_context.m_device, m_queryPool, nullptr);
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addPass(const char *name, PassType passType, QueueType queueType, Pass *pass)
+PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc)
 {
-	size_t passIndex = 0;
+	assert(m_passCount + 1 < MAX_PASSES);
+	m_passCount += 2;
+	size_t passIndex = m_passCount - 1;
 
-	// graphics and compute passes may need a clear pass before, blit and host access dont.
-	// clear passes are inserted implicitly and must not be added by the user
-	switch (passType)
-	{
-	case PassType::GRAPHICS:
-	case PassType::COMPUTE:
-		assert(m_passCount + 1 < MAX_PASSES);
-		m_passCount += 2;
-		passIndex = m_passCount - 1;
-
-		// add potential clear pass
-		m_passNames[passIndex - 1] = "Clear";
-		m_passTypes[passIndex - 1] = PassType::CLEAR;
-		m_queueType[passIndex - 1] = queueType;
-		break;
-
-	case PassType::BLIT:
-	case PassType::HOST_ACCESS:
-		assert(m_passCount < MAX_PASSES);
-		passIndex = m_passCount++;
-		break;
-
-	case PassType::CLEAR:
-		assert(false);
-		break;
-	default:
-		assert(false);
-		break;
-	}
+	// add potential clear pass
+	m_passNames[passIndex - 1] = "Clear";
+	m_passTypes[passIndex - 1] = PassType::CLEAR;
+	m_queueType[passIndex - 1] = QueueType::GRAPHICS;
 
 	// add actual pass
 	m_passNames[passIndex] = name;
-	m_passTypes[passIndex] = passType;
+	m_passTypes[passIndex] = PassType::GRAPHICS;
+	m_queueType[passIndex] = QueueType::GRAPHICS;
+	m_pipelineDescriptions[passIndex] = pipelineDesc;
+
+	m_passes[passIndex] = pass;
+
+	return PassBuilder(*this, passIndex);
+}
+
+PassBuilder VEngine::FrameGraph::Graph::addComputePass(const char *name, Pass *pass, const VKComputePipelineDescription *pipelineDesc, QueueType queueType)
+{
+	assert(m_passCount + 1 < MAX_PASSES);
+	m_passCount += 2;
+	size_t passIndex = m_passCount - 1;
+
+	// add potential clear pass
+	m_passNames[passIndex - 1] = "Clear";
+	m_passTypes[passIndex - 1] = PassType::CLEAR;
+	m_queueType[passIndex - 1] = queueType;
+
+	// add actual pass
+	m_passNames[passIndex] = name;
+	m_passTypes[passIndex] = PassType::COMPUTE;
 	m_queueType[passIndex] = queueType;
+	m_pipelineDescriptions[passIndex] = pipelineDesc;
+
+	m_passes[passIndex] = pass;
+
+	return PassBuilder(*this, passIndex);
+}
+
+PassBuilder VEngine::FrameGraph::Graph::addGenericPass(const char *name, Pass *pass, QueueType queueType)
+{
+	assert(m_passCount < MAX_PASSES);
+	size_t passIndex = m_passCount++;
+
+	// add actual pass
+	m_passNames[passIndex] = name;
+	m_passTypes[passIndex] = PassType::GENERIC;
+	m_queueType[passIndex] = queueType;
+
+	m_passes[passIndex] = pass;
+
+	return PassBuilder(*this, passIndex);
+}
+
+PassBuilder VEngine::FrameGraph::Graph::addHostAccessPass(const char * name, Pass * pass)
+{
+	assert(m_passCount < MAX_PASSES);
+	size_t passIndex = m_passCount++;
+
+	// add actual pass
+	m_passNames[passIndex] = name;
+	m_passTypes[passIndex] = PassType::HOST_ACCESS;
+	m_queueType[passIndex] = QueueType::NONE;
 
 	m_passes[passIndex] = pass;
 
@@ -470,6 +501,7 @@ void Graph::execute(ResourceHandle finalResourceHandle)
 	createRenderPasses(firstResourceUses, lastResourceUses, finalResourceHandle);
 	createSynchronization(firstResourceUses, lastResourceUses, syncBits);
 	writeDescriptorSets(culledDescriptorSets);
+	retrievePipelines();
 	recordAndSubmit(firstResourceUses, lastResourceUses, syncBits, finalResourceHandle);
 }
 
@@ -1426,6 +1458,102 @@ void Graph::writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescript
 	vkUpdateDescriptorSets(g_context.m_device, writeCount, writes, 0, nullptr);
 }
 
+void VEngine::FrameGraph::Graph::retrievePipelines()
+{
+	for (size_t passIndex = 0; passIndex < m_passCount; ++passIndex)
+	{
+		if (!m_culledPasses[passIndex])
+		{
+			continue;
+		}
+
+		switch (m_passTypes[passIndex])
+		{
+		case PassType::GRAPHICS:
+		{
+			// make copy of original desc and insert correct renderpass description
+			VKGraphicsPipelineDescription graphicsPipelineDesc;
+			memcpy(&graphicsPipelineDesc, m_pipelineDescriptions[passIndex], sizeof(graphicsPipelineDesc));
+
+			VKGraphicsPipelineDescription::RenderPassDescription &renderpassDesc = graphicsPipelineDesc.m_renderpass;
+			memset(&renderpassDesc, 0, sizeof(renderpassDesc));
+
+			uint32_t attachmentIndex = 0;
+
+			// add color attachments
+			for (size_t i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
+			{
+				auto handle = m_framebufferInfo[passIndex].m_colorAttachments[i];
+
+				// skip empty handles
+				if (!handle)
+				{
+					continue;
+				}
+
+				++renderpassDesc.m_colorAttachmentCount;
+
+				size_t resourceIndex = (size_t)handle - 1;
+
+				renderpassDesc.m_colorAttachments[attachmentIndex] =
+				{
+					attachmentIndex,
+					m_resourceUsages[resourceIndex][passIndex].m_imageLayout
+				};
+
+				const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
+				auto &descr = renderpassDesc.m_attachments[attachmentIndex];
+				descr.m_format = resourceDescription.m_format;
+				descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
+
+				++attachmentIndex;
+			}
+
+			// add depthStencil attachment
+			if (m_framebufferInfo[passIndex].m_depthStencilAttachment)
+			{
+				size_t resourceIndex = (size_t)m_framebufferInfo[passIndex].m_depthStencilAttachment - 1;
+
+				const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
+				auto &descr = renderpassDesc.m_attachments[attachmentIndex];
+				descr.m_format = resourceDescription.m_format;
+				descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
+
+				renderpassDesc.m_depthStencilAttachment =
+				{
+					attachmentIndex,
+					m_resourceUsages[resourceIndex][passIndex].m_imageLayout
+				};
+
+				renderpassDesc.m_depthStencilAttachmentPresent = true;
+			}
+
+			const auto pipelinePair = m_pipelineManager.getPipeline(graphicsPipelineDesc, m_renderpassFramebufferHandles[passIndex].first);
+			m_pipelines[passIndex] = pipelinePair.m_pipeline;
+			m_layouts[passIndex] = pipelinePair.m_layout;
+
+			break;
+		}
+		case PassType::COMPUTE:
+		{
+			const auto pipelinePair = m_pipelineManager.getPipeline(*reinterpret_cast<const VKComputePipelineDescription *>(m_pipelineDescriptions[passIndex]));
+			m_pipelines[passIndex] = pipelinePair.m_pipeline;
+			m_layouts[passIndex] = pipelinePair.m_layout;
+			break;
+		}
+		case PassType::GENERIC:
+		case PassType::HOST_ACCESS:
+		case PassType::CLEAR:
+			m_pipelines[passIndex] = VK_NULL_HANDLE;
+			m_layouts[passIndex] = VK_NULL_HANDLE;
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
+}
+
 // pseudo code:
 // for all culled passes
 //		if recording command buffer and need to wait on semaphore
@@ -1764,7 +1892,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 		// record commands
 		if (m_passTypes[passIndex] != PassType::CLEAR)
 		{
-			m_passes[passIndex]->record(*cmdBuf, ResourceRegistry(m_images, m_imageViews, m_buffers, m_allocations));
+			m_passes[passIndex]->record(*cmdBuf, ResourceRegistry(m_images, m_imageViews, m_buffers, m_allocations), m_layouts[passIndex], m_pipelines[passIndex]);
 		}
 		// clear pass
 		else

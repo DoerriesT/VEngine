@@ -16,7 +16,7 @@ namespace VEngine
 			size_t srcItemStride,
 			size_t count);
 		void addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle &bufferHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
 		FrameGraph::BufferHandle m_bufferHandle = 0;

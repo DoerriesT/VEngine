@@ -8,9 +8,7 @@ namespace VEngine
 	class VKLightingPass : FrameGraph::Pass
 	{
 	public:
-		explicit VKLightingPass(VkPipeline pipeline,
-			VkPipelineLayout pipelineLayout,
-			VKRenderResources *renderResources,
+		explicit VKLightingPass(VKRenderResources *renderResources,
 			uint32_t width,
 			uint32_t height,
 			size_t resourceIndex);
@@ -29,14 +27,13 @@ namespace VEngine
 			FrameGraph::ImageHandle materialTextureHandle,
 			FrameGraph::ImageHandle shadowTextureHandle,
 			FrameGraph::ImageHandle &lightTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 		VKRenderResources *m_renderResources;
 		uint32_t m_width;
 		uint32_t m_height;
 		size_t m_resourceIndex;
+		VKComputePipelineDescription m_pipelineDesc;
 	};
 }

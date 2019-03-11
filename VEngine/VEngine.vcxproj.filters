@@ -57,9 +57,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h">
-      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
@@ -195,9 +192,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKForwardPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
@@ -231,6 +225,12 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKPipelineManager.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -247,9 +247,6 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp">
-      <Filter>Code\Graphics\Vulkan\Pipeline</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
@@ -329,9 +326,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKForwardPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
@@ -361,6 +355,12 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKPipelineManager.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

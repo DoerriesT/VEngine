@@ -168,7 +168,6 @@
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKForwardPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h" />
@@ -176,7 +175,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTilingPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.h" />
@@ -187,6 +185,8 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKMemoryAllocator.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKPipelineManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKShaderModule.h" />
@@ -218,7 +218,6 @@
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKForwardPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
@@ -226,7 +225,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTilingPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKForwardPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKGeometryPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKLightingPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pipeline\VKMemoryHeapDebugPipeline.cpp" />
@@ -237,6 +235,8 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKPipelineManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKShaderModule.cpp" />

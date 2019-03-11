@@ -8,11 +8,11 @@
 #include "Graphics/LightData.h"
 #include "Graphics/DrawItem.h"
 #include "VKSyncPrimitiveAllocator.h"
+#include "VKPipelineManager.h"
 #include "Pipeline/VKGeometryPipeline.h"
 #include "Pipeline/VKShadowPipeline.h"
 #include "Pipeline/VKTilingPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
-#include "Pipeline/VKForwardPipeline.h"
 #include "Pipeline/VKMemoryHeapDebugPipeline.h"
 #include "Pipeline/VKTextPipeline.h"
 
@@ -24,6 +24,7 @@ VEngine::VKRenderResources::~VKRenderResources()
 void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, VkFormat swapchainFormat)
 {
 	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
+	m_pipelineManager = std::make_unique<VKPipelineManager>();
 
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
 	{
@@ -409,7 +410,6 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		m_shadowPipeline = std::make_unique<VKShadowPipeline>(g_context.m_device, this);
 		m_tilingPipeline = std::make_unique<VKTilingPipeline>(g_context.m_device, this);
 		m_lightingPipeline = std::make_unique<VKLightingPipeline>(g_context.m_device, this);
-		m_forwardPipeline = std::make_unique<VKForwardPipeline>(g_context.m_device, this);
 		m_memoryHeapDebugPipeline = std::make_unique<VKMemoryHeapDebugPipeline>(g_context.m_device, swapchainFormat);
 		m_textPipeline = std::make_unique<VKTextPipeline>(g_context.m_device, this, swapchainFormat);
 	}

@@ -9,6 +9,7 @@
 #include <bitset>
 #include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
 #include "Graphics/Vulkan/VKMemoryAllocator.h"
+#include "Graphics/Vulkan/VKPipelineManager.h"
 
 namespace VEngine
 {
@@ -24,7 +25,7 @@ namespace VEngine
 		class Pass
 		{
 		public:
-			virtual void record(VkCommandBuffer cmdBuf, const ResourceRegistry &registry) = 0;
+			virtual void record(VkCommandBuffer cmdBuf, const ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) = 0;
 		};
 
 		enum class QueueType
@@ -39,7 +40,7 @@ namespace VEngine
 		{
 			GRAPHICS,
 			COMPUTE,
-			BLIT,
+			GENERIC,
 			HOST_ACCESS,
 			CLEAR
 		};
@@ -139,13 +140,17 @@ namespace VEngine
 		{
 			friend class PassBuilder;
 		public:
-			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator);
+			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator, VKPipelineManager &pipelineManager);
 			Graph(const Graph &) = delete;
 			Graph(const Graph &&) = delete;
 			Graph &operator= (const Graph &) = delete;
 			Graph &operator= (const Graph &&) = delete;
 			~Graph();
-			PassBuilder addPass(const char *name, PassType passType, QueueType queueType, Pass *pass);
+			PassBuilder addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc);
+			PassBuilder addComputePass(const char *name, Pass *pass, const VKComputePipelineDescription *pipelineDesc, QueueType queueType);
+			PassBuilder addGenericPass(const char *name, Pass *pass, QueueType queueType);
+			PassBuilder addHostAccessPass(const char *name, Pass *pass);
+
 			void execute(ResourceHandle finalResourceHandle);
 			void reset();
 			ImageHandle createImage(const ImageDescription &imageDescription);
@@ -235,6 +240,7 @@ namespace VEngine
 			};
 
 			VKSyncPrimitiveAllocator &m_syncPrimitiveAllocator;
+			VKPipelineManager &m_pipelineManager;
 			const char *m_resourceNames[MAX_RESOURCES];
 			const char *m_passNames[MAX_PASSES];
 			VkImageLayout *m_externalLayouts[MAX_RESOURCES];
@@ -246,6 +252,9 @@ namespace VEngine
 			VkCommandBuffer m_commandBuffers[3][MAX_PASSES];
 			bool m_recordTimings = true;
 			size_t m_timingInfoCount = 0;
+			const void *m_pipelineDescriptions[MAX_PASSES];
+			VkPipelineLayout m_layouts[MAX_PASSES];
+			VkPipeline m_pipelines[MAX_PASSES];
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //
@@ -298,6 +307,7 @@ namespace VEngine
 			void createRenderPasses(size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
 			void createSynchronization(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits);
 			void writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets);
+			void retrievePipelines();
 			void recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle);
 			uint32_t queueIndexFromQueueType(QueueType queueType);
 			void addDescriptorWrite(size_t passIndex,

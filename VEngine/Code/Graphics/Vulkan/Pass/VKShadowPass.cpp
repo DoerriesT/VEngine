@@ -4,9 +4,9 @@
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKUtility.h"
+#include "Graphics/Mesh.h"
 
-VEngine::VKShadowPass::VKShadowPass(VkPipeline pipeline,
-	VkPipelineLayout pipelineLayout,
+VEngine::VKShadowPass::VKShadowPass(
 	VKRenderResources *renderResources,
 	uint32_t width,
 	uint32_t height,
@@ -16,9 +16,7 @@ VEngine::VKShadowPass::VKShadowPass(VkPipeline pipeline,
 	uint32_t drawItemBufferOffset,
 	size_t shadowJobCount,
 	const ShadowJob *shadowJobs)
-	:m_pipeline(pipeline),
-	m_pipelineLayout(pipelineLayout),
-	m_renderResources(renderResources),
+	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_resourceIndex(resourceIndex),
@@ -28,6 +26,54 @@ VEngine::VKShadowPass::VKShadowPass(VkPipeline pipeline,
 	m_shadowJobCount(shadowJobCount),
 	m_shadowJobs(shadowJobs)
 {
+	// create pipeline description
+	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/shadows_vert.spv");
+
+	m_pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
+	m_pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+
+	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 3;
+	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) };
+	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), };
+	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord), };
+
+	m_pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	m_pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
+
+	m_pipelineDesc.m_viewportState.m_viewportCount = 1;
+	m_pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
+	m_pipelineDesc.m_viewportState.m_scissorCount = 1;
+	m_pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
+
+	m_pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
+	m_pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_BACK_BIT;
+	m_pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	m_pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
+
+	m_pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	m_pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
+
+	m_pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
+	m_pipelineDesc.m_depthStencilState.m_depthWriteEnable = true;
+	m_pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	m_pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
+	m_pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
+
+	m_pipelineDesc.m_blendState.m_logicOpEnable = false;
+	m_pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
+	m_pipelineDesc.m_blendState.m_attachmentCount = 0;
+
+	m_pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
+	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
+	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
+
+	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_perDrawDataDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 16 };
 }
 
 void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, 
@@ -35,8 +81,8 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::BufferHandle perDrawDataBufferHandle,
 	FrameGraph::ImageHandle shadowTextureHandle)
 {
-	auto builder = graph.addPass("Shadow Pass", FrameGraph::PassType::GRAPHICS, FrameGraph::QueueType::GRAPHICS, this);
-
+	auto builder = graph.addGraphicsPass("Shadow Pass", this, &m_pipelineDesc);
+		
 	builder.setDimensions(m_width, m_height);
 
 	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -49,9 +95,9 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph,
 	builder.writeDepthStencil(shadowTextureHandle);
 }
 
-void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry)
+void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 	VkViewport viewport = { 0, 0, m_width, m_height , 0.0f, 1.0f };
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
@@ -90,7 +136,7 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
 		const glm::mat4 &viewProjection = job.m_shadowViewProjectionMatrix;
-		vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
+		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
 
 		VkBuffer vertexBuffer = m_renderResources->m_vertexBuffer.getBuffer();
 		size_t itemSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
@@ -101,7 +147,7 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 			vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 
 			uint32_t dynamicOffset = static_cast<uint32_t>(itemSize * (i + m_drawItemBufferOffset));
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 1, &dynamicOffset);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(cmdBuf, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}

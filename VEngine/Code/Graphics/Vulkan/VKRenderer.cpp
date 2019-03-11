@@ -5,7 +5,6 @@
 #include "Pipeline/VKShadowPipeline.h"
 #include "Pipeline/VKGeometryPipeline.h"
 #include "Pipeline/VKLightingPipeline.h"
-#include "Pipeline/VKForwardPipeline.h"
 #include "Pipeline/VKMemoryHeapDebugPipeline.h"
 #include "Pipeline/VKTextPipeline.h"
 #include "Utility/Utility.h"
@@ -21,10 +20,10 @@
 #include "Pass/VKShadowPass.h"
 #include "Pass/VKTilingPass.h"
 #include "Pass/VKLightingPass.h"
-#include "Pass/VKForwardPass.h"
 #include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
 #include "Pass/VKTextPass.h"
+#include "VKPipelineManager.h"
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
@@ -53,7 +52,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 	for (size_t i = 0; i < 2; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator);
+		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator, *m_renderResources->m_pipelineManager);
 	}
 }
 
@@ -176,23 +175,17 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKHostWritePass pointLightCullDataWritePass(pointLightCullDataBufferDesc, "Point Light Cull Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
 		offsetof(PointLightData, m_positionRadius), 0, sizeof(glm::vec4), sizeof(glm::vec4), sizeof(PointLightData), lightData.m_pointLightData.size());
 
-	VKGeometryPass geometryPass(m_renderResources->m_geometryPipeline->getPipeline(), m_renderResources->m_geometryPipeline->getLayout(), m_renderResources.get(),
-		m_width, m_height, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
+	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
 
-	VKGeometryPass geometryAlphaMaskedPass(m_renderResources->m_geometryAlphaMaskedPipeline->getPipeline(), m_renderResources->m_geometryAlphaMaskedPipeline->getLayout(), m_renderResources.get(),
-		m_width, m_height, frameIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
+	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
 
-	VKShadowPass shadowPass(m_renderResources->m_shadowPipeline->getPipeline(), m_renderResources->m_shadowPipeline->getLayout(), m_renderResources.get(),
-		g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
+	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
-	VKTilingPass tilingPass(m_renderResources->m_tilingPipeline->getPipeline(), m_renderResources->m_tilingPipeline->getLayout(), m_renderResources.get(),
-		m_width, m_height, frameIndex, lightData.m_pointLightData.size());
+	VKTilingPass tilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData.m_pointLightData.size());
 
-	VKLightingPass lightingPass(m_renderResources->m_lightingPipeline->getPipeline(), m_renderResources->m_lightingPipeline->getLayout(), m_renderResources.get(),
-		m_width, m_height, frameIndex);
+	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, frameIndex);
 
-	VKMemoryHeapDebugPass memoryHeapDebugPass(m_renderResources->m_memoryHeapDebugPipeline->getPipeline(), m_renderResources->m_memoryHeapDebugPipeline->getLayout(), m_width, m_height,
-		0.0f, 0.0f, 1.0f, 1.0f);
+	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	FrameGraph::PassTimingInfo timingInfos[128];
 	size_t timingInfoCount;
@@ -243,7 +236,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
 	++timingInfoCount;
 
-	VKTextPass textPass(m_renderResources->m_textPipeline->getPipeline(), m_renderResources->m_textPipeline->getLayout(), m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
+	VKTextPass textPass(m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;

@@ -10,8 +10,7 @@ namespace VEngine
 	class VKShadowPass : FrameGraph::Pass
 	{
 	public:
-		explicit VKShadowPass(VkPipeline pipeline,
-			VkPipelineLayout pipelineLayout,
+		explicit VKShadowPass(
 			VKRenderResources *renderResources,
 			uint32_t width,
 			uint32_t height,
@@ -26,11 +25,9 @@ namespace VEngine
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
 			FrameGraph::BufferHandle perDrawDataBufferHandle,
 			FrameGraph::ImageHandle shadowTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry) override;
+		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_pipelineLayout;
 		VKRenderResources *m_renderResources;
 		uint32_t m_width;
 		uint32_t m_height;
@@ -40,5 +37,6 @@ namespace VEngine
 		uint32_t m_drawItemBufferOffset;
 		size_t m_shadowJobCount;
 		const ShadowJob *m_shadowJobs;
+		VKGraphicsPipelineDescription m_pipelineDesc;
 	};
 }

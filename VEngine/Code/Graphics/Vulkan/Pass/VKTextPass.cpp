@@ -1,29 +1,79 @@
 #include "VKTextPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 
-VEngine::VKTextPass::VKTextPass(VkPipeline pipeline, VkPipelineLayout pipelineLayout, VKRenderResources *renderResources, uint32_t width, uint32_t height, uint32_t atlasTextureIndex, size_t stringCount, const String *strings)
-	:m_pipeline(pipeline),
-	m_pipelineLayout(pipelineLayout),
-	m_renderResources(renderResources),
+VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources, uint32_t width, uint32_t height, uint32_t atlasTextureIndex, size_t stringCount, const String *strings)
+	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_atlasTextureIndex(atlasTextureIndex),
 	m_stringCount(stringCount),
 	m_strings(strings)
 {
+	// create pipeline description
+	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/text_vert.spv");
+	strcpy_s(m_pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/text_frag.spv");
+
+	m_pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	m_pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
+
+	m_pipelineDesc.m_viewportState.m_viewportCount = 1;
+	m_pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
+	m_pipelineDesc.m_viewportState.m_scissorCount = 1;
+	m_pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
+
+	m_pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
+	m_pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_NONE;
+	m_pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	m_pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
+	m_pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
+
+	m_pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	m_pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
+
+	m_pipelineDesc.m_depthStencilState.m_depthTestEnable = false;
+	m_pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
+	m_pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	m_pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
+	m_pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_TRUE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	m_pipelineDesc.m_blendState.m_logicOpEnable = false;
+	m_pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
+	m_pipelineDesc.m_blendState.m_attachmentCount = 1;
+	m_pipelineDesc.m_blendState.m_attachments[0] = colorBlendAttachment;
+
+	m_pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
+	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
+	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
+
+	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_textureDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 12 + sizeof(uint32_t) };
 }
 
 void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle)
 {
-	auto builder = graph.addPass("Text Pass", FrameGraph::PassType::GRAPHICS, FrameGraph::QueueType::GRAPHICS, this);
+	auto builder = graph.addGraphicsPass("Text Pass", this, &m_pipelineDesc);
 
 	builder.setDimensions(m_width, m_height);
 	builder.writeColorAttachment(colorTextureHandle, 0);
 }
 
-void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry)
+void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 	VkViewport viewport;
 	viewport.x = 0.0f;
@@ -40,7 +90,7 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_renderResources->m_textureDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_textureDescriptorSet, 0, nullptr);
 
 	const size_t symbolHeight = 48;
 	const size_t symbolWidth = 24;
@@ -105,7 +155,7 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 
 					pushConsts.atlasTextureIndex = m_atlasTextureIndex;
 
-					vkCmdPushConstants(cmdBuf, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+					vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 					vkCmdDraw(cmdBuf, 6, 1, 0, 0);
 				}
 
