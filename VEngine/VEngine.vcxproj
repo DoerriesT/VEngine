@@ -172,6 +172,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTilingPass.h" />
@@ -215,6 +216,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTilingPass.cpp" />

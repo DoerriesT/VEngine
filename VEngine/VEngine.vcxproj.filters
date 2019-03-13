@@ -207,6 +207,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKPipelineManager.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -316,6 +319,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

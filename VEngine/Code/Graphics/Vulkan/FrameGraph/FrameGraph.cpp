@@ -488,7 +488,7 @@ PassBuilder VEngine::FrameGraph::Graph::addHostAccessPass(const char * name, Pas
 	return PassBuilder(*this, passIndex);
 }
 
-void Graph::execute(ResourceHandle finalResourceHandle)
+void Graph::execute(ResourceHandle finalResourceHandle, VkImageLayout finalLayout)
 {
 	std::bitset<MAX_DESCRIPTOR_SETS> culledDescriptorSets;
 	size_t firstResourceUses[MAX_RESOURCES];
@@ -502,7 +502,7 @@ void Graph::execute(ResourceHandle finalResourceHandle)
 	createSynchronization(firstResourceUses, lastResourceUses, syncBits);
 	writeDescriptorSets(culledDescriptorSets);
 	retrievePipelines();
-	recordAndSubmit(firstResourceUses, lastResourceUses, syncBits, finalResourceHandle);
+	recordAndSubmit(firstResourceUses, lastResourceUses, syncBits, finalResourceHandle, finalLayout);
 }
 
 void Graph::reset()
@@ -1595,7 +1595,7 @@ void VEngine::FrameGraph::Graph::retrievePipelines()
 //			end command buffer and submit
 //
 // update external resource layouts
-void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle)
+void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle, VkImageLayout finalLayout)
 {
 	// we can overlap recording of different command buffers, so we have one for each queue
 	VkCommandBuffer graphicsCmdBuf = VK_NULL_HANDLE;
@@ -1946,8 +1946,8 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			vkCmdEndRenderPass(*cmdBuf);
 		}
 
-		// release resources
-		if (sync.m_releaseCount)
+		// release resources and/or apply layout transition of final resource to final layout
+		if (sync.m_releaseCount || (lastResourceUses[(size_t)finalResourceHandle - 1] == passIndex && m_imageResources[(size_t)finalResourceHandle - 1] && finalLayout != VK_IMAGE_LAYOUT_UNDEFINED))
 		{
 			size_t remaining = sync.m_releaseCount;
 			size_t resourceIndex = 0;
@@ -1958,7 +1958,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			size_t imageBarrierCount = 0;
 			size_t bufferBarrierCount = 0;
 
-			VkPipelineStageFlags dstStageMask = 0;
+			VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
 			while (remaining)
 			{
@@ -1999,6 +1999,21 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 					--remaining;
 				}
 				++resourceIndex;
+			}
+
+			size_t finalResourceHandleIndex = (size_t)finalResourceHandle - 1;
+			if (lastResourceUses[finalResourceHandleIndex] == passIndex && m_imageResources[finalResourceHandleIndex] && finalLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+			{
+				VkImageMemoryBarrier &imageBarrier = imageBarriers[imageBarrierCount++];
+				imageBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+				imageBarrier.srcAccessMask = m_resourceUsages[finalResourceHandleIndex][passIndex].m_accessMask;
+				imageBarrier.dstAccessMask = 0;
+				imageBarrier.oldLayout = m_resourceUsages[finalResourceHandleIndex][passIndex].m_imageLayout;
+				imageBarrier.newLayout = finalLayout;
+				imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imageBarrier.image = m_images[finalResourceHandleIndex];
+				imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(m_resourceDescriptions[finalResourceHandleIndex].m_format), 0, VK_REMAINING_MIP_LEVELS, 0, 1 };
 			}
 
 			vkCmdPipelineBarrier(*cmdBuf, m_passStageMasks[passIndex], dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers, imageBarrierCount, imageBarriers);
@@ -2061,6 +2076,11 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 		{
 			*m_externalLayouts[resourceIndex] = m_resourceUsages[resourceIndex][lastResourceUses[resourceIndex]].m_imageLayout;
 		}
+	}
+
+	if (m_imageResources[(size_t)finalResourceHandle - 1] && finalLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		*m_externalLayouts[(size_t)finalResourceHandle - 1] = finalLayout;
 	}
 
 	// we should have submitted all cmdBufs at this point

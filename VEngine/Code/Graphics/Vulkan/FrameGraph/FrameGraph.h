@@ -151,7 +151,7 @@ namespace VEngine
 			PassBuilder addGenericPass(const char *name, Pass *pass, QueueType queueType);
 			PassBuilder addHostAccessPass(const char *name, Pass *pass);
 
-			void execute(ResourceHandle finalResourceHandle);
+			void execute(ResourceHandle finalResourceHandle, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 			void reset();
 			ImageHandle createImage(const ImageDescription &imageDescription);
 			BufferHandle createBuffer(const BufferDescription &bufferDescription);
@@ -308,7 +308,7 @@ namespace VEngine
 			void createSynchronization(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits);
 			void writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets);
 			void retrievePipelines();
-			void recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle);
+			void recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle, VkImageLayout finalLayout);
 			uint32_t queueIndexFromQueueType(QueueType queueType);
 			void addDescriptorWrite(size_t passIndex,
 				size_t resourceIndex,

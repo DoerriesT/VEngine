@@ -381,24 +381,11 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	//memoryHeapDebugPass.addToGraph(graph, lightTextureHandle);
 	textPass.addToGraph(graph, lightTextureHandle);
 
-	// draw blended items
-	//if (!drawLists.m_blendedItems.empty())
-	//{
-	//	m_forwardPipeline->addPass(graph,
-	//		perFrameDataBufferHandle,
-	//		perDrawDataBufferHandle,
-	//		tiledLightBufferHandle,
-	//		shadowTextureHandle,
-	//		depthTextureHandle,
-	//		lightTextureHandle,
-	//		velocityTextureHandle,
-	//		m_renderResources.get(),
-	//		drawLists);
-	//}
+	VkSwapchainKHR swapChain = m_swapChain->get();
 
 	// get swapchain image
 	{
-		VkResult result = vkAcquireNextImageKHR(g_context.m_device, m_swapChain->get(), std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -430,62 +417,10 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			m_renderResources->m_swapChainRenderFinishedSemaphores[frameIndex]);
 	}
 
-
 	// blit to swapchain image
-	{
-		VkOffset3D blitSize;
-		blitSize.x = m_width;
-		blitSize.y = m_height;
-		blitSize.z = 1;
+	blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
 
-		VkImageBlit imageBlitRegion = {};
-		imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.srcSubresource.layerCount = 1;
-		imageBlitRegion.srcOffsets[1] = blitSize;
-		imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageBlitRegion.dstSubresource.layerCount = 1;
-		imageBlitRegion.dstOffsets[1] = blitSize;
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
-	}
-
-	//m_testPipeline->addPass(graph,
-	//	perFrameDataBufferHandle,
-	//	perDrawDataBufferHandle,
-	//	depthTextureHandle,
-	//	swapchainTextureHandle,
-	//	frameIndex,
-	//	m_renderResources.get(),
-	//	drawLists);
-
-	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle));
-
-	VkCommandBuffer cmdBuf = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-	{
-		VkImageMemoryBarrier imageBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-		imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageBarrier.dstAccessMask = 0;
-		imageBarrier.oldLayout = m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex];
-		imageBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageBarrier.image = m_swapChain->getImage(m_swapChainImageIndex);
-		imageBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, 1 };
-
-		vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
-
-		m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	}
-	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, cmdBuf);
-
-	VkSwapchainKHR swapChain = m_swapChain->get();
+	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = 1;
