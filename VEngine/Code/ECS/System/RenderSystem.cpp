@@ -120,16 +120,39 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 		// generate light data
 		{
+			glm::mat4 proj = glm::transpose(m_renderParams.m_projectionMatrix);
+			glm::vec4 frustumPlaneEquations[] =
+			{
+				proj[3] + proj[0],	// left
+				proj[3] - proj[0],	// right
+				proj[3] + proj[1],	// bottom
+				proj[3] - proj[1],	// top
+				proj[2],			// near
+				proj[3] - proj[2]	// far
+			};
+
 			m_entityManager.each<TransformationComponent, PointLightComponent, RenderableComponent>(
-				[this](const Entity *entity, TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
+				[this, &frustumPlaneEquations](const Entity *entity, TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
 			{
 				PointLightData pl = {};
 				glm::vec3 pos = glm::vec3(m_renderParams.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f));
 				pl.m_positionRadius = glm::vec4(pos, pointLightComponent.m_radius);
 				float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
 				pl.m_colorInvSqrAttRadius = glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius));
+
+				// frustum cull
+				//for (const auto &plane : frustumPlaneEquations)
+				//{
+				//	if (glm::dot(glm::vec4(pos, 1.0f), plane) <= -1.0f)
+				//	{
+				//		return;
+				//	}
+				//}
+
 				m_lightData.m_pointLightData.push_back(pl);
 			});
+
+			//printf("%d\n", (int)m_lightData.m_pointLightData.size());
 
 			std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
 				[](const PointLightData &lhs, const PointLightData &rhs)
@@ -153,8 +176,8 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 				float nearestPoint = -posRadius.z - posRadius.w;
 				float furthestPoint = -posRadius.z + posRadius.w;
 
-				size_t minBin = glm::clamp(static_cast<size_t>(nearestPoint / binDepth), size_t(0), size_t(8191));
-				size_t maxBin = glm::clamp(static_cast<size_t>(furthestPoint / binDepth), size_t(0), size_t(8191));
+				size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / binDepth, 0.0f)), size_t(0), size_t(8191));
+				size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / binDepth, 0.0f)), size_t(0), size_t(8191));
 
 				for (size_t j = minBin; j <= maxBin; ++j)
 				{

@@ -17,6 +17,7 @@
 #include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
 #include "Pass/VKTextPass.h"
+#include "Pass/VKRasterTilingPass.h"
 #include "VKPipelineManager.h"
 
 VEngine::VKRenderer::VKRenderer()
@@ -176,6 +177,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
 	VKTilingPass tilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData.m_pointLightData.size());
+
+	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData, renderParams.m_projectionMatrix);
 
 	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, frameIndex);
 
@@ -353,12 +356,16 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// cull lights to tiles
-	{
-		tilingPass.addToGraph(graph,
-			perFrameDataBufferHandle,
-			pointLightCullDataBufferHandle,
-			pointLightBitMaskBufferHandle);
-	}
+	//{
+	//	tilingPass.addToGraph(graph,
+	//		perFrameDataBufferHandle,
+	//		pointLightCullDataBufferHandle,
+	//		pointLightBitMaskBufferHandle);
+	//}
+
+	rasterTilingPass.addToGraph(graph,
+		perFrameDataBufferHandle,
+		pointLightBitMaskBufferHandle);
 
 	// light gbuffer
 	{

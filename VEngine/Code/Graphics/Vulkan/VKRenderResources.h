@@ -30,6 +30,8 @@ namespace VEngine
 		// buffers
 		VKBuffer m_vertexBuffer;
 		VKBuffer m_indexBuffer;
+		VKBuffer m_lightProxyVertexBuffer;
+		VKBuffer m_lightProxyIndexBuffer;
 
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;

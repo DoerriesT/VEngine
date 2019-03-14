@@ -11,5 +11,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c memoryHeapDebug_vert.vert -o memoryHe
 glslc --target-env=vulkan1.1 -O -Werror -c memoryHeapDebug_frag.frag -o memoryHeapDebug_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c text_vert.vert -o text_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c text_frag.frag -o text_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c rasterTiling_vert.vert -o rasterTiling_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c rasterTiling_frag.frag -o rasterTiling_frag.spv
 
 pause
