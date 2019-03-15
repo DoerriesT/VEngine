@@ -17,6 +17,7 @@ namespace VEngine
 
 		explicit VKTextPass(
 			VKRenderResources *renderResources,
+			size_t resourceIndex,
 			uint32_t width,
 			uint32_t height,
 			uint32_t atlasTextureIndex,
@@ -28,6 +29,7 @@ namespace VEngine
 
 	private:
 		VKRenderResources *m_renderResources;
+		size_t m_resourceIndex;
 		uint32_t m_width;
 		uint32_t m_height;
 		uint32_t m_atlasTextureIndex;

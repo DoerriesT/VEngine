@@ -1,13 +1,6 @@
 #version 450
-#extension GL_ARB_separate_shader_objects : enable
 
-#ifndef PI
-#define PI (3.14159265359)
-#endif // PI
-
-#ifndef TEXTURE_ARRAY_SIZE
-#define TEXTURE_ARRAY_SIZE (512)
-#endif // TEXTURE_ARRAY_SIZE
+#include "common.h"
 
 #ifndef ALPHA_MASK_ENABLED
 #define ALPHA_MASK_ENABLED 0
@@ -21,6 +14,11 @@
 #define MIP_SCALE (0.25)
 #endif // MIP_SCALE
 
+layout(push_constant) uniform PushConsts 
+{
+	uint drawIndex;
+} uPushConsts;
+
 #if !ALPHA_MASK_ENABLED
 layout(early_fragment_tests) in;
 #endif // ALPHA_MASK_ENABLED
@@ -33,46 +31,6 @@ layout(location = 0) out vec4 oAlbedo;
 layout(location = 1) out vec4 oNormalEmissive;
 layout(location = 2) out vec4 oMetallicRoughnessOcclusion;
 layout(location = 3) out vec4 oVelocity;
-
-layout(set = 0, binding = 0) uniform PerFrameData 
-{
-	float time;
-	float fovy;
-	float nearPlane;
-	float farPlane;
-	mat4 viewMatrix;
-	mat4 projectionMatrix;
-	mat4 viewProjectionMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjectionMatrix;
-	mat4 invViewProjectionMatrix;
-	mat4 prevViewMatrix;
-	mat4 prevProjectionMatrix;
-	mat4 prevViewProjectionMatrix;
-	mat4 prevInvViewMatrix;
-	mat4 prevInvProjectionMatrix;
-	mat4 prevInvViewProjectionMatrix;
-	vec4 cameraPosition;
-	vec4 cameraDirection;
-	uint frame;
-} uPerFrameData;
-
-layout(set = 1, binding = 0) uniform PerDrawData 
-{
-    vec4 albedoFactorMetallic;
-	vec4 emissiveFactorRoughness;
-	mat4 modelMatrix;
-	uint albedoTexture;
-	uint normalTexture;
-	uint metallicTexture;
-	uint roughnessTexture;
-	uint occlusionTexture;
-	uint emissiveTexture;
-	uint displacementTexture;
-	uint padding;
-} uPerDrawData;
-
-layout(set = 2, binding = 0) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
 
 // based on http://www.thetenthplanet.de/archives/1180
 mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
@@ -97,11 +55,11 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
 void main() 
 {
 #if ALPHA_MASK_ENABLED
-	vec3 albedo = uPerDrawData.albedoFactorMetallic.rgb;
-	if (uPerDrawData.albedoTexture != 0)
+	vec3 albedo = uPerDrawData.data[uPushConsts.drawIndex].albedoFactorMetallic.rgb;
+	if (uPerDrawData.data[uPushConsts.drawIndex].albedoTexture != 0)
 	{
-		vec4 albedoTexSample = texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgba;
-		albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).x * MIP_SCALE;
+		vec4 albedoTexSample = texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].albedoTexture - 1], vTexCoord).rgba;
+		albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[uPerDrawData.data[uPushConsts.drawIndex].albedoTexture - 1], vTexCoord).x * MIP_SCALE;
 		if(albedoTexSample.a < ALPHA_CUTOFF)
 		{
 			discard;
@@ -110,23 +68,23 @@ void main()
 	}
 	oAlbedo.rgb = albedo;
 #else
-	oAlbedo.rgb = uPerDrawData.albedoFactorMetallic.rgb;
+	oAlbedo.rgb = uPerDrawData.data[uPushConsts.drawIndex].albedoFactorMetallic.rgb;
 #endif // ALPHA_MASK_ENABLED
 	
 	oNormalEmissive.xyz = normalize(vNormal);
-	oMetallicRoughnessOcclusion.x = uPerDrawData.albedoFactorMetallic.w;
-	oMetallicRoughnessOcclusion.y = uPerDrawData.emissiveFactorRoughness.w;
+	oMetallicRoughnessOcclusion.x = uPerDrawData.data[uPushConsts.drawIndex].albedoFactorMetallic.w;
+	oMetallicRoughnessOcclusion.y = uPerDrawData.data[uPushConsts.drawIndex].emissiveFactorRoughness.w;
 	oMetallicRoughnessOcclusion.z = 1.0;
 	
 #if !ALPHA_MASK_ENABLED
-	oAlbedo.rgb *= (uPerDrawData.albedoTexture != 0) ? texture(uTextures[uPerDrawData.albedoTexture - 1], vTexCoord).rgb : vec3(1.0);
+	oAlbedo.rgb *= (uPerDrawData.data[uPushConsts.drawIndex].albedoTexture != 0) ? texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].albedoTexture - 1], vTexCoord).rgb : vec3(1.0);
 #endif // !ALPHA_MASK_ENABLED
 	
-	oNormalEmissive.xyz = (uPerDrawData.normalTexture != 0) ? 
-	normalize(calculateTBN(oNormalEmissive.xyz, vWorldPos, vTexCoord) * (texture(uTextures[uPerDrawData.normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0)) : oNormalEmissive.xyz;
+	oNormalEmissive.xyz = (uPerDrawData.data[uPushConsts.drawIndex].normalTexture != 0) ? 
+	normalize(calculateTBN(oNormalEmissive.xyz, vWorldPos, vTexCoord) * (texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].normalTexture - 1], vTexCoord).xyz * 2.0 - 1.0)) : oNormalEmissive.xyz;
 	
-	oMetallicRoughnessOcclusion.x *= (uPerDrawData.metallicTexture != 0) ? texture(uTextures[uPerDrawData.metallicTexture - 1], vTexCoord).x : 1.0;
-	oMetallicRoughnessOcclusion.y *= (uPerDrawData.roughnessTexture != 0) ? texture(uTextures[uPerDrawData.roughnessTexture - 1], vTexCoord).x : 1.0;
-	oMetallicRoughnessOcclusion.z *= (uPerDrawData.occlusionTexture != 0) ? texture(uTextures[uPerDrawData.occlusionTexture - 1], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.x *= (uPerDrawData.data[uPushConsts.drawIndex].metallicTexture != 0) ? texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].metallicTexture - 1], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.y *= (uPerDrawData.data[uPushConsts.drawIndex].roughnessTexture != 0) ? texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].roughnessTexture - 1], vTexCoord).x : 1.0;
+	oMetallicRoughnessOcclusion.z *= (uPerDrawData.data[uPushConsts.drawIndex].occlusionTexture != 0) ? texture(uTextures[uPerDrawData.data[uPushConsts.drawIndex].occlusionTexture - 1], vTexCoord).x : 1.0;
 }
 

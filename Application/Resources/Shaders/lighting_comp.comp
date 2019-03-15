@@ -1,113 +1,18 @@
 #version 450
 
-#ifndef PI
-#define PI (3.14159265359)
-#endif // PI
-
 #define DEPTH_TEXTURE_INDEX 0
 #define ALBEDO_TEXTURE_INDEX 1
 #define NORMAL_TEXTURE_INDEX 2
 #define MRO_TEXTURE_INDEX 3
-#define MAX_POINT_LIGHT_WORDS 2048
-#define TILE_SIZE 16
+
+#include "common.h"
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-struct ShadowData
-{
-	mat4 shadowViewProjectionMatrix;
-	vec4 shadowCoordScaleBias;
-};
-
-struct DirectionalLight
-{
-	vec4 color;
-	vec4 direction;
-	uint shadowDataOffset;
-	uint shadowDataCount;
-};
-
-struct PointLight
-{
-	vec4 positionRadius;
-	vec4 colorInvSqrAttRadius;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
-};
-
-struct SpotLight
-{
-	vec4 colorInvSqrAttRadius;
-	vec4 positionAngleScale;
-	vec4 directionAngleOffset;
-	vec4 boundingSphere;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
-};
 
 layout(push_constant) uniform PushConsts 
 {
 	uint directionalLightCount;
 } uPushConsts;
-
-layout(set = 0, binding = 0) uniform PerFrameData 
-{
-	float time;
-	float fovy;
-	float nearPlane;
-	float farPlane;
-	mat4 viewMatrix;
-	mat4 projectionMatrix;
-	mat4 viewProjectionMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjectionMatrix;
-	mat4 invViewProjectionMatrix;
-	mat4 prevViewMatrix;
-	mat4 prevProjectionMatrix;
-	mat4 prevViewProjectionMatrix;
-	mat4 prevInvViewMatrix;
-	mat4 prevInvProjectionMatrix;
-	mat4 prevInvViewProjectionMatrix;
-	vec4 cameraPosition;
-	vec4 cameraDirection;
-	uint frame;
-} uPerFrameData;
-
-layout(set = 1, binding = 0, rgba16f) uniform writeonly image2D uResultImage;
-
-layout(set = 1, binding = 1) uniform sampler2D uTextures[4];
-
-layout(set = 2, binding = 0) readonly buffer DirectionalLights 
-{
-	DirectionalLight lights[];
-} uDirectionalLights;
-
-layout(set = 2, binding = 1) readonly buffer PointLights 
-{
-	PointLight lights[];
-} uPointLights;
-
-layout(set = 2, binding = 2) readonly buffer SpotLights 
-{
-	SpotLight lights[];
-} uSpotLights;
-
-layout(set = 2, binding = 3) readonly buffer Shadows 
-{
-	ShadowData data[];
-} uShadowData;
-
-layout(set = 2, binding = 4) readonly buffer PointLightZBins 
-{
-	uint bins[];
-} uPointLightZBins;
-
-layout(set = 2, binding = 5) uniform sampler2DShadow uShadowTexture;
-
-layout(set = 3, binding = 0) buffer PointLightBitMask 
-{
-	uint mask[];
-} uPointLightBitMask;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -175,10 +80,10 @@ vec3 evaluatePointLight(
 	inout float roughness,
 	uint index)
 {
-	vec4 positionRadius = uPointLights.lights[index].positionRadius;
+	vec4 positionRadius = uPointLightData.lights[index].positionRadius;
 	vec3 unnormalizedLightVector = positionRadius.xyz - viewSpacePosition;
 	vec3 L = normalize(unnormalizedLightVector);
-	float att = getDistanceAtt(unnormalizedLightVector, uPointLights.lights[index].colorInvSqrAttRadius.w);
+	float att = getDistanceAtt(unnormalizedLightVector, uPointLightData.lights[index].colorInvSqrAttRadius.w);
 
 	vec3 H = normalize(V + L);
 	float NdotL = max(dot(N, L), 0.0);
@@ -198,7 +103,7 @@ vec3 evaluatePointLight(
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
 
-	vec3 radiance = uPointLights.lights[index].colorInvSqrAttRadius.rgb * att;
+	vec3 radiance = uPointLightData.lights[index].colorInvSqrAttRadius.rgb * att;
 	return (kD * albedo * (1.0 / PI) + specular) * radiance * NdotL;
 }
 
@@ -214,7 +119,7 @@ vec3 evaluateDirectionalLight(
 	inout float roughness,
 	uint index)
 {
-	vec3 L = viewMatrix * uDirectionalLights.lights[index].direction.xyz;
+	vec3 L = viewMatrix * uDirectionalLightData.lights[index].direction.xyz;
 	vec3 H = normalize(V + L);
     
 	float NdotL = max(dot(N, L), 0.0);
@@ -233,12 +138,12 @@ vec3 evaluateDirectionalLight(
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
     
-	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLights.lights[index].color.rgb;
+	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLightData.lights[index].color.rgb;
 	
-	uint shadowDataCount = uDirectionalLights.lights[index].shadowDataCount;
+	uint shadowDataCount = uDirectionalLightData.lights[index].shadowDataCount;
 	if(shadowDataCount > 0)
 	{		
-		uint shadowDataOffset = uDirectionalLights.lights[index].shadowDataOffset;
+		uint shadowDataOffset = uDirectionalLightData.lights[index].shadowDataOffset;
 		vec3 shadowCoord = vec3(2.0);
 		vec2 invShadowTextureSize = 1.0 / textureSize(uShadowTexture, 0).xy;
 		vec4 offsetPos = uPerFrameData.invViewMatrix * vec4(0.1 * L + viewSpacePosition, 1.0);
@@ -316,7 +221,7 @@ vec3 accurateSRGBToLinear(in vec3 sRGBCol)
 uint getTileAddress()
 {
 	uvec2 tile = uvec2(gl_GlobalInvocationID.xy) / TILE_SIZE;
-	uint domainSizeX = uint(textureSize(uTextures[0], 0).x);
+	uint domainSizeX = uint(textureSize(uGBufferTextures[0], 0).x);
 	return tile.x + tile.y * (domainSizeX / TILE_SIZE + ((domainSizeX % TILE_SIZE == 0) ? 0 : 1));
 }
 
@@ -364,15 +269,15 @@ vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLi
 
 void main() 
 {
-	float depth = texelFetch(uTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
+	float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
 	
 	if (depth == 1.0)
 	{
-		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.529, 0.808, 0.922), 1.0));
+		imageStore(uLightingResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.529, 0.808, 0.922), 1.0));
 		return;
 	}
 	
-	vec2 domainSize = textureSize(uTextures[0], 0).xy;
+	vec2 domainSize = textureSize(uGBufferTextures[0], 0).xy;
 	vec2 texelSize = vec2(1.0 / domainSize);
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
@@ -380,13 +285,13 @@ void main()
 	viewSpacePosition /= viewSpacePosition.w;
 	
 	mat3 viewMatrix = mat3(uPerFrameData.viewMatrix);
-	vec3 albedo = accurateSRGBToLinear(texelFetch(uTextures[ALBEDO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).rgb);
-	vec3 N = texelFetch(uTextures[NORMAL_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xyz;
-	float metallic = texelFetch(uTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
+	vec3 albedo = accurateSRGBToLinear(texelFetch(uGBufferTextures[ALBEDO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).rgb);
+	vec3 N = texelFetch(uGBufferTextures[NORMAL_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xyz;
+	float metallic = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
 	vec3 V = -normalize(viewSpacePosition.xyz);
 	float NdotV = max(dot(N, V), 0.0);
-	float roughness = texelFetch(uTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).y;
+	float roughness = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).y;
 	
 	vec3 result = vec3(0.0);
 	
@@ -433,5 +338,5 @@ void main()
 	
 	result = accurateLinearToSRGB(result);
 	//result = mix(convertNumberOfLightsToRadarColor(count, 144), result, 0.5);
-	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result, 1.0));
+	imageStore(uLightingResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result, 1.0));
 }

@@ -17,7 +17,6 @@ namespace VEngine
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
 			FrameGraph::BufferHandle directionalLightDataBufferHandle,
 			FrameGraph::BufferHandle pointLightDataBufferHandle,
-			FrameGraph::BufferHandle spotLightDataBufferHandle,
 			FrameGraph::BufferHandle shadowDataBufferHandle,
 			FrameGraph::BufferHandle pointLightZBinsBufferHandle,
 			FrameGraph::BufferHandle pointLightBitMaskBufferHandle,
@@ -26,7 +25,7 @@ namespace VEngine
 			FrameGraph::ImageHandle normalTextureHandle,
 			FrameGraph::ImageHandle materialTextureHandle,
 			FrameGraph::ImageHandle shadowTextureHandle,
-			FrameGraph::ImageHandle &lightTextureHandle);
+			FrameGraph::ImageHandle lightTextureHandle);
 		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:

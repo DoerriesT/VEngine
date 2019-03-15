@@ -1,43 +1,11 @@
 #version 450
-#extension GL_ARB_separate_shader_objects : enable
 
-layout(set = 0, binding = 0) uniform PerFrameData 
-{
-	float time;
-	float fovy;
-	float nearPlane;
-	float farPlane;
-	mat4 viewMatrix;
-	mat4 projectionMatrix;
-	mat4 viewProjectionMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjectionMatrix;
-	mat4 invViewProjectionMatrix;
-	mat4 prevViewMatrix;
-	mat4 prevProjectionMatrix;
-	mat4 prevViewProjectionMatrix;
-	mat4 prevInvViewMatrix;
-	mat4 prevInvProjectionMatrix;
-	mat4 prevInvViewProjectionMatrix;
-	vec4 cameraPosition;
-	vec4 cameraDirection;
-	uint frame;
-} uPerFrameData;
+#include "common.h"
 
-layout(set = 1, binding = 0) uniform PerDrawData 
+layout(push_constant) uniform PushConsts 
 {
-    vec4 albedoFactorMetallic;
-	vec4 emissiveFactorRoughness;
-	mat4 modelMatrix;
-	uint albedoTexture;
-	uint normalTexture;
-	uint metallicTexture;
-	uint roughnessTexture;
-	uint occlusionTexture;
-	uint emissiveTexture;
-	uint displacementTexture;
-	uint padding;
-} uPerDrawData;
+	uint drawIndex;
+} uPushConsts;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -47,16 +15,12 @@ layout(location = 0) out vec2 vTexCoord;
 layout(location = 1) out vec3 vNormal;
 layout(location = 2) out vec3 vWorldPos;
 
-out gl_PerVertex 
-{
-    vec4 gl_Position;
-};
-
 void main() 
 {
-    gl_Position = uPerFrameData.viewProjectionMatrix * uPerDrawData.modelMatrix * vec4(inPosition, 1.0);
+	mat4 modelMatrix = uPerDrawData.data[uPushConsts.drawIndex].modelMatrix;
+    gl_Position = uPerFrameData.viewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
 	vTexCoord = inTexCoord;
-	vNormal = mat3(uPerFrameData.viewMatrix * uPerDrawData.modelMatrix) * inNormal;
-	vWorldPos = (uPerFrameData.viewMatrix * uPerDrawData.modelMatrix * vec4(inPosition, 1.0)).xyz;
+	vNormal = mat3(uPerFrameData.viewMatrix * modelMatrix) * inNormal;
+	vWorldPos = (uPerFrameData.viewMatrix * modelMatrix * vec4(inPosition, 1.0)).xyz;
 }
 

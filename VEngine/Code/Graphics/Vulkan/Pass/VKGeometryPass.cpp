@@ -12,7 +12,7 @@ VEngine::VKGeometryPass::VKGeometryPass(
 	size_t resourceIndex,
 	size_t drawItemCount,
 	const DrawItem *drawItems,
-	uint32_t drawItemBufferOffset,
+	uint32_t drawItemOffset,
 	bool alphaMasked)
 	:m_renderResources(renderResources),
 	m_width(width),
@@ -20,7 +20,7 @@ VEngine::VKGeometryPass::VKGeometryPass(
 	m_resourceIndex(resourceIndex),
 	m_drawItemCount(drawItemCount),
 	m_drawItems(drawItems),
-	m_drawItemBufferOffset(drawItemBufferOffset),
+	m_drawItemOffset(drawItemOffset),
 	m_alphaMasked(alphaMasked)
 {
 	// create pipeline description
@@ -76,116 +76,27 @@ VEngine::VKGeometryPass::VKGeometryPass(
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
-	m_pipelineDesc.m_layout.m_setLayoutCount = 3;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_perFrameDataDescriptorSetLayout;
-	m_pipelineDesc.m_layout.m_setLayouts[1] = m_renderResources->m_perDrawDataDescriptorSetLayout;
-	m_pipelineDesc.m_layout.m_setLayouts[2] = m_renderResources->m_textureDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
+	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t) };
 }
 
 void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::BufferHandle perFrameDataBufferHandle,
 	FrameGraph::BufferHandle perDrawDataBufferHandle,
-	FrameGraph::ImageHandle &depthTextureHandle,
-	FrameGraph::ImageHandle &albedoTextureHandle,
-	FrameGraph::ImageHandle &normalTextureHandle,
-	FrameGraph::ImageHandle &materialTextureHandle,
-	FrameGraph::ImageHandle &velocityTextureHandle)
+	FrameGraph::ImageHandle depthTextureHandle,
+	FrameGraph::ImageHandle albedoTextureHandle,
+	FrameGraph::ImageHandle normalTextureHandle,
+	FrameGraph::ImageHandle materialTextureHandle,
+	FrameGraph::ImageHandle velocityTextureHandle)
 {
 	auto builder = graph.addGraphicsPass(m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", this, &m_pipelineDesc);
 
 	builder.setDimensions(m_width, m_height);
 
-	if (!depthTextureHandle)
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "DepthTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = true;
-		desc.m_clearValue.m_imageClearValue.depthStencil.depth = 1.0f;
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_D32_SFLOAT;
-
-		depthTextureHandle = builder.createImage(desc);
-	}
-
-	if (!albedoTextureHandle)
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "AlbedoTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-
-		albedoTextureHandle = builder.createImage(desc);
-	}
-
-	if (!normalTextureHandle)
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "NormalTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-
-		normalTextureHandle = builder.createImage(desc);
-	}
-
-	if (!materialTextureHandle)
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "MaterialTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-
-		materialTextureHandle = builder.createImage(desc);
-	}
-
-	if (!velocityTextureHandle)
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "VelocityTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R16G16_SFLOAT;
-
-		velocityTextureHandle = builder.createImage(desc);
-	}
-
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		m_renderResources->m_perFrameDataDescriptorSets[m_resourceIndex], 0);
-
-	builder.readUniformBufferDynamic(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment),
-		m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 0);
+	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 0);
+	builder.readStorageBuffer(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 10);
 
 	builder.writeDepthStencil(depthTextureHandle);
 	builder.writeColorAttachment(albedoTextureHandle, 0);
@@ -215,19 +126,17 @@ void VEngine::VKGeometryPass::record(VkCommandBuffer cmdBuf, const FrameGraph::R
 
 	vkCmdBindIndexBuffer(cmdBuf, m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_perFrameDataDescriptorSets[m_resourceIndex], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 2, 1, &m_renderResources->m_textureDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
 
 	VkBuffer vertexBuffer = m_renderResources->m_vertexBuffer.getBuffer();
-	size_t itemSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
 
-	for (size_t i = 0; i < m_drawItemCount; ++i)
+	for (uint32_t i = 0; i < m_drawItemCount; ++i)
 	{
 		const DrawItem &item = m_drawItems[i];
 		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 
-		uint32_t dynamicOffset = static_cast<uint32_t>(itemSize * (i + m_drawItemBufferOffset));
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 1, &dynamicOffset);
+		uint32_t offset = m_drawItemOffset + i;
+		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(offset), &offset);
 
 		vkCmdDrawIndexed(cmdBuf, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 	}

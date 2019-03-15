@@ -13,7 +13,7 @@ VEngine::VKShadowPass::VKShadowPass(
 	size_t resourceIndex,
 	size_t drawItemCount,
 	const DrawItem *drawItems,
-	uint32_t drawItemBufferOffset,
+	uint32_t drawItemOffset,
 	size_t shadowJobCount,
 	const ShadowJob *shadowJobs)
 	:m_renderResources(renderResources),
@@ -22,7 +22,7 @@ VEngine::VKShadowPass::VKShadowPass(
 	m_resourceIndex(resourceIndex),
 	m_drawItemCount(drawItemCount),
 	m_drawItems(drawItems),
-	m_drawItemBufferOffset(drawItemBufferOffset),
+	m_drawItemOffset(drawItemOffset),
 	m_shadowJobCount(shadowJobCount),
 	m_shadowJobs(shadowJobs)
 {
@@ -71,9 +71,9 @@ VEngine::VKShadowPass::VKShadowPass(
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_perDrawDataDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 16 };
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 16 + sizeof(uint32_t) };
 }
 
 void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, 
@@ -85,12 +85,8 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph,
 		
 	builder.setDimensions(m_width, m_height);
 
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		m_renderResources->m_perFrameDataDescriptorSets[m_resourceIndex], 0);
-
-	builder.readUniformBufferDynamic(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment),
-		m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 0);
+	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 0);
+	builder.readStorageBuffer(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 10);
 
 	builder.writeDepthStencil(shadowTextureHandle);
 }
@@ -122,6 +118,8 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 		vkCmdClearAttachments(cmdBuf, 1, &clearAttachment, m_shadowJobCount, clearRects);
 	}
 
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
+
 	vkCmdBindIndexBuffer(cmdBuf, m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	for (size_t i = 0; i < m_shadowJobCount; ++i)
@@ -139,15 +137,14 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
 
 		VkBuffer vertexBuffer = m_renderResources->m_vertexBuffer.getBuffer();
-		size_t itemSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
 
-		for (size_t i = 0; i < m_drawItemCount; ++i)
+		for (uint32_t i = 0; i < m_drawItemCount; ++i)
 		{
 			const DrawItem &item = m_drawItems[i];
 			vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &item.m_vertexOffset);
 
-			uint32_t dynamicOffset = static_cast<uint32_t>(itemSize * (i + m_drawItemBufferOffset));
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_perDrawDataDescriptorSets[m_resourceIndex], 1, &dynamicOffset);
+			uint32_t offset = m_drawItemOffset + i;
+			vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), sizeof(offset), &offset);
 
 			vkCmdDrawIndexed(cmdBuf, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
 		}

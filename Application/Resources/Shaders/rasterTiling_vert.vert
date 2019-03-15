@@ -12,8 +12,6 @@ layout(push_constant) uniform PushConsts
 	uint alignedDomainSizeX;
 } uPushConsts;
 
-
-
 void main() 
 {
     gl_Position = uPushConsts.transform * vec4(inPosition, 1.0);

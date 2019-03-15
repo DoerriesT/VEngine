@@ -24,6 +24,7 @@ void PassBuilder::setDimensions(uint32_t width, uint32_t height)
 
 void PassBuilder::readDepthStencil(ImageHandle imageHandle)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -42,6 +43,7 @@ void PassBuilder::readDepthStencil(ImageHandle imageHandle)
 
 void PassBuilder::readInputAttachment(ImageHandle imageHandle, uint32_t index, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -60,6 +62,7 @@ void PassBuilder::readInputAttachment(ImageHandle imageHandle, uint32_t index, V
 
 void PassBuilder::readTexture(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkSampler sampler, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -77,6 +80,7 @@ void PassBuilder::readTexture(ImageHandle imageHandle, VkPipelineStageFlags stag
 
 void PassBuilder::readStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -94,6 +98,7 @@ void PassBuilder::readStorageImage(ImageHandle imageHandle, VkPipelineStageFlags
 
 void PassBuilder::readStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -110,6 +115,7 @@ void PassBuilder::readStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFl
 
 void PassBuilder::readStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -126,6 +132,7 @@ void PassBuilder::readStorageBufferDynamic(BufferHandle bufferHandle, VkPipeline
 
 void PassBuilder::readUniformBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -142,6 +149,7 @@ void PassBuilder::readUniformBuffer(BufferHandle bufferHandle, VkPipelineStageFl
 
 void PassBuilder::readUniformBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -158,6 +166,7 @@ void PassBuilder::readUniformBufferDynamic(BufferHandle bufferHandle, VkPipeline
 
 void PassBuilder::readVertexBuffer(BufferHandle bufferHandle)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -173,6 +182,7 @@ void PassBuilder::readVertexBuffer(BufferHandle bufferHandle)
 
 void PassBuilder::readIndexBuffer(BufferHandle bufferHandle)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -188,6 +198,7 @@ void PassBuilder::readIndexBuffer(BufferHandle bufferHandle)
 
 void PassBuilder::readIndirectBuffer(BufferHandle bufferHandle)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -203,6 +214,7 @@ void PassBuilder::readIndirectBuffer(BufferHandle bufferHandle)
 
 void PassBuilder::readImageTransfer(ImageHandle imageHandle)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -219,6 +231,7 @@ void PassBuilder::readImageTransfer(ImageHandle imageHandle)
 
 void PassBuilder::writeDepthStencil(ImageHandle imageHandle)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -237,6 +250,7 @@ void PassBuilder::writeDepthStencil(ImageHandle imageHandle)
 
 void PassBuilder::writeColorAttachment(ImageHandle imageHandle, uint32_t index)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -255,6 +269,7 @@ void PassBuilder::writeColorAttachment(ImageHandle imageHandle, uint32_t index)
 
 void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -272,6 +287,7 @@ void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlag
 
 void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -288,6 +304,7 @@ void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageF
 
 void PassBuilder::writeStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -304,6 +321,7 @@ void PassBuilder::writeStorageBufferDynamic(BufferHandle bufferHandle, VkPipelin
 
 void VEngine::FrameGraph::PassBuilder::writeImageTransfer(ImageHandle imageHandle)
 {
+	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
@@ -320,6 +338,7 @@ void VEngine::FrameGraph::PassBuilder::writeImageTransfer(ImageHandle imageHandl
 
 void PassBuilder::writeBufferFromHost(BufferHandle bufferHandle)
 {
+	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
 
 	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;

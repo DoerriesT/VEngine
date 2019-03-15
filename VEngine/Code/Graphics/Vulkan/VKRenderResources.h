@@ -8,7 +8,7 @@
 #define MAX_UNIFORM_BUFFER_INSTANCE_COUNT (512)
 #define TEXTURE_ARRAY_SIZE (512)
 #define MAX_DIRECTIONAL_LIGHTS (1)
-#define MAX_POINT_LIGHTS (65536)
+#define MAX_POINT_LIGHTS (2048)
 #define MAX_SPOT_LIGHTS (65536)
 #define MAX_SHADOW_DATA (512)
 #define Z_BINS (8192)
@@ -39,20 +39,8 @@ namespace VEngine
 
 		// descriptors
 		VkDescriptorPool m_descriptorPool;
-		VkDescriptorSetLayout m_perFrameDataDescriptorSetLayout;
-		VkDescriptorSetLayout m_perDrawDataDescriptorSetLayout;
-		VkDescriptorSetLayout m_textureDescriptorSetLayout;
-		VkDescriptorSetLayout m_lightingInputDescriptorSetLayout;
-		VkDescriptorSetLayout m_lightDataDescriptorSetLayout;
-		VkDescriptorSetLayout m_cullDataDescriptorSetLayout;
-		VkDescriptorSetLayout m_lightBitMaskDescriptorSetLayout;
-		VkDescriptorSet m_perFrameDataDescriptorSets[FRAMES_IN_FLIGHT];
-		VkDescriptorSet m_perDrawDataDescriptorSets[FRAMES_IN_FLIGHT];
-		VkDescriptorSet m_textureDescriptorSet;
-		VkDescriptorSet m_lightingInputDescriptorSets[FRAMES_IN_FLIGHT];
-		VkDescriptorSet m_lightDataDescriptorSets[FRAMES_IN_FLIGHT];
-		VkDescriptorSet m_cullDataDescriptorSets[FRAMES_IN_FLIGHT];
-		VkDescriptorSet m_lightBitMaskDescriptorSets[FRAMES_IN_FLIGHT];
+		VkDescriptorSetLayout m_descriptorSetLayout;
+		VkDescriptorSet m_descriptorSets[FRAMES_IN_FLIGHT];
 
 		// samplers
 		VkSampler m_shadowSampler;
@@ -63,6 +51,8 @@ namespace VEngine
 		VkSemaphore m_shadowTextureSemaphores[FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainImageAvailableSemaphores[FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainRenderFinishedSemaphores[FRAMES_IN_FLIGHT];
+
+		uint32_t m_textureArrayBindingIndex;
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 		std::unique_ptr<VKPipelineManager> m_pipelineManager;

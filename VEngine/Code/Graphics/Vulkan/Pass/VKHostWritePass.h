@@ -6,8 +6,7 @@ namespace VEngine
 	class VKHostWritePass : FrameGraph::Pass
 	{
 	public:
-		explicit VKHostWritePass(const FrameGraph::BufferDescription &bufferDescription,
-			const char *name,
+		explicit VKHostWritePass(const char *name,
 			const unsigned char *data,
 			size_t srcOffset,
 			size_t dstOffset,
@@ -20,7 +19,6 @@ namespace VEngine
 
 	private:
 		FrameGraph::BufferHandle m_bufferHandle = 0;
-		FrameGraph::BufferDescription m_bufferDescription;
 		const char *m_name;
 		const unsigned char *m_data;
 		size_t m_srcOffset;

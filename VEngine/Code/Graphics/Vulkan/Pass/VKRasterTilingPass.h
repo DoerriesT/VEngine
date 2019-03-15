@@ -19,7 +19,7 @@ namespace VEngine
 
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
-			FrameGraph::BufferHandle &pointLightBitMaskBufferHandle);
+			FrameGraph::BufferHandle pointLightBitMaskBufferHandle);
 		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:

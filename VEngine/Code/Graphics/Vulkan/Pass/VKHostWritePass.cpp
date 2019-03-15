@@ -1,8 +1,7 @@
 #include "VKHostWritePass.h"
 #include <cassert>
 
-VEngine::VKHostWritePass::VKHostWritePass(const FrameGraph::BufferDescription &bufferDescription,
-	const char *name,
+VEngine::VKHostWritePass::VKHostWritePass(const char *name,
 	const unsigned char *data,
 	size_t srcOffset,
 	size_t dstOffset,
@@ -10,8 +9,7 @@ VEngine::VKHostWritePass::VKHostWritePass(const FrameGraph::BufferDescription &b
 	size_t dstItemSize,
 	size_t srcItemStride,
 	size_t count)
-	:m_bufferDescription(bufferDescription),
-	m_name(name),
+	:m_name(name),
 	m_data(data),
 	m_srcOffset(srcOffset),
 	m_dstOffset(dstOffset),
@@ -26,11 +24,6 @@ VEngine::VKHostWritePass::VKHostWritePass(const FrameGraph::BufferDescription &b
 void VEngine::VKHostWritePass::addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle &bufferHandle)
 {
 	auto builder = graph.addHostAccessPass(m_name, this);
-	
-	if (!bufferHandle)
-	{
-		bufferHandle = builder.createBuffer(m_bufferDescription);
-	}
 
 	builder.writeBufferFromHost(bufferHandle);
 
@@ -39,8 +32,6 @@ void VEngine::VKHostWritePass::addToGraph(FrameGraph::Graph &graph, FrameGraph::
 
 void VEngine::VKHostWritePass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
-	assert(m_bufferDescription.m_size >= m_dstOffset + m_count * m_dstItemSize);
-
 	const unsigned char *src = m_data + m_srcOffset;
 	unsigned char *dst = (unsigned char *)registry.mapMemory(m_bufferHandle);
 	{

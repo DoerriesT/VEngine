@@ -17,7 +17,7 @@ namespace VEngine
 			size_t resourceIndex,
 			size_t drawItemCount,
 			const DrawItem *drawItems,
-			uint32_t drawItemBufferOffset,
+			uint32_t drawItemOffset,
 			size_t shadowJobCount,
 			const ShadowJob *shadowJobs);
 
@@ -34,7 +34,7 @@ namespace VEngine
 		size_t m_resourceIndex;
 		size_t m_drawItemCount;
 		const DrawItem *m_drawItems;
-		uint32_t m_drawItemBufferOffset;
+		uint32_t m_drawItemOffset;
 		size_t m_shadowJobCount;
 		const ShadowJob *m_shadowJobs;
 		VKGraphicsPipelineDescription m_pipelineDesc;

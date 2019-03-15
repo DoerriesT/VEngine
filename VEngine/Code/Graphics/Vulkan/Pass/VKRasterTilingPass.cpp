@@ -62,36 +62,18 @@ VEngine::VKRasterTilingPass::VKRasterTilingPass(VKRenderResources * renderResour
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_lightBitMaskDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
 	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t) * 2 + sizeof(float) * 16 };
 }
 
-void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph & graph, FrameGraph::BufferHandle perFrameDataBufferHandle, FrameGraph::BufferHandle &pointLightBitMaskBufferHandle)
+void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle perFrameDataBufferHandle, FrameGraph::BufferHandle pointLightBitMaskBufferHandle)
 {
 	auto builder = graph.addGraphicsPass("Tiling Pass", this, &m_pipelineDesc);
 
 	builder.setDimensions(m_width / 2, m_height / 2);
 
-	if (!pointLightBitMaskBufferHandle)
-	{
-		uint32_t w = m_width / 16 + ((m_width % 16 == 0) ? 0 : 1);
-		uint32_t h = m_height / 16 + ((m_height % 16 == 0) ? 0 : 1);
-		uint32_t tileCount = w * h;
-		VkDeviceSize bufferSize = MAX_POINT_LIGHTS / 32 * sizeof(uint32_t) * tileCount;
-
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Point Light Index Buffer";
-		desc.m_concurrent = false;
-		desc.m_clear = true;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = bufferSize;
-		desc.m_hostVisible = false;
-
-		pointLightBitMaskBufferHandle = builder.createBuffer(desc);
-	}
-
-	builder.writeStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_lightBitMaskDescriptorSets[m_resourceIndex], 0);
+	builder.writeStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 7);
 }
 
 void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
@@ -119,7 +101,7 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 	VkDeviceSize vertexOffset = 0;
 	vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &vertexOffset);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_lightBitMaskDescriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
 
 	for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
 	{
@@ -132,7 +114,7 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 			uint32_t alignedDomainSizeX;
 		} pushConsts;
 
-		pushConsts.index = i;
+		pushConsts.index = static_cast<uint32_t>(i);
 		pushConsts.alignedDomainSizeX = (m_width / 16 + ((m_width % 16 == 0) ? 0 : 1));
 		pushConsts.transform = glm::mat4(1.0);
 		pushConsts.transform = m_pojection * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));

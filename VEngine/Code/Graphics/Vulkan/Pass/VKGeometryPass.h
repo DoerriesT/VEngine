@@ -15,17 +15,17 @@ namespace VEngine
 			size_t resourceIndex,
 			size_t drawItemCount,
 			const DrawItem *drawItems,
-			uint32_t drawItemBufferOffset,
+			uint32_t drawItemOffset,
 			bool alphaMasked);
 
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
 			FrameGraph::BufferHandle perDrawDataBufferHandle,
-			FrameGraph::ImageHandle &depthTextureHandle,
-			FrameGraph::ImageHandle &albedoTextureHandle,
-			FrameGraph::ImageHandle &normalTextureHandle,
-			FrameGraph::ImageHandle &materialTextureHandle,
-			FrameGraph::ImageHandle &velocityTextureHandle);
+			FrameGraph::ImageHandle depthTextureHandle,
+			FrameGraph::ImageHandle albedoTextureHandle,
+			FrameGraph::ImageHandle normalTextureHandle,
+			FrameGraph::ImageHandle materialTextureHandle,
+			FrameGraph::ImageHandle velocityTextureHandle);
 		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
 
 	private:
@@ -35,7 +35,7 @@ namespace VEngine
 		size_t m_resourceIndex;
 		size_t m_drawItemCount;
 		const DrawItem *m_drawItems;
-		uint32_t m_drawItemBufferOffset;
+		uint32_t m_drawItemOffset;
 		bool m_alphaMasked;
 		VKGraphicsPipelineDescription m_pipelineDesc;
 	};

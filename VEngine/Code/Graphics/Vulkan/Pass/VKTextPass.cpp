@@ -1,8 +1,15 @@
 #include "VKTextPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 
-VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources, uint32_t width, uint32_t height, uint32_t atlasTextureIndex, size_t stringCount, const String *strings)
+VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources, 
+	size_t resourceIndex,
+	uint32_t width, 
+	uint32_t height, 
+	uint32_t atlasTextureIndex, 
+	size_t stringCount, 
+	const String *strings)
 	:m_renderResources(renderResources),
+	m_resourceIndex(resourceIndex),
 	m_width(width),
 	m_height(height),
 	m_atlasTextureIndex(atlasTextureIndex),
@@ -58,7 +65,7 @@ VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources, uint32_t wid
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_textureDescriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
 	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 12 + sizeof(uint32_t) };
 }
@@ -90,7 +97,7 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_textureDescriptorSet, 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
 
 	const size_t symbolHeight = 48;
 	const size_t symbolWidth = 24;

@@ -12,7 +12,6 @@
 #include "Pass/VKHostWritePass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
-#include "Pass/VKTilingPass.h"
 #include "Pass/VKLightingPass.h"
 #include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
@@ -71,112 +70,256 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	size_t waitSemaphoreIndex = (renderParams.m_frame - 1) % FRAMES_IN_FLIGHT;
 	size_t signalSemaphoreIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
 
-	size_t alignedPerDrawDataSize = VKUtility::align(sizeof(PerDrawData), g_context.m_properties.limits.minUniformBufferOffsetAlignment);
+	FrameGraph::ImageHandle swapchainTextureHandle = 0;
 
-	// buffer descriptions
-	FrameGraph::BufferDescription perFrameDataBufferDesc = {};
-	perFrameDataBufferDesc.m_name = "Per Frame Data Buffer";
-	perFrameDataBufferDesc.m_concurrent = true;
-	perFrameDataBufferDesc.m_clear = false;
-	perFrameDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	perFrameDataBufferDesc.m_size = sizeof(RenderParams);
-	perFrameDataBufferDesc.m_hostVisible = true;
+	FrameGraph::ImageHandle shadowTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "Shadow Atlas";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = g_shadowAtlasSize;
+		desc.m_height = g_shadowAtlasSize;
+		desc.m_format = m_renderResources->m_shadowTexture.getFormat();
 
-	FrameGraph::BufferDescription perDrawDataBufferDesc = {};
-	perDrawDataBufferDesc.m_name = "Per Draw Data Buffer";
-	perDrawDataBufferDesc.m_concurrent = true;
-	perDrawDataBufferDesc.m_clear = false;
-	perDrawDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	perDrawDataBufferDesc.m_size = alignedPerDrawDataSize * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
-	perDrawDataBufferDesc.m_hostVisible = true;
 
-	FrameGraph::BufferDescription directionalLightDataBufferDesc = {};
-	directionalLightDataBufferDesc.m_name = "DirectionalLight Data Buffer";
-	directionalLightDataBufferDesc.m_concurrent = true;
-	directionalLightDataBufferDesc.m_clear = false;
-	directionalLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	directionalLightDataBufferDesc.m_size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
-	directionalLightDataBufferDesc.m_hostVisible = true;
+		shadowTextureHandle = graph.importImage(desc,
+			m_renderResources->m_shadowTexture.getImage(),
+			m_renderResources->m_shadowTextureView,
+			&m_renderResources->m_shadowTextureLayout,
+			renderParams.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[waitSemaphoreIndex], // on first frame we dont wait
+			m_renderResources->m_shadowTextureSemaphores[signalSemaphoreIndex]);
+	}
 
-	FrameGraph::BufferDescription pointLightDataBufferDesc = {};
-	pointLightDataBufferDesc.m_name = "PointLight Data Buffer";
-	pointLightDataBufferDesc.m_concurrent = true;
-	pointLightDataBufferDesc.m_clear = false;
-	pointLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	pointLightDataBufferDesc.m_size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
-	pointLightDataBufferDesc.m_hostVisible = true;
+	FrameGraph::ImageHandle depthTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "DepthTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = true;
+		desc.m_clearValue.m_imageClearValue.depthStencil.depth = 1.0f;
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_D32_SFLOAT;
 
-	FrameGraph::BufferDescription spotLightDataBufferDesc = {};
-	spotLightDataBufferDesc.m_name = "SpotLight Data Buffer";
-	spotLightDataBufferDesc.m_concurrent = true;
-	spotLightDataBufferDesc.m_clear = false;
-	spotLightDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	spotLightDataBufferDesc.m_size = sizeof(SpotLightData) * MAX_SPOT_LIGHTS;
-	spotLightDataBufferDesc.m_hostVisible = true;
+		depthTextureHandle = graph.createImage(desc);
+	}
 
-	FrameGraph::BufferDescription shadowDataBufferDesc = {};
-	shadowDataBufferDesc.m_name = "Shadow Data Buffer";
-	shadowDataBufferDesc.m_concurrent = true;
-	shadowDataBufferDesc.m_clear = false;
-	shadowDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	shadowDataBufferDesc.m_size = sizeof(ShadowData) * MAX_SHADOW_DATA;
-	shadowDataBufferDesc.m_hostVisible = true;
+	FrameGraph::ImageHandle albedoTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "AlbedoTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-	FrameGraph::BufferDescription pointLightZBinsBufferDesc = {};
-	pointLightZBinsBufferDesc.m_name = "Z-Bin Buffer";
-	pointLightZBinsBufferDesc.m_concurrent = true;
-	pointLightZBinsBufferDesc.m_clear = false;
-	pointLightZBinsBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	pointLightZBinsBufferDesc.m_size = sizeof(uint32_t) * Z_BINS;
-	pointLightZBinsBufferDesc.m_hostVisible = true;
+		albedoTextureHandle = graph.createImage(desc);
+	}
 
-	FrameGraph::BufferDescription pointLightCullDataBufferDesc = {};
-	pointLightCullDataBufferDesc.m_name = "Light Cull Data Buffer";
-	pointLightCullDataBufferDesc.m_concurrent = true;
-	pointLightCullDataBufferDesc.m_clear = false;
-	pointLightCullDataBufferDesc.m_clearValue.m_bufferClearValue = 0;
-	pointLightCullDataBufferDesc.m_size = MAX_POINT_LIGHTS * sizeof(glm::vec4);
-	pointLightCullDataBufferDesc.m_hostVisible = true;
+	FrameGraph::ImageHandle normalTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "NormalTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+		normalTextureHandle = graph.createImage(desc);
+	}
+
+	FrameGraph::ImageHandle materialTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "MaterialTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+		materialTextureHandle = graph.createImage(desc);
+	}
+
+	FrameGraph::ImageHandle velocityTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "VelocityTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R16G16_SFLOAT;
+
+		velocityTextureHandle = graph.createImage(desc);
+	}
+
+	FrameGraph::ImageHandle lightTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "LightTexture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+		lightTextureHandle = graph.createImage(desc);
+	}
+
+	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
+	{
+		uint32_t w = m_width / 16 + ((m_width % 16 == 0) ? 0 : 1);
+		uint32_t h = m_height / 16 + ((m_height % 16 == 0) ? 0 : 1);
+		uint32_t tileCount = w * h;
+		VkDeviceSize bufferSize = MAX_POINT_LIGHTS / 32 * sizeof(uint32_t) * tileCount;
+
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Point Light Index Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = true;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = bufferSize;
+		desc.m_hostVisible = false;
+
+		pointLightBitMaskBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle perFrameDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Per Frame Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(RenderParams);
+		desc.m_hostVisible = true;
+
+		perFrameDataBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle perDrawDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Per Draw Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(PerDrawData) * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
+		desc.m_hostVisible = true;
+
+		perDrawDataBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle directionalLightDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "DirectionalLight Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
+		desc.m_hostVisible = true;
+
+		directionalLightDataBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle pointLightDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "PointLight Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
+		desc.m_hostVisible = true;
+
+		pointLightDataBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle shadowDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Shadow Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(ShadowData) * MAX_SHADOW_DATA;
+		desc.m_hostVisible = true;
+
+		shadowDataBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle pointLightZBinsBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Z-Bin Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(uint32_t) * Z_BINS;
+		desc.m_hostVisible = true;
+
+		pointLightZBinsBufferHandle = graph.createBuffer(desc);
+	}
 	
 
 	// passes
-	VKHostWritePass perFrameDataWritePass(perFrameDataBufferDesc, "Per Frame Data Write Pass", (unsigned char *)&renderParams, 
-		0, 0, sizeof(renderParams), sizeof(renderParams), sizeof(renderParams), 1);
+	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&renderParams, 0, 0, sizeof(renderParams), sizeof(renderParams), sizeof(renderParams), 1);
 
-	VKHostWritePass perDrawDataWritePassOpaque(perDrawDataBufferDesc, "Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(), 
-		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_opaqueItems.size());
+	VKHostWritePass perDrawDataWritePassOpaque("Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(), 
+		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_opaqueItems.size());
 
-	VKHostWritePass perDrawDataWritePassMasked(perDrawDataBufferDesc, "Per Draw Data Write Pass (Masked)", (unsigned char *)drawLists.m_maskedItems.data(),
-		offsetof(DrawItem, m_perDrawData), drawLists.m_opaqueItems.size() * alignedPerDrawDataSize, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_maskedItems.size());
-	
-	VKHostWritePass perDrawDataWritePassBlended(perDrawDataBufferDesc, "Per Draw Data Write Pass (Blended)", (unsigned char *)drawLists.m_blendedItems.data(),
-		offsetof(DrawItem, m_perDrawData), (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size()) * alignedPerDrawDataSize, sizeof(PerDrawData), alignedPerDrawDataSize, sizeof(DrawItem), drawLists.m_blendedItems.size());
+	VKHostWritePass perDrawDataWritePassMasked("Per Draw Data Write Pass (Masked)", (unsigned char *)drawLists.m_maskedItems.data(),
+		offsetof(DrawItem, m_perDrawData), drawLists.m_opaqueItems.size() * sizeof(PerDrawData), sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_maskedItems.size());
 
-	VKHostWritePass directionalLightDataWritePass(directionalLightDataBufferDesc, "Directional Light Data Write Pass", (unsigned char *)lightData.m_directionalLightData.data(),
+	VKHostWritePass directionalLightDataWritePass("Directional Light Data Write Pass", (unsigned char *)lightData.m_directionalLightData.data(),
 		0, 0, lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size(), 1);
 
-	VKHostWritePass pointLightDataWritePass(pointLightDataBufferDesc, "Point Light Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
+	VKHostWritePass pointLightDataWritePass("Point Light Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
 		0, 0, lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size(), 1);
 
-	VKHostWritePass spotLightDataWritePass(spotLightDataBufferDesc, "Spot Light Data Write Pass", (unsigned char *)lightData.m_spotLightData.data(),
+	VKHostWritePass spotLightDataWritePass("Spot Light Data Write Pass", (unsigned char *)lightData.m_spotLightData.data(),
 		0, 0, lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size(), 1);
 
-	VKHostWritePass shadowDataWritePass(shadowDataBufferDesc, "Shadow Data Write Pass", (unsigned char *)lightData.m_shadowData.data(),
+	VKHostWritePass shadowDataWritePass("Shadow Data Write Pass", (unsigned char *)lightData.m_shadowData.data(),
 		0, 0, lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size(), 1);
 
-	VKHostWritePass pointLightZBinsWritePass(pointLightZBinsBufferDesc, "Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
+	VKHostWritePass pointLightZBinsWritePass("Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
 		0, 0, lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size(), 1);
-
-	VKHostWritePass pointLightCullDataWritePass(pointLightCullDataBufferDesc, "Point Light Cull Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
-		offsetof(PointLightData, m_positionRadius), 0, sizeof(glm::vec4), sizeof(glm::vec4), sizeof(PointLightData), lightData.m_pointLightData.size());
 
 	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
 
 	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
 
 	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
-
-	VKTilingPass tilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData.m_pointLightData.size());
 
 	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData, renderParams.m_projectionMatrix);
 
@@ -233,7 +376,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
 	++timingInfoCount;
 
-	VKTextPass textPass(m_renderResources.get(), m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
+	VKTextPass textPass(m_renderResources.get(), frameIndex, m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
@@ -249,47 +392,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	imageBlitRegion.dstOffsets[1] = blitSize;
 
 	VKBlitPass blitPass("Blit Pass", 1, &imageBlitRegion, VK_FILTER_NEAREST);
-
-	FrameGraph::BufferHandle perFrameDataBufferHandle = 0;
-	FrameGraph::BufferHandle perDrawDataBufferHandle = 0;
-	FrameGraph::BufferHandle directionalLightDataBufferHandle = 0;
-	FrameGraph::BufferHandle pointLightDataBufferHandle = 0;
-	FrameGraph::BufferHandle spotLightDataBufferHandle = 0;
-	FrameGraph::BufferHandle shadowDataBufferHandle = 0;
-	FrameGraph::BufferHandle pointLightZBinsBufferHandle = 0;
-	FrameGraph::BufferHandle pointLightCullDataBufferHandle = 0;
-	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
-	FrameGraph::ImageHandle depthTextureHandle = 0;
-	FrameGraph::ImageHandle albedoTextureHandle = 0;
-	FrameGraph::ImageHandle normalTextureHandle = 0;
-	FrameGraph::ImageHandle materialTextureHandle = 0;
-	FrameGraph::ImageHandle velocityTextureHandle = 0;
-	FrameGraph::ImageHandle lightTextureHandle = 0;
-	FrameGraph::ImageHandle shadowTextureHandle = 0;
-	FrameGraph::ImageHandle swapchainTextureHandle = 0;
-
-	// import resources
-	{
-		// shadow atlas
-		{
-			FrameGraph::ImageDescription desc = {};
-			desc.m_name = "Shadow Atlas";
-			desc.m_concurrent = false;
-			desc.m_clear = false;
-			desc.m_clearValue.m_imageClearValue = {};
-			desc.m_width = g_shadowAtlasSize;
-			desc.m_height = g_shadowAtlasSize;
-			desc.m_format = m_renderResources->m_shadowTexture.getFormat();
-
-
-			shadowTextureHandle = graph.importImage(desc,
-				m_renderResources->m_shadowTexture.getImage(),
-				m_renderResources->m_shadowTextureView,
-				&m_renderResources->m_shadowTextureLayout,
-				renderParams.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[waitSemaphoreIndex], // on first frame we dont wait
-				m_renderResources->m_shadowTextureSemaphores[signalSemaphoreIndex]);
-		}
-	}
 
 	// host write passes
 	perFrameDataWritePass.addToGraph(graph, perFrameDataBufferHandle);
@@ -309,11 +411,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	{
 		pointLightDataWritePass.addToGraph(graph, pointLightDataBufferHandle);
 		pointLightZBinsWritePass.addToGraph(graph, pointLightZBinsBufferHandle);
-		pointLightCullDataWritePass.addToGraph(graph, pointLightCullDataBufferHandle);
-	}
-	//if (!lightData.m_spotLightData.empty())
-	{
-		spotLightDataWritePass.addToGraph(graph, spotLightDataBufferHandle);
 	}
 	//if (!lightData.m_shadowData.empty())
 	{
@@ -356,16 +453,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// cull lights to tiles
-	//{
-	//	tilingPass.addToGraph(graph,
-	//		perFrameDataBufferHandle,
-	//		pointLightCullDataBufferHandle,
-	//		pointLightBitMaskBufferHandle);
-	//}
-
-	rasterTilingPass.addToGraph(graph,
-		perFrameDataBufferHandle,
-		pointLightBitMaskBufferHandle);
+	rasterTilingPass.addToGraph(graph, perFrameDataBufferHandle, pointLightBitMaskBufferHandle);
 
 	// light gbuffer
 	{
@@ -373,7 +461,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			perFrameDataBufferHandle,
 			directionalLightDataBufferHandle,
 			pointLightDataBufferHandle,
-			spotLightDataBufferHandle,
 			shadowDataBufferHandle,
 			pointLightZBinsBufferHandle,
 			pointLightBitMaskBufferHandle,

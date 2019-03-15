@@ -2,16 +2,10 @@
 
 #extension GL_KHR_shader_subgroup_ballot : enable
 
-#define TILE_SIZE 16
-#define MAX_POINT_LIGHT_WORDS 2048
+#include "common.h"
 
 layout(location = 0) in flat uint vIndex;
 layout(location = 1) in flat uint vAlignedDomainSizeX;
-
-layout(set = 0, binding = 0) buffer PointLightBitMask 
-{
-	uint mask[];
-} uPointLightBitMask;
 
 uint subgroupCompactValue(uint checkValue)
 {
