@@ -38,6 +38,7 @@ VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources,
 
 	m_pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	m_pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
+	m_pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
 
 	m_pipelineDesc.m_depthStencilState.m_depthTestEnable = false;
 	m_pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
