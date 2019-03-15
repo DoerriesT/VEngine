@@ -12,6 +12,7 @@
 #define MAX_SPOT_LIGHTS (65536)
 #define MAX_SHADOW_DATA (512)
 #define Z_BINS (8192)
+#define TILE_SIZE (16)
 
 namespace VEngine
 {

@@ -103,6 +103,10 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
 
+	uint32_t alignedDomainSizeX = (m_width / TILE_SIZE + ((m_width % TILE_SIZE == 0) ? 0 : 1));
+
+	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4) + sizeof(uint32_t), sizeof(alignedDomainSizeX), &alignedDomainSizeX);
+
 	for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
 	{
 		const auto &item = m_lightData.m_pointLightData[i];
@@ -111,11 +115,9 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 		{
 			glm::mat4 transform;
 			uint32_t index;
-			uint32_t alignedDomainSizeX;
 		} pushConsts;
 
 		pushConsts.index = static_cast<uint32_t>(i);
-		pushConsts.alignedDomainSizeX = (m_width / 16 + ((m_width % 16 == 0) ? 0 : 1));
 		pushConsts.transform = glm::mat4(1.0);
 		pushConsts.transform = m_pojection * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));
 

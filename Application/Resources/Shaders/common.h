@@ -10,10 +10,6 @@
 #define TILE_SIZE 16
 #endif // TILE_SIZE
 
-#ifndef MAX_POINT_LIGHT_WORDS
-#define MAX_POINT_LIGHT_WORDS 64
-#endif //MAX_POINT_LIGHT_WORDS
-
 struct ShadowData
 {
 	mat4 shadowViewProjectionMatrix;
@@ -82,7 +78,11 @@ layout(set = 0, binding = 0) uniform PER_FRAME_DATA
 	mat4 prevInvViewProjectionMatrix;
 	vec4 cameraPosition;
 	vec4 cameraDirection;
+	uint width;
+	uint height;
 	uint frame;
+	uint directionalLightCount;
+	uint pointLightCount;
 } uPerFrameData;
 
 layout(set = 0, binding = 1, rgba16f) uniform writeonly image2D uLightingResultImage;

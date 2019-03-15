@@ -70,6 +70,8 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_renderParams.m_invViewProjectionMatrix = glm::inverse(m_renderParams.m_viewProjectionMatrix);
 			m_renderParams.m_cameraPosition = glm::vec4(transformationComponent->m_position, 1.0f);
 			m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
+			m_renderParams.m_width = g_windowWidth;
+			m_renderParams.m_height = g_windowHeight;
 		}
 
 
@@ -210,6 +212,9 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
 			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
 		}
+
+		m_renderParams.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
+		m_renderParams.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
 	}
 }
 

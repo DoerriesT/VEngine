@@ -9,11 +9,6 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(push_constant) uniform PushConsts 
-{
-	uint directionalLightCount;
-} uPushConsts;
-
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a2 = roughness*roughness;
@@ -299,17 +294,19 @@ void main()
 	result += 0.1 * albedo;
 	
 	// directional lights
-	for (uint i = 0; i < uPushConsts.directionalLightCount; ++i)
+	for (uint i = 0; i < uPerFrameData.directionalLightCount; ++i)
 	{
 		result += evaluateDirectionalLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, i);
 	}
 	
 	// point lights
+	if (uPerFrameData.pointLightCount > 0)
 	{
 		uint wordMin = 0;
-		uint wordMax = MAX_POINT_LIGHT_WORDS - 1;
+		const uint wordCount = (uPerFrameData.pointLightCount + 31) / 32;
+		uint wordMax = wordCount - 1;
 		
-		uint address = getTileAddress() * MAX_POINT_LIGHT_WORDS;
+		uint address = getTileAddress() * wordCount;
 		uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
 		uint zBinData = uPointLightZBins.bins[zBinAddress];
 		uint minIndex = (zBinData & 0xFFFF0000) >> 16;

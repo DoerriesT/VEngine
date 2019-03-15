@@ -35,7 +35,8 @@ void main()
 	
 	const uint lightBit = 1 << (vIndex % 32);
 	const uint word = vIndex / 32;
-	const uint wordIndex = tileIndex * MAX_POINT_LIGHT_WORDS + word;
+	const uint wordCount = (uPerFrameData.pointLightCount + 31) / 32;
+	const uint wordIndex = tileIndex * wordCount + word;
 	
 	const uint hash = subgroupCompactValue(wordIndex);
 	

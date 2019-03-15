@@ -16,8 +16,6 @@ VEngine::VKLightingPass::VKLightingPass(
 	
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
 	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t) };
 }
 
 void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
@@ -57,9 +55,6 @@ void VEngine::VKLightingPass::record(VkCommandBuffer cmdBuf, const FrameGraph::R
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
-
-	uint32_t directionalLightCount = 1;
-	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &directionalLightCount);
 
 	VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 8, 8, 1);
 }

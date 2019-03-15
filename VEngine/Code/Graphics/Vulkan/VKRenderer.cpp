@@ -196,10 +196,10 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
 	{
-		uint32_t w = m_width / 16 + ((m_width % 16 == 0) ? 0 : 1);
-		uint32_t h = m_height / 16 + ((m_height % 16 == 0) ? 0 : 1);
+		uint32_t w = m_width / TILE_SIZE + ((m_width % TILE_SIZE == 0) ? 0 : 1);
+		uint32_t h = m_height / TILE_SIZE + ((m_height % TILE_SIZE == 0) ? 0 : 1);
 		uint32_t tileCount = w * h;
-		VkDeviceSize bufferSize = MAX_POINT_LIGHTS / 32 * sizeof(uint32_t) * tileCount;
+		VkDeviceSize bufferSize = Utility::alignUp(lightData.m_pointLightData.size(), VkDeviceSize(32)) / 32 * sizeof(uint32_t) * tileCount;
 
 		FrameGraph::BufferDescription desc = {};
 		desc.m_name = "Point Light Index Buffer";
@@ -207,6 +207,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_clear = true;
 		desc.m_clearValue.m_bufferClearValue = 0;
 		desc.m_size = bufferSize;
+		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = false;
 
 		pointLightBitMaskBufferHandle = graph.createBuffer(desc);
@@ -232,7 +233,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(PerDrawData) * MAX_UNIFORM_BUFFER_INSTANCE_COUNT;
+		desc.m_size = sizeof(PerDrawData) * (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size());
+		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = true;
 
 		perDrawDataBufferHandle = graph.createBuffer(desc);
@@ -245,7 +247,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(DirectionalLightData) * MAX_DIRECTIONAL_LIGHTS;
+		desc.m_size = sizeof(DirectionalLightData) * lightData.m_directionalLightData.size();
+		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = true;
 
 		directionalLightDataBufferHandle = graph.createBuffer(desc);
@@ -258,7 +261,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(PointLightData) * MAX_POINT_LIGHTS;
+		desc.m_size = sizeof(PointLightData) * lightData.m_pointLightData.size();
+		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = true;
 
 		pointLightDataBufferHandle = graph.createBuffer(desc);
@@ -271,7 +275,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(ShadowData) * MAX_SHADOW_DATA;
+		desc.m_size = sizeof(ShadowData) * lightData.m_shadowData.size();
+		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = true;
 
 		shadowDataBufferHandle = graph.createBuffer(desc);
@@ -395,24 +400,24 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	// host write passes
 	perFrameDataWritePass.addToGraph(graph, perFrameDataBufferHandle);
-	//if (!drawLists.m_opaqueItems.empty())
+	if (!drawLists.m_opaqueItems.empty())
 	{
 		perDrawDataWritePassOpaque.addToGraph(graph, perDrawDataBufferHandle);
 	}
-	//if (!drawLists.m_maskedItems.empty())
+	if (!drawLists.m_maskedItems.empty())
 	{
 		perDrawDataWritePassMasked.addToGraph(graph, perDrawDataBufferHandle);
 	}
-	//if (!lightData.m_directionalLightData.empty())
+	if (!lightData.m_directionalLightData.empty())
 	{
 		directionalLightDataWritePass.addToGraph(graph, directionalLightDataBufferHandle);
 	}
-	//if (!lightData.m_pointLightData.empty())
+	if (!lightData.m_pointLightData.empty())
 	{
 		pointLightDataWritePass.addToGraph(graph, pointLightDataBufferHandle);
 		pointLightZBinsWritePass.addToGraph(graph, pointLightZBinsBufferHandle);
 	}
-	//if (!lightData.m_shadowData.empty())
+	if (!lightData.m_shadowData.empty())
 	{
 		shadowDataWritePass.addToGraph(graph, shadowDataBufferHandle);
 	}
@@ -453,7 +458,10 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// cull lights to tiles
-	rasterTilingPass.addToGraph(graph, perFrameDataBufferHandle, pointLightBitMaskBufferHandle);
+	if (!lightData.m_pointLightData.empty())
+	{
+		rasterTilingPass.addToGraph(graph, perFrameDataBufferHandle, pointLightBitMaskBufferHandle);
+	}
 
 	// light gbuffer
 	{

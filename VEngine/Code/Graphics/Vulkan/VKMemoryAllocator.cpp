@@ -347,6 +347,9 @@ VkResult VEngine::VKMemoryAllocator::VKMemoryPool::allocateFromBlock(size_t bloc
 	// add some margin to accound for alignment
 	VkDeviceSize requestedSize = size + alignment;
 
+	// size must be larger-equal than MAX_SECOND_LEVEL_INDEX
+	requestedSize = requestedSize < MAX_SECOND_LEVEL_INDEX ? MAX_SECOND_LEVEL_INDEX : requestedSize;
+
 	// rounds up requested size to next power of two and finds indices of a list containing spans of the requested size class
 	mappingSearch(requestedSize, blockIndex, firstLevelIndex, secondLevelIndex);
 
@@ -617,6 +620,7 @@ VkResult VEngine::VKMemoryAllocator::createImage(const VKAllocationCreateInfo &a
 
 VkResult VEngine::VKMemoryAllocator::createBuffer(const VKAllocationCreateInfo &allocationCreateInfo, const VkBufferCreateInfo &bufferCreateInfo, VkBuffer &buffer, VKAllocationHandle &allocationHandle)
 {
+	assert(bufferCreateInfo.size);
 	VkResult result = vkCreateBuffer(m_device, &bufferCreateInfo, nullptr, &buffer);
 
 	if (result != VK_SUCCESS)
