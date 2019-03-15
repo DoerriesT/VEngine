@@ -123,12 +123,12 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			glm::mat4 proj = glm::transpose(m_renderParams.m_projectionMatrix);
 			glm::vec4 frustumPlaneEquations[] =
 			{
-				proj[3] + proj[0],	// left
-				proj[3] - proj[0],	// right
-				proj[3] + proj[1],	// bottom
-				proj[3] - proj[1],	// top
-				proj[2],			// near
-				proj[3] - proj[2]	// far
+				glm::normalize(proj[3] + proj[0]),	// left
+				glm::normalize(proj[3] - proj[0]),	// right
+				glm::normalize(proj[3] + proj[1]),	// bottom
+				glm::normalize(proj[3] - proj[1]),	// top
+				glm::normalize(proj[2]),			// near
+				glm::normalize(proj[3] - proj[2])	// far
 			};
 
 			m_entityManager.each<TransformationComponent, PointLightComponent, RenderableComponent>(
@@ -141,18 +141,16 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 				pl.m_colorInvSqrAttRadius = glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius));
 
 				// frustum cull
-				//for (const auto &plane : frustumPlaneEquations)
-				//{
-				//	if (glm::dot(glm::vec4(pos, 1.0f), plane) <= -1.0f)
-				//	{
-				//		return;
-				//	}
-				//}
+				for (const auto &plane : frustumPlaneEquations)
+				{
+					if (glm::dot(glm::vec4(pos, 1.0f), plane) <= -pl.m_positionRadius.w)
+					{
+						return;
+					}
+				}
 
 				m_lightData.m_pointLightData.push_back(pl);
 			});
-
-			//printf("%d\n", (int)m_lightData.m_pointLightData.size());
 
 			std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
 				[](const PointLightData &lhs, const PointLightData &rhs)

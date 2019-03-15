@@ -1,20 +1,20 @@
 #include "VKRasterTilingPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/LightData.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 VEngine::VKRasterTilingPass::VKRasterTilingPass(VKRenderResources * renderResources, 
 	uint32_t width, 
 	uint32_t height, 
 	size_t resourceIndex, 
 	const LightData &lightData,
-	const glm::mat4 &viewProjection)
+	const glm::mat4 &projection)
 	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_resourceIndex(resourceIndex),
 	m_lightData(lightData),
-	m_viewProjection(viewProjection)
+	m_pojection(projection)
 {
 	// create pipeline description
 	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/rasterTiling_vert.spv");
@@ -134,8 +134,8 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 
 		pushConsts.index = i;
 		pushConsts.alignedDomainSizeX = (m_width / 16 + ((m_width % 16 == 0) ? 0 : 1));
-		pushConsts.transform = glm::mat4(1.0f);
-		pushConsts.transform = m_viewProjection * glm::translate(pushConsts.transform, glm::vec3(item.m_positionRadius));
+		pushConsts.transform = glm::mat4(1.0);
+		pushConsts.transform = m_pojection * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));
 
 		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 

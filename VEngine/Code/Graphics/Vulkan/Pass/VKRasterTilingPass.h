@@ -15,7 +15,7 @@ namespace VEngine
 			uint32_t height,
 			size_t resourceIndex,
 			const LightData &lightData,
-			const glm::mat4 &viewProjection);
+			const glm::mat4 &projection);
 
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
@@ -28,7 +28,7 @@ namespace VEngine
 		uint32_t m_height;
 		size_t m_resourceIndex;
 		const LightData &m_lightData;
-		glm::mat4 m_viewProjection;
+		glm::mat4 m_pojection;
 		VKGraphicsPipelineDescription m_pipelineDesc;
 	};
 }
