@@ -1,5 +1,8 @@
 #version 450
 
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
 #define DEPTH_TEXTURE_INDEX 0
 #define ALBEDO_TEXTURE_INDEX 1
 #define NORMAL_TEXTURE_INDEX 2
@@ -309,26 +312,36 @@ void main()
 		uint address = getTileAddress() * wordCount;
 		uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
 		uint zBinData = uPointLightZBins.bins[zBinAddress];
-		uint minIndex = (zBinData & 0xFFFF0000) >> 16;
-		uint maxIndex = zBinData & 0xFFFF;
-		wordMin = minIndex / 32;
-		wordMax = maxIndex / 32;
+		uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+		uint maxIndex = zBinData & uint(0xFFFF);
+		// mergedMin scalar from this point
+		uint mergedMin = subgroupBroadcastFirst(subgroupMin(minIndex)); 
+		// mergedMax scalar from this point
+		uint mergedMax = subgroupBroadcastFirst(subgroupMax(maxIndex)); 
+		wordMin = max(mergedMin / 32, wordMin);
+		wordMax = min(mergedMax / 32, wordMax);
 		
-		uint count = 0;
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
 			uint mask = uPointLightBitMask.mask[address + wordIndex];
 			
-			while (mask != 0)
+			// mask by zbin mask
+			const int localBaseIndex = int(wordIndex * 32);
+			const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
+			const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
+			const uint maskWidth = localMax - localMin + 1;
+			const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
+			mask &= zBinMask;
+			
+			// compact word bitmask over all threads in subrgroup
+			uint mergedMask = subgroupBroadcastFirst(subgroupOr(mask));
+			
+			while (mergedMask != 0)
 			{
-				uint bitIndex = findLSB(mask);
+				uint bitIndex = findLSB(mergedMask);
 				uint index = 32 * wordIndex + bitIndex;
-				mask ^= (1 << bitIndex);
-				if (index >= minIndex && index <= maxIndex)
-				{
-					result += evaluatePointLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, index);
-				}
-				++count;
+				mergedMask ^= (1 << bitIndex);
+				result += evaluatePointLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, index);
 			}
 		}
 	}
