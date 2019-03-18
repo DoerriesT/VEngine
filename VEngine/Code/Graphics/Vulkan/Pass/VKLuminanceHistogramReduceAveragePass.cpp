@@ -7,18 +7,24 @@ struct PushConsts
 	float precomputedTerm;
 	uint32_t lowerBound;
 	uint32_t upperBound;
+	float invScale;
+	float bias;
 };
 
 VEngine::VKLuminanceHistogramReduceAveragePass::VKLuminanceHistogramReduceAveragePass(VKRenderResources *renderResources, 
 	uint32_t width, 
 	uint32_t height, 
 	size_t resourceIndex, 
-	float timeDelta)
+	float timeDelta,
+	float logMin,
+	float logMax)
 	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_resourceIndex(resourceIndex),
-	m_timeDelta(timeDelta)
+	m_timeDelta(timeDelta),
+	m_logMin(logMin),
+	m_logMax(logMax)
 {
 	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/luminanceHistogramReduceAverage_comp.spv");
 
@@ -47,6 +53,8 @@ void VEngine::VKLuminanceHistogramReduceAveragePass::record(VkCommandBuffer cmdB
 	pushConsts.precomputedTerm = 1.0f - exp(-m_timeDelta * 1.1f);
 	pushConsts.lowerBound = m_width * m_height * 0.0f;
 	pushConsts.upperBound = m_width * m_height * 1.0f;
+	pushConsts.invScale = m_logMax - m_logMin;
+	pushConsts.bias = -m_logMin * (1.0f / pushConsts.invScale);
 
 	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

@@ -204,22 +204,6 @@ vec3 evaluateDirectionalLight(
 	return result;
 }
 
-vec3 accurateLinearToSRGB(in vec3 linearCol)
-{
-	vec3 sRGBLo = linearCol * 12.92;
-	vec3 sRGBHi = (pow(abs(linearCol), vec3(1.0/2.4)) * 1.055) - 0.055;
-	vec3 sRGB = mix(sRGBLo, sRGBHi, vec3(greaterThan(linearCol, vec3(0.0031308))));
-	return sRGB;
-}
-
-vec3 accurateSRGBToLinear(in vec3 sRGBCol)
-{
-	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
-	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
-	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
-	return linearRGB;
-}
-
 uint getTileAddress()
 {
 	uvec2 tile = uvec2(gl_GlobalInvocationID.xy) / TILE_SIZE;

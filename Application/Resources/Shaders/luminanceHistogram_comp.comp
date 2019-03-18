@@ -4,6 +4,12 @@
 
 #define LOCAL_SIZE_X 64
 
+layout(push_constant) uniform PushConsts 
+{
+	float scale;
+	float bias;
+} uPushConsts;
+
 layout(set = 1, binding = 0) uniform sampler2D uSourceTexture;
 
 layout (local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
@@ -33,9 +39,9 @@ void main()
 			vec3 color = texelFetch(uSourceTexture, ivec2(i, groupId), 0).rgb;
 			float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
 		
-			luma = log(luma + 1.0) * 128;
+			luma = log2(max(luma, 1e-5)) * uPushConsts.scale + uPushConsts.bias;//log(luma + 1.0) * 128;
 			
-			uint bucket = min(uint(luma), 255);
+			uint bucket = uint(clamp(luma, 0.0, 1.0) * (LUMINANCE_HISTOGRAM_SIZE - 1));//min(uint(luma), 255);
 			
 			atomicAdd(localHistogram[bucket], 1);
 		}

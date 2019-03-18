@@ -70,7 +70,7 @@ VEngine::VKRasterTilingPass::VKRasterTilingPass(VKRenderResources * renderResour
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
 	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConsts) };
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConsts) + sizeof(uint32_t) };
 }
 
 void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle perFrameDataBufferHandle, FrameGraph::BufferHandle pointLightBitMaskBufferHandle)

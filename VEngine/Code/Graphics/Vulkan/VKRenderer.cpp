@@ -372,9 +372,9 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 
-	VKLuminanceHistogramPass luminanceHistogramPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+	VKLuminanceHistogramPass luminanceHistogramPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, -10.0f, 17.0f);
 
-	VKLuminanceHistogramReduceAveragePass luminanceHistogramAveragePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_timeDelta);
+	VKLuminanceHistogramReduceAveragePass luminanceHistogramAveragePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_timeDelta, -10.0f, 17.0f);
 
 	VKTonemapPass tonemapPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 

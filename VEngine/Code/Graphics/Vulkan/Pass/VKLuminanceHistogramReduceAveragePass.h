@@ -12,7 +12,9 @@ namespace VEngine
 			uint32_t width,
 			uint32_t height,
 			size_t resourceIndex,
-			float timeDelta);
+			float timeDelta,
+			float logMin,
+			float logMax);
 
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::BufferHandle luminanceHistogramBufferHandle,
@@ -25,6 +27,8 @@ namespace VEngine
 		uint32_t m_height;
 		size_t m_resourceIndex;
 		float m_timeDelta;
+		float m_logMin;
+		float m_logMax;
 		VKComputePipelineDescription m_pipelineDesc;
 	};
 }
