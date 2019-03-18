@@ -10,6 +10,13 @@
 #define TILE_SIZE 16
 #endif // TILE_SIZE
 
+#ifndef LUMINANCE_HISTOGRAM_SIZE
+#define LUMINANCE_HISTOGRAM_SIZE 256
+#endif // LUMINANCE_HISTOGRAM_SIZE
+
+
+#define LIGHTING_RESULT_TEXTURE_INDEX 4
+
 struct ShadowData
 {
 	mat4 shadowViewProjectionMatrix;
@@ -57,7 +64,6 @@ struct PerDrawData
 	uint padding;
 };
 
-
 layout(set = 0, binding = 0) uniform PER_FRAME_DATA 
 {
 	float time;
@@ -83,11 +89,20 @@ layout(set = 0, binding = 0) uniform PER_FRAME_DATA
 	uint frame;
 	uint directionalLightCount;
 	uint pointLightCount;
+	uint currentResourceIndex;
+	uint previousResourceIndex;
+	float timeDelta;
 } uPerFrameData;
 
-layout(set = 0, binding = 1, rgba16f) uniform writeonly image2D uLightingResultImage;
+layout(set = 0, binding = 1) readonly buffer PER_DRAW_DATA 
+{
+    PerDrawData data[];
+} uPerDrawData;
 
-layout(set = 0, binding = 2) uniform sampler2D uGBufferTextures[4];
+layout(set = 0, binding = 2) readonly buffer SHADOW_DATA
+{
+	ShadowData data[];
+} uShadowData;
 
 layout(set = 0, binding = 3) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -99,26 +114,40 @@ layout(set = 0, binding = 4) readonly buffer POINT_LIGHT_DATA
 	PointLight lights[];
 } uPointLightData;
 
-layout(set = 0, binding = 5) readonly buffer SHADOW_DATA
-{
-	ShadowData data[];
-} uShadowData;
-
-layout(set = 0, binding = 6) readonly buffer POINT_LIGHT_Z_BINS 
+layout(set = 0, binding = 5) readonly buffer POINT_LIGHT_Z_BINS 
 {
 	uint bins[];
 } uPointLightZBins;
 
-layout(set = 0, binding = 7) buffer POINT_LIGHT_BITMASK 
+layout(set = 0, binding = 6) buffer POINT_LIGHT_BITMASK 
 {
 	uint mask[];
 } uPointLightBitMask;
 
-layout(set = 0, binding = 8) uniform sampler2DShadow uShadowTexture;
+layout(set = 0, binding = 7) buffer PERSISTENT_VALUES
+{
+    float luminance[];
+} uPersistentValues;
+
+layout(set = 0, binding = 8) buffer LUMINANCE_HISTOGRAM
+{
+    uint data[];
+} uLuminanceHistogram;
 
 layout(set = 0, binding = 9) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
 
-layout(set = 0, binding = 10) readonly buffer PER_DRAW_DATA 
+vec3 accurateLinearToSRGB(in vec3 linearCol)
 {
-    PerDrawData data[];
-} uPerDrawData;
+	vec3 sRGBLo = linearCol * 12.92;
+	vec3 sRGBHi = (pow(abs(linearCol), vec3(1.0/2.4)) * 1.055) - 0.055;
+	vec3 sRGB = mix(sRGBLo, sRGBHi, vec3(greaterThan(linearCol, vec3(0.0031308))));
+	return sRGB;
+}
+
+vec3 accurateSRGBToLinear(in vec3 sRGBCol)
+{
+	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
+	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
+	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
+	return linearRGB;
+}

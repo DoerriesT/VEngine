@@ -67,6 +67,20 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		}
 	}
 
+	// avg luminance buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = sizeof(float) * FRAMES_IN_FLIGHT;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_avgLuminanceBuffer.create(bufferCreateInfo, allocCreateInfo);
+
+	}
+
 	// shadow sampler
 	{
 		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
@@ -139,107 +153,196 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 	// create descriptor sets
 	{
 		// create layout
-
+		VkDescriptorSetLayoutBinding bindings[32] = {};
 		uint32_t bindingCount = 0;
-		VkDescriptorSetLayoutBinding bindings[11] = {};
 
-		// general data
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// lighting result image
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// gbuffer textures
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 4;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// directional light data
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// point light data
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// shadow data
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// point light zbins
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// point light bit mask
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		++bindingCount;
-
-		// shadow texture
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		++bindingCount;
-
-		// textures
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = TEXTURE_ARRAY_SIZE;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		m_textureArrayBindingIndex = bindingCount;
-		++bindingCount;
-
-		// per draw data
-		bindings[bindingCount].binding = bindingCount;
-		bindings[bindingCount].descriptorCount = 1;
-		bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		bindings[bindingCount].pImmutableSamplers = nullptr;
-		bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		++bindingCount;
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layoutInfo.bindingCount = bindingCount;
-		layoutInfo.pBindings = bindings;
-
-		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+		// common set
 		{
-			Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			uint32_t offset = bindingCount;
+
+			// general data
+			bindings[bindingCount].binding = CommonSetBindings::PER_FRAME_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// per draw data
+			bindings[bindingCount].binding = CommonSetBindings::PER_DRAW_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			// shadow data
+			bindings[bindingCount].binding = CommonSetBindings::SHADOW_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// directional light data
+			bindings[bindingCount].binding = CommonSetBindings::DIRECTIONAL_LIGHT_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// point light data
+			bindings[bindingCount].binding = CommonSetBindings::POINT_LIGHT_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// point light zbins
+			bindings[bindingCount].binding = CommonSetBindings::POINT_LIGHT_Z_BINS_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// point light bit mask
+			bindings[bindingCount].binding = CommonSetBindings::POINT_LIGHT_BITMASK_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			// persistent values
+			bindings[bindingCount].binding = CommonSetBindings::PERSISTENT_VALUES_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// luminance histogram
+			bindings[bindingCount].binding = CommonSetBindings::LUMINANCE_HISTOGRAM_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			// textures
+			bindings[bindingCount].binding = CommonSetBindings::TEXTURES_BINDING;
+			bindings[bindingCount].descriptorCount = TEXTURE_ARRAY_SIZE;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[COMMON_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
 		}
+		
+		// lighting set
+		{
+			uint32_t offset = bindingCount;
+
+			// lighting result image
+			bindings[bindingCount].binding = LightingSetBindings::RESULT_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// gbuffer textures
+			bindings[bindingCount].binding = LightingSetBindings::G_BUFFER_TEXTURES_BINDING;
+			bindings[bindingCount].descriptorCount = 4;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// shadow texture
+			bindings[bindingCount].binding = LightingSetBindings::SHADOW_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[LIGHTING_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+
+
+		// luminance histogram set
+		{
+			uint32_t offset = bindingCount;
+
+			// source texture
+			bindings[bindingCount].binding = LuminanceHistogramSetBindings::SOURCE_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[LUMINANCE_HISTOGRAM_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+		
+
+		// tonemap set
+		{
+			uint32_t offset = bindingCount;
+
+			// tonemap result image
+			bindings[bindingCount].binding = TonemapSetBindings::RESULT_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// source texture
+			bindings[bindingCount].binding = TonemapSetBindings::SOURCE_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[TONEMAP_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+
+		
 
 
 		// create descriptor pool
@@ -263,7 +366,7 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolInfo.poolSizeCount = poolSizeCount;
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = FRAMES_IN_FLIGHT;
+		poolInfo.maxSets = FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -274,18 +377,21 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 
 		// create sets
 
-		VkDescriptorSetLayout layouts[FRAMES_IN_FLIGHT];
+		VkDescriptorSetLayout layouts[FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1)];
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
 		{
-			layouts[i] = m_descriptorSetLayout;
+			for (size_t j = 0; j < MAX_DESCRIPTOR_SET_INDEX + 1; ++j)
+			{
+				layouts[i * (MAX_DESCRIPTOR_SET_INDEX + 1) + j] = m_descriptorSetLayouts[j];
+			}
 		}
 
 		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.descriptorPool = m_descriptorPool;
-		allocInfo.descriptorSetCount = FRAMES_IN_FLIGHT;
+		allocInfo.descriptorSetCount = FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
 		allocInfo.pSetLayouts = layouts;
 
-		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, m_descriptorSets) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, reinterpret_cast<VkDescriptorSet *>(m_descriptorSets)) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to allocate descriptor sets!", -1);
 		}
@@ -553,8 +659,8 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 	{
 		VkWriteDescriptorSet &write = descriptorWrites[i];
 		write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-		write.dstSet = m_descriptorSets[i];
-		write.dstBinding = m_textureArrayBindingIndex;
+		write.dstSet = m_descriptorSets[i][COMMON_SET_INDEX];
+		write.dstBinding = CommonSetBindings::TEXTURES_BINDING;
 		write.dstArrayElement = 0;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		write.descriptorCount = count < TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : TEXTURE_ARRAY_SIZE;

@@ -13,9 +13,10 @@ VEngine::VKLightingPass::VKLightingPass(
 	m_resourceIndex(resourceIndex)
 {
 	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/lighting_comp.spv");
-	
-	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
+
+	m_pipelineDesc.m_layout.m_setLayoutCount = 2;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
+	m_pipelineDesc.m_layout.m_setLayouts[1] = m_renderResources->m_descriptorSetLayouts[LIGHTING_SET_INDEX];
 }
 
 void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
@@ -34,19 +35,21 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
 {
 	auto builder = graph.addComputePass("Lighting Pass", this, &m_pipelineDesc, FrameGraph::QueueType::GRAPHICS);
 
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 0);
-	builder.readStorageBuffer(directionalLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 3);
-	builder.readStorageBuffer(pointLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 4);
-	builder.readStorageBuffer(shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 5);
-	builder.readStorageBuffer(pointLightZBinsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 6);
-	builder.readStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 7);
-	builder.readTexture(shadowTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_shadowSampler, m_renderResources->m_descriptorSets[m_resourceIndex], 8);
-	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler,m_renderResources->m_descriptorSets[m_resourceIndex], 2, 0);
-	builder.readTexture(albedoTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler,m_renderResources->m_descriptorSets[m_resourceIndex], 2, 1);
-	builder.readTexture(normalTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler,m_renderResources->m_descriptorSets[m_resourceIndex], 2, 2);
-	builder.readTexture(materialTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler,m_renderResources->m_descriptorSets[m_resourceIndex], 2, 3);
+	// common set
+	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
+	builder.readStorageBuffer(shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::SHADOW_DATA_BINDING);
+	builder.readStorageBuffer(directionalLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::DIRECTIONAL_LIGHT_DATA_BINDING);
+	builder.readStorageBuffer(pointLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::POINT_LIGHT_DATA_BINDING);
+	builder.readStorageBuffer(pointLightZBinsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::POINT_LIGHT_Z_BINS_BINDING);
+	builder.readStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::POINT_LIGHT_BITMASK_BINDING);
 
-	builder.writeStorageImage(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 1);
+	// lighting set
+	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 0);
+	builder.readTexture(albedoTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 1);
+	builder.readTexture(normalTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 2);
+	builder.readTexture(materialTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 3);
+	builder.readTexture(shadowTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_shadowSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::SHADOW_TEXTURE_BINDING);
+	builder.writeStorageImage(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::RESULT_IMAGE_BINDING);
 }
 
 
@@ -54,7 +57,8 @@ void VEngine::VKLightingPass::record(VkCommandBuffer cmdBuf, const FrameGraph::R
 {
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 1, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], 0, nullptr);
 
 	VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 8, 8, 1);
 }

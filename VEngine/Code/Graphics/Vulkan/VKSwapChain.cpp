@@ -25,14 +25,14 @@ void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
 		auto &formats = g_context.m_swapChainSupportDetails.m_formats;
 		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 		{
-			surfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+			surfaceFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 		}
 		else
 		{
 			bool foundOptimal = false;
 			for (const auto& format : formats)
 			{
-				if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				if (format.format == VK_FORMAT_R8G8B8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				{
 					surfaceFormat = format;
 					foundOptimal = true;

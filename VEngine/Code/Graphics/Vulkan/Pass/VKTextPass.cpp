@@ -1,6 +1,15 @@
 #include "VKTextPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 
+struct PushConsts
+{
+	float scaleBias[4];
+	float color[4];
+	float texCoordOffset[2];
+	float texCoordSize[2];
+	uint32_t atlasTextureIndex;
+};
+
 VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources, 
 	size_t resourceIndex,
 	uint32_t width, 
@@ -66,9 +75,9 @@ VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources,
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 12 + sizeof(uint32_t) };
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConsts) };
 }
 
 void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle)
@@ -76,6 +85,10 @@ void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::Image
 	auto builder = graph.addGraphicsPass("Text Pass", this, &m_pipelineDesc);
 
 	builder.setDimensions(m_width, m_height);
+
+	// this pass reads from the global textures array in the common set. these descriptors are not managed by framegraph,
+	// which is why the reads are not declared here.
+
 	builder.writeColorAttachment(colorTextureHandle, 0);
 }
 
@@ -98,7 +111,7 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
 
 	const size_t symbolHeight = 48;
 	const size_t symbolWidth = 24;
@@ -136,14 +149,7 @@ void VEngine::VKTextPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Resou
 				// we can skip rendering spaces
 				if (*c != ' ')
 				{
-					struct PushConsts
-					{
-						float scaleBias[4];
-						float color[4];
-						float texCoordOffset[2];
-						float texCoordSize[2];
-						uint32_t atlasTextureIndex;
-					} pushConsts;
+					PushConsts pushConsts;
 
 					pushConsts.scaleBias[0] = charScaleX;
 					pushConsts.scaleBias[1] = charScaleY;

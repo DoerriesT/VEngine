@@ -1,0 +1,51 @@
+#version 450
+
+#include "common.h"
+
+#define LOCAL_SIZE_X 64
+
+layout(set = 1, binding = 0) uniform sampler2D uSourceTexture;
+
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+
+shared uint localHistogram[LUMINANCE_HISTOGRAM_SIZE];
+
+void main() 
+{
+	const uint groupId = gl_WorkGroupID.x;
+	const uint threadId = gl_LocalInvocationID.x;
+	
+	// clear local histogram
+	for (uint i = threadId; i < LUMINANCE_HISTOGRAM_SIZE; i += LOCAL_SIZE_X)
+	{
+		localHistogram[i] = 0;
+	}
+	
+	barrier();
+	memoryBarrier();
+	
+	const uint width = uint(textureSize(uSourceTexture, 0).x);
+	
+	for (uint i = threadId; i < width; i += LOCAL_SIZE_X)
+	{
+		if (i < width)
+		{
+			vec3 color = texelFetch(uSourceTexture, ivec2(i, groupId), 0).rgb;
+			float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+		
+			luma = log(luma + 1.0) * 128;
+			
+			uint bucket = min(uint(luma), 255);
+			
+			atomicAdd(localHistogram[bucket], 1);
+		}
+	}
+	
+	barrier();
+	memoryBarrier();
+	
+	for (uint i = threadId; i < LUMINANCE_HISTOGRAM_SIZE; i += LOCAL_SIZE_X)
+	{
+		atomicAdd(uLuminanceHistogram.data[i], localHistogram[i]);
+	}
+}

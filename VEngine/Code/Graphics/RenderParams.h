@@ -29,5 +29,8 @@ namespace VEngine
 		uint32_t m_frame;
 		uint32_t m_directionalLightCount;
 		uint32_t m_pointLightCount;
+		uint32_t m_currentResourceIndex;
+		uint32_t m_previousResourceIndex;
+		float m_timeDelta;
 	};
 }

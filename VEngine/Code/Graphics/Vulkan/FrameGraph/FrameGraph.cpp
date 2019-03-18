@@ -229,6 +229,60 @@ void PassBuilder::readImageTransfer(ImageHandle imageHandle)
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
 }
 
+void PassBuilder::readWriteStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+{
+	assert(imageHandle);
+	size_t resourceIndex = (size_t)imageHandle - 1;
+
+	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_readResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
+
+	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
+	resourceUsage.m_stageMask = stageFlags;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_usageFlags = VK_IMAGE_USAGE_STORAGE_BIT;
+	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
+	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, resourceUsage.m_imageLayout, VK_NULL_HANDLE, 0);
+}
+
+void PassBuilder::readWriteStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+{
+	assert(bufferHandle);
+	size_t resourceIndex = (size_t)bufferHandle - 1;
+
+	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_readResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
+
+	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
+	resourceUsage.m_stageMask = stageFlags;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
+	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, 0);
+}
+
+void PassBuilder::readWriteStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+{
+	assert(bufferHandle);
+	size_t resourceIndex = (size_t)bufferHandle - 1;
+
+	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
+
+	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
+	resourceUsage.m_stageMask = stageFlags;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
+	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, dynamicBufferSize);
+}
+
 void PassBuilder::writeDepthStencil(ImageHandle imageHandle)
 {
 	assert(imageHandle);
@@ -277,7 +331,7 @@ void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlag
 
 	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
 	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
 	resourceUsage.m_usageFlags = VK_IMAGE_USAGE_STORAGE_BIT;
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
@@ -295,7 +349,7 @@ void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageF
 
 	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
 	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
@@ -312,7 +366,7 @@ void PassBuilder::writeStorageBufferDynamic(BufferHandle bufferHandle, VkPipelin
 
 	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
 	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
@@ -1135,17 +1189,22 @@ void Graph::createRenderPasses(size_t *firstResourceUses, size_t *lastResourceUs
 				descr.flags = 0;
 				descr.format = desc.m_format;
 				descr.samples = VkSampleCountFlagBits(desc.m_samples);
-				descr.loadOp = (passIndex == firstResourceUses[resourceIndex] && m_clearResources[resourceIndex]) ? VK_ATTACHMENT_LOAD_OP_CLEAR	// first use and clear? -> clear
-					: (passIndex == firstResourceUses[resourceIndex] && !m_clearResources[resourceIndex]) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE		// first use and not clear? -> dont care
-					: (passIndex == lastResourceUses[resourceIndex]) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE												// last use? -> dont care
-					: VK_ATTACHMENT_LOAD_OP_LOAD;																									// neither first nor last use -> load
 				descr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;// (passIndex == lastResourceUses[resourceIndex] || resourceIndex == ((size_t)finalResourceHandle - 1)) ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				descr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				descr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-				descr.initialLayout = m_externalResources[resourceIndex] ? *m_externalLayouts[resourceIndex] // external resources have special initial layout
-					: previousPassIndex != passIndex ? m_resourceUsages[resourceIndex][previousPassIndex].m_imageLayout // internal resources use previous layout
-					: VK_IMAGE_LAYOUT_UNDEFINED; // internal resource on first use is undefined layout
 				descr.finalLayout = attachmentRefs[attachmentCount - 1].layout;
+
+				// first use?
+				if (passIndex == previousPassIndex)
+				{
+					descr.loadOp = m_clearResources[resourceIndex] ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					descr.initialLayout = m_externalResources[resourceIndex] ? *m_externalLayouts[resourceIndex] : VK_IMAGE_LAYOUT_UNDEFINED;
+				}
+				else
+				{
+					descr.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+					descr.initialLayout = m_resourceUsages[resourceIndex][previousPassIndex].m_imageLayout;
+				}
 			}
 		}
 
@@ -2091,7 +2150,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 	// update external resources image layouts
 	for (size_t resourceIndex = 0; resourceIndex < m_resourceCount; ++resourceIndex)
 	{
-		if (m_externalResources[resourceIndex])
+		if (m_externalResources[resourceIndex] && m_imageResources[resourceIndex])
 		{
 			*m_externalLayouts[resourceIndex] = m_resourceUsages[resourceIndex][lastResourceUses[resourceIndex]].m_imageLayout;
 		}

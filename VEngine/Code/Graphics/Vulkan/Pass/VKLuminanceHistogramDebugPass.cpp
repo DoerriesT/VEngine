@@ -1,25 +1,26 @@
-#include "VKMemoryHeapDebugPass.h"
-#include "Graphics/Vulkan/VKContext.h"
-#include <iostream>
+#include "VKLuminanceHistogramDebugPass.h"
+#include "Graphics/Vulkan/VKRenderResources.h"
 
-struct PushConsts
-{
-	float scaleBias[4];
-	float color[3];
-};
-
-VEngine::VKMemoryHeapDebugPass::VKMemoryHeapDebugPass(uint32_t width, uint32_t height,
-	float offsetX, float offsetY, float scaleX, float scaleY)
-	:m_width(width),
+VEngine::VKLuminanceHistogramDebugPass::VKLuminanceHistogramDebugPass(VKRenderResources *renderResources,
+	uint32_t width, 
+	uint32_t height, 
+	size_t resourceIndex,
+	float offsetX, 
+	float offsetY, 
+	float scaleX, 
+	float scaleY)
+	:m_renderResources(renderResources),
+	m_width(width),
 	m_height(height),
+	m_resourceIndex(resourceIndex),
 	m_offsetX(offsetX),
 	m_offsetY(offsetY),
 	m_scaleX(scaleX),
 	m_scaleY(scaleY)
 {
 	// create pipeline description
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/memoryHeapDebug_vert.spv");
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/memoryHeapDebug_frag.spv");
+	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/luminanceHistogramDebug_vert.spv");
+	strcpy_s(m_pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/luminanceHistogramDebug_frag.spv");
 
 	m_pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	m_pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
@@ -60,19 +61,27 @@ VEngine::VKMemoryHeapDebugPass::VKMemoryHeapDebugPass(uint32_t width, uint32_t h
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConsts) };
+	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
 }
 
-void VEngine::VKMemoryHeapDebugPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle)
+void VEngine::VKLuminanceHistogramDebugPass::addToGraph(FrameGraph::Graph &graph, 
+	FrameGraph::BufferHandle perFrameDataBufferHandle, 
+	FrameGraph::ImageHandle colorTextureHandle, 
+	FrameGraph::BufferHandle luminanceHistogramBufferHandle)
 {
-	auto builder = graph.addGraphicsPass("Memory Heap Debug Pass", this, &m_pipelineDesc);
+	auto builder = graph.addGraphicsPass("Luminance Histogram Debug Pass", this, &m_pipelineDesc);
 
 	builder.setDimensions(m_width, m_height);
+
+	// common set
+	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
+	builder.readStorageBuffer(luminanceHistogramBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::LUMINANCE_HISTOGRAM_BINDING);
+
 	builder.writeColorAttachment(colorTextureHandle, 0);
 }
 
-void VEngine::VKMemoryHeapDebugPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
+void VEngine::VKLuminanceHistogramDebugPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
 {
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
@@ -91,54 +100,7 @@ void VEngine::VKMemoryHeapDebugPass::record(VkCommandBuffer cmdBuf, const FrameG
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-	auto debugInfo = g_context.m_allocator.getDebugInfo();
-	const float maxBlockSize = static_cast<float>(g_context.m_allocator.getMaximumBlockSize());
-	const float maxBlocks = 4.0f;
-	const float blockSpacingMult = 1.05f;
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
 
-	size_t memoryTypeBlockCount[VK_MAX_MEMORY_TYPES] = {};
-
-	for (size_t i = 0; i < debugInfo.size(); ++i)
-	{
-		const auto &blockInfo = debugInfo[i];
-
-		for (size_t j = 0; j < blockInfo.m_spans.size(); ++j)
-		{
-			const auto &span = blockInfo.m_spans[j];
-
-			PushConsts pushConsts;
-
-			switch (span.m_state)
-			{
-			case VKMemorySpanDebugInfo::State::FREE:
-				pushConsts.color[0] = 0.0f;
-				pushConsts.color[1] = 1.0f;
-				pushConsts.color[2] = 0.0f;
-				break;
-			case VKMemorySpanDebugInfo::State::USED:
-				pushConsts.color[0] = 0.0f;
-				pushConsts.color[1] = 0.0f;
-				pushConsts.color[2] = 1.0f;
-				break;
-			case VKMemorySpanDebugInfo::State::WASTED:
-				pushConsts.color[0] = 1.0f;
-				pushConsts.color[1] = 0.0f;
-				pushConsts.color[2] = 0.0f;
-				break;
-			default:
-				assert(false);
-				break;
-			}
-
-			pushConsts.scaleBias[0] = span.m_size / (maxBlockSize * maxBlocks);
-			pushConsts.scaleBias[1] = 1.0f / float(VK_MAX_MEMORY_TYPES);
-			pushConsts.scaleBias[2] = (memoryTypeBlockCount[blockInfo.m_memoryType] * blockSpacingMult + span.m_offset / maxBlockSize) / maxBlocks;
-			pushConsts.scaleBias[3] = blockInfo.m_memoryType / float(VK_MAX_MEMORY_TYPES) * blockSpacingMult;
-
-			vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
-			vkCmdDraw(cmdBuf, 6, 1, 0, 0);
-		}
-
-		++memoryTypeBlockCount[blockInfo.m_memoryType];
-	}
+	vkCmdDraw(cmdBuf, 6, 1, 0, 0);
 }

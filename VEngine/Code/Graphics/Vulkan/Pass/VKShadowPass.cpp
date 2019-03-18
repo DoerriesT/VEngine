@@ -72,7 +72,7 @@ VEngine::VKShadowPass::VKShadowPass(
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayout;
+	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
 	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(float) * 16 + sizeof(uint32_t) };
 }
@@ -86,8 +86,9 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph,
 		
 	builder.setDimensions(m_width, m_height);
 
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 0);
-	builder.readStorageBuffer(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex], 10);
+	// common set
+	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
+	builder.readStorageBuffer(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_DRAW_DATA_BINDING);
 
 	builder.writeDepthStencil(shadowTextureHandle);
 }
@@ -119,7 +120,7 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 		vkCmdClearAttachments(cmdBuf, 1, &clearAttachment, m_shadowJobCount, clearRects);
 	}
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
 
 	vkCmdBindIndexBuffer(cmdBuf, m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 

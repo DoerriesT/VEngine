@@ -1,0 +1,72 @@
+#version 450
+
+#include "common.h"
+
+#define LOCAL_SIZE_X 64
+
+layout(push_constant) uniform PushConsts 
+{
+	float precomputedTerm;
+	uint lowerBound;
+	uint upperBound;
+} uPushConsts;
+
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+
+shared uint localHistogram[LUMINANCE_HISTOGRAM_SIZE];
+
+void main() 
+{
+	const uint threadId = gl_LocalInvocationID.x;
+	
+	// fill local histogram
+	for (uint i = threadId; i < LUMINANCE_HISTOGRAM_SIZE; i += LOCAL_SIZE_X)
+	{
+		localHistogram[i] = uLuminanceHistogram.data[i];
+	}
+	
+	barrier();
+	memoryBarrier();
+	
+	if (threadId == 0)
+	{
+		float avgLuminance = 0.0;
+		uint numProcessedPixels = 0;
+		const uint lowerBound = uPushConsts.lowerBound;
+		const uint upperBound = uPushConsts.upperBound;
+
+		for (uint i = 0; i < LUMINANCE_HISTOGRAM_SIZE; ++i)
+		{
+			uint numPixels = localHistogram[i];
+			
+			uint tmpNumProcessedPixels = numProcessedPixels + numPixels;
+			
+			// subtract lower bound if it intersects this bucket
+			numPixels -= min(lowerBound - min(numProcessedPixels, lowerBound), numPixels);
+			// subtract upper bound if it intersects this bucket
+			numPixels -= min(tmpNumProcessedPixels - min(upperBound, tmpNumProcessedPixels), numPixels);
+			
+			// get luma from bucket index
+			float luma = float(i) + 0.5;
+			luma *= (1.0 / 128.0);
+			luma = exp(luma);
+			luma -= 1.0;
+			
+			numProcessedPixels = tmpNumProcessedPixels;
+			
+			avgLuminance += numPixels * luma;
+			
+			if (numProcessedPixels >= upperBound)
+			{
+				break;
+			}
+		}
+		
+		avgLuminance /= (upperBound - lowerBound);
+		
+		float previousLum = uPersistentValues.luminance[uPerFrameData.previousResourceIndex];
+	
+		// Adapt the luminance using Pattanaik's technique
+		uPersistentValues.luminance[uPerFrameData.currentResourceIndex] = previousLum + (avgLuminance - previousLum) * uPushConsts.precomputedTerm;
+	}
+}

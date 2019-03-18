@@ -101,6 +101,9 @@ namespace VEngine
 			void readIndexBuffer(BufferHandle handle);
 			void readIndirectBuffer(BufferHandle handle);
 			void readImageTransfer(ImageHandle handle);
+			void readWriteStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readWriteStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readWriteStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
 			void writeDepthStencil(ImageHandle handle);
 			void writeColorAttachment(ImageHandle handle, uint32_t index);
 			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);

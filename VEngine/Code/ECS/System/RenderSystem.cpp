@@ -72,6 +72,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
 			m_renderParams.m_width = g_windowWidth;
 			m_renderParams.m_height = g_windowHeight;
+			m_renderParams.m_timeDelta = static_cast<float>(timeDelta);
 		}
 
 
@@ -192,7 +193,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 			m_lightData.m_directionalLightData.push_back(
 				{
-					glm::vec4(glm::vec3(10.0f), 1.0f),
+					glm::vec4(glm::vec3(100.0f), 1.0f),
 					glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 1.0f),
 					0,
 					3

@@ -17,7 +17,12 @@
 #include "Pass/VKMemoryHeapDebugPass.h"
 #include "Pass/VKTextPass.h"
 #include "Pass/VKRasterTilingPass.h"
+#include "Pass/VKLuminanceHistogramPass.h"
+#include "Pass/VKLuminanceHistogramReduceAveragePass.h"
+#include "Pass/VKLuminanceHistogramDebugPass.h"
+#include "Pass/VKTonemapPass.h"
 #include "VKPipelineManager.h"
+#include <iostream>
 
 VEngine::VKRenderer::VKRenderer()
 	:m_width(),
@@ -44,7 +49,7 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 	updateTextureData();
 
-	for (size_t i = 0; i < 2; ++i)
+	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
 	{
 		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator, *m_renderResources->m_pipelineManager);
 	}
@@ -52,25 +57,36 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 
 void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData)
 {
-	if (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size() + drawLists.m_blendedItems.size() > MAX_UNIFORM_BUFFER_INSTANCE_COUNT)
-	{
-		Utility::fatalExit("Exceeded max DrawItem count!", -1);
-	}
-
 	assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
 	assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
 	assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
 	assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
 
-	size_t frameIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
+	RenderParams perFrameData = renderParams;
+	perFrameData.m_currentResourceIndex = perFrameData.m_frame % FRAMES_IN_FLIGHT;
+	perFrameData.m_previousResourceIndex = (perFrameData.m_frame + FRAMES_IN_FLIGHT - 1) % FRAMES_IN_FLIGHT;
 
-	FrameGraph::Graph &graph = *m_frameGraphs[frameIndex];
+	FrameGraph::Graph &graph = *m_frameGraphs[perFrameData.m_currentResourceIndex];
 	graph.reset();
 
-	size_t waitSemaphoreIndex = (renderParams.m_frame - 1) % FRAMES_IN_FLIGHT;
-	size_t signalSemaphoreIndex = renderParams.m_frame % FRAMES_IN_FLIGHT;
-
 	FrameGraph::ImageHandle swapchainTextureHandle = 0;
+
+	FrameGraph::ImageHandle finalTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "Final Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+		finalTextureHandle = graph.createImage(desc);
+	}
 
 	FrameGraph::ImageHandle shadowTextureHandle = 0;
 	{
@@ -88,8 +104,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			m_renderResources->m_shadowTexture.getImage(),
 			m_renderResources->m_shadowTextureView,
 			&m_renderResources->m_shadowTextureLayout,
-			renderParams.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[waitSemaphoreIndex], // on first frame we dont wait
-			m_renderResources->m_shadowTextureSemaphores[signalSemaphoreIndex]);
+			perFrameData.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[perFrameData.m_previousResourceIndex], // on first frame we dont wait
+			m_renderResources->m_shadowTextureSemaphores[perFrameData.m_currentResourceIndex]);
 	}
 
 	FrameGraph::ImageHandle depthTextureHandle = 0;
@@ -294,10 +310,36 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 		pointLightZBinsBufferHandle = graph.createBuffer(desc);
 	}
+
+	FrameGraph::BufferHandle luminanceHistogramBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Luminance Histogram Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = true;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(uint32_t) * LUMINANCE_HISTOGRAM_SIZE;
+		desc.m_hostVisible = false;
+
+		luminanceHistogramBufferHandle = graph.createBuffer(desc);
+	}
+
+	FrameGraph::BufferHandle avgLuminanceBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Average Luminance Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(float) * FRAMES_IN_FLIGHT;
+		desc.m_hostVisible = false;
+
+		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
 	
 
 	// passes
-	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&renderParams, 0, 0, sizeof(renderParams), sizeof(renderParams), sizeof(renderParams), 1);
+	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&perFrameData, 0, 0, sizeof(perFrameData), sizeof(perFrameData), sizeof(perFrameData), 1);
 
 	VKHostWritePass perDrawDataWritePassOpaque("Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(), 
 		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_opaqueItems.size());
@@ -320,17 +362,25 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKHostWritePass pointLightZBinsWritePass("Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
 		0, 0, lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size(), 1);
 
-	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
+	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
 
-	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, frameIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
+	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
 
-	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, frameIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
+	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
-	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, frameIndex, lightData, renderParams.m_projectionMatrix);
+	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_projectionMatrix);
 
-	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, frameIndex);
+	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 
-	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.0f, 0.0f, 1.0f, 1.0f);
+	VKLuminanceHistogramPass luminanceHistogramPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+
+	VKLuminanceHistogramReduceAveragePass luminanceHistogramAveragePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_timeDelta);
+
+	VKTonemapPass tonemapPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+
+	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.75f, 0.0f, 0.25f, 0.25f);
+
+	VKLuminanceHistogramDebugPass luminanceHistogramDebugPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, 0.5f, 0.0f, 0.5f, 1.0f);
 
 	FrameGraph::PassTimingInfo timingInfos[128];
 	size_t timingInfoCount;
@@ -381,7 +431,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
 	++timingInfoCount;
 
-	VKTextPass textPass(m_renderResources.get(), frameIndex, m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
+	VKTextPass textPass(m_renderResources.get(), perFrameData.m_currentResourceIndex, m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
 
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
@@ -480,14 +530,17 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			lightTextureHandle);
 	}
 
-	//memoryHeapDebugPass.addToGraph(graph, lightTextureHandle);
-	textPass.addToGraph(graph, lightTextureHandle);
+	// calculate luminance histograms
+	luminanceHistogramPass.addToGraph(graph, lightTextureHandle, luminanceHistogramBufferHandle);
+
+	// calculate avg luminance
+	luminanceHistogramAveragePass.addToGraph(graph, luminanceHistogramBufferHandle, avgLuminanceBufferHandle);
 
 	VkSwapchainKHR swapChain = m_swapChain->get();
 
 	// get swapchain image
 	{
-		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -515,18 +568,31 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			m_swapChain->getImage(m_swapChainImageIndex),
 			m_swapChain->getImageView(m_swapChainImageIndex),
 			&m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex],
-			m_renderResources->m_swapChainImageAvailableSemaphores[frameIndex],
-			m_renderResources->m_swapChainRenderFinishedSemaphores[frameIndex]);
+			m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex],
+			m_renderResources->m_swapChainRenderFinishedSemaphores[perFrameData.m_currentResourceIndex]);
 	}
 
+	// tonemap
+	FrameGraph::ImageHandle tonemapTargetTextureHandle = m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM ? finalTextureHandle : swapchainTextureHandle;
+	tonemapPass.addToGraph(graph, lightTextureHandle, tonemapTargetTextureHandle, avgLuminanceBufferHandle);
+
+	luminanceHistogramDebugPass.addToGraph(graph, perFrameDataBufferHandle, tonemapTargetTextureHandle, luminanceHistogramBufferHandle);
+	
+
+	memoryHeapDebugPass.addToGraph(graph, tonemapTargetTextureHandle);
+	textPass.addToGraph(graph, tonemapTargetTextureHandle);
+
 	// blit to swapchain image
-	blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
+	if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
+	{
+		blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
+	}
 
 	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &m_renderResources->m_swapChainRenderFinishedSemaphores[frameIndex];
+	presentInfo.pWaitSemaphores = &m_renderResources->m_swapChainRenderFinishedSemaphores[perFrameData.m_currentResourceIndex];
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swapChain;
 	presentInfo.pImageIndices = &m_swapChainImageIndex;
