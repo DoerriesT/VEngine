@@ -30,7 +30,7 @@ layout(location = 2) in vec3 vWorldPos;
 layout(location = 0) out vec4 oAlbedo;
 layout(location = 1) out vec4 oNormalEmissive;
 layout(location = 2) out vec4 oMetallicRoughnessOcclusion;
-layout(location = 3) out vec4 oVelocity;
+//layout(location = 3) out vec4 oVelocity;
 
 // based on http://www.thetenthplanet.de/archives/1180
 mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )

@@ -67,6 +67,49 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		}
 	}
 
+	// TAA history textures
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+		{
+			m_taaHistoryTextures[i].create(imageCreateInfo, allocCreateInfo);
+
+			VkImageSubresourceRange subresourceRange = {};
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.levelCount = 1;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.layerCount = 1;
+
+			VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+			viewInfo.image = m_taaHistoryTextures[i].getImage();
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = m_taaHistoryTextures[i].getFormat();
+			viewInfo.subresourceRange = subresourceRange;
+
+			if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_taaHistoryTextureViews[i]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create image view!", -1);
+			}
+		}
+	}
+
 	// avg luminance buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -106,13 +149,11 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 
 	// linear sampler
 	{
+		
 		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
 		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.mipLodBias = 0.0f;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
@@ -121,7 +162,22 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		samplerCreateInfo.anisotropyEnable = VK_FALSE;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSampler) != VK_SUCCESS)
+		// clamp
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSamplerClamp) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create sampler!", -1);
+		}
+
+		// repeat
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSamplerRepeat) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -133,9 +189,6 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
 		samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.mipLodBias = 0.0f;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
@@ -144,7 +197,22 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 		samplerCreateInfo.anisotropyEnable = VK_FALSE;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_pointSampler) != VK_SUCCESS)
+		// clamp
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_pointSamplerClamp) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create sampler!", -1);
+		}
+
+		// repeat
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_pointSamplerRepeat) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -342,7 +410,89 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 			}
 		}
 
-		
+		// taa resolve set
+		{
+			uint32_t offset = bindingCount;
+
+			// result image
+			bindings[bindingCount].binding = TAAResolveSetBindings::RESULT_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// depth texture
+			bindings[bindingCount].binding = TAAResolveSetBindings::DEPTH_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// depth texture
+			bindings[bindingCount].binding = TAAResolveSetBindings::VELOCITY_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// history image
+			bindings[bindingCount].binding = TAAResolveSetBindings::HISTORY_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// source texture
+			bindings[bindingCount].binding = TAAResolveSetBindings::SOURCE_TEXTURE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[TAA_RESOLVE_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+
+		// velocity composition set
+		{
+			uint32_t offset = bindingCount;
+
+			// result image
+			bindings[bindingCount].binding = VelocityCompositionSetBindings::VELOCITY_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			// depth texture
+			bindings[bindingCount].binding = VelocityCompositionSetBindings::DEPTH_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[VELOCITY_COMPOSITION_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
 
 
 		// create descriptor pool

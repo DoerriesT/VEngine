@@ -67,11 +67,11 @@ VEngine::VKGeometryPass::VKGeometryPass(
 
 	m_pipelineDesc.m_blendState.m_logicOpEnable = false;
 	m_pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-	m_pipelineDesc.m_blendState.m_attachmentCount = 4;
+	m_pipelineDesc.m_blendState.m_attachmentCount = 3; // 4
 	m_pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
 	m_pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
 	m_pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
-	m_pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
+	//m_pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
 
 	m_pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
 	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
@@ -104,7 +104,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
 	builder.writeColorAttachment(albedoTextureHandle, 0);
 	builder.writeColorAttachment(normalTextureHandle, 1);
 	builder.writeColorAttachment(materialTextureHandle, 2);
-	builder.writeColorAttachment(velocityTextureHandle, 3);
+	//builder.writeColorAttachment(velocityTextureHandle, 3);
 }
 
 void VEngine::VKGeometryPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)

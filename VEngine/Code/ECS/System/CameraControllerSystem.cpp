@@ -11,7 +11,7 @@ VEngine::CameraControllerSystem::CameraControllerSystem(EntityManager & entityMa
 	m_grabMouse(grabMouse),
 	m_grabbedMouse(),
 	m_mouseHistory(),
-	m_mouseSmoothFactor()
+	m_mouseSmoothFactor(0.85f)
 {
 }
 

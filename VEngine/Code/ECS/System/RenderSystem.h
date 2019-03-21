@@ -33,6 +33,8 @@ namespace VEngine
 		RenderParams m_renderParams;
 		DrawLists m_drawLists;
 		LightData m_lightData;
+		float m_haltonX[16];
+		float m_haltonY[16];
 
 		void calculateCascadeViewProjectionMatrices(const RenderParams &renderParams, const glm::vec3 &lightDir, float nearPlane, float farPlane, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
 	};

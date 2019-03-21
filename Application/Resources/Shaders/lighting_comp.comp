@@ -267,7 +267,7 @@ void main()
 	vec2 texelSize = vec2(1.0 / domainSize);
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
-	vec4 viewSpacePosition = uPerFrameData.invProjectionMatrix * clipSpacePosition;
+	vec4 viewSpacePosition = uPerFrameData.invJitteredProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
 	
 	mat3 viewMatrix = mat3(uPerFrameData.viewMatrix);
@@ -282,7 +282,7 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	result += 0.1 * albedo;
+	result += 1.0 * albedo;
 	
 	// directional lights
 	for (uint i = 0; i < uPerFrameData.directionalLightCount; ++i)

@@ -21,6 +21,8 @@
 #include "Pass/VKLuminanceHistogramReduceAveragePass.h"
 #include "Pass/VKLuminanceHistogramDebugPass.h"
 #include "Pass/VKTonemapPass.h"
+#include "Pass/VKTAAResolvePass.h"
+#include "Pass/VKVelocityCompositionPass.h"
 #include "VKPipelineManager.h"
 #include <iostream>
 
@@ -43,7 +45,9 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	m_textureLoader = std::make_unique<VKTextureLoader>();
 	m_swapChain = std::make_unique<VKSwapChain>();
 	m_swapChain->init(width, height);
-	m_renderResources->init(width, height, VK_FORMAT_R16G16B16A16_SFLOAT);
+	m_width = m_swapChain->getExtent().width;
+	m_height = m_swapChain->getExtent().height;
+	m_renderResources->init(m_width, m_height, VK_FORMAT_R16G16B16A16_SFLOAT);
 
 	m_fontAtlasTextureIndex = m_textureLoader->load("Resources/Textures/fontConsolas.dds");
 
@@ -99,13 +103,50 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_height = g_shadowAtlasSize;
 		desc.m_format = m_renderResources->m_shadowTexture.getFormat();
 
-
 		shadowTextureHandle = graph.importImage(desc,
 			m_renderResources->m_shadowTexture.getImage(),
 			m_renderResources->m_shadowTextureView,
 			&m_renderResources->m_shadowTextureLayout,
 			perFrameData.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[perFrameData.m_previousResourceIndex], // on first frame we dont wait
 			m_renderResources->m_shadowTextureSemaphores[perFrameData.m_currentResourceIndex]);
+	}
+
+	FrameGraph::ImageHandle taaHistoryTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "TAA History Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_taaHistoryTextures[perFrameData.m_previousResourceIndex].getFormat();
+
+		taaHistoryTextureHandle = graph.importImage(desc,
+			m_renderResources->m_taaHistoryTextures[perFrameData.m_previousResourceIndex].getImage(),
+			m_renderResources->m_taaHistoryTextureViews[perFrameData.m_previousResourceIndex],
+			&m_renderResources->m_taaHistoryTextureLayouts[perFrameData.m_previousResourceIndex],
+			VK_NULL_HANDLE,
+			VK_NULL_HANDLE);
+	}
+
+	FrameGraph::ImageHandle taaResolveTextureHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "TAA Resolve Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_taaHistoryTextures[perFrameData.m_currentResourceIndex].getFormat();
+
+		taaResolveTextureHandle = graph.importImage(desc,
+			m_renderResources->m_taaHistoryTextures[perFrameData.m_currentResourceIndex].getImage(),
+			m_renderResources->m_taaHistoryTextureViews[perFrameData.m_currentResourceIndex],
+			&m_renderResources->m_taaHistoryTextureLayouts[perFrameData.m_currentResourceIndex],
+			VK_NULL_HANDLE,
+			VK_NULL_HANDLE);
 	}
 
 	FrameGraph::ImageHandle depthTextureHandle = 0;
@@ -181,7 +222,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		FrameGraph::ImageDescription desc = {};
 		desc.m_name = "VelocityTexture";
 		desc.m_concurrent = false;
-		desc.m_clear = false;
+		desc.m_clear = true;
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
@@ -368,7 +409,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
-	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_projectionMatrix);
+	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_jitteredProjectionMatrix);
 
 	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 
@@ -381,6 +422,10 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.75f, 0.0f, 0.25f, 0.25f);
 
 	VKLuminanceHistogramDebugPass luminanceHistogramDebugPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, 0.5f, 0.0f, 0.5f, 1.0f);
+
+	VKTAAResolvePass taaResolvePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+
+	VKVelocityCompositionPass velocityCompositionPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
 
 	FrameGraph::PassTimingInfo timingInfos[128];
 	size_t timingInfoCount;
@@ -530,6 +575,9 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			lightTextureHandle);
 	}
 
+	// correct velocities
+	velocityCompositionPass.addToGraph(graph, depthTextureHandle, velocityTextureHandle);
+
 	// calculate luminance histograms
 	luminanceHistogramPass.addToGraph(graph, lightTextureHandle, luminanceHistogramBufferHandle);
 
@@ -572,15 +620,21 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			m_renderResources->m_swapChainRenderFinishedSemaphores[perFrameData.m_currentResourceIndex]);
 	}
 
+	// taa resolve
+	//if (perFrameData.m_frame % 100 < 50)
+	{
+		taaResolvePass.addToGraph(graph, perFrameDataBufferHandle, depthTextureHandle, velocityTextureHandle, taaHistoryTextureHandle, lightTextureHandle, taaResolveTextureHandle);
+
+		lightTextureHandle = taaResolveTextureHandle;
+	}
+
 	// tonemap
 	FrameGraph::ImageHandle tonemapTargetTextureHandle = m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM ? finalTextureHandle : swapchainTextureHandle;
 	tonemapPass.addToGraph(graph, lightTextureHandle, tonemapTargetTextureHandle, avgLuminanceBufferHandle);
 
-	luminanceHistogramDebugPass.addToGraph(graph, perFrameDataBufferHandle, tonemapTargetTextureHandle, luminanceHistogramBufferHandle);
-	
-
-	memoryHeapDebugPass.addToGraph(graph, tonemapTargetTextureHandle);
-	textPass.addToGraph(graph, tonemapTargetTextureHandle);
+	//luminanceHistogramDebugPass.addToGraph(graph, perFrameDataBufferHandle, tonemapTargetTextureHandle, luminanceHistogramBufferHandle);
+	//memoryHeapDebugPass.addToGraph(graph, tonemapTargetTextureHandle);
+	//textPass.addToGraph(graph, tonemapTargetTextureHandle);
 
 	// blit to swapchain image
 	if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)

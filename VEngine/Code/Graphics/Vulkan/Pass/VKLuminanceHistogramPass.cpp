@@ -39,7 +39,7 @@ void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, Fra
 	builder.writeStorageBuffer(luminanceHistogramBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::LUMINANCE_HISTOGRAM_BINDING);
 
 	// histogram set
-	builder.readTexture(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LUMINANCE_HISTOGRAM_SET_INDEX], LuminanceHistogramSetBindings::SOURCE_TEXTURE_BINDING);
+	builder.readTexture(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LUMINANCE_HISTOGRAM_SET_INDEX], LuminanceHistogramSetBindings::SOURCE_TEXTURE_BINDING);
 }
 
 void VEngine::VKLuminanceHistogramPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)

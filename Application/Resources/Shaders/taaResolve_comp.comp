@@ -1,0 +1,241 @@
+#version 450
+
+#include "common.h"
+
+#define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
+
+layout(set = 1, binding = 0, rgba16f) uniform image2D uResultImage;
+layout(set = 1, binding = 1) uniform sampler2D uDepthTexture;
+layout(set = 1, binding = 2) uniform sampler2D uVelocityTexture;
+layout(set = 1, binding = 3) uniform sampler2D uHistoryTexture;
+layout(set = 1, binding = 4) uniform sampler2D uSourceTexture;
+
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec3 rgbToYcocg(vec3 color)
+{
+	vec3 result;
+	result.x = dot(color, vec3(  1, 2,  1 ) );
+	result.y = dot(color, vec3(  2, 0, -2 ) );
+	result.z = dot(color, vec3( -1, 2, -1 ) );
+	
+	return result;
+}
+
+vec3 ycocgToRgb(vec3 color )
+{
+	float y  = color.x * 0.25;
+	float co = color.y * 0.25;
+	float cg = color.z * 0.25;
+
+	vec3 result;
+	result.r = y + co - cg;
+	result.g = y + cg;
+	result.b = y - co - cg;
+
+	return result;
+}
+
+vec3 sampleHistory(vec2 texCoord, vec4 rtMetrics)
+{
+	const float sharpening = 0.0;  // [-0.5, 0.5]
+
+	vec2 samplePos = texCoord * rtMetrics.xy;
+	vec2 tc1 = floor(samplePos - 0.5) + 0.5;
+	vec2 f = samplePos - tc1;
+	vec2 f2 = f * f;
+	vec2 f3 = f * f2;
+
+	// Catmull-Rom weights
+	const float c = 0.5 + sharpening;
+	vec2 w0 = -(c)       * f3 + (2.0 * c)        * f2 - (c * f);
+	vec2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2            + 1.0;
+	vec2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + (c * f);
+	vec2 w3 =  (c)       * f3 - (c)              * f2;
+
+	vec2 w12  = w1 + w2;
+	vec2 tc0  = (tc1 - 1.0)      * rtMetrics.zw;
+	vec2 tc3  = (tc1 + 2.0)      * rtMetrics.zw;
+	vec2 tc12 = (tc1 + w2 / w12) * rtMetrics.zw;
+	
+	// Bicubic filter using bilinear lookups, skipping the 4 corner texels
+	vec4 filtered = vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc0.y ), 0).rgb, 1.0) * (w12.x *  w0.y) +
+	                  vec4(textureLod(uHistoryTexture, vec2(tc0.x,  tc12.y), 0).rgb, 1.0) * ( w0.x * w12.y) +
+	                  vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc12.y), 0).rgb, 1.0) * (w12.x * w12.y) +  // Center pixel
+	                  vec4(textureLod(uHistoryTexture, vec2(tc3.x,  tc12.y), 0).rgb, 1.0) * ( w3.x * w12.y) +
+	                  vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc3.y ), 0).rgb, 1.0) * (w12.x *  w3.y);
+	
+return filtered.rgb * (1.0 / filtered.a);
+}
+
+vec3 clipAABB(vec3 point, vec3 aabbMin, vec3 aabbMax)
+{
+    //Clips towards AABB center for better perfomance
+    vec3 center   = 0.5 * (aabbMax + aabbMin);
+    vec3 halfSize = 0.5 * (aabbMax - aabbMin) + 1e-5;
+    //Relative position from the center
+    vec3 clip     = point - center;
+    //Normalize relative position
+    vec3 unit     = clip / halfSize;
+    vec3 absUnit  = abs(unit);
+    float maxUnit = max(absUnit.x, max(absUnit.y, absUnit.z));
+	
+	return (maxUnit > 1.0) ? clip * (1.0 / maxUnit) + center : point;
+}
+
+float intersectAABB(vec3 rayDir, vec3 rayOrg, vec3 boxExt)
+{
+	if (length(rayDir) < 1e-6) return 1;
+
+	// Intersection using slabs
+	vec3 rcpDir = 1.0 / rayDir;
+	vec3 tNeg = ( boxExt - rayOrg) * rcpDir;
+	vec3 tPos = (-boxExt - rayOrg) * rcpDir;
+	return max(max(min(tNeg.x, tPos.x), min(tNeg.y, tPos.y)), min(tNeg.z, tPos.z));
+}
+
+float clipHistory(vec3 cHistory, vec3 cM, vec3 cMin, vec3 cMax)
+{
+	// Clip color difference against neighborhood min/max AABB
+	// Clipped color is cHistory + rayDir * result
+	
+	vec3 boxCenter = (cMax + cMin) * 0.5;
+	vec3 boxExtents = cMax - boxCenter;
+	
+	vec3 rayDir = cM - cHistory;
+	vec3 rayOrg = cHistory - boxCenter;
+	
+	return clamp(intersectAABB(rayDir, rayOrg, boxExtents), 0.0, 1.0);
+}
+
+vec3 tonemap(vec3 color)
+{
+	return color / max((1.0 + dot(color, LUMA_RGB_TUPLE)), 1e-6);
+}
+
+vec3 inverseTonemap(vec3 color)
+{
+	return color / max((1.0 - dot(color, LUMA_RGB_TUPLE)), 1e-6);
+}
+
+float square(float a)
+{
+	return a * a;
+}
+
+void main() 
+{
+	vec2 domainSize = textureSize(uSourceTexture, 0).xy;
+	vec2 texelSize = vec2(1.0 / domainSize);
+	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
+	
+	// find closest depth in X pattern and sample velocity from there -> better preserves edges during movement
+	float closestDepth = 1.0;
+	ivec2 velocityOffset = ivec2(0, 0);
+	for (int y = -1; y < 2; ++y)
+	{
+		for (int x = -1; x < 2; ++x)
+		{
+			ivec2 offset = ivec2(x, y);
+			float depth = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + offset, 0).x;
+			
+			if (depth < closestDepth)
+			{
+				closestDepth = depth;
+				velocityOffset = offset;
+			}
+		}
+	}
+	
+	vec2 previousUV = texCoord - texelFetch(uVelocityTexture, ivec2(gl_GlobalInvocationID.xy) + velocityOffset, 0).xy;
+	
+	vec4 history;
+	history.rgb = max(sampleHistory(previousUV, vec4(domainSize, texelSize)), 0.0.xxx);
+	history.a = textureLod(uHistoryTexture, previousUV, 0).a;
+	
+	// sample neighborhood
+	vec3 neighbors[9];
+	neighbors[0] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, -1), 0).rgb;
+	neighbors[1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0, -1), 0).rgb;
+	neighbors[2] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1, -1), 0).rgb;
+	neighbors[3] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1,  0), 0).rgb;
+	neighbors[4] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0,  0), 0).rgb;
+	neighbors[5] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1,  0), 0).rgb;
+	neighbors[6] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1,  1), 0).rgb;
+	neighbors[7] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0,  1), 0).rgb;
+	neighbors[8] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1,  1), 0).rgb;
+	
+	// plus shape min max
+	vec3 neighborPlusMin = neighbors[4];
+	vec3 neighborPlusMax = neighbors[4];
+	
+	neighborPlusMin = min(neighborPlusMin, neighbors[1]);
+	neighborPlusMax = max(neighborPlusMax, neighbors[1]);
+	neighborPlusMin = min(neighborPlusMin, neighbors[3]);
+	neighborPlusMax = max(neighborPlusMax, neighbors[3]);
+	neighborPlusMin = min(neighborPlusMin, neighbors[5]);
+	neighborPlusMax = max(neighborPlusMax, neighbors[5]);
+	neighborPlusMin = min(neighborPlusMin, neighbors[7]);
+	neighborPlusMax = max(neighborPlusMax, neighbors[7]);
+	
+	// box shape min max
+	vec3 neighborBoxMin = neighborPlusMin;
+	vec3 neighborBoxMax = neighborPlusMax;
+	
+	neighborBoxMin = min(neighborBoxMin, neighbors[0]);
+	neighborBoxMax = max(neighborBoxMax, neighbors[0]);
+	neighborBoxMin = min(neighborBoxMin, neighbors[2]);
+	neighborBoxMax = max(neighborBoxMax, neighbors[2]);
+	neighborBoxMin = min(neighborBoxMin, neighbors[6]);
+	neighborBoxMax = max(neighborBoxMax, neighbors[6]);
+	neighborBoxMin = min(neighborBoxMin, neighbors[8]);
+	neighborBoxMax = max(neighborBoxMax, neighbors[8]);
+	
+	// mix between plus shape and box shape to approximate round shape
+	vec3 neighborMin = mix(neighborPlusMin, neighborBoxMin, 0.5);
+	vec3 neighborMax = mix(neighborPlusMax, neighborBoxMax, 0.5);
+	
+	float currentLuma = dot(neighbors[4], LUMA_RGB_TUPLE);
+	float minLuma = dot(neighborMin, LUMA_RGB_TUPLE);
+	float maxLuma = dot(neighborMax, LUMA_RGB_TUPLE);
+	
+	float spatialContrastWeight = clamp(minLuma / max(maxLuma, 1e-6), 0.0, 1.0);
+	float antiFlickeringWeight = clamp(abs(spatialContrastWeight - history.a) , 0.0, 1.0);
+	
+	float historyLuma = dot(history.rgb, LUMA_RGB_TUPLE);
+	float temporalContrast = abs(currentLuma - historyLuma);
+	float temporalContrastWeight = temporalContrast < 0.01 ? 1.0 : 0.0;
+	
+	float clipLength = clamp(clipHistory(history.rgb, neighbors[4], neighborMin, neighborMax), 0.0, 1.0);
+	history.rgb = mix(history.rgb, neighbors[4], clipLength * square(square(1.0 - antiFlickeringWeight)));
+	
+	// https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
+	//vec3 mu = m1 * (1.0 / 5.0);
+	//vec3 sigma = sqrt(m2  * (1.0 / 5.0) - mu * mu);
+	//
+	//float gamma = 1.0;
+	//
+	//vec3 minc = mu - gamma * sigma;
+	//vec3 maxc = mu + gamma * sigma;
+	
+	
+	
+	float alpha = mix(0.05, 1.0, temporalContrastWeight);
+	alpha = mix(alpha, 1e-10, antiFlickeringWeight);
+	
+	ivec2 previousPosition = ivec2(previousUV * textureSize(uSourceTexture, 0).xy);
+	
+	alpha = any(lessThan(previousPosition - 1, ivec2(0))) || any(greaterThan(previousPosition + 1, ivec2(textureSize(uSourceTexture, 0).xy))) ? 1.0 : alpha;
+	vec2 jitterOffset = uPerFrameData.jitteredProjectionMatrix[2].xy;
+	alpha *= exp(-2.29 * dot(jitterOffset, jitterOffset));
+	
+	vec4 result;
+	result.rgb = inverseTonemap(mix(tonemap(history.rgb), tonemap(neighbors[4]), alpha));
+	result.a = spatialContrastWeight;
+	
+	//if (uPerFrameData.frame % 100 >= 50)
+	//	result.rgb = neighbors[4];
+	
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
+}

@@ -264,7 +264,8 @@ namespace VEngine
 					&& supportedFeatures.samplerAnisotropy
 					&& supportedFeatures.textureCompressionBC
 					&& supportedFeatures.independentBlend
-					&& supportedFeatures.fragmentStoresAndAtomics)
+					&& supportedFeatures.fragmentStoresAndAtomics
+					&& supportedFeatures.shaderStorageImageExtendedFormats)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices = 
@@ -309,6 +310,7 @@ namespace VEngine
 			deviceFeatures.textureCompressionBC = VK_TRUE;
 			deviceFeatures.independentBlend = VK_TRUE;
 			deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+			deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
 
@@ -380,7 +382,7 @@ namespace VEngine
 		}
 
 		// create allocator
-		m_allocator.init(m_device, m_physicalDevice);
+		m_allocator.init(m_device, m_physicalDevice);	
 	}
 
 	void VKContext::shutdown()

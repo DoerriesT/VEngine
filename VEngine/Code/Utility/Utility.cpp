@@ -112,3 +112,18 @@ uint32_t VEngine::Utility::findLastSetBit(uint32_t mask)
 	}
 	return r - 1;
 }
+
+float VEngine::Utility::halton(size_t index, size_t base)
+{
+	float f = 1.0f;
+	float r = 0.0f;
+
+	while (index > 0)
+	{
+		f /= base;
+		r += f * (index % base);
+		index /=base;
+	}
+
+	return r;
+}

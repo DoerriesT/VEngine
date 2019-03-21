@@ -18,7 +18,7 @@ layout(location = 2) out vec3 vWorldPos;
 void main() 
 {
 	mat4 modelMatrix = uPerDrawData.data[uPushConsts.drawIndex].modelMatrix;
-    gl_Position = uPerFrameData.viewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
+    gl_Position = uPerFrameData.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
 	vTexCoord = inTexCoord;
 	vNormal = mat3(uPerFrameData.viewMatrix * modelMatrix) * inNormal;
 	vWorldPos = (uPerFrameData.viewMatrix * modelMatrix * vec4(inPosition, 1.0)).xyz;

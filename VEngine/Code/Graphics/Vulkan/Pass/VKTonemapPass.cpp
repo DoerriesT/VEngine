@@ -28,7 +28,7 @@ void VEngine::VKTonemapPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::Im
 	builder.readStorageBuffer(avgLuminanceBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PERSISTENT_VALUES_BINDING);
 
 	// tonemap set
-	builder.readTexture(srcImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][TONEMAP_SET_INDEX], TonemapSetBindings::SOURCE_TEXTURE_BINDING);
+	builder.readTexture(srcImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][TONEMAP_SET_INDEX], TonemapSetBindings::SOURCE_TEXTURE_BINDING);
 	builder.writeStorageImage(dstImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][TONEMAP_SET_INDEX], TonemapSetBindings::RESULT_IMAGE_BINDING);
 }
 

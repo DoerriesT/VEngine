@@ -44,10 +44,10 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph,
 	builder.readStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::POINT_LIGHT_BITMASK_BINDING);
 
 	// lighting set
-	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 0);
-	builder.readTexture(albedoTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 1);
-	builder.readTexture(normalTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 2);
-	builder.readTexture(materialTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 3);
+	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 0);
+	builder.readTexture(albedoTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 1);
+	builder.readTexture(normalTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 2);
+	builder.readTexture(materialTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::G_BUFFER_TEXTURES_BINDING, 3);
 	builder.readTexture(shadowTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_shadowSampler, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::SHADOW_TEXTURE_BINDING);
 	builder.writeStorageImage(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][LIGHTING_SET_INDEX], LightingSetBindings::RESULT_IMAGE_BINDING);
 }

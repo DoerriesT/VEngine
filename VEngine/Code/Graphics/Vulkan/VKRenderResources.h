@@ -64,13 +64,36 @@ namespace VEngine
 		};
 	}
 
+	namespace TAAResolveSetBindings
+	{
+		enum
+		{
+			RESULT_IMAGE_BINDING = 0,
+			DEPTH_TEXTURE_BINDING = 1,
+			VELOCITY_TEXTURE_BINDING = 2,
+			HISTORY_IMAGE_BINDING = 3,
+			SOURCE_TEXTURE_BINDING = 4,
+		};
+	}
+
+	namespace VelocityCompositionSetBindings
+	{
+		enum
+		{
+			VELOCITY_IMAGE_BINDING = 0,
+			DEPTH_IMAGE_BINDING = 1,
+		};
+	}
+
 	enum
 	{
 		COMMON_SET_INDEX = 0,
 		LIGHTING_SET_INDEX = 1,
 		LUMINANCE_HISTOGRAM_SET_INDEX = 2,
 		TONEMAP_SET_INDEX = 3,
-		MAX_DESCRIPTOR_SET_INDEX = TONEMAP_SET_INDEX
+		TAA_RESOLVE_SET_INDEX = 4,
+		VELOCITY_COMPOSITION_SET_INDEX = 5,
+		MAX_DESCRIPTOR_SET_INDEX = VELOCITY_COMPOSITION_SET_INDEX
 	};
 	
 
@@ -78,9 +101,11 @@ namespace VEngine
 	{
 		// images
 		VKImage m_shadowTexture;
+		VKImage m_taaHistoryTextures[FRAMES_IN_FLIGHT];
 
 		// views
 		VkImageView m_shadowTextureView;
+		VkImageView m_taaHistoryTextureViews[FRAMES_IN_FLIGHT];
 
 		// buffers
 		VKBuffer m_vertexBuffer;
@@ -91,7 +116,8 @@ namespace VEngine
 
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		VkImageLayout m_swapChainImageLayouts[3] = {};
+		VkImageLayout m_taaHistoryTextureLayouts[FRAMES_IN_FLIGHT] = {};
+		VkImageLayout m_swapChainImageLayouts[FRAMES_IN_FLIGHT + 1] = {};
 
 		// descriptors
 		VkDescriptorPool m_descriptorPool;
@@ -100,8 +126,10 @@ namespace VEngine
 
 		// samplers
 		VkSampler m_shadowSampler;
-		VkSampler m_linearSampler;
-		VkSampler m_pointSampler;
+		VkSampler m_linearSamplerClamp;
+		VkSampler m_linearSamplerRepeat;
+		VkSampler m_pointSamplerClamp;
+		VkSampler m_pointSamplerRepeat;
 
 		// semaphores
 		VkSemaphore m_shadowTextureSemaphores[FRAMES_IN_FLIGHT];

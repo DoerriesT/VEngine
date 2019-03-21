@@ -10,6 +10,7 @@
 #include <glm/ext.hpp>
 #include <glm/vec3.hpp>
 #include <algorithm>
+#include "Utility/Utility.h"
 
 VEngine::RenderSystem::RenderSystem(EntityManager &entityManager)
 	:m_entityManager(entityManager),
@@ -18,6 +19,11 @@ VEngine::RenderSystem::RenderSystem(EntityManager &entityManager)
 	m_drawLists(),
 	m_lightData()
 {
+	for (size_t i = 0; i < 16; ++i)
+	{
+		m_haltonX[i] = Utility::halton(i + 1, 2) * 2.0f - 1.0f;
+		m_haltonY[i] = Utility::halton(i + 1, 3) * 2.0f - 1.0f;
+	}
 }
 
 void VEngine::RenderSystem::init()
@@ -49,8 +55,9 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			CameraComponent *cameraComponent = m_entityManager.getComponent<CameraComponent>(m_cameraEntity);
 			TransformationComponent *transformationComponent = m_entityManager.getComponent<TransformationComponent>(m_cameraEntity);
 
-			glm::mat4 &viewMatrix = cameraComponent->m_viewMatrix;
-			glm::mat4 &projectionMatrix = cameraComponent->m_projectionMatrix;
+			glm::mat4 viewMatrix = cameraComponent->m_viewMatrix;
+			glm::mat4 projectionMatrix = cameraComponent->m_projectionMatrix;
+			glm::mat4 jitterMatrix = glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % 16] / g_windowWidth, m_haltonY[m_renderParams.m_frame % 16] / g_windowHeight, 0.0f));
 
 			m_renderParams.m_time = static_cast<float>(time);
 			m_renderParams.m_fovy = cameraComponent->m_fovy;
@@ -62,12 +69,19 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_renderParams.m_prevInvViewMatrix = m_renderParams.m_invViewMatrix;
 			m_renderParams.m_prevInvProjectionMatrix = m_renderParams.m_invProjectionMatrix;
 			m_renderParams.m_prevInvViewProjectionMatrix = m_renderParams.m_invViewProjectionMatrix;
+			m_renderParams.m_prevJitteredProjectionMatrix = m_renderParams.m_jitteredProjectionMatrix;
+			m_renderParams.m_prevInvJitteredProjectionMatrix = m_renderParams.m_invJitteredProjectionMatrix;
+			m_renderParams.m_prevInvJitteredViewProjectionMatrix = m_renderParams.m_invJitteredViewProjectionMatrix;
 			m_renderParams.m_viewMatrix = viewMatrix;
 			m_renderParams.m_projectionMatrix = projectionMatrix;
 			m_renderParams.m_viewProjectionMatrix = projectionMatrix * viewMatrix;
 			m_renderParams.m_invViewMatrix = glm::inverse(viewMatrix);
 			m_renderParams.m_invProjectionMatrix = glm::inverse(projectionMatrix);
 			m_renderParams.m_invViewProjectionMatrix = glm::inverse(m_renderParams.m_viewProjectionMatrix);
+			m_renderParams.m_jitteredProjectionMatrix = jitterMatrix * m_renderParams.m_projectionMatrix;
+			m_renderParams.m_jitteredViewProjectionMatrix = jitterMatrix * m_renderParams.m_viewProjectionMatrix;
+			m_renderParams.m_invJitteredProjectionMatrix = glm::inverse(m_renderParams.m_jitteredProjectionMatrix);
+			m_renderParams.m_invJitteredViewProjectionMatrix = glm::inverse(m_renderParams.m_jitteredViewProjectionMatrix);
 			m_renderParams.m_cameraPosition = glm::vec4(transformationComponent->m_position, 1.0f);
 			m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
 			m_renderParams.m_width = g_windowWidth;
@@ -297,7 +311,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 	float lastSplitDist = 0.0;
 	for (uint32_t i = 0; i < cascadeCount; i++)
 	{
-		glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, 1600.0f / 900.0f, nearPlane + lastSplitDist * (farPlane - nearPlane), nearPlane + splits[i] * (farPlane - nearPlane));
+		glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, g_windowWidth / float(g_windowHeight), nearPlane + lastSplitDist * (farPlane - nearPlane), nearPlane + splits[i] * (farPlane - nearPlane));
 		glm::mat4 invProjection = glm::inverse(projectionMatrix);
 
 		glm::vec3 frustumCorners[8];

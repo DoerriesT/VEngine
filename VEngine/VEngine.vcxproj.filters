@@ -219,6 +219,12 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityCompositionPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -339,6 +345,12 @@
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityCompositionPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

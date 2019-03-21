@@ -14,5 +14,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c luminanceHistogramReduceAverage_comp.
 glslc --target-env=vulkan1.1 -O -Werror -c tonemap_comp.comp -o tonemap_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c luminanceHistogramDebug_vert.vert -o luminanceHistogramDebug_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c luminanceHistogramDebug_frag.frag -o luminanceHistogramDebug_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c taaResolve_comp.comp -o taaResolve_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c velocityComposition_comp.comp -o velocityComposition_comp.spv
 
 pause
