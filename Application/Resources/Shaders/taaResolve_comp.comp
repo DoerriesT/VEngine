@@ -204,8 +204,8 @@ void main()
 	float antiFlickeringWeight = clamp(abs(spatialContrastWeight - history.a) , 0.0, 1.0);
 	
 	float historyLuma = dot(history.rgb, LUMA_RGB_TUPLE);
-	float temporalContrast = abs(currentLuma - historyLuma);
-	float temporalContrastWeight = temporalContrast < 0.01 ? 1.0 : 0.0;
+	float temporalContrast = abs(currentLuma - historyLuma) / max(currentLuma, max(historyLuma, 1e-6));
+	float temporalContrastWeight = temporalContrast < 0.15 ? 1.0 : 0.0;
 	
 	float clipLength = clamp(clipHistory(history.rgb, neighbors[4], neighborMin, neighborMax), 0.0, 1.0);
 	history.rgb = mix(history.rgb, neighbors[4], clipLength * square(square(1.0 - antiFlickeringWeight)));
@@ -221,7 +221,7 @@ void main()
 	
 	
 	
-	float alpha = mix(0.05, 1.0, temporalContrastWeight);
+	float alpha = mix(0.05, 0.6, temporalContrastWeight);
 	alpha = mix(alpha, 1e-10, antiFlickeringWeight);
 	
 	ivec2 previousPosition = ivec2(previousUV * textureSize(uSourceTexture, 0).xy);
