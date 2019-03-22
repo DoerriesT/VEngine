@@ -494,6 +494,28 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 			}
 		}
 
+		// velocity initialization set
+		{
+			uint32_t offset = bindingCount;
+
+			// depth texture
+			bindings[bindingCount].binding = VelocityInitializationSetBindings::DEPTH_IMAGE_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+			layoutInfo.bindingCount = bindingCount - offset;
+			layoutInfo.pBindings = &bindings[offset];
+
+			if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutInfo, nullptr, &m_descriptorSetLayouts[VELOCITY_INITIALIZATION_SET_INDEX]) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create descriptor set layout!", -1);
+			}
+		}
+
 
 		// create descriptor pool
 

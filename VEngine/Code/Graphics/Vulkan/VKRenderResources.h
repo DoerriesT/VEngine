@@ -85,6 +85,14 @@ namespace VEngine
 		};
 	}
 
+	namespace VelocityInitializationSetBindings
+	{
+		enum
+		{
+			DEPTH_IMAGE_BINDING = 0,
+		};
+	}
+
 	enum
 	{
 		COMMON_SET_INDEX = 0,
@@ -93,7 +101,8 @@ namespace VEngine
 		TONEMAP_SET_INDEX = 3,
 		TAA_RESOLVE_SET_INDEX = 4,
 		VELOCITY_COMPOSITION_SET_INDEX = 5,
-		MAX_DESCRIPTOR_SET_INDEX = VELOCITY_COMPOSITION_SET_INDEX
+		VELOCITY_INITIALIZATION_SET_INDEX,
+		MAX_DESCRIPTOR_SET_INDEX = VELOCITY_INITIALIZATION_SET_INDEX
 	};
 	
 

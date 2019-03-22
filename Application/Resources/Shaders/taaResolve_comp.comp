@@ -3,6 +3,8 @@
 #include "common.h"
 
 #define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
+#define LOCAL_SIZE_X 8
+#define LOCAL_SIZE_Y 8
 
 layout(set = 1, binding = 0, rgba16f) uniform image2D uResultImage;
 layout(set = 1, binding = 1) uniform sampler2D uDepthTexture;
@@ -11,7 +13,10 @@ layout(set = 1, binding = 3) uniform sampler2D uHistoryTexture;
 layout(set = 1, binding = 4) uniform sampler2D uSourceTexture;
 
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = 1) in;
+
+shared float ldsDepth[LOCAL_SIZE_X + 2][LOCAL_SIZE_Y + 2];
+shared vec3 ldsNeighborHood[LOCAL_SIZE_X + 2][LOCAL_SIZE_Y + 2];
 
 vec3 rgbToYcocg(vec3 color)
 {
@@ -126,11 +131,39 @@ float square(float a)
 
 void main() 
 {
+	// fill lds data
+	ldsDepth[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	ldsNeighborHood[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
+	
+	if (gl_LocalInvocationID.x == 0)
+	{
+		ldsDepth[0][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), 0).x;
+		ldsNeighborHood[0][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), 0).rgb;
+	}
+	else if (gl_LocalInvocationID.x == LOCAL_SIZE_X - 1)
+	{
+		ldsDepth[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), 0).x;
+		ldsNeighborHood[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), 0).rgb;
+	}
+	
+	if (gl_LocalInvocationID.y == 0)
+	{
+		ldsDepth[gl_LocalInvocationID.x + 1][0] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, -1), 0).x;
+		ldsNeighborHood[gl_LocalInvocationID.x + 1][0] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, -1), 0).rgb;
+	}
+	else if (gl_LocalInvocationID.y == LOCAL_SIZE_Y - 1)
+	{
+		ldsDepth[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 2] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, 1), 0).x;
+		ldsNeighborHood[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 2] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, 1), 0).rgb;
+	}
+	
+	barrier();
+	
 	vec2 domainSize = textureSize(uSourceTexture, 0).xy;
 	vec2 texelSize = vec2(1.0 / domainSize);
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	
-	// find closest depth in X pattern and sample velocity from there -> better preserves edges during movement
+	// find closest depth and sample velocity from there -> better preserves edges during movement
 	float closestDepth = 1.0;
 	ivec2 velocityOffset = ivec2(0, 0);
 	for (int y = -1; y < 2; ++y)
@@ -138,7 +171,7 @@ void main()
 		for (int x = -1; x < 2; ++x)
 		{
 			ivec2 offset = ivec2(x, y);
-			float depth = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + offset, 0).x;
+			float depth = ldsDepth[gl_LocalInvocationID.x + 1 + x][gl_LocalInvocationID.y + 1 + y];
 			
 			if (depth < closestDepth)
 			{
@@ -156,15 +189,15 @@ void main()
 	
 	// sample neighborhood
 	vec3 neighbors[9];
-	neighbors[0] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, -1), 0).rgb;
-	neighbors[1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0, -1), 0).rgb;
-	neighbors[2] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1, -1), 0).rgb;
-	neighbors[3] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1,  0), 0).rgb;
-	neighbors[4] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0,  0), 0).rgb;
-	neighbors[5] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1,  0), 0).rgb;
-	neighbors[6] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1,  1), 0).rgb;
-	neighbors[7] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 0,  1), 0).rgb;
-	neighbors[8] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2( 1,  1), 0).rgb;
+	neighbors[0] = ldsNeighborHood[gl_LocalInvocationID.x + 1 - 1][gl_LocalInvocationID.y + 1 - 1];
+	neighbors[1] = ldsNeighborHood[gl_LocalInvocationID.x + 1    ][gl_LocalInvocationID.y + 1 - 1];
+	neighbors[2] = ldsNeighborHood[gl_LocalInvocationID.x + 1 + 1][gl_LocalInvocationID.y + 1 - 1];
+	neighbors[3] = ldsNeighborHood[gl_LocalInvocationID.x + 1 - 1][gl_LocalInvocationID.y + 1    ];
+	neighbors[4] = ldsNeighborHood[gl_LocalInvocationID.x + 1    ][gl_LocalInvocationID.y + 1    ];
+	neighbors[5] = ldsNeighborHood[gl_LocalInvocationID.x + 1 + 1][gl_LocalInvocationID.y + 1    ];
+	neighbors[6] = ldsNeighborHood[gl_LocalInvocationID.x + 1 - 1][gl_LocalInvocationID.y + 1 + 1];
+	neighbors[7] = ldsNeighborHood[gl_LocalInvocationID.x + 1    ][gl_LocalInvocationID.y + 1 + 1];
+	neighbors[8] = ldsNeighborHood[gl_LocalInvocationID.x + 1 + 1][gl_LocalInvocationID.y + 1 + 1];
 	
 	// plus shape min max
 	vec3 neighborPlusMin = neighbors[4];

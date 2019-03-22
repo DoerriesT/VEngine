@@ -181,6 +181,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityCompositionPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
@@ -230,6 +231,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityCompositionPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp" />

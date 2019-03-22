@@ -28,7 +28,6 @@ void main()
 	}
 	
 	barrier();
-	memoryBarrier();
 	
 	if (threadId == 0)
 	{

@@ -23,6 +23,7 @@
 #include "Pass/VKTonemapPass.h"
 #include "Pass/VKTAAResolvePass.h"
 #include "Pass/VKVelocityCompositionPass.h"
+#include "Pass/VKVelocityInitializationPass.h"
 #include "VKPipelineManager.h"
 #include <iostream>
 
@@ -222,7 +223,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		FrameGraph::ImageDescription desc = {};
 		desc.m_name = "VelocityTexture";
 		desc.m_concurrent = false;
-		desc.m_clear = true;
+		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
@@ -407,11 +408,15 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
 
+	VKVelocityInitializationPass velocityInitializationPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
+
 	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
 	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_jitteredProjectionMatrix);
 
 	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+
+	VKTAAResolvePass taaResolvePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 
 	VKLuminanceHistogramPass luminanceHistogramPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, -10.0f, 17.0f);
 
@@ -422,10 +427,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.75f, 0.0f, 0.25f, 0.25f);
 
 	VKLuminanceHistogramDebugPass luminanceHistogramDebugPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, 0.5f, 0.0f, 0.5f, 1.0f);
-
-	VKTAAResolvePass taaResolvePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
-
-	VKVelocityCompositionPass velocityCompositionPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
 
 	FrameGraph::PassTimingInfo timingInfos[128];
 	size_t timingInfoCount;
@@ -543,6 +544,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			velocityTextureHandle);
 	}
 
+	velocityInitializationPass.addToGraph(graph, depthTextureHandle, velocityTextureHandle);
+
 	// draw shadows
 	if (!lightData.m_shadowJobs.empty())
 	{
@@ -574,9 +577,6 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 			shadowTextureHandle,
 			lightTextureHandle);
 	}
-
-	// correct velocities
-	velocityCompositionPass.addToGraph(graph, depthTextureHandle, velocityTextureHandle);
 
 	// calculate luminance histograms
 	luminanceHistogramPass.addToGraph(graph, lightTextureHandle, luminanceHistogramBufferHandle);
