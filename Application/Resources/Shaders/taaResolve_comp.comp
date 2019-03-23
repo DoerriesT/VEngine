@@ -12,6 +12,14 @@ layout(set = 1, binding = 2) uniform sampler2D uVelocityTexture;
 layout(set = 1, binding = 3) uniform sampler2D uHistoryTexture;
 layout(set = 1, binding = 4) uniform sampler2D uSourceTexture;
 
+layout(push_constant) uniform PushConsts 
+{
+	float bicubicSharpness;
+	float temporalContrastThreshold;
+	float lowStrengthAlpha;
+	float highStrengthAlpha;
+	float antiFlickeringAlpha;
+} uPushConsts;
 
 layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = 1) in;
 
@@ -44,7 +52,7 @@ vec3 ycocgToRgb(vec3 color )
 
 vec3 sampleHistory(vec2 texCoord, vec4 rtMetrics)
 {
-	const float sharpening = 0.0;  // [-0.5, 0.5]
+	const float sharpening = uPushConsts.bicubicSharpness;  // [0.0, 1.0]
 
 	vec2 samplePos = texCoord * rtMetrics.xy;
 	vec2 tc1 = floor(samplePos - 0.5) + 0.5;
@@ -53,7 +61,7 @@ vec3 sampleHistory(vec2 texCoord, vec4 rtMetrics)
 	vec2 f3 = f * f2;
 
 	// Catmull-Rom weights
-	const float c = 0.5 + sharpening;
+	const float c = sharpening;
 	vec2 w0 = -(c)       * f3 + (2.0 * c)        * f2 - (c * f);
 	vec2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2            + 1.0;
 	vec2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + (c * f);
@@ -131,30 +139,69 @@ float square(float a)
 
 void main() 
 {
+	ivec2 globalID = ivec2(gl_GlobalInvocationID.xy);
+	uvec2 localID = gl_LocalInvocationID.xy;
+	uvec2 ldsID = localID + 1;
+	
 	// fill lds data
-	ldsDepth[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy), 0).x;
-	ldsNeighborHood[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
-	
-	if (gl_LocalInvocationID.x == 0)
 	{
-		ldsDepth[0][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), 0).x;
-		ldsNeighborHood[0][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(-1, 0), 0).rgb;
-	}
-	else if (gl_LocalInvocationID.x == LOCAL_SIZE_X - 1)
-	{
-		ldsDepth[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 1] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), 0).x;
-		ldsNeighborHood[gl_LocalInvocationID.x + 2][gl_LocalInvocationID.y + 1] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(1, 0), 0).rgb;
-	}
-	
-	if (gl_LocalInvocationID.y == 0)
-	{
-		ldsDepth[gl_LocalInvocationID.x + 1][0] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, -1), 0).x;
-		ldsNeighborHood[gl_LocalInvocationID.x + 1][0] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, -1), 0).rgb;
-	}
-	else if (gl_LocalInvocationID.y == LOCAL_SIZE_Y - 1)
-	{
-		ldsDepth[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 2] = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, 1), 0).x;
-		ldsNeighborHood[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 2] = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(0, 1), 0).rgb;
+		// center
+		ldsDepth[ldsID.x][ldsID.y] = texelFetch(uDepthTexture, globalID, 0).x;
+		ldsNeighborHood[ldsID.x][ldsID.y] = texelFetch(uSourceTexture, globalID, 0).rgb;
+		
+		// left edge
+		if (localID.x == 0)
+		{
+			ldsDepth[0][ldsID.y] = texelFetch(uDepthTexture, globalID + ivec2(-1, 0), 0).x;
+			ldsNeighborHood[0][ldsID.y] = texelFetch(uSourceTexture, globalID + ivec2(-1, 0), 0).rgb;
+		}
+		// right edge
+		else if (localID.x == LOCAL_SIZE_X - 1)
+		{
+			ldsDepth[ldsID.x + 1][ldsID.y] = texelFetch(uDepthTexture, globalID + ivec2(1, 0), 0).x;
+			ldsNeighborHood[ldsID.x + 1][ldsID.y] = texelFetch(uSourceTexture, globalID + ivec2(1, 0), 0).rgb;
+		}
+		
+		// top edge
+		if (localID.y == 0)
+		{
+			ldsDepth[ldsID.x][0] = texelFetch(uDepthTexture, globalID + ivec2(0, -1), 0).x;
+			ldsNeighborHood[ldsID.x][0] = texelFetch(uSourceTexture, globalID + ivec2(0, -1), 0).rgb;
+		}
+		// bottom edge
+		else if (localID.y == LOCAL_SIZE_Y - 1)
+		{
+			ldsDepth[ldsID.x][ldsID.y + 1] = texelFetch(uDepthTexture, globalID + ivec2(0, 1), 0).x;
+			ldsNeighborHood[ldsID.x][ldsID.y + 1] = texelFetch(uSourceTexture, globalID + ivec2(0, 1), 0).rgb;
+		}
+		
+		// top left corner
+		if (localID.x == 0 && localID.y == 0)
+		{
+			ldsDepth[0][0] = texelFetch(uDepthTexture, globalID + ivec2(-1, -1), 0).x;
+			ldsNeighborHood[0][0] = texelFetch(uSourceTexture, globalID + ivec2(-1, -1), 0).rgb;
+		}
+		
+		// top right corner
+		if (localID.x == LOCAL_SIZE_X - 1 && localID.y == 0)
+		{
+			ldsDepth[ldsID.x + 1][0] = texelFetch(uDepthTexture, globalID + ivec2(1, -1), 0).x;
+			ldsNeighborHood[ldsID.x + 1][0] = texelFetch(uSourceTexture, globalID + ivec2(1, -1), 0).rgb;
+		}
+		
+		// bottom left corner
+		if (localID.x == 0 && localID.y == LOCAL_SIZE_Y - 1)
+		{
+			ldsDepth[0][ldsID.y + 1] = texelFetch(uDepthTexture, globalID + ivec2(-1, 1), 0).x;
+			ldsNeighborHood[0][ldsID.y + 1] = texelFetch(uSourceTexture, globalID + ivec2(-1, 1), 0).rgb;
+		}
+		
+		// bottom right corner
+		if (localID.x == LOCAL_SIZE_X - 1 && localID.y == LOCAL_SIZE_Y - 1)
+		{
+			ldsDepth[ldsID.x + 1][ldsID.y + 1] = texelFetch(uDepthTexture, globalID + ivec2(1, 1), 0).x;
+			ldsNeighborHood[ldsID.x + 1][ldsID.y + 1] = texelFetch(uSourceTexture, globalID + ivec2(1, 1), 0).rgb;
+		}
 	}
 	
 	barrier();
@@ -238,7 +285,7 @@ void main()
 	
 	float historyLuma = dot(history.rgb, LUMA_RGB_TUPLE);
 	float temporalContrast = abs(currentLuma - historyLuma) / max(currentLuma, max(historyLuma, 1e-6));
-	float temporalContrastWeight = temporalContrast < 0.15 ? 1.0 : 0.0;
+	float temporalContrastWeight = temporalContrast < uPushConsts.temporalContrastThreshold ? 1.0 : 0.0;
 	
 	float clipLength = clamp(clipHistory(history.rgb, neighbors[4], neighborMin, neighborMax), 0.0, 1.0);
 	history.rgb = mix(history.rgb, neighbors[4], clipLength * square(square(1.0 - antiFlickeringWeight)));
@@ -254,8 +301,8 @@ void main()
 	
 	
 	
-	float alpha = mix(0.05, 0.6, temporalContrastWeight);
-	alpha = mix(alpha, 1e-10, antiFlickeringWeight);
+	float alpha = mix(uPushConsts.highStrengthAlpha, uPushConsts.lowStrengthAlpha, temporalContrastWeight);
+	alpha = mix(alpha, uPushConsts.antiFlickeringAlpha, antiFlickeringWeight);
 	
 	ivec2 previousPosition = ivec2(previousUV * textureSize(uSourceTexture, 0).xy);
 	
@@ -266,9 +313,6 @@ void main()
 	vec4 result;
 	result.rgb = inverseTonemap(mix(tonemap(history.rgb), tonemap(neighbors[4]), alpha));
 	result.a = spatialContrastWeight;
-	
-	//if (uPerFrameData.frame % 100 >= 50)
-	//	result.rgb = neighbors[4];
 	
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
 }

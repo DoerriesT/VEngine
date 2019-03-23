@@ -13,12 +13,14 @@
 #include <GlobalVar.h>
 #include <Scene.h>
 #include <random>
+#include <Input/UserInput.h>
+#include <GlobalVar.h>
 
 class DummyLogic : public VEngine::IGameLogic
 {
 public:
 	void init();
-	void input(double time, double timeDelta) {};
+	void input(double time, double timeDelta);
 	void update(double time, double timeDelta) {};
 	void render() {};
 };
@@ -78,4 +80,10 @@ void DummyLogic::init()
 	//	em.addComponent<VEngine::RenderableComponent>(lightEntity1);
 	//}
 	
+}
+
+void DummyLogic::input(double time, double timeDelta)
+{
+	auto &input = e->getUserInput();
+	VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::SPACE);
 }

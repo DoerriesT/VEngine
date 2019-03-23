@@ -88,6 +88,12 @@ namespace VEngine
 
 	extern GlobalVar<unsigned int> g_windowWidth;
 	extern GlobalVar<unsigned int> g_windowHeight;
+	extern GlobalVar<bool> g_TAAEnabled;
+	extern GlobalVar<float> g_TAABicubicSharpness;
+	extern GlobalVar<float> g_TAATemporalContrastThreshold;
+	extern GlobalVar<float> g_TAALowStrengthAlpha;
+	extern GlobalVar<float> g_TAAHighStrengthAlpha;
+	extern GlobalVar<float> g_TAAAntiFlickeringAlpha;
 	extern GlobalConst<unsigned int> g_shadowAtlasSize;
 	extern GlobalConst<unsigned int> g_shadowAtlasMinTileSize;
 	extern GlobalConst<unsigned int> g_shadowCascadeSize;

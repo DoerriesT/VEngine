@@ -621,7 +621,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// taa resolve
-	//if (perFrameData.m_frame % 100 < 50)
+	if (g_TAAEnabled)
 	{
 		taaResolvePass.addToGraph(graph, perFrameDataBufferHandle, depthTextureHandle, velocityTextureHandle, taaHistoryTextureHandle, lightTextureHandle, taaResolveTextureHandle);
 

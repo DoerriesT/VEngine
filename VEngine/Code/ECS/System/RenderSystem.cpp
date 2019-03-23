@@ -57,7 +57,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 
 			glm::mat4 viewMatrix = cameraComponent->m_viewMatrix;
 			glm::mat4 projectionMatrix = cameraComponent->m_projectionMatrix;
-			glm::mat4 jitterMatrix = glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % 16] / g_windowWidth, m_haltonY[m_renderParams.m_frame % 16] / g_windowHeight, 0.0f));
+			glm::mat4 jitterMatrix = g_TAAEnabled ? glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % 16] / g_windowWidth, m_haltonY[m_renderParams.m_frame % 16] / g_windowHeight, 0.0f)) : glm::mat4();
 
 			m_renderParams.m_time = static_cast<float>(time);
 			m_renderParams.m_fovy = cameraComponent->m_fovy;
@@ -70,6 +70,7 @@ void VEngine::RenderSystem::update(double time, double timeDelta)
 			m_renderParams.m_prevInvProjectionMatrix = m_renderParams.m_invProjectionMatrix;
 			m_renderParams.m_prevInvViewProjectionMatrix = m_renderParams.m_invViewProjectionMatrix;
 			m_renderParams.m_prevJitteredProjectionMatrix = m_renderParams.m_jitteredProjectionMatrix;
+			m_renderParams.m_prevJitteredViewProjectionMatrix = m_renderParams.m_jitteredViewProjectionMatrix;
 			m_renderParams.m_prevInvJitteredProjectionMatrix = m_renderParams.m_invJitteredProjectionMatrix;
 			m_renderParams.m_prevInvJitteredViewProjectionMatrix = m_renderParams.m_invJitteredViewProjectionMatrix;
 			m_renderParams.m_viewMatrix = viewMatrix;
