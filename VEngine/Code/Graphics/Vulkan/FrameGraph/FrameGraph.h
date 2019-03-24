@@ -88,7 +88,6 @@ namespace VEngine
 		{
 		public:
 			explicit PassBuilder(Graph &graph, size_t passIndex);
-			void setDimensions(uint32_t width, uint32_t height);
 			void readDepthStencil(ImageHandle handle);
 			void readInputAttachment(ImageHandle handle, uint32_t index, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
 			void readTexture(ImageHandle handle, VkPipelineStageFlags stageFlags, VkSampler sampler, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
@@ -149,7 +148,7 @@ namespace VEngine
 			Graph &operator= (const Graph &) = delete;
 			Graph &operator= (const Graph &&) = delete;
 			~Graph();
-			PassBuilder addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc);
+			PassBuilder addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc, uint32_t width, uint32_t height);
 			PassBuilder addComputePass(const char *name, Pass *pass, const VKComputePipelineDescription *pipelineDesc, QueueType queueType);
 			PassBuilder addGenericPass(const char *name, Pass *pass, QueueType queueType);
 			PassBuilder addHostAccessPass(const char *name, Pass *pass);

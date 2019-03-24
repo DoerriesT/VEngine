@@ -639,7 +639,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	// blit to swapchain image
 	if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
 	{
-		blitPass.addToGraph(graph, lightTextureHandle, swapchainTextureHandle);
+		blitPass.addToGraph(graph, tonemapTargetTextureHandle, swapchainTextureHandle);
 	}
 
 	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

@@ -82,9 +82,7 @@ VEngine::VKTextPass::VKTextPass(VKRenderResources *renderResources,
 
 void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle)
 {
-	auto builder = graph.addGraphicsPass("Text Pass", this, &m_pipelineDesc);
-
-	builder.setDimensions(m_width, m_height);
+	auto builder = graph.addGraphicsPass("Text Pass", this, &m_pipelineDesc, m_width, m_height);
 
 	// this pass reads from the global textures array in the common set. these descriptors are not managed by framegraph,
 	// which is why the reads are not declared here.

@@ -66,9 +66,8 @@ VEngine::VKMemoryHeapDebugPass::VKMemoryHeapDebugPass(uint32_t width, uint32_t h
 
 void VEngine::VKMemoryHeapDebugPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle)
 {
-	auto builder = graph.addGraphicsPass("Memory Heap Debug Pass", this, &m_pipelineDesc);
+	auto builder = graph.addGraphicsPass("Memory Heap Debug Pass", this, &m_pipelineDesc, m_width, m_height);
 
-	builder.setDimensions(m_width, m_height);
 	builder.writeColorAttachment(colorTextureHandle, 0);
 }
 

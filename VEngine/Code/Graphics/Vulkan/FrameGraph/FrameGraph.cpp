@@ -16,12 +16,6 @@ VEngine::FrameGraph::PassBuilder::PassBuilder(Graph &graph, size_t passIndex)
 {
 }
 
-void PassBuilder::setDimensions(uint32_t width, uint32_t height)
-{
-	m_graph.m_framebufferInfo[m_passIndex].m_width = width;
-	m_graph.m_framebufferInfo[m_passIndex].m_height = height;
-}
-
 void PassBuilder::readDepthStencil(ImageHandle imageHandle)
 {
 	assert(imageHandle);
@@ -487,7 +481,7 @@ Graph::~Graph()
 	vkDestroyQueryPool(g_context.m_device, m_queryPool, nullptr);
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc)
+PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc, uint32_t width, uint32_t height)
 {
 	assert(m_passCount + 1 < MAX_PASSES);
 	m_passCount += 2;
@@ -503,6 +497,8 @@ PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *
 	m_passTypes[passIndex] = PassType::GRAPHICS;
 	m_queueType[passIndex] = QueueType::GRAPHICS;
 	m_pipelineDescriptions[passIndex] = pipelineDesc;
+	m_framebufferInfo[passIndex].m_width = width;
+	m_framebufferInfo[passIndex].m_height = height;
 
 	m_passes[passIndex] = pass;
 
@@ -1916,6 +1912,17 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			// if no events to wait on and we still have pending resource barriers, issue a pipeline barrier
 			if (!sync.m_waitEventCount && (bufferBarrierCount || imageBarrierCount))
 			{
+				// since source stage is now VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, remove all srcAcces masks;
+				for (size_t i = 0; i < bufferBarrierCount; ++i)
+				{
+					bufferBarriers[i].srcAccessMask = 0;
+				}
+
+				for (size_t i = 0; i < imageBarrierCount; ++i)
+				{
+					imageBarriers[i].srcAccessMask = 0;
+				}
+
 				vkCmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_passStageMasks[passIndex], 0, 0, nullptr, bufferBarrierCount, bufferBarriers, imageBarrierCount, imageBarriers);
 			}
 		}

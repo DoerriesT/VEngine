@@ -75,9 +75,7 @@ VEngine::VKRasterTilingPass::VKRasterTilingPass(VKRenderResources * renderResour
 
 void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::BufferHandle perFrameDataBufferHandle, FrameGraph::BufferHandle pointLightBitMaskBufferHandle)
 {
-	auto builder = graph.addGraphicsPass("Tiling Pass", this, &m_pipelineDesc);
-
-	builder.setDimensions(m_width / 2, m_height / 2);
+	auto builder = graph.addGraphicsPass("Tiling Pass", this, &m_pipelineDesc, m_width / 2, m_height / 2);
 
 	// common set
 	builder.writeStorageBuffer(pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::POINT_LIGHT_BITMASK_BINDING);

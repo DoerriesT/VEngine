@@ -92,9 +92,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::ImageHandle materialTextureHandle,
 	FrameGraph::ImageHandle velocityTextureHandle)
 {
-	auto builder = graph.addGraphicsPass(m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", this, &m_pipelineDesc);
-
-	builder.setDimensions(m_width, m_height);
+	auto builder = graph.addGraphicsPass(m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", this, &m_pipelineDesc, m_width, m_height);
 
 	// common set
 	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);

@@ -82,9 +82,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::BufferHandle perDrawDataBufferHandle,
 	FrameGraph::ImageHandle shadowTextureHandle)
 {
-	auto builder = graph.addGraphicsPass("Shadow Pass", this, &m_pipelineDesc);
-		
-	builder.setDimensions(m_width, m_height);
+	auto builder = graph.addGraphicsPass("Shadow Pass", this, &m_pipelineDesc, m_width, m_height);
 
 	// common set
 	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);

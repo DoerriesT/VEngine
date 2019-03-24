@@ -11,7 +11,7 @@ VEngine::CameraControllerSystem::CameraControllerSystem(EntityManager & entityMa
 	m_grabMouse(grabMouse),
 	m_grabbedMouse(),
 	m_mouseHistory(),
-	m_mouseSmoothFactor(0.85f)
+	m_mouseSmoothFactor(0.05f)
 {
 }
 
@@ -55,7 +55,7 @@ void VEngine::CameraControllerSystem::input(double time, double timeDelta)
 				}
 			}
 
-			m_mouseHistory = glm::mix(mouseDelta, m_mouseHistory, m_mouseSmoothFactor);
+			m_mouseHistory = glm::mix(m_mouseHistory, mouseDelta, timeDelta / (timeDelta + m_mouseSmoothFactor));
 			if (glm::dot(m_mouseHistory, m_mouseHistory) > 0.0f)
 			{
 				camera.rotate(glm::vec3(m_mouseHistory.y * 0.005f, m_mouseHistory.x * 0.005f, 0.0));

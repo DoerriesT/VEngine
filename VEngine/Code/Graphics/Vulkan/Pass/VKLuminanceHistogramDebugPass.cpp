@@ -70,9 +70,7 @@ void VEngine::VKLuminanceHistogramDebugPass::addToGraph(FrameGraph::Graph &graph
 	FrameGraph::ImageHandle colorTextureHandle, 
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle)
 {
-	auto builder = graph.addGraphicsPass("Luminance Histogram Debug Pass", this, &m_pipelineDesc);
-
-	builder.setDimensions(m_width, m_height);
+	auto builder = graph.addGraphicsPass("Luminance Histogram Debug Pass", this, &m_pipelineDesc, m_width, m_height);
 
 	// common set
 	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);

@@ -63,9 +63,7 @@ VEngine::VKVelocityInitializationPass::VKVelocityInitializationPass(VKRenderReso
 
 void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle depthTextureHandle, FrameGraph::ImageHandle velocityTextureHandle)
 {
-	auto builder = graph.addGraphicsPass("Velocity Initialization", this, &m_pipelineDesc);
-
-	builder.setDimensions(m_width, m_height);
+	auto builder = graph.addGraphicsPass("Velocity Initialization", this, &m_pipelineDesc, m_width, m_height);
 
 	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][VELOCITY_INITIALIZATION_SET_INDEX], VelocityInitializationSetBindings::DEPTH_IMAGE_BINDING);
 
