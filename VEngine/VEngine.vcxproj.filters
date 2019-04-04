@@ -192,6 +192,9 @@
     <ClInclude Include="Code\Input\CameraControllerSystem.h">
       <Filter>Code\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Utility\Timer.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -304,6 +307,9 @@
     </ClCompile>
     <ClCompile Include="Code\Input\CameraControllerSystem.cpp">
       <Filter>Code\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\Timer.cpp">
+      <Filter>Code\Utility</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

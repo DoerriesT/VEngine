@@ -4,11 +4,10 @@
 #include "Graphics/Vulkan/VKRenderer.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "IGameLogic.h"
-#include <GLFW/glfw3.h>
-#include <iostream>
 #include "Graphics/RenderSystem.h"
 #include "Input/CameraControllerSystem.h"
 #include "GlobalVar.h"
+#include "Utility/Timer.h"
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -33,28 +32,30 @@ void VEngine::Engine::start()
 
 	m_gameLogic.initialize(this);
 	
-	m_lastFpsMeasure = m_time = glfwGetTime();
+	Timer timer;
+	uint64_t previousTickCount = timer.getElapsedTicks();
+	uint64_t frameCount = 0;
+
 	while (!m_shutdown && !m_window->shouldClose())
 	{
-		double time = glfwGetTime();
-		m_timeDelta = time - m_time;
-		m_time = time;
+		timer.update();
+		double timeDelta = timer.getTimeDelta();
 
 		m_window->pollEvents();
 		m_userInput->input();
-		m_cameraControllerSystem->update(m_timeDelta);
-		m_gameLogic.update(m_timeDelta);
-		m_renderSystem->update(m_timeDelta);
+		m_cameraControllerSystem->update(timeDelta);
+		m_gameLogic.update(timeDelta);
+		m_renderSystem->update(timeDelta);
 
-		double difference = m_time - m_lastFpsMeasure;
-		if (difference > 1.0)
+		double timeDiff = (timer.getElapsedTicks() - previousTickCount) / static_cast<double>(timer.getTickFrequency());
+		if (timeDiff > 1.0)
 		{
-			m_fps /= difference;
-			m_window->setTitle(m_windowTitle + " - " + std::to_string(m_fps) + " FPS " + std::to_string(1.0 / m_fps * 1000.0) + " ms");
-			m_lastFpsMeasure = m_time;
-			m_fps = 0.0;
+			double fps = frameCount / timeDiff;
+			m_window->setTitle(m_windowTitle + " - " + std::to_string(fps) + " FPS " + std::to_string(1.0 / fps * 1000.0) + " ms");
+			previousTickCount = timer.getElapsedTicks();
+			frameCount = 0;
 		}
-		++m_fps;
+		++frameCount;
 	}
 }
 

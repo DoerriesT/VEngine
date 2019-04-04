@@ -34,10 +34,6 @@ namespace VEngine
 		std::unique_ptr<UserInput> m_userInput;
 		std::unique_ptr<CameraControllerSystem> m_cameraControllerSystem;
 		std::unique_ptr<RenderSystem> m_renderSystem;
-		double m_time;
-		double m_timeDelta;
-		double m_fps;
-		double m_lastFpsMeasure;
 		bool m_shutdown;
 		std::string m_windowTitle;
 	};
