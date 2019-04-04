@@ -19,23 +19,17 @@
     <Filter Include="Code\Input">
       <UniqueIdentifier>{b9042ce5-8996-43e3-a87d-136048f86e5f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\ECS">
-      <UniqueIdentifier>{8501741e-7058-423b-ad83-bad9424162aa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Code\ECS\Component">
-      <UniqueIdentifier>{18150fdf-5c24-476e-a49e-c3a8f1590325}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\Graphics\Camera">
       <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Code\ECS\System">
-      <UniqueIdentifier>{5283f8fe-617e-4be1-9b9e-51e43caa3c28}</UniqueIdentifier>
     </Filter>
     <Filter Include="Code\Graphics\Vulkan\FrameGraph">
       <UniqueIdentifier>{83870de2-c33c-4ac9-a94d-fc59ee01051b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Code\Graphics\Vulkan\Pass">
       <UniqueIdentifier>{677f189a-427e-40e2-989a-49d1555ec275}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Component">
+      <UniqueIdentifier>{afa93efd-7cf8-40f5-84e3-eef527e09db9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -56,12 +50,6 @@
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Utility\stb_image.h">
-      <Filter>Code\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Utility\stb_image_write.h">
-      <Filter>Code\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Code\Utility\ContainerUtility.h">
       <Filter>Code\Utility</Filter>
@@ -84,27 +72,6 @@
     <ClInclude Include="Code\Window\Window.h">
       <Filter>Code\Window</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\IOnComponentAddedListener.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\Component.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\TransformationComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\RenderableComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
     <ClInclude Include="Code\GlobalVar.h">
       <Filter>Code</Filter>
     </ClInclude>
@@ -114,32 +81,8 @@
     <ClInclude Include="Code\Graphics\Camera\Camera.h">
       <Filter>Code\Graphics\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\EntityManager.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\System\System.h">
-      <Filter>Code\ECS\System</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\SystemManager.h">
-      <Filter>Code\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\System\RenderSystem.h">
-      <Filter>Code\ECS\System</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\CameraComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\RenderParams.h">
       <Filter>Code\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\System\CameraControllerSystem.h">
-      <Filter>Code\ECS\System</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\PointLightComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\SpotLightComponent.h">
-      <Filter>Code\ECS\Component</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Mesh.h">
       <Filter>Code\Graphics</Filter>
@@ -147,17 +90,11 @@
     <ClInclude Include="Code\Graphics\DrawItem.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\ECS\Component\MeshComponent.h">
-      <Filter>Code\ECS\Component</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\LightData.h">
       <Filter>Code\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\ECS\Component\DirectionalLightComponent.h">
-      <Filter>Code\ECS\Component</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h">
       <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
@@ -228,6 +165,33 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Components\CameraComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\DirectionalLightComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\MeshComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\PointLightComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\RenderableComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\SpotLightComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\TransformationComponent.h">
+      <Filter>Code\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\RenderSystem.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Input\CameraControllerSystem.h">
+      <Filter>Code\Input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -248,12 +212,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utility\stb_image.cpp">
-      <Filter>Code\Utility</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Utility\stb_image_write.cpp">
-      <Filter>Code\Utility</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Input\UserInput.cpp">
       <Filter>Code\Input</Filter>
     </ClCompile>
@@ -263,29 +221,11 @@
     <ClCompile Include="Code\Window\Window.cpp">
       <Filter>Code\Window</Filter>
     </ClCompile>
-    <ClCompile Include="Code\ECS\Component\Component.cpp">
-      <Filter>Code\ECS\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Code\GlobalVar.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp">
       <Filter>Code\Graphics\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\EntityManager.cpp">
-      <Filter>Code\ECS</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\System\System.cpp">
-      <Filter>Code\ECS\System</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\SystemManager.cpp">
-      <Filter>Code\ECS</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\System\RenderSystem.cpp">
-      <Filter>Code\ECS\System</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\ECS\System\CameraControllerSystem.cpp">
-      <Filter>Code\ECS\System</Filter>
     </ClCompile>
     <ClCompile Include="Code\Scene.cpp">
       <Filter>Code</Filter>
@@ -358,6 +298,12 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\RenderSystem.cpp">
+      <Filter>Code\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Input\CameraControllerSystem.cpp">
+      <Filter>Code\Input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

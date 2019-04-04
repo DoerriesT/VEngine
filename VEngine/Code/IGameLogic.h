@@ -2,13 +2,14 @@
 
 namespace VEngine
 {
+	class Engine;
+
 	class IGameLogic
 	{
 	public:
-		virtual void init() = 0;
-		virtual void input(double time, double timeDelta) = 0;
-		virtual void update(double time, double timeDelta) = 0;
-		virtual void render() = 0;
+		virtual void initialize(Engine *engine) = 0;
+		virtual void update(float timeDelta) = 0;
+		virtual void shutdown() = 0;
 	};
 
 }

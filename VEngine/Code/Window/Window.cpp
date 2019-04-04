@@ -17,16 +17,6 @@ VEngine::Window::Window(unsigned int width, unsigned int height, const std::stri
 	m_height(height),
 	m_title(title)
 {
-}
-
-VEngine::Window::~Window()
-{
-	glfwDestroyWindow(m_windowHandle);
-	glfwTerminate();
-}
-
-void VEngine::Window::init()
-{
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -49,6 +39,13 @@ void VEngine::Window::init()
 
 	glfwSetWindowUserPointer(m_windowHandle, this);
 }
+
+VEngine::Window::~Window()
+{
+	glfwDestroyWindow(m_windowHandle);
+	glfwTerminate();
+}
+
 void VEngine::Window::pollEvents() const
 {
 	glfwPollEvents();

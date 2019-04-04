@@ -27,28 +27,16 @@
 #include "VKPipelineManager.h"
 #include <iostream>
 
-VEngine::VKRenderer::VKRenderer()
-	:m_width(),
-	m_height(),
-	m_swapChainImageIndex()
+VEngine::VKRenderer::VKRenderer(unsigned int width, unsigned int height, void *windowHandle)
 {
-}
+	g_context.init(static_cast<GLFWwindow *>(windowHandle));
 
-VEngine::VKRenderer::~VKRenderer()
-{
-}
-
-void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
-{
-	m_width = width;
-	m_height = height;
 	m_renderResources = std::make_unique<VKRenderResources>();
 	m_textureLoader = std::make_unique<VKTextureLoader>();
-	m_swapChain = std::make_unique<VKSwapChain>();
-	m_swapChain->init(width, height);
+	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
-	m_renderResources->init(m_width, m_height, VK_FORMAT_R16G16B16A16_SFLOAT);
+	m_renderResources->init(m_width, m_height);
 
 	m_fontAtlasTextureIndex = m_textureLoader->load("Resources/Textures/fontConsolas.dds");
 
@@ -58,6 +46,18 @@ void VEngine::VKRenderer::init(unsigned int width, unsigned int height)
 	{
 		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator, *m_renderResources->m_pipelineManager);
 	}
+}
+
+VEngine::VKRenderer::~VKRenderer()
+{
+	vkDeviceWaitIdle(g_context.m_device);
+	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+	{
+		m_frameGraphs[i].release();
+	}
+	m_swapChain.reset();
+	m_textureLoader.reset();
+	m_renderResources.reset();
 }
 
 void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData)
@@ -378,12 +378,12 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
 	}
-	
+
 
 	// passes
 	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&perFrameData, 0, 0, sizeof(perFrameData), sizeof(perFrameData), sizeof(perFrameData), 1);
 
-	VKHostWritePass perDrawDataWritePassOpaque("Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(), 
+	VKHostWritePass perDrawDataWritePassOpaque("Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(),
 		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_opaqueItems.size());
 
 	VKHostWritePass perDrawDataWritePassMasked("Per Draw Data Write Pass (Masked)", (unsigned char *)drawLists.m_maskedItems.data(),
@@ -443,7 +443,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	for (size_t i = 0; i < timingInfoCount; ++i)
 	{
 		timingInfoStringData[i] = std::to_string(timingInfos[i].m_passTimeWithSync) + "ms Pass+Sync   "
-			+ std::to_string(timingInfos[i].m_passTime) + "ms Pass-Only   " 
+			+ std::to_string(timingInfos[i].m_passTime) + "ms Pass-Only   "
 			+ std::to_string(timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) + "ms Sync Only   "
 			+ std::to_string(((timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) / timingInfos[i].m_passTimeWithSync) * 100.0f) + "% Sync of total Pass Time   "
 			+ timingInfos[i].m_passName;

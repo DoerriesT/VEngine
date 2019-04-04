@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -142,23 +142,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Code\ECS\Component\CameraComponent.h" />
-    <ClInclude Include="Code\ECS\Component\Component.h" />
-    <ClInclude Include="Code\ECS\Component\DirectionalLightComponent.h" />
-    <ClInclude Include="Code\ECS\Component\MeshComponent.h" />
-    <ClInclude Include="Code\ECS\Component\PointLightComponent.h" />
-    <ClInclude Include="Code\ECS\Component\RenderableComponent.h" />
-    <ClInclude Include="Code\ECS\Component\SpotLightComponent.h" />
-    <ClInclude Include="Code\ECS\Component\TransformationComponent.h" />
-    <ClInclude Include="Code\ECS\EntityManager.h" />
-    <ClInclude Include="Code\ECS\IOnComponentAddedListener.h" />
-    <ClInclude Include="Code\ECS\IOnComponentRemovedListener.h" />
-    <ClInclude Include="Code\ECS\IOnEntityCreatedListener.h" />
-    <ClInclude Include="Code\ECS\IOnEntityDestructionListener.h" />
-    <ClInclude Include="Code\ECS\SystemManager.h" />
-    <ClInclude Include="Code\ECS\System\CameraControllerSystem.h" />
-    <ClInclude Include="Code\ECS\System\RenderSystem.h" />
-    <ClInclude Include="Code\ECS\System\System.h" />
+    <ClInclude Include="Code\Components\CameraComponent.h" />
+    <ClInclude Include="Code\Components\DirectionalLightComponent.h" />
+    <ClInclude Include="Code\Components\MeshComponent.h" />
+    <ClInclude Include="Code\Components\PointLightComponent.h" />
+    <ClInclude Include="Code\Components\RenderableComponent.h" />
+    <ClInclude Include="Code\Components\SpotLightComponent.h" />
+    <ClInclude Include="Code\Components\TransformationComponent.h" />
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
@@ -166,6 +156,7 @@
     <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
+    <ClInclude Include="Code\Graphics\RenderSystem.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
@@ -195,27 +186,21 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
     <ClInclude Include="Code\IGameLogic.h" />
+    <ClInclude Include="Code\Input\CameraControllerSystem.h" />
     <ClInclude Include="Code\Input\IInputListener.h" />
     <ClInclude Include="Code\Input\InputTokens.h" />
     <ClInclude Include="Code\Input\UserInput.h" />
     <ClInclude Include="Code\Scene.h" />
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
     <ClInclude Include="Code\Utility\ObjectPool.h" />
-    <ClInclude Include="Code\Utility\stb_image.h" />
-    <ClInclude Include="Code\Utility\stb_image_write.h" />
     <ClInclude Include="Code\Utility\Utility.h" />
     <ClInclude Include="Code\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Code\ECS\Component\Component.cpp" />
-    <ClCompile Include="Code\ECS\EntityManager.cpp" />
-    <ClCompile Include="Code\ECS\SystemManager.cpp" />
-    <ClCompile Include="Code\ECS\System\CameraControllerSystem.cpp" />
-    <ClCompile Include="Code\ECS\System\RenderSystem.cpp" />
-    <ClCompile Include="Code\ECS\System\System.cpp" />
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
+    <ClCompile Include="Code\Graphics\RenderSystem.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
@@ -244,10 +229,9 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
+    <ClCompile Include="Code\Input\CameraControllerSystem.cpp" />
     <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Scene.cpp" />
-    <ClCompile Include="Code\Utility\stb_image.cpp" />
-    <ClCompile Include="Code\Utility\stb_image_write.cpp" />
     <ClCompile Include="Code\Utility\Utility.cpp" />
     <ClCompile Include="Code\Window\Window.cpp" />
   </ItemGroup>

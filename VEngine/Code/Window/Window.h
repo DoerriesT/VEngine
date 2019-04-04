@@ -17,7 +17,6 @@ namespace VEngine
 	public:
 		explicit Window(unsigned int width, unsigned int height, const std::string &title);
 		~Window();
-		void init();
 		void pollEvents() const;
 		void *getWindowHandle() const;
 		unsigned int getWidth() const;

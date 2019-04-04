@@ -1,7 +1,7 @@
 #include "Scene.h"
-#include "ECS/System/RenderSystem.h"
+#include "Graphics/RenderSystem.h"
 #include <fstream>
-#include <json.h>
+#include <nlohmann/json.hpp>
 #include <memory>
 #include "Utility/Utility.h"
 

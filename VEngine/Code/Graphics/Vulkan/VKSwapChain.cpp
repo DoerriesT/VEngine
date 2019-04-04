@@ -5,11 +5,12 @@
 #include "Utility/Utility.h"
 #include "VKUtility.h"
 
-VEngine::VKSwapChain::VKSwapChain()
+VEngine::VKSwapChain::VKSwapChain(unsigned int width, unsigned int height)
 	:m_swapChain(),
 	m_imageFormat(),
 	m_extent()
 {
+	create(width, height);
 }
 
 VEngine::VKSwapChain::~VKSwapChain()
@@ -17,7 +18,7 @@ VEngine::VKSwapChain::~VKSwapChain()
 	shutdown();
 }
 
-void VEngine::VKSwapChain::init(unsigned int width, unsigned int height)
+void VEngine::VKSwapChain::create(unsigned int width, unsigned int height)
 {
 	// find surface format
 	VkSurfaceFormatKHR surfaceFormat;
@@ -171,7 +172,7 @@ void VEngine::VKSwapChain::recreate(unsigned int width, unsigned int height)
 {
 	vkDeviceWaitIdle(g_context.m_device);
 	shutdown();
-	init(width, height);
+	create(width, height);
 }
 
 VkExtent2D VEngine::VKSwapChain::getExtent() const

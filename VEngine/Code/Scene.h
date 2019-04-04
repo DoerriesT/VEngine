@@ -2,15 +2,15 @@
 #include <map>
 #include <string>
 #include "Graphics/Mesh.h"
+#include <entt/entity/registry.hpp>
 
 namespace VEngine
 {
-	struct Entity;
 	class RenderSystem;
 
 	struct Scene
 	{
-		std::map<std::string, const Entity *> m_entities;
+		std::map<std::string, entt::entity> m_entities;
 		std::map<std::string, Mesh> m_meshes;
 		std::map<std::string, uint32_t> m_textures;
 

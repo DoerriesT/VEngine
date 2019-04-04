@@ -12,7 +12,8 @@
 #include <limits>
 #include <cstdlib>
 #include <Windows.h>
-#include <json.h>
+#include <nlohmann/json.hpp>
+#include <iomanip>
 
 #undef min
 #undef max

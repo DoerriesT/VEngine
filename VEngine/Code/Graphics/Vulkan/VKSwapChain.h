@@ -7,13 +7,13 @@ namespace VEngine
 	class VKSwapChain
 	{
 	public:
-		explicit VKSwapChain();
+		explicit VKSwapChain(unsigned int width, unsigned int height);
 		VKSwapChain(VKSwapChain &) = delete;
 		VKSwapChain(VKSwapChain &&) = delete;
 		VKSwapChain &operator= (const VKSwapChain &) = delete;
 		VKSwapChain &operator= (const VKSwapChain &&) = delete;
 		~VKSwapChain();
-		void init(unsigned int width, unsigned int height);
+		void create(unsigned int width, unsigned int height);
 		void recreate(unsigned int width, unsigned int height);
 		VkExtent2D getExtent() const;
 		VkFormat getImageFormat() const;

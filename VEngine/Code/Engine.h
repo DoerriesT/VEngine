@@ -1,14 +1,15 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <entt/entity/registry.hpp>
 
 namespace VEngine
 {
 	class IGameLogic;
 	class UserInput;
 	class Window;
-	class EntityManager;
-	class SystemManager;
+	class RenderSystem;
+	class CameraControllerSystem;
 
 	class Engine
 	{
@@ -21,26 +22,23 @@ namespace VEngine
 		~Engine();
 		void start();
 		void shutdown();
-		EntityManager &getEntityManager();
-		SystemManager &getSystemManager();
+		entt::registry &getEntityRegistry();
 		UserInput &getUserInput();
+		CameraControllerSystem &getCameraControllerSystem();
+		RenderSystem &getRenderSystem();
 
 	private:
 		IGameLogic &m_gameLogic;
+		std::unique_ptr<entt::registry> m_entityRegistry;
 		std::unique_ptr<Window> m_window;
 		std::unique_ptr<UserInput> m_userInput;
-		std::unique_ptr<EntityManager> m_entityManager;
-		std::unique_ptr<SystemManager> m_systemManager;
+		std::unique_ptr<CameraControllerSystem> m_cameraControllerSystem;
+		std::unique_ptr<RenderSystem> m_renderSystem;
 		double m_time;
 		double m_timeDelta;
 		double m_fps;
 		double m_lastFpsMeasure;
 		bool m_shutdown;
 		std::string m_windowTitle;
-		
-		void gameLoop();
-		void input();
-		void update();
-		void render();
 	};
 }

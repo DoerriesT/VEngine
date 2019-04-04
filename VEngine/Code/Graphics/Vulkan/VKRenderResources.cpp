@@ -15,7 +15,7 @@ VEngine::VKRenderResources::~VKRenderResources()
 
 }
 
-void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, VkFormat swapchainFormat)
+void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 {
 	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
 	m_pipelineManager = std::make_unique<VKPipelineManager>();
@@ -754,7 +754,7 @@ void VEngine::VKRenderResources::init(unsigned int width, unsigned int height, V
 	}
 }
 
-void VEngine::VKRenderResources::resize(unsigned int width, unsigned int height)
+void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 {
 }
 

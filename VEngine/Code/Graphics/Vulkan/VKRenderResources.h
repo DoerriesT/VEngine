@@ -154,8 +154,8 @@ namespace VEngine
 		VKRenderResources &operator= (const VKRenderResources &) = delete;
 		VKRenderResources &operator= (const VKRenderResources &&) = delete;
 		~VKRenderResources();
-		void init(unsigned int width, unsigned int height, VkFormat swapchainFormat);
-		void resize(unsigned int width, unsigned int height);
+		void init(uint32_t width, uint32_t height);
+		void resize(uint32_t width, uint32_t height);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 		void updateTextureArray(const VkDescriptorImageInfo *data, size_t count);
