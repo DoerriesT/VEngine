@@ -134,12 +134,14 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.mipLodBias = 0.0f;
+		samplerCreateInfo.anisotropyEnable = VK_FALSE;
+		samplerCreateInfo.maxAnisotropy = 1.0f;
+		samplerCreateInfo.compareEnable = VK_TRUE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_GREATER;
 		samplerCreateInfo.minLod = 0.0f;
 		samplerCreateInfo.maxLod = 1;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_shadowSampler) != VK_SUCCESS)
 		{
@@ -149,18 +151,19 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// linear sampler
 	{
-		
 		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
 		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerCreateInfo.mipLodBias = 0.0f;
+		samplerCreateInfo.anisotropyEnable = VK_FALSE;
+		samplerCreateInfo.maxAnisotropy = 1.0f;
+		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
 		samplerCreateInfo.maxLod = 1;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		// clamp
 		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -190,12 +193,14 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		samplerCreateInfo.mipLodBias = 0.0f;
+		samplerCreateInfo.anisotropyEnable = VK_FALSE;
+		samplerCreateInfo.maxAnisotropy = 1.0f;
+		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
 		samplerCreateInfo.maxLod = 1;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		// clamp
 		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
