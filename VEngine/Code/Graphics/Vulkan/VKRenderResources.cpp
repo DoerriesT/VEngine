@@ -20,7 +20,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
 	m_pipelineManager = std::make_unique<VKPipelineManager>();
 
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_shadowTextureSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
 		m_swapChainImageAvailableSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
@@ -86,7 +86,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
 			m_taaHistoryTextures[i].create(imageCreateInfo, allocCreateInfo);
 
@@ -113,7 +113,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 	// avg luminance buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = sizeof(float) * FRAMES_IN_FLIGHT;
+		bufferCreateInfo.size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -307,7 +307,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 			// textures
 			bindings[bindingCount].binding = CommonSetBindings::TEXTURES_BINDING;
-			bindings[bindingCount].descriptorCount = TEXTURE_ARRAY_SIZE;
+			bindings[bindingCount].descriptorCount = RendererConsts::TEXTURE_ARRAY_SIZE;
 			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			bindings[bindingCount].pImmutableSamplers = nullptr;
 			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -527,7 +527,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		uint32_t poolSizesMap[VK_DESCRIPTOR_TYPE_RANGE_SIZE] = {};
 		for (uint32_t i = 0; i < bindingCount; ++i)
 		{
-			poolSizesMap[bindings[i].descriptorType] += bindings[i].descriptorCount * FRAMES_IN_FLIGHT;
+			poolSizesMap[bindings[i].descriptorType] += bindings[i].descriptorCount * RendererConsts::FRAMES_IN_FLIGHT;
 		}
 
 		VkDescriptorPoolSize poolSizes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
@@ -543,7 +543,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolInfo.poolSizeCount = poolSizeCount;
 		poolInfo.pPoolSizes = poolSizes;
-		poolInfo.maxSets = FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
+		poolInfo.maxSets = RendererConsts::FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -554,8 +554,8 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 		// create sets
 
-		VkDescriptorSetLayout layouts[FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1)];
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+		VkDescriptorSetLayout layouts[RendererConsts::FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1)];
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
 			for (size_t j = 0; j < MAX_DESCRIPTOR_SET_INDEX + 1; ++j)
 			{
@@ -565,7 +565,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.descriptorPool = m_descriptorPool;
-		allocInfo.descriptorSetCount = FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
+		allocInfo.descriptorSetCount = RendererConsts::FRAMES_IN_FLIGHT * (MAX_DESCRIPTOR_SET_INDEX + 1);
 		allocInfo.pSetLayouts = layouts;
 
 		if (vkAllocateDescriptorSets(g_context.m_device, &allocInfo, reinterpret_cast<VkDescriptorSet *>(m_descriptorSets)) != VK_SUCCESS)
@@ -830,9 +830,9 @@ void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, u
 
 void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo *data, size_t count)
 {
-	VkWriteDescriptorSet descriptorWrites[FRAMES_IN_FLIGHT];
+	VkWriteDescriptorSet descriptorWrites[RendererConsts::FRAMES_IN_FLIGHT];
 
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		VkWriteDescriptorSet &write = descriptorWrites[i];
 		write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
@@ -840,12 +840,12 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 		write.dstBinding = CommonSetBindings::TEXTURES_BINDING;
 		write.dstArrayElement = 0;
 		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		write.descriptorCount = count < TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : TEXTURE_ARRAY_SIZE;
+		write.descriptorCount = count < RendererConsts::TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : RendererConsts::TEXTURE_ARRAY_SIZE;
 		write.pImageInfo = data;
 	}
 
 	vkDeviceWaitIdle(g_context.m_device);
-	vkUpdateDescriptorSets(g_context.m_device, FRAMES_IN_FLIGHT, descriptorWrites, 0, nullptr);
+	vkUpdateDescriptorSets(g_context.m_device, RendererConsts::FRAMES_IN_FLIGHT, descriptorWrites, 0, nullptr);
 }
 
 VEngine::VKRenderResources::VKRenderResources()

@@ -1,6 +1,7 @@
 #pragma once
 #include "VKContext.h"
 #include <memory>
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
@@ -31,7 +32,7 @@ namespace VEngine
 		std::unique_ptr<VKRenderResources> m_renderResources;
 		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKSwapChain> m_swapChain;
-		std::unique_ptr<FrameGraph::Graph> m_frameGraphs[2];
+		std::unique_ptr<FrameGraph::Graph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
 
 		uint32_t m_width;
 		uint32_t m_height;

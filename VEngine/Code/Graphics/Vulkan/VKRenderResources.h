@@ -3,16 +3,7 @@
 #include "VKBuffer.h"
 #include <vector>
 #include <memory>
-
-#define FRAMES_IN_FLIGHT (2)
-#define TEXTURE_ARRAY_SIZE (512)
-#define MAX_DIRECTIONAL_LIGHTS (1)
-#define MAX_POINT_LIGHTS (65536)
-#define MAX_SPOT_LIGHTS (65536)
-#define MAX_SHADOW_DATA (512)
-#define Z_BINS (8192)
-#define TILE_SIZE (16)
-#define LUMINANCE_HISTOGRAM_SIZE (256)
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
@@ -110,11 +101,11 @@ namespace VEngine
 	{
 		// images
 		VKImage m_shadowTexture;
-		VKImage m_taaHistoryTextures[FRAMES_IN_FLIGHT];
+		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// views
 		VkImageView m_shadowTextureView;
-		VkImageView m_taaHistoryTextureViews[FRAMES_IN_FLIGHT];
+		VkImageView m_taaHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// buffers
 		VKBuffer m_vertexBuffer;
@@ -125,13 +116,13 @@ namespace VEngine
 
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		VkImageLayout m_taaHistoryTextureLayouts[FRAMES_IN_FLIGHT] = {};
-		VkImageLayout m_swapChainImageLayouts[FRAMES_IN_FLIGHT + 1] = {};
+		VkImageLayout m_taaHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		VkImageLayout m_swapChainImageLayouts[RendererConsts::FRAMES_IN_FLIGHT + 1] = {};
 
 		// descriptors
 		VkDescriptorPool m_descriptorPool;
 		VkDescriptorSetLayout m_descriptorSetLayouts[MAX_DESCRIPTOR_SET_INDEX + 1];
-		VkDescriptorSet m_descriptorSets[FRAMES_IN_FLIGHT][MAX_DESCRIPTOR_SET_INDEX + 1];
+		VkDescriptorSet m_descriptorSets[RendererConsts::FRAMES_IN_FLIGHT][MAX_DESCRIPTOR_SET_INDEX + 1];
 
 		// samplers
 		VkSampler m_shadowSampler;
@@ -141,9 +132,9 @@ namespace VEngine
 		VkSampler m_pointSamplerRepeat;
 
 		// semaphores
-		VkSemaphore m_shadowTextureSemaphores[FRAMES_IN_FLIGHT];
-		VkSemaphore m_swapChainImageAvailableSemaphores[FRAMES_IN_FLIGHT];
-		VkSemaphore m_swapChainRenderFinishedSemaphores[FRAMES_IN_FLIGHT];
+		VkSemaphore m_shadowTextureSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
+		VkSemaphore m_swapChainImageAvailableSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
+		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 		std::unique_ptr<VKPipelineManager> m_pipelineManager;

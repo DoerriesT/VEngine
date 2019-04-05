@@ -108,7 +108,7 @@ void VEngine::VKRasterTilingPass::record(VkCommandBuffer cmdBuf, const FrameGrap
 
 	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
 
-	uint32_t alignedDomainSizeX = (m_width / TILE_SIZE + ((m_width % TILE_SIZE == 0) ? 0 : 1));
+	uint32_t alignedDomainSizeX = (m_width / RendererConsts::LIGHTING_TILE_SIZE + ((m_width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1));
 
 	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4) + sizeof(uint32_t), sizeof(alignedDomainSizeX), &alignedDomainSizeX);
 

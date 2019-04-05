@@ -155,6 +155,7 @@
     <ClInclude Include="Code\Graphics\DrawItem.h" />
     <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
+    <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />

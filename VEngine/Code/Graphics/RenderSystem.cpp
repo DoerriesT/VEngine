@@ -18,7 +18,7 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 	m_drawLists(),
 	m_lightData()
 {
-	for (size_t i = 0; i < 16; ++i)
+	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
 		m_haltonX[i] = Utility::halton(i + 1, 2) * 2.0f - 1.0f;
 		m_haltonY[i] = Utility::halton(i + 1, 3) * 2.0f - 1.0f;
@@ -48,7 +48,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			glm::mat4 viewMatrix = cameraComponent.m_viewMatrix;
 			glm::mat4 projectionMatrix = cameraComponent.m_projectionMatrix;
-			glm::mat4 jitterMatrix = g_TAAEnabled ? glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % 16] / g_windowWidth, m_haltonY[m_renderParams.m_frame % 16] / g_windowHeight, 0.0f)) : glm::mat4();
+			glm::mat4 jitterMatrix = g_TAAEnabled ? 
+				glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth, 
+					m_haltonY[m_renderParams.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowHeight, 
+					0.0f)) 
+				: glm::mat4();
 
 			m_renderParams.m_time = 0.0f;
 			m_renderParams.m_fovy = cameraComponent.m_fovy;
@@ -169,7 +173,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 				return (-lhs.m_positionRadius.z - lhs.m_positionRadius.w) < (-rhs.m_positionRadius.z - rhs.m_positionRadius.w);
 			});
 
-			const float binDepth = 1.0f;
 			const unsigned int emptyBin = ((~0 & 0xFFFF) << 16);
 
 			// clear bins
@@ -185,8 +188,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 				float nearestPoint = -posRadius.z - posRadius.w;
 				float furthestPoint = -posRadius.z + posRadius.w;
 
-				size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / binDepth, 0.0f)), size_t(0), size_t(8191));
-				size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / binDepth, 0.0f)), size_t(0), size_t(8191));
+				size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
+				size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
 
 				for (size_t j = minBin; j <= maxBin; ++j)
 				{
@@ -289,9 +292,9 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 	glm::mat4 vulkanCorrection =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f },
-	{ 0.0f, -1.0f, 0.0f, 0.0f },
-	{ 0.0f, 0.0f, 0.5f, 0.0f },
-	{ 0.0f, 0.0f, 0.5f, 1.0f }
+		{ 0.0f, -1.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.5f, 0.0f },
+		{ 0.0f, 0.0f, 0.5f, 1.0f }
 	};
 
 

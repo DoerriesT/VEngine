@@ -195,6 +195,9 @@
     <ClInclude Include="Code\Utility\Timer.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\RendererConsts.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">

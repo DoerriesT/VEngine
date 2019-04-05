@@ -29,10 +29,10 @@ namespace VEngine
 			VKImage m_image;
 		};
 
-		std::bitset<TEXTURE_ARRAY_SIZE> m_usedSlots;
+		std::bitset<RendererConsts::TEXTURE_ARRAY_SIZE> m_usedSlots;
 		VKBuffer m_stagingBuffer;
 		VKTexture m_dummyTexture;
-		VKTexture m_textures[TEXTURE_ARRAY_SIZE];
-		VkDescriptorImageInfo m_descriptorImageInfos[TEXTURE_ARRAY_SIZE];
+		VKTexture m_textures[RendererConsts::TEXTURE_ARRAY_SIZE];
+		VkDescriptorImageInfo m_descriptorImageInfos[RendererConsts::TEXTURE_ARRAY_SIZE];
 	};
 }

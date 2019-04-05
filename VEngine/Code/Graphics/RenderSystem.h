@@ -1,9 +1,10 @@
 #pragma once
 #include <memory>
 #include <entt/entity/registry.hpp>
-#include "Graphics/RenderParams.h"
-#include "Graphics/DrawItem.h"
-#include "Graphics/LightData.h"
+#include "RenderParams.h"
+#include "DrawItem.h"
+#include "LightData.h"
+#include "RendererConsts.h"
 
 namespace VEngine
 {
@@ -28,8 +29,8 @@ namespace VEngine
 		RenderParams m_renderParams;
 		DrawLists m_drawLists;
 		LightData m_lightData;
-		float m_haltonX[16];
-		float m_haltonY[16];
+		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
+		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 
 		void calculateCascadeViewProjectionMatrices(const RenderParams &renderParams, const glm::vec3 &lightDir, float nearPlane, float farPlane, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
 	};

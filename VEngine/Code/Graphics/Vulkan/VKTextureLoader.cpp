@@ -105,7 +105,7 @@ VEngine::VKTextureLoader::VKTextureLoader()
 	}
 
 	// fill VkDescriptorImageInfo array with dummy textures
-	for (size_t i = 0; i < TEXTURE_ARRAY_SIZE; ++i)
+	for (size_t i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
 	{
 		m_descriptorImageInfos[i].sampler = m_dummyTexture.m_sampler;
 		m_descriptorImageInfos[i].imageView = m_dummyTexture.m_view;
@@ -116,7 +116,7 @@ VEngine::VKTextureLoader::VKTextureLoader()
 VEngine::VKTextureLoader::~VKTextureLoader()
 {
 	// free all remaining textures
-	for (size_t i = 0; i < TEXTURE_ARRAY_SIZE; ++i)
+	for (size_t i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
 	{
 		if (m_usedSlots[i])
 		{
@@ -140,7 +140,7 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 	{
 		bool foundFreeId = false;
 
-		for (; id < TEXTURE_ARRAY_SIZE; ++id)
+		for (; id < RendererConsts::TEXTURE_ARRAY_SIZE; ++id)
 		{
 			if (!m_usedSlots[id])
 			{
@@ -343,5 +343,5 @@ void VEngine::VKTextureLoader::free(size_t id)
 void VEngine::VKTextureLoader::getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count)
 {
 	*data = m_descriptorImageInfos;
-	count = TEXTURE_ARRAY_SIZE;
+	count = RendererConsts::TEXTURE_ARRAY_SIZE;
 }

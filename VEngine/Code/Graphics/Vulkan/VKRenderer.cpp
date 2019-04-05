@@ -27,7 +27,7 @@
 #include "VKPipelineManager.h"
 #include <iostream>
 
-VEngine::VKRenderer::VKRenderer(unsigned int width, unsigned int height, void *windowHandle)
+VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
 	g_context.init(static_cast<GLFWwindow *>(windowHandle));
 
@@ -42,7 +42,7 @@ VEngine::VKRenderer::VKRenderer(unsigned int width, unsigned int height, void *w
 
 	updateTextureData();
 
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator, *m_renderResources->m_pipelineManager);
 	}
@@ -51,7 +51,7 @@ VEngine::VKRenderer::VKRenderer(unsigned int width, unsigned int height, void *w
 VEngine::VKRenderer::~VKRenderer()
 {
 	vkDeviceWaitIdle(g_context.m_device);
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i)
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_frameGraphs[i].release();
 	}
@@ -62,14 +62,9 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData)
 {
-	assert(lightData.m_directionalLightData.size() <= MAX_DIRECTIONAL_LIGHTS);
-	assert(lightData.m_pointLightData.size() <= MAX_POINT_LIGHTS);
-	assert(lightData.m_spotLightData.size() <= MAX_SPOT_LIGHTS);
-	assert(lightData.m_shadowData.size() <= MAX_SHADOW_DATA);
-
 	RenderParams perFrameData = renderParams;
-	perFrameData.m_currentResourceIndex = perFrameData.m_frame % FRAMES_IN_FLIGHT;
-	perFrameData.m_previousResourceIndex = (perFrameData.m_frame + FRAMES_IN_FLIGHT - 1) % FRAMES_IN_FLIGHT;
+	perFrameData.m_currentResourceIndex = perFrameData.m_frame % RendererConsts::FRAMES_IN_FLIGHT;
+	perFrameData.m_previousResourceIndex = (perFrameData.m_frame + RendererConsts::FRAMES_IN_FLIGHT - 1) % RendererConsts::FRAMES_IN_FLIGHT;
 
 	FrameGraph::Graph &graph = *m_frameGraphs[perFrameData.m_currentResourceIndex];
 	graph.reset();
@@ -254,8 +249,8 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
 	{
-		uint32_t w = m_width / TILE_SIZE + ((m_width % TILE_SIZE == 0) ? 0 : 1);
-		uint32_t h = m_height / TILE_SIZE + ((m_height % TILE_SIZE == 0) ? 0 : 1);
+		uint32_t w = m_width / RendererConsts::LIGHTING_TILE_SIZE + ((m_width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
+		uint32_t h = m_height / RendererConsts::LIGHTING_TILE_SIZE + ((m_height % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
 		uint32_t tileCount = w * h;
 		VkDeviceSize bufferSize = Utility::alignUp(lightData.m_pointLightData.size(), VkDeviceSize(32)) / 32 * sizeof(uint32_t) * tileCount;
 
@@ -347,7 +342,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * Z_BINS;
+		desc.m_size = sizeof(uint32_t) * RendererConsts::Z_BINS;
 		desc.m_hostVisible = true;
 
 		pointLightZBinsBufferHandle = graph.createBuffer(desc);
@@ -360,7 +355,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = false;
 		desc.m_clear = true;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * LUMINANCE_HISTOGRAM_SIZE;
+		desc.m_size = sizeof(uint32_t) * RendererConsts::LUMINANCE_HISTOGRAM_SIZE;
 		desc.m_hostVisible = false;
 
 		luminanceHistogramBufferHandle = graph.createBuffer(desc);
@@ -373,7 +368,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = false;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(float) * FRAMES_IN_FLIGHT;
+		desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT;
 		desc.m_hostVisible = false;
 
 		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
