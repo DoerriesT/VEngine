@@ -1,26 +1,32 @@
 #include "VKGeometryPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
-#include "Graphics/DrawItem.h"
+#include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Mesh.h"
+
+struct PushConsts
+{
+	uint32_t transformIndex;
+	uint32_t materialIndex;
+};
 
 VEngine::VKGeometryPass::VKGeometryPass(
 	VKRenderResources *renderResources,
 	uint32_t width,
 	uint32_t height,
 	size_t resourceIndex,
-	size_t drawItemCount,
-	const DrawItem *drawItems,
-	uint32_t drawItemOffset,
+	size_t subMeshInstanceCount,
+	const SubMeshInstanceData *subMeshInstances,
+	const SubMeshData *subMeshData,
 	bool alphaMasked)
 	:m_renderResources(renderResources),
 	m_width(width),
 	m_height(height),
 	m_resourceIndex(resourceIndex),
-	m_drawItemCount(drawItemCount),
-	m_drawItems(drawItems),
-	m_drawItemOffset(drawItemOffset),
+	m_subMeshInstanceCount(subMeshInstanceCount),
+	m_subMeshInstances(subMeshInstances),
+	m_subMeshData(subMeshData),
 	m_alphaMasked(alphaMasked)
 {
 	// create pipeline description
@@ -80,12 +86,13 @@ VEngine::VKGeometryPass::VKGeometryPass(
 	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
 	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
 	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t) };
+	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConsts) };
 }
 
 void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
 	FrameGraph::BufferHandle perFrameDataBufferHandle,
-	FrameGraph::BufferHandle perDrawDataBufferHandle,
+	FrameGraph::BufferHandle materialDataBufferHandle,
+	FrameGraph::BufferHandle transformDataBufferHandle,
 	FrameGraph::ImageHandle depthTextureHandle,
 	FrameGraph::ImageHandle albedoTextureHandle,
 	FrameGraph::ImageHandle normalTextureHandle,
@@ -96,7 +103,8 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
 
 	// common set
 	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
-	builder.readStorageBuffer(perDrawDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_DRAW_DATA_BINDING);
+	builder.readStorageBuffer(materialDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::MATERIAL_DATA_BINDING);
+	builder.readStorageBuffer(transformDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::TRANSFORM_DATA_BINDING);
 
 	builder.writeDepthStencil(depthTextureHandle);
 	builder.writeColorAttachment(albedoTextureHandle, 0);
@@ -130,14 +138,19 @@ void VEngine::VKGeometryPass::record(VkCommandBuffer cmdBuf, const FrameGraph::R
 
 	VkBuffer vertexBuffer = m_renderResources->m_vertexBuffer.getBuffer();
 
-	for (uint32_t i = 0; i < m_drawItemCount; ++i)
+	for (uint32_t i = 0; i < m_subMeshInstanceCount; ++i)
 	{
-		const DrawItem &item = m_drawItems[i];
-		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &item.m_vertexOffset);
+		const SubMeshInstanceData &instance = m_subMeshInstances[i];
+		const SubMeshData &subMesh = m_subMeshData[instance.m_subMeshIndex];
 
-		uint32_t offset = m_drawItemOffset + i;
-		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(offset), &offset);
+		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &subMesh.m_vertexOffset);
 
-		vkCmdDrawIndexed(cmdBuf, item.m_indexCount, 1, item.m_baseIndex, 0, 0);
+		PushConsts pushConsts;
+		pushConsts.transformIndex = instance.m_transformIndex;
+		pushConsts.materialIndex = instance.m_materialIndex;
+
+		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+		vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, 0, 0);
 	}
 }

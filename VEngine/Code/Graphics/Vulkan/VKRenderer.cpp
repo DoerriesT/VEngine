@@ -3,8 +3,7 @@
 #include "VKRenderResources.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
-#include "Graphics/RenderParams.h"
-#include "Graphics/DrawItem.h"
+#include "Graphics/RenderData.h"
 #include "Graphics/LightData.h"
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
@@ -25,6 +24,7 @@
 #include "Pass/VKVelocityCompositionPass.h"
 #include "Pass/VKVelocityInitializationPass.h"
 #include "VKPipelineManager.h"
+#include "VKMaterialManager.h"
 #include <iostream>
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
@@ -32,7 +32,8 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	g_context.init(static_cast<GLFWwindow *>(windowHandle));
 
 	m_renderResources = std::make_unique<VKRenderResources>();
-	m_textureLoader = std::make_unique<VKTextureLoader>();
+	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
+	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
 	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
@@ -60,9 +61,9 @@ VEngine::VKRenderer::~VKRenderer()
 	m_renderResources.reset();
 }
 
-void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLists &drawLists, const LightData &lightData)
+void VEngine::VKRenderer::render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData)
 {
-	RenderParams perFrameData = renderParams;
+	CommonRenderData perFrameData = commonData;
 	perFrameData.m_currentResourceIndex = perFrameData.m_frame % RendererConsts::FRAMES_IN_FLIGHT;
 	perFrameData.m_previousResourceIndex = (perFrameData.m_frame + RendererConsts::FRAMES_IN_FLIGHT - 1) % RendererConsts::FRAMES_IN_FLIGHT;
 
@@ -273,24 +274,24 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(RenderParams);
+		desc.m_size = sizeof(CommonRenderData);
 		desc.m_hostVisible = true;
 
 		perFrameDataBufferHandle = graph.createBuffer(desc);
 	}
 
-	FrameGraph::BufferHandle perDrawDataBufferHandle = 0;
+	FrameGraph::BufferHandle transformDataBufferHandle = 0;
 	{
 		FrameGraph::BufferDescription desc = {};
 		desc.m_name = "Per Draw Data Buffer";
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(PerDrawData) * (drawLists.m_opaqueItems.size() + drawLists.m_maskedItems.size());
+		desc.m_size = sizeof(glm::mat4) * renderData.m_transformDataCount;
 		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
 		desc.m_hostVisible = true;
 
-		perDrawDataBufferHandle = graph.createBuffer(desc);
+		transformDataBufferHandle = graph.createBuffer(desc);
 	}
 
 	FrameGraph::BufferHandle directionalLightDataBufferHandle = 0;
@@ -374,15 +375,25 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
 	}
 
+	FrameGraph::BufferHandle materialDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Material Data Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(MaterialData) * RendererConsts::MAX_MATERIALS;
+		desc.m_hostVisible = false;
+
+		materialDataBufferHandle = graph.importBuffer(desc, m_renderResources->m_materialBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
+
 
 	// passes
 	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&perFrameData, 0, 0, sizeof(perFrameData), sizeof(perFrameData), sizeof(perFrameData), 1);
 
-	VKHostWritePass perDrawDataWritePassOpaque("Per Draw Data Write Pass (Opaque)", (unsigned char *)drawLists.m_opaqueItems.data(),
-		offsetof(DrawItem, m_perDrawData), 0, sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_opaqueItems.size());
-
-	VKHostWritePass perDrawDataWritePassMasked("Per Draw Data Write Pass (Masked)", (unsigned char *)drawLists.m_maskedItems.data(),
-		offsetof(DrawItem, m_perDrawData), drawLists.m_opaqueItems.size() * sizeof(PerDrawData), sizeof(PerDrawData), sizeof(PerDrawData), sizeof(DrawItem), drawLists.m_maskedItems.size());
+	VKHostWritePass transformDataWritePass("Transform Data Write Pass", (unsigned char *)renderData.m_transformData,
+		0, 0, sizeof(glm::mat4), sizeof(glm::mat4), sizeof(glm::mat4), renderData.m_transformDataCount);
 
 	VKHostWritePass directionalLightDataWritePass("Directional Light Data Write Pass", (unsigned char *)lightData.m_directionalLightData.data(),
 		0, 0, lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size(), 1);
@@ -399,13 +410,13 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	VKHostWritePass pointLightZBinsWritePass("Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
 		0, 0, lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size(), 1);
 
-	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, false);
+	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, false);
 
-	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, drawLists.m_maskedItems.size(), drawLists.m_maskedItems.data(), drawLists.m_opaqueItems.size(), true);
+	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, renderData.m_maskedSubMeshInstanceDataCount, renderData.m_maskedSubMeshInstanceData, renderData.m_subMeshData, true);
 
 	VKVelocityInitializationPass velocityInitializationPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
 
-	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, drawLists.m_opaqueItems.size(), drawLists.m_opaqueItems.data(), 0, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
+	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
 
 	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_jitteredProjectionMatrix);
 
@@ -491,13 +502,9 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 
 	// host write passes
 	perFrameDataWritePass.addToGraph(graph, perFrameDataBufferHandle);
-	if (!drawLists.m_opaqueItems.empty())
+	if (renderData.m_opaqueSubMeshInstanceDataCount || renderData.m_maskedSubMeshInstanceData)
 	{
-		perDrawDataWritePassOpaque.addToGraph(graph, perDrawDataBufferHandle);
-	}
-	if (!drawLists.m_maskedItems.empty())
-	{
-		perDrawDataWritePassMasked.addToGraph(graph, perDrawDataBufferHandle);
+		transformDataWritePass.addToGraph(graph, transformDataBufferHandle);
 	}
 	if (!lightData.m_directionalLightData.empty())
 	{
@@ -514,11 +521,12 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// draw opaque geometry to gbuffer
-	if (!drawLists.m_opaqueItems.empty())
+	if (renderData.m_opaqueSubMeshInstanceDataCount)
 	{
 		geometryPass.addToGraph(graph,
 			perFrameDataBufferHandle,
-			perDrawDataBufferHandle,
+			materialDataBufferHandle,
+			transformDataBufferHandle,
 			depthTextureHandle,
 			albedoTextureHandle,
 			normalTextureHandle,
@@ -527,11 +535,12 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	}
 
 	// draw opaque alpha masked geometry to gbuffer
-	if (!drawLists.m_maskedItems.empty())
+	if (renderData.m_maskedSubMeshInstanceDataCount)
 	{
 		geometryAlphaMaskedPass.addToGraph(graph,
 			perFrameDataBufferHandle,
-			perDrawDataBufferHandle,
+			materialDataBufferHandle,
+			transformDataBufferHandle,
 			depthTextureHandle,
 			albedoTextureHandle,
 			normalTextureHandle,
@@ -546,7 +555,7 @@ void VEngine::VKRenderer::render(const RenderParams &renderParams, const DrawLis
 	{
 		shadowPass.addToGraph(graph,
 			perFrameDataBufferHandle,
-			perDrawDataBufferHandle,
+			transformDataBufferHandle,
 			shadowTextureHandle);
 	}
 
@@ -671,6 +680,21 @@ uint32_t VEngine::VKRenderer::loadTexture(const char *filepath)
 void VEngine::VKRenderer::freeTexture(uint32_t id)
 {
 	m_textureLoader->free(id);
+}
+
+void VEngine::VKRenderer::createMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+{
+	m_materialManager->createMaterials(count, materials, handles);
+}
+
+void VEngine::VKRenderer::updateMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+{
+	m_materialManager->updateMaterials(count, materials, handles);
+}
+
+void VEngine::VKRenderer::destroyMaterials(size_t count, MaterialHandle *handles)
+{
+	m_materialManager->destroyMaterials(count, handles);
 }
 
 void VEngine::VKRenderer::updateTextureData()

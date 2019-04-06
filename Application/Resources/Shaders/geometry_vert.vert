@@ -4,7 +4,8 @@
 
 layout(push_constant) uniform PushConsts 
 {
-	uint drawIndex;
+	uint transformIndex;
+	uint materialIndex;
 } uPushConsts;
 
 layout(location = 0) in vec3 inPosition;
@@ -17,7 +18,7 @@ layout(location = 2) out vec3 vWorldPos;
 
 void main() 
 {
-	mat4 modelMatrix = uPerDrawData.data[uPushConsts.drawIndex].modelMatrix;
+	mat4 modelMatrix = uTransformData.data[uPushConsts.transformIndex];
     gl_Position = uPerFrameData.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
 	vTexCoord = inTexCoord;
 	vNormal = mat3(uPerFrameData.viewMatrix * modelMatrix) * inNormal;

@@ -45,9 +45,4 @@ namespace VEngine
 		glm::vec3 m_min;
 		glm::vec3 m_max;
 	};
-
-	struct Mesh
-	{
-		std::vector<SubMesh> m_subMeshes;
-	};
 }

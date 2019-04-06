@@ -4,7 +4,8 @@
 namespace VEngine
 {
 	struct VKRenderResources;
-	struct DrawItem;
+	struct SubMeshData;
+	struct SubMeshInstanceData;
 
 	class VKGeometryPass : FrameGraph::Pass
 	{
@@ -13,14 +14,15 @@ namespace VEngine
 			uint32_t width,
 			uint32_t height,
 			size_t resourceIndex,
-			size_t drawItemCount,
-			const DrawItem *drawItems,
-			uint32_t drawItemOffset,
+			size_t subMeshInstanceCount,
+			const SubMeshInstanceData *subMeshInstances,
+			const SubMeshData *subMeshData,
 			bool alphaMasked);
 
 		void addToGraph(FrameGraph::Graph &graph,
 			FrameGraph::BufferHandle perFrameDataBufferHandle,
-			FrameGraph::BufferHandle perDrawDataBufferHandle,
+			FrameGraph::BufferHandle materialDataBufferHandle,
+			FrameGraph::BufferHandle transformDataBufferHandle,
 			FrameGraph::ImageHandle depthTextureHandle,
 			FrameGraph::ImageHandle albedoTextureHandle,
 			FrameGraph::ImageHandle normalTextureHandle,
@@ -33,9 +35,9 @@ namespace VEngine
 		uint32_t m_width;
 		uint32_t m_height;
 		size_t m_resourceIndex;
-		size_t m_drawItemCount;
-		const DrawItem *m_drawItems;
-		uint32_t m_drawItemOffset;
+		size_t m_subMeshInstanceCount;
+		const SubMeshInstanceData *m_subMeshInstances;
+		const SubMeshData *m_subMeshData;
 		bool m_alphaMasked;
 		VKGraphicsPipelineDescription m_pipelineDesc;
 	};

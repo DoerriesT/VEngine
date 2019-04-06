@@ -81,13 +81,7 @@
     <ClInclude Include="Code\Graphics\Camera\Camera.h">
       <Filter>Code\Graphics\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderParams.h">
-      <Filter>Code\Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Mesh.h">
-      <Filter>Code\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\DrawItem.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h">
@@ -196,6 +190,15 @@
       <Filter>Code\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\RendererConsts.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKMaterialManager.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Handles.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\RenderData.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
@@ -313,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="Code\Utility\Timer.cpp">
       <Filter>Code\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKMaterialManager.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

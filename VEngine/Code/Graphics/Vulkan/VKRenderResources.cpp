@@ -2,13 +2,10 @@
 #include "VKUtility.h"
 #include "VKContext.h"
 #include "Utility/Utility.h"
-#include "Graphics/RenderParams.h"
-#include "VKTextureLoader.h"
 #include "GlobalVar.h"
-#include "Graphics/LightData.h"
-#include "Graphics/DrawItem.h"
 #include "VKSyncPrimitiveAllocator.h"
 #include "VKPipelineManager.h"
+#include "Graphics/RenderData.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -122,6 +119,32 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 		m_avgLuminanceBuffer.create(bufferCreateInfo, allocCreateInfo);
 
+	}
+
+	// staging buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = RendererConsts::STAGING_BUFFER_SIZE;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+		m_stagingBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	// material buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = sizeof(MaterialData) * RendererConsts::MAX_MATERIALS;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_materialBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
 	// shadow sampler
@@ -241,12 +264,20 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 			++bindingCount;
 
-			// per draw data
-			bindings[bindingCount].binding = CommonSetBindings::PER_DRAW_DATA_BINDING;
+			// material data
+			bindings[bindingCount].binding = CommonSetBindings::MATERIAL_DATA_BINDING;
 			bindings[bindingCount].descriptorCount = 1;
 			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			bindings[bindingCount].pImmutableSamplers = nullptr;
 			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			++bindingCount;
+
+			// transform data
+			bindings[bindingCount].binding = CommonSetBindings::TRANSFORM_DATA_BINDING;
+			bindings[bindingCount].descriptorCount = 1;
+			bindings[bindingCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[bindingCount].pImmutableSamplers = nullptr;
+			bindings[bindingCount].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 			++bindingCount;
 
 			// shadow data

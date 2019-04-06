@@ -1,7 +1,6 @@
 #pragma once
 #include "VKImage.h"
 #include "VKBuffer.h"
-#include <vector>
 #include <memory>
 #include "Graphics/RendererConsts.h"
 
@@ -16,15 +15,16 @@ namespace VEngine
 		enum
 		{
 			PER_FRAME_DATA_BINDING = 0,
-			PER_DRAW_DATA_BINDING = 1,
-			SHADOW_DATA_BINDING = 2,
-			DIRECTIONAL_LIGHT_DATA_BINDING = 3,
-			POINT_LIGHT_DATA_BINDING = 4,
-			POINT_LIGHT_Z_BINS_BINDING = 5,
-			POINT_LIGHT_BITMASK_BINDING = 6,
-			PERSISTENT_VALUES_BINDING = 7,
-			LUMINANCE_HISTOGRAM_BINDING = 8,
-			TEXTURES_BINDING = 9,
+			MATERIAL_DATA_BINDING = 1,
+			TRANSFORM_DATA_BINDING = 2,
+			SHADOW_DATA_BINDING = 3,
+			DIRECTIONAL_LIGHT_DATA_BINDING = 4,
+			POINT_LIGHT_DATA_BINDING = 5,
+			POINT_LIGHT_Z_BINS_BINDING = 6,
+			POINT_LIGHT_BITMASK_BINDING = 7,
+			PERSISTENT_VALUES_BINDING = 8,
+			LUMINANCE_HISTOGRAM_BINDING = 9,
+			TEXTURES_BINDING = 10,
 		};
 	}
 	
@@ -113,6 +113,8 @@ namespace VEngine
 		VKBuffer m_lightProxyVertexBuffer;
 		VKBuffer m_lightProxyIndexBuffer;
 		VKBuffer m_avgLuminanceBuffer;
+		VKBuffer m_stagingBuffer;
+		VKBuffer m_materialBuffer;
 
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;

@@ -1,10 +1,12 @@
 #pragma once
-#include "Graphics/Mesh.h"
+#include "Handles.h"
+#include "Graphics/RenderData.h"
+#include <vector>
 
 namespace VEngine
 {
 	struct MeshComponent
 	{
-		Mesh m_mesh;
+		std::vector<std::pair<SubMeshData, MaterialHandle>> m_subMeshMaterialPairs;
 	};
 }

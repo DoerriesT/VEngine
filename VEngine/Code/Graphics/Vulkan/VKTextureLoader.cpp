@@ -7,29 +7,12 @@
 #include "VKContext.h"
 #include "VKUtility.h"
 
-#define STAGING_BUFFER_SIZE (64ull * 1024 * 1024)
-
-VEngine::VKTextureLoader::VKTextureLoader()
+VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 	:m_usedSlots(),
-	m_stagingBuffer(),
+	m_stagingBuffer(stagingBuffer),
 	m_dummyTexture()
 {
 	memset(m_textures, 0, sizeof(m_textures));
-
-	// create staging buffer
-	{
-		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCreateInfo.size = STAGING_BUFFER_SIZE;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VKAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-		m_stagingBuffer.create(bufferCreateInfo, allocCreateInfo);
-	}
 
 	// create dummy texture
 	{
@@ -124,9 +107,6 @@ VEngine::VKTextureLoader::~VKTextureLoader()
 		}
 	}
 
-	// destroy staging buffer
-	m_stagingBuffer.destroy();
-
 	// destroy dummy texture
 	vkDestroyImageView(g_context.m_device, m_dummyTexture.m_view, nullptr);
 	vkDestroySampler(g_context.m_device, m_dummyTexture.m_sampler, nullptr);
@@ -163,7 +143,7 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 			Utility::fatalExit(("Failed to load texture: " + std::string(filepath)).c_str(), -1);
 		}
 
-		if (gliTex.size() > STAGING_BUFFER_SIZE)
+		if (gliTex.size() > RendererConsts::STAGING_BUFFER_SIZE)
 		{
 			Utility::fatalExit("Texture is too large for staging buffer!", -1);
 		}

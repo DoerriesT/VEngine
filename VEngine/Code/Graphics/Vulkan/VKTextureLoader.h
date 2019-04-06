@@ -4,14 +4,14 @@
 #include <vulkan/vulkan.h>
 #include "VKImage.h"
 #include "VKBuffer.h"
-#include "VKRenderResources.h"
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
 	class VKTextureLoader
 	{
 	public:
-		explicit VKTextureLoader();
+		explicit VKTextureLoader(VKBuffer &stagingBuffer);
 		VKTextureLoader(const VKTextureLoader &) = delete;
 		VKTextureLoader(const VKTextureLoader &&) = delete;
 		VKTextureLoader &operator= (const VKTextureLoader &) = delete;
@@ -30,7 +30,7 @@ namespace VEngine
 		};
 
 		std::bitset<RendererConsts::TEXTURE_ARRAY_SIZE> m_usedSlots;
-		VKBuffer m_stagingBuffer;
+		VKBuffer &m_stagingBuffer;
 		VKTexture m_dummyTexture;
 		VKTexture m_textures[RendererConsts::TEXTURE_ARRAY_SIZE];
 		VkDescriptorImageInfo m_descriptorImageInfos[RendererConsts::TEXTURE_ARRAY_SIZE];

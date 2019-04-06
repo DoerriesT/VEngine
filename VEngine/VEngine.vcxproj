@@ -152,11 +152,10 @@
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
-    <ClInclude Include="Code\Graphics\DrawItem.h" />
     <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
+    <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
-    <ClInclude Include="Code\Graphics\RenderParams.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
@@ -177,6 +176,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKMaterialManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKMemoryAllocator.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKPipelineManager.h" />
@@ -186,6 +186,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
+    <ClInclude Include="Code\Handles.h" />
     <ClInclude Include="Code\IGameLogic.h" />
     <ClInclude Include="Code\Input\CameraControllerSystem.h" />
     <ClInclude Include="Code\Input\IInputListener.h" />
@@ -222,6 +223,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKMaterialManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKPipelineManager.cpp" />

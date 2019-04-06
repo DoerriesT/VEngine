@@ -10,14 +10,15 @@
 #include <glm/vec3.hpp>
 #include <algorithm>
 #include "Utility/Utility.h"
+#include "Mesh.h"
 
 VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle)
 	:m_entityRegistry(entityRegistry),
 	m_cameraEntity(entt::null),
-	m_renderParams(),
-	m_drawLists(),
-	m_lightData()
+	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS))
 {
+	memset(m_materialBatchAssignment.get(), 0, RendererConsts::MAX_MATERIALS * sizeof(m_materialBatchAssignment[0]));
+
 	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
 		m_haltonX[i] = Utility::halton(i + 1, 2) * 2.0f - 1.0f;
@@ -29,9 +30,10 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 
 void VEngine::RenderSystem::update(float timeDelta)
 {
-	m_drawLists.m_opaqueItems.clear();
-	m_drawLists.m_maskedItems.clear();
-	m_drawLists.m_blendedItems.clear();
+	m_transformData.clear();
+	m_subMeshData.clear();
+	m_opaqueSubMeshInstanceData.clear();
+	m_maskedSubMeshInstanceData.clear();
 
 	m_lightData.m_shadowData.clear();
 	m_lightData.m_directionalLightData.clear();
@@ -49,40 +51,40 @@ void VEngine::RenderSystem::update(float timeDelta)
 			glm::mat4 viewMatrix = cameraComponent.m_viewMatrix;
 			glm::mat4 projectionMatrix = cameraComponent.m_projectionMatrix;
 			glm::mat4 jitterMatrix = g_TAAEnabled ? 
-				glm::translate(glm::vec3(m_haltonX[m_renderParams.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth, 
-					m_haltonY[m_renderParams.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowHeight, 
+				glm::translate(glm::vec3(m_haltonX[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth, 
+					m_haltonY[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowHeight,
 					0.0f)) 
 				: glm::mat4();
 
-			m_renderParams.m_time = 0.0f;
-			m_renderParams.m_fovy = cameraComponent.m_fovy;
-			m_renderParams.m_nearPlane = cameraComponent.m_near;
-			m_renderParams.m_farPlane = cameraComponent.m_far;
-			m_renderParams.m_prevViewMatrix = m_renderParams.m_viewMatrix;
-			m_renderParams.m_prevProjectionMatrix = m_renderParams.m_projectionMatrix;
-			m_renderParams.m_prevViewProjectionMatrix = m_renderParams.m_viewProjectionMatrix;
-			m_renderParams.m_prevInvViewMatrix = m_renderParams.m_invViewMatrix;
-			m_renderParams.m_prevInvProjectionMatrix = m_renderParams.m_invProjectionMatrix;
-			m_renderParams.m_prevInvViewProjectionMatrix = m_renderParams.m_invViewProjectionMatrix;
-			m_renderParams.m_prevJitteredProjectionMatrix = m_renderParams.m_jitteredProjectionMatrix;
-			m_renderParams.m_prevJitteredViewProjectionMatrix = m_renderParams.m_jitteredViewProjectionMatrix;
-			m_renderParams.m_prevInvJitteredProjectionMatrix = m_renderParams.m_invJitteredProjectionMatrix;
-			m_renderParams.m_prevInvJitteredViewProjectionMatrix = m_renderParams.m_invJitteredViewProjectionMatrix;
-			m_renderParams.m_viewMatrix = viewMatrix;
-			m_renderParams.m_projectionMatrix = projectionMatrix;
-			m_renderParams.m_viewProjectionMatrix = projectionMatrix * viewMatrix;
-			m_renderParams.m_invViewMatrix = glm::inverse(viewMatrix);
-			m_renderParams.m_invProjectionMatrix = glm::inverse(projectionMatrix);
-			m_renderParams.m_invViewProjectionMatrix = glm::inverse(m_renderParams.m_viewProjectionMatrix);
-			m_renderParams.m_jitteredProjectionMatrix = jitterMatrix * m_renderParams.m_projectionMatrix;
-			m_renderParams.m_jitteredViewProjectionMatrix = jitterMatrix * m_renderParams.m_viewProjectionMatrix;
-			m_renderParams.m_invJitteredProjectionMatrix = glm::inverse(m_renderParams.m_jitteredProjectionMatrix);
-			m_renderParams.m_invJitteredViewProjectionMatrix = glm::inverse(m_renderParams.m_jitteredViewProjectionMatrix);
-			m_renderParams.m_cameraPosition = glm::vec4(transformationComponent.m_position, 1.0f);
-			m_renderParams.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
-			m_renderParams.m_width = g_windowWidth;
-			m_renderParams.m_height = g_windowHeight;
-			m_renderParams.m_timeDelta = static_cast<float>(timeDelta);
+			m_commonRenderData.m_time = 0.0f;
+			m_commonRenderData.m_fovy = cameraComponent.m_fovy;
+			m_commonRenderData.m_nearPlane = cameraComponent.m_near;
+			m_commonRenderData.m_farPlane = cameraComponent.m_far;
+			m_commonRenderData.m_prevViewMatrix = m_commonRenderData.m_viewMatrix;
+			m_commonRenderData.m_prevProjectionMatrix = m_commonRenderData.m_projectionMatrix;
+			m_commonRenderData.m_prevViewProjectionMatrix = m_commonRenderData.m_viewProjectionMatrix;
+			m_commonRenderData.m_prevInvViewMatrix = m_commonRenderData.m_invViewMatrix;
+			m_commonRenderData.m_prevInvProjectionMatrix = m_commonRenderData.m_invProjectionMatrix;
+			m_commonRenderData.m_prevInvViewProjectionMatrix = m_commonRenderData.m_invViewProjectionMatrix;
+			m_commonRenderData.m_prevJitteredProjectionMatrix = m_commonRenderData.m_jitteredProjectionMatrix;
+			m_commonRenderData.m_prevJitteredViewProjectionMatrix = m_commonRenderData.m_jitteredViewProjectionMatrix;
+			m_commonRenderData.m_prevInvJitteredProjectionMatrix = m_commonRenderData.m_invJitteredProjectionMatrix;
+			m_commonRenderData.m_prevInvJitteredViewProjectionMatrix = m_commonRenderData.m_invJitteredViewProjectionMatrix;
+			m_commonRenderData.m_viewMatrix = viewMatrix;
+			m_commonRenderData.m_projectionMatrix = projectionMatrix;
+			m_commonRenderData.m_viewProjectionMatrix = projectionMatrix * viewMatrix;
+			m_commonRenderData.m_invViewMatrix = glm::inverse(viewMatrix);
+			m_commonRenderData.m_invProjectionMatrix = glm::inverse(projectionMatrix);
+			m_commonRenderData.m_invViewProjectionMatrix = glm::inverse(m_commonRenderData.m_viewProjectionMatrix);
+			m_commonRenderData.m_jitteredProjectionMatrix = jitterMatrix * m_commonRenderData.m_projectionMatrix;
+			m_commonRenderData.m_jitteredViewProjectionMatrix = jitterMatrix * m_commonRenderData.m_viewProjectionMatrix;
+			m_commonRenderData.m_invJitteredProjectionMatrix = glm::inverse(m_commonRenderData.m_jitteredProjectionMatrix);
+			m_commonRenderData.m_invJitteredViewProjectionMatrix = glm::inverse(m_commonRenderData.m_jitteredViewProjectionMatrix);
+			m_commonRenderData.m_cameraPosition = glm::vec4(transformationComponent.m_position, 1.0f);
+			m_commonRenderData.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
+			m_commonRenderData.m_width = g_windowWidth;
+			m_commonRenderData.m_height = g_windowHeight;
+			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
 		}
 
 
@@ -97,36 +99,30 @@ void VEngine::RenderSystem::update(float timeDelta)
 					* glm::mat4_cast(transformationComponent.m_orientation)
 					* glm::scale(glm::vec3(transformationComponent.m_scale));
 
-				for (const auto &subMesh : meshComponent.m_mesh.m_subMeshes)
-				{
-					DrawItem drawItem = {};
-					drawItem.m_vertexOffset = subMesh.m_vertexOffset;
-					drawItem.m_baseIndex = subMesh.m_indexOffset / sizeof(uint32_t);
-					drawItem.m_indexCount = subMesh.m_indexCount;
-					drawItem.m_perDrawData.m_albedoFactorMetallic = glm::vec4(subMesh.m_material.m_albedoFactor, subMesh.m_material.m_metallicFactor);
-					drawItem.m_perDrawData.m_emissiveFactorRoughness = glm::vec4(subMesh.m_material.m_emissiveFactor, subMesh.m_material.m_roughnessFactor);
-					drawItem.m_perDrawData.m_modelMatrix = transformationComponent.m_transformation;
-					drawItem.m_perDrawData.m_albedoTexture = subMesh.m_material.m_albedoTexture;
-					drawItem.m_perDrawData.m_normalTexture = subMesh.m_material.m_normalTexture;
-					drawItem.m_perDrawData.m_metallicTexture = subMesh.m_material.m_metallicTexture;
-					drawItem.m_perDrawData.m_roughnessTexture = subMesh.m_material.m_roughnessTexture;
-					drawItem.m_perDrawData.m_occlusionTexture = subMesh.m_material.m_occlusionTexture;
-					drawItem.m_perDrawData.m_emissiveTexture = subMesh.m_material.m_emissiveTexture;
-					drawItem.m_perDrawData.m_displacementTexture = subMesh.m_material.m_displacementTexture;
+				uint32_t transformIndex = m_transformData.size();
 
-					switch (subMesh.m_material.m_alpha)
+				m_transformData.push_back(transformationComponent.m_transformation);
+
+				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
+				{
+					SubMeshInstanceData instanceData;
+					instanceData.m_subMeshIndex = m_subMeshData.size();
+					instanceData.m_transformIndex = transformIndex;
+					instanceData.m_materialIndex = p.second;
+
+					m_subMeshData.push_back(p.first);
+
+					auto batchAssigment = m_materialBatchAssignment[p.second - 1];
+
+					// opaque batch
+					if (batchAssigment & 1)
 					{
-					case Material::Alpha::OPAQUE:
-						m_drawLists.m_opaqueItems.push_back(drawItem);
-						break;
-					case Material::Alpha::MASKED:
-						m_drawLists.m_maskedItems.push_back(drawItem);
-						break;
-					case Material::Alpha::BLENDED:
-						m_drawLists.m_blendedItems.push_back(drawItem);
-						break;
-					default:
-						assert(false);
+						m_opaqueSubMeshInstanceData.push_back(instanceData);
+					}
+					// masked batch
+					else if (batchAssigment & (1 << 1))
+					{
+						m_maskedSubMeshInstanceData.push_back(instanceData);
 					}
 				}
 			});
@@ -134,7 +130,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		// generate light data
 		{
-			glm::mat4 proj = glm::transpose(m_renderParams.m_projectionMatrix);
+			glm::mat4 proj = glm::transpose(m_commonRenderData.m_projectionMatrix);
 			glm::vec4 frustumPlaneEquations[] =
 			{
 				glm::normalize(proj[3] + proj[0]),	// left
@@ -150,7 +146,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 			view.each([this, &frustumPlaneEquations](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
 			{
 				PointLightData pl = {};
-				glm::vec3 pos = glm::vec3(m_renderParams.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f));
+				glm::vec3 pos = glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f));
 				pl.m_positionRadius = glm::vec4(pos, pointLightComponent.m_radius);
 				float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
 				pl.m_colorInvSqrAttRadius = glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius));
@@ -212,7 +208,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 			);
 
 			glm::mat4 matrices[3];
-			calculateCascadeViewProjectionMatrices(m_renderParams, glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
+			calculateCascadeViewProjectionMatrices(m_commonRenderData, glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
 
 			m_lightData.m_shadowData.push_back({ matrices[0], { 0.25f, 0.25f, 0.0f, 0.0f } });
 			m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f,  0.25f, 0.0f } });
@@ -225,11 +221,21 @@ void VEngine::RenderSystem::update(float timeDelta)
 			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
 		}
 
-		m_renderParams.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
-		m_renderParams.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
+		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
+		m_commonRenderData.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
 
-		m_renderer->render(m_renderParams, m_drawLists, m_lightData);
-		++m_renderParams.m_frame;
+		RenderData renderData;
+		renderData.m_transformDataCount = m_transformData.size();
+		renderData.m_transformData = m_transformData.data();
+		renderData.m_subMeshDataCount = m_subMeshData.size();
+		renderData.m_subMeshData = m_subMeshData.data();
+		renderData.m_opaqueSubMeshInstanceDataCount = m_opaqueSubMeshInstanceData.size();
+		renderData.m_opaqueSubMeshInstanceData = m_opaqueSubMeshInstanceData.data();
+		renderData.m_maskedSubMeshInstanceDataCount = m_maskedSubMeshInstanceData.size();
+		renderData.m_maskedSubMeshInstanceData = m_maskedSubMeshInstanceData.data();
+
+		m_renderer->render(m_commonRenderData, renderData, m_lightData);
+		++m_commonRenderData.m_frame;
 	}
 }
 
@@ -253,6 +259,23 @@ void VEngine::RenderSystem::updateTextureData()
 	m_renderer->updateTextureData();
 }
 
+void VEngine::RenderSystem::createMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+{
+	m_renderer->createMaterials(count, materials, handles);
+	updateMaterialBatchAssigments(count, materials, handles);
+}
+
+void VEngine::RenderSystem::updateMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+{
+	m_renderer->updateMaterials(count, materials, handles);
+	updateMaterialBatchAssigments(count, materials, handles);
+}
+
+void VEngine::RenderSystem::destroyMaterials(size_t count, MaterialHandle *handles)
+{
+	m_renderer->destroyMaterials(count, handles);
+}
+
 void VEngine::RenderSystem::setCameraEntity(entt::entity cameraEntity)
 {
 	m_cameraEntity = cameraEntity;
@@ -264,7 +287,7 @@ entt::entity VEngine::RenderSystem::getCameraEntity() const
 }
 
 void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
-	const RenderParams &renderParams,
+	const CommonRenderData &renderParams,
 	const glm::vec3 &lightDir,
 	float nearPlane,
 	float farPlane,
@@ -346,5 +369,25 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, 300.0f) * lightView;
 
 		lastSplitDist = splits[i];
+	}
+}
+
+void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
+{
+	for (size_t i = 0; i < count; ++i)
+	{
+		auto &batchAssignment = m_materialBatchAssignment[handles[i] - 1];
+
+		switch (materials[i].m_alpha)
+		{
+		case Material::Alpha::OPAQUE:
+			batchAssignment = 1;
+			break;
+		case Material::Alpha::MASKED:
+			batchAssignment = 1 << 1;
+			break;
+		default:
+			break;
+		}
 	}
 }

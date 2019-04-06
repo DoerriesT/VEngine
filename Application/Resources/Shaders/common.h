@@ -49,19 +49,14 @@ struct SpotLight
 	//uint shadowDataCount;
 };
 
-struct PerDrawData
+struct MaterialData
 {
-	vec4 albedoFactorMetallic;
-	vec4 emissiveFactorRoughness;
-	mat4 modelMatrix;
-	uint albedoTexture;
-	uint normalTexture;
-	uint metallicTexture;
-	uint roughnessTexture;
-	uint occlusionTexture;
-	uint emissiveTexture;
+	vec4 albedoMetalness;
+	vec4 emissiveRoughness;
+	uint albedoNormalTexture;
+	uint metalnessRoughnessTexture;
+	uint occlusionEmissiveTexture;
 	uint displacementTexture;
-	uint padding;
 };
 
 layout(set = 0, binding = 0) uniform PER_FRAME_DATA 
@@ -102,47 +97,52 @@ layout(set = 0, binding = 0) uniform PER_FRAME_DATA
 	float timeDelta;
 } uPerFrameData;
 
-layout(set = 0, binding = 1) readonly buffer PER_DRAW_DATA 
+layout(set = 0, binding = 1) readonly buffer MATERIAL_DATA 
 {
-    PerDrawData data[];
-} uPerDrawData;
+    MaterialData data[];
+} uMaterialData;
 
-layout(set = 0, binding = 2) readonly buffer SHADOW_DATA
+layout(set = 0, binding = 2) readonly buffer TRANSFORM_DATA 
+{
+    mat4 data[];
+} uTransformData;
+
+layout(set = 0, binding = 3) readonly buffer SHADOW_DATA
 {
 	ShadowData data[];
 } uShadowData;
 
-layout(set = 0, binding = 3) readonly buffer DIRECTIONAL_LIGHT_DATA
+layout(set = 0, binding = 4) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
 	DirectionalLight lights[];
 } uDirectionalLightData;
 
-layout(set = 0, binding = 4) readonly buffer POINT_LIGHT_DATA
+layout(set = 0, binding = 5) readonly buffer POINT_LIGHT_DATA
 {
 	PointLight lights[];
 } uPointLightData;
 
-layout(set = 0, binding = 5) readonly buffer POINT_LIGHT_Z_BINS 
+layout(set = 0, binding = 6) readonly buffer POINT_LIGHT_Z_BINS 
 {
 	uint bins[];
 } uPointLightZBins;
 
-layout(set = 0, binding = 6) buffer POINT_LIGHT_BITMASK 
+layout(set = 0, binding = 7) buffer POINT_LIGHT_BITMASK 
 {
 	uint mask[];
 } uPointLightBitMask;
 
-layout(set = 0, binding = 7) buffer PERSISTENT_VALUES
+layout(set = 0, binding = 8) buffer PERSISTENT_VALUES
 {
     float luminance[];
 } uPersistentValues;
 
-layout(set = 0, binding = 8) buffer LUMINANCE_HISTOGRAM
+layout(set = 0, binding = 9) buffer LUMINANCE_HISTOGRAM
 {
     uint data[];
 } uLuminanceHistogram;
 
-layout(set = 0, binding = 9) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = 0, binding = 10) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
 
 vec3 accurateLinearToSRGB(in vec3 linearCol)
 {

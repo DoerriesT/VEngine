@@ -38,34 +38,33 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		}
 	};
 
-	Mesh mesh;
+	std::vector<Material> materials;
+	std::vector<std::pair<SubMeshData, MaterialHandle>> mesh;
 	for (auto &subMeshInfo : info["SubMeshes"])
 	{
-		SubMesh subMesh = {};
-		subMesh.m_name = subMeshInfo["Name"].get<std::string>();
-		subMesh.m_vertexOffset = subMeshInfo["VertexOffset"];
-		subMesh.m_vertexSize = subMeshInfo["VertexSize"];
-		subMesh.m_indexOffset = subMeshInfo["IndexOffset"];
-		subMesh.m_indexSize = subMeshInfo["IndexSize"];
-		subMesh.m_indexCount = subMesh.m_indexSize / 4;
-		subMesh.m_min = glm::vec3(subMeshInfo["Min"][0], subMeshInfo["Min"][1], subMeshInfo["Min"][2]);
-		subMesh.m_max = glm::vec3(subMeshInfo["Max"][0], subMeshInfo["Max"][1], subMeshInfo["Max"][2]);
-		subMesh.m_material.m_alpha = Material::Alpha(subMeshInfo["Material"]["Alpha"]);
-		subMesh.m_material.m_albedoFactor = glm::vec3(subMeshInfo["Material"]["AlbedoFactor"][0], subMeshInfo["Material"]["AlbedoFactor"][1], subMeshInfo["Material"]["AlbedoFactor"][2]);
-		subMesh.m_material.m_metallicFactor = subMeshInfo["Material"]["MetallicFactor"];
-		subMesh.m_material.m_roughnessFactor = subMeshInfo["Material"]["RoughnessFactor"];
-		subMesh.m_material.m_emissiveFactor = glm::vec3(subMeshInfo["Material"]["EmissiveFactor"][0], subMeshInfo["Material"]["EmissiveFactor"][1], subMeshInfo["Material"]["EmissiveFactor"][2]);
-		
-		// textures
-		subMesh.m_material.m_albedoTexture = getTextureHandle(subMeshInfo["Material"]["AlbedoTexture"].get<std::string>());
-		subMesh.m_material.m_normalTexture = getTextureHandle(subMeshInfo["Material"]["NormalTexture"].get<std::string>());
-		subMesh.m_material.m_metallicTexture = getTextureHandle(subMeshInfo["Material"]["MetallicTexture"].get<std::string>());
-		subMesh.m_material.m_roughnessTexture = getTextureHandle(subMeshInfo["Material"]["RoughnessTexture"].get<std::string>());
-		subMesh.m_material.m_occlusionTexture = getTextureHandle(subMeshInfo["Material"]["OcclusionTexture"].get<std::string>());
-		subMesh.m_material.m_emissiveTexture = getTextureHandle(subMeshInfo["Material"]["EmissiveTexture"].get<std::string>());
-		subMesh.m_material.m_displacementTexture = getTextureHandle(subMeshInfo["Material"]["DisplacementTexture"].get<std::string>());
+		SubMeshData subMeshData;
+		subMeshData.m_vertexOffset = subMeshInfo["VertexOffset"].get<uint32_t>();
+		subMeshData.m_baseIndex = subMeshInfo["IndexOffset"].get<uint32_t>() / 4;
+		subMeshData.m_indexCount = subMeshInfo["IndexSize"].get<uint32_t>() / 4;
 
-		mesh.m_subMeshes.push_back(subMesh);
+		Material material;
+		material.m_alpha = Material::Alpha(subMeshInfo["Material"]["Alpha"]);
+		material.m_albedoFactor = glm::vec3(subMeshInfo["Material"]["AlbedoFactor"][0], subMeshInfo["Material"]["AlbedoFactor"][1], subMeshInfo["Material"]["AlbedoFactor"][2]);
+		material.m_metallicFactor = subMeshInfo["Material"]["MetallicFactor"];
+		material.m_roughnessFactor = subMeshInfo["Material"]["RoughnessFactor"];
+		material.m_emissiveFactor = glm::vec3(subMeshInfo["Material"]["EmissiveFactor"][0], subMeshInfo["Material"]["EmissiveFactor"][1], subMeshInfo["Material"]["EmissiveFactor"][2]);
+		material.m_albedoTexture = getTextureHandle(subMeshInfo["Material"]["AlbedoTexture"].get<std::string>());
+		material.m_normalTexture = getTextureHandle(subMeshInfo["Material"]["NormalTexture"].get<std::string>());
+		material.m_metallicTexture = getTextureHandle(subMeshInfo["Material"]["MetallicTexture"].get<std::string>());
+		material.m_roughnessTexture = getTextureHandle(subMeshInfo["Material"]["RoughnessTexture"].get<std::string>());
+		material.m_occlusionTexture = getTextureHandle(subMeshInfo["Material"]["OcclusionTexture"].get<std::string>());
+		material.m_emissiveTexture = getTextureHandle(subMeshInfo["Material"]["EmissiveTexture"].get<std::string>());
+		material.m_displacementTexture = getTextureHandle(subMeshInfo["Material"]["DisplacementTexture"].get<std::string>());
+
+		MaterialHandle materialHandle;
+		renderSystem.createMaterials(1, &material, &materialHandle);
+
+		mesh.push_back({ subMeshData, materialHandle });
 	}
 
 	m_meshes[filepath] = mesh;

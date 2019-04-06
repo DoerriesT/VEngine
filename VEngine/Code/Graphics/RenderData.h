@@ -4,7 +4,7 @@
 
 namespace VEngine
 {
-	struct RenderParams
+	struct CommonRenderData
 	{
 		float m_time;
 		float m_fovy;
@@ -40,5 +40,43 @@ namespace VEngine
 		uint32_t m_currentResourceIndex;
 		uint32_t m_previousResourceIndex;
 		float m_timeDelta;
+	};
+
+	struct alignas(16) MaterialData
+	{
+		float m_albedoFactor[3];
+		float m_metalnessFactor;
+		float m_emissiveFactor[3];
+		float m_roughnessFactor;
+		uint32_t m_albedoNormalTexture;
+		uint32_t m_metalnessRoughnessTexture;
+		uint32_t m_occlusionEmissiveTexture;
+		uint32_t m_displacementTexture;
+	};
+
+	struct alignas(16) SubMeshData
+	{
+		uint64_t m_vertexOffset;
+		uint32_t m_baseIndex;
+		uint32_t m_indexCount;
+	};
+
+	struct alignas(16) SubMeshInstanceData
+	{
+		uint32_t m_subMeshIndex;
+		uint32_t m_transformIndex;
+		uint32_t m_materialIndex;
+	};
+
+	struct RenderData
+	{
+		uint32_t m_transformDataCount;
+		glm::mat4 *m_transformData;
+		uint32_t m_subMeshDataCount;
+		SubMeshData *m_subMeshData;
+		uint32_t m_opaqueSubMeshInstanceDataCount;
+		SubMeshInstanceData *m_opaqueSubMeshInstanceData;
+		uint32_t m_maskedSubMeshInstanceDataCount;
+		SubMeshInstanceData *m_maskedSubMeshInstanceData;
 	};
 }
