@@ -4,6 +4,7 @@
 #include <bitset>
 #include <vector>
 #include "Utility/ObjectPool.h"
+#include "Utility/TLSFAllocator.h"
 
 namespace VEngine
 {
@@ -26,24 +27,11 @@ namespace VEngine
 		void *m_poolData;
 	};
 
-	struct VKMemorySpanDebugInfo
-	{
-		enum class State
-		{
-			FREE,
-			USED,
-			WASTED
-		};
-		size_t m_offset;
-		size_t m_size;
-		State m_state;
-	};
-
 	struct VKMemoryBlockDebugInfo
 	{
 		uint32_t m_memoryType;
 		size_t m_allocationSize;
-		std::vector<VKMemorySpanDebugInfo> m_spans;
+		std::vector<TLSFSpanDebugInfo> m_spans;
 	};
 
 	class VKMemoryAllocator
@@ -59,11 +47,9 @@ namespace VEngine
 		VkResult mapMemory(VKAllocationHandle allocationHandle, void **data);
 		void unmapMemory(VKAllocationHandle allocationHandle);
 		VKAllocationInfo getAllocationInfo(VKAllocationHandle allocationHandle);
-		std::vector<VKMemoryBlockDebugInfo> getDebugInfo();
-		size_t getMaximumBlockSize();
-		size_t getFreeMemorySize();
-		size_t getUsedMemorySize();
-		size_t getWastedMemorySize();
+		std::vector<VKMemoryBlockDebugInfo> getDebugInfo() const;
+		size_t getMaximumBlockSize() const;
+		void getFreeUsedWastedSizes(size_t &free, size_t &used, size_t &wasted) const;
 		void destroy();
 
 	private:
@@ -75,66 +61,31 @@ namespace VEngine
 		class VKMemoryPool
 		{
 		public:
-			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize splitSizeThreshold, VkDeviceSize preferredBlockSize,
-				VkDeviceSize *usedMemorySize,VkDeviceSize *freeMemorySize,VkDeviceSize *wastedMemorySize);
+			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize preferredBlockSize);
 			VkResult alloc(VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo);
 			void free(VKAllocationInfo allocationInfo);
 			VkResult mapMemory(size_t blockIndex, VkDeviceSize offset, void **data);
 			void unmapMemory(size_t blockIndex);
-			void getDebugInfo(std::vector<VKMemoryBlockDebugInfo> &result);
+			void getFreeUsedWastedSizes(size_t &free, size_t &used, size_t &wasted) const;
+			void getDebugInfo(std::vector<VKMemoryBlockDebugInfo> &result) const;
 			void destroy();
 
 		private:
 			enum
 			{
-				MAX_BLOCKS = 16,
-				MAX_FIRST_LEVEL_INDEX = 28,
-				MAX_LOG2_SECOND_LEVEL_INDEX = 5,
-				MAX_SECOND_LEVEL_INDEX = 1 << MAX_LOG2_SECOND_LEVEL_INDEX,
+				MAX_BLOCKS = 16
 			};
-
-			struct Span
-			{
-				Span *m_previous;
-				Span *m_next;
-				Span *m_previousPhysical;
-				Span *m_nextPhysical;
-				VkDeviceSize m_offset;
-				VkDeviceSize m_size;
-				VkDeviceSize m_usedOffset;
-				VkDeviceSize m_usedSize;
-			};
-
 			VkDevice m_device;
 			uint32_t m_memoryType;
-			std::bitset<MAX_BLOCKS> m_allocatedBlocks;
 			VkDeviceSize m_bufferImageGranularity;
-			VkDeviceSize m_splitSizeThreshold;
 			VkDeviceSize m_preferredBlockSize;
 			VkDeviceSize m_blockSizes[MAX_BLOCKS];
 			VkDeviceMemory m_memory[MAX_BLOCKS];
-			uint32_t m_firstLevelBitsets[MAX_BLOCKS];
-			uint32_t m_secondLevelBitsets[MAX_BLOCKS][MAX_FIRST_LEVEL_INDEX];
-			Span *m_freeSpans[MAX_BLOCKS][MAX_FIRST_LEVEL_INDEX][MAX_SECOND_LEVEL_INDEX];
-			Span *m_firstPhysicalSpan[MAX_BLOCKS];
-			size_t m_allocationCounts[MAX_BLOCKS];
 			void *m_mappedPtr[MAX_BLOCKS];
 			size_t m_mapCount[MAX_BLOCKS];
-			VkDeviceSize *m_usedMemorySize;
-			VkDeviceSize *m_freeMemorySize;
-			VkDeviceSize *m_wastedMemorySize;
-			StaticObjectPool<Span, 256> m_spanPool;
+			TLSFAllocator *m_allocators[MAX_BLOCKS];
 
-			// returns indices of the list holding memory blocks that lie in the same size class as requestedSize.
-			// used for inserting free blocks into the data structure
-			void mappingInsert(VkDeviceSize size, size_t blockIndex, size_t &firstLevelIndex, size_t &secondLevelIndex);
-			// returns indices of the list holding memory blocks that are one size class above requestedSize,
-			// ensuring, that any block in the list can be used. used for alloc
-			void mappingSearch(VkDeviceSize size, size_t blockIndex, size_t &firstLevelIndex, size_t &secondLevelIndex);
-			bool findFreeSpan(size_t blockIndex, size_t &firstLevelIndex, size_t &secondLevelIndex);
-			VkResult allocateFromBlock(size_t blockIndex, VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo);
-			void addSpanToFreeList(Span *span, size_t blockIndex, size_t firstLevelIndex, size_t secondLevelIndex);
-			void removeSpanFromFreeList(Span *span, size_t blockIndex, size_t firstLevelIndex, size_t secondLevelIndex);
+			bool allocFromBlock(size_t blockIndex, VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo);
 		};
 
 		VkDevice m_device;

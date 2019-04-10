@@ -109,17 +109,17 @@ void VEngine::VKMemoryHeapDebugPass::record(VkCommandBuffer cmdBuf, const FrameG
 
 			switch (span.m_state)
 			{
-			case VKMemorySpanDebugInfo::State::FREE:
+			case TLSFSpanDebugInfo::State::FREE:
 				pushConsts.color[0] = 0.0f;
 				pushConsts.color[1] = 1.0f;
 				pushConsts.color[2] = 0.0f;
 				break;
-			case VKMemorySpanDebugInfo::State::USED:
+			case TLSFSpanDebugInfo::State::USED:
 				pushConsts.color[0] = 0.0f;
 				pushConsts.color[1] = 0.0f;
 				pushConsts.color[2] = 1.0f;
 				break;
-			case VKMemorySpanDebugInfo::State::WASTED:
+			case TLSFSpanDebugInfo::State::WASTED:
 				pushConsts.color[0] = 1.0f;
 				pushConsts.color[1] = 0.0f;
 				pushConsts.color[2] = 0.0f;

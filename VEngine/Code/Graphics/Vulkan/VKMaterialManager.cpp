@@ -24,9 +24,9 @@ VEngine::VKMaterialManager::~VKMaterialManager()
 	m_freeHandles = nullptr;
 }
 
-void VEngine::VKMaterialManager::createMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::VKMaterialManager::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
-	for (size_t i = 0; i < count; ++i)
+	for (uint32_t i = 0; i < count; ++i)
 	{
 		if (!m_freeHandleCount)
 		{
@@ -40,7 +40,7 @@ void VEngine::VKMaterialManager::createMaterials(size_t count, const Material *m
 	updateMaterials(count, materials, handles);
 }
 
-void VEngine::VKMaterialManager::updateMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::VKMaterialManager::updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
 	// fill staging buffer
 	{
@@ -52,7 +52,7 @@ void VEngine::VKMaterialManager::updateMaterials(size_t count, const Material *m
 		MaterialData *data;
 		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), (void **)&data);
 		{
-			for (size_t i = 0; i < count; ++i)
+			for (uint32_t i = 0; i < count; ++i)
 			{
 				auto &dstData = data[i];
 				auto &srcData = materials[i];
@@ -78,7 +78,7 @@ void VEngine::VKMaterialManager::updateMaterials(size_t count, const Material *m
 	{
 		VkBufferCopy *bufferCopies = new VkBufferCopy[count];
 
-		for (size_t i = 0; i < count; ++i)
+		for (uint32_t i = 0; i < count; ++i)
 		{
 			auto &copy = bufferCopies[i];
 			copy.srcOffset = i * sizeof(MaterialData);
@@ -96,9 +96,9 @@ void VEngine::VKMaterialManager::updateMaterials(size_t count, const Material *m
 	}
 }
 
-void VEngine::VKMaterialManager::destroyMaterials(size_t count, MaterialHandle *handles)
+void VEngine::VKMaterialManager::destroyMaterials(uint32_t count, MaterialHandle *handles)
 {
-	for (size_t i = 0; i < count; ++i)
+	for (uint32_t i = 0; i < count; ++i)
 	{
 		m_freeHandles[m_freeHandleCount] = handles[i];
 		++m_freeHandleCount;

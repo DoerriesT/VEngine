@@ -196,6 +196,7 @@
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
     <ClInclude Include="Code\Utility\ObjectPool.h" />
     <ClInclude Include="Code\Utility\Timer.h" />
+    <ClInclude Include="Code\Utility\TLSFAllocator.h" />
     <ClInclude Include="Code\Utility\Utility.h" />
     <ClInclude Include="Code\Window\Window.h" />
   </ItemGroup>
@@ -237,6 +238,7 @@
     <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Scene.cpp" />
     <ClCompile Include="Code\Utility\Timer.cpp" />
+    <ClCompile Include="Code\Utility\TLSFAllocator.cpp" />
     <ClCompile Include="Code\Utility\Utility.cpp" />
     <ClCompile Include="Code\Window\Window.cpp" />
   </ItemGroup>

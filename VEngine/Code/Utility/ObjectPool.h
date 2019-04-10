@@ -9,6 +9,7 @@ namespace VEngine
 		explicit StaticObjectPool();
 		T *alloc();
 		void free(T *value);
+		size_t getAllocationCount() const;
 
 	private:
 		union Item
@@ -19,6 +20,7 @@ namespace VEngine
 
 		Item m_items[Count];
 		size_t m_firstFreeIndex;
+		size_t m_allocationCount;
 	};
 
 	template<typename T, size_t Count>
@@ -41,6 +43,8 @@ namespace VEngine
 			return nullptr;
 		}
 
+		++m_allocationCount;
+
 		Item &item = m_items[m_firstFreeIndex];
 		m_firstFreeIndex = item.m_nextFreeItem;
 		return &item.m_value;
@@ -53,5 +57,13 @@ namespace VEngine
 		size_t index = item - m_items;
 		item->m_nextFreeItem = m_firstFreeIndex;
 		m_firstFreeIndex = index;
+
+		--m_allocationCount;
+	}
+
+	template<typename T, size_t Count>
+	inline size_t StaticObjectPool<T, Count>::getAllocationCount() const
+	{
+		return m_allocationCount;
 	}
 }

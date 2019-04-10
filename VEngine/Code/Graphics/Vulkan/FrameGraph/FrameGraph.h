@@ -206,11 +206,11 @@ namespace VEngine
 
 			struct SyncBits
 			{
-				size_t m_waitSemaphoreCount;
-				size_t m_signalSemaphoreCount;
-				size_t m_waitEventCount;
-				size_t m_releaseCount;
-				size_t m_resourceBarrierCount;
+				uint32_t m_waitSemaphoreCount;
+				uint32_t m_signalSemaphoreCount;
+				uint32_t m_waitEventCount;
+				uint32_t m_releaseCount;
+				uint32_t m_resourceBarrierCount;
 				std::bitset<MAX_PASSES + MAX_RESOURCES * 2> m_waitSemaphores;
 				std::bitset<MAX_PASSES + MAX_RESOURCES * 2> m_signalSemaphores;
 				std::bitset<MAX_PASSES> m_waitEvents;
@@ -225,8 +225,8 @@ namespace VEngine
 			{
 				size_t m_descriptorSetIndex;
 				size_t m_resourceIndex;
-				size_t m_binding;
-				size_t m_arrayIndex;
+				uint32_t m_binding;
+				uint32_t m_arrayIndex;
 				VkDescriptorType m_descriptorType;
 				VkSampler m_sampler;
 				VkImageLayout m_imageLayout;
@@ -273,7 +273,7 @@ namespace VEngine
 			size_t m_passCount = 0;
 			size_t m_descriptorSetCount = 0;
 			size_t m_descriptorWriteCount = 0;
-			size_t m_timestampQueryCount = 0;
+			uint32_t m_timestampQueryCount = 0;
 			// each element holds a bitset that specifies if the resource is read/written in the pass
 			std::bitset<MAX_PASSES> m_writeResources[MAX_RESOURCES];
 			std::bitset<MAX_PASSES> m_readResources[MAX_RESOURCES];

@@ -757,36 +757,20 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 		m_lightProxyIndexBuffer.create(indexBufferInfo, allocCreateInfo);
 
-
-
-		VKBuffer stagingBuffer;
-
-		VkBufferCreateInfo stagingBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		stagingBufferInfo.size = sizeof(vertexData) + sizeof(indexData);
-		stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		allocCreateInfo = {};
-		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-		stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
-
 		void *data;
-		g_context.m_allocator.mapMemory(stagingBuffer.getAllocation(), &data);
+		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), &data);
 		memcpy(data, vertexData, sizeof(vertexData));
 		memcpy(((unsigned char *)data) + sizeof(vertexData), indexData, sizeof(indexData));
-		g_context.m_allocator.unmapMemory(stagingBuffer.getAllocation());
+		g_context.m_allocator.unmapMemory(m_stagingBuffer.getAllocation());
 
 		VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 		{
 			VkBufferCopy copyRegionVertex = { 0, 0, sizeof(vertexData) };
-			vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_lightProxyVertexBuffer.getBuffer(), 1, &copyRegionVertex);
+			vkCmdCopyBuffer(commandBuffer, m_stagingBuffer.getBuffer(), m_lightProxyVertexBuffer.getBuffer(), 1, &copyRegionVertex);
 			VkBufferCopy copyRegionIndex = { sizeof(vertexData), 0, sizeof(indexData) };
-			vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_lightProxyIndexBuffer.getBuffer(), 1, &copyRegionIndex);
+			vkCmdCopyBuffer(commandBuffer, m_stagingBuffer.getBuffer(), m_lightProxyIndexBuffer.getBuffer(), 1, &copyRegionIndex);
 		}
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
-
-		stagingBuffer.destroy();
 	}
 }
 

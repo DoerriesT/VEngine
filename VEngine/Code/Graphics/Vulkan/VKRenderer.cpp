@@ -416,7 +416,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	VKVelocityInitializationPass velocityInitializationPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
 
-	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, lightData.m_shadowJobs.size(), lightData.m_shadowJobs.data());
+	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, static_cast<uint32_t>(lightData.m_shadowJobs.size()), lightData.m_shadowJobs.data());
 
 	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_jitteredProjectionMatrix);
 
@@ -672,27 +672,27 @@ void VEngine::VKRenderer::uploadMeshData(const unsigned char * vertices, uint64_
 	m_renderResources->uploadMeshData(vertices, vertexSize, indices, indexSize);
 }
 
-uint32_t VEngine::VKRenderer::loadTexture(const char *filepath)
+VEngine::TextureHandle VEngine::VKRenderer::loadTexture(const char *filepath)
 {
 	return m_textureLoader->load(filepath);
 }
 
-void VEngine::VKRenderer::freeTexture(uint32_t id)
+void VEngine::VKRenderer::freeTexture(TextureHandle id)
 {
 	m_textureLoader->free(id);
 }
 
-void VEngine::VKRenderer::createMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::VKRenderer::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
 	m_materialManager->createMaterials(count, materials, handles);
 }
 
-void VEngine::VKRenderer::updateMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::VKRenderer::updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
 	m_materialManager->updateMaterials(count, materials, handles);
 }
 
-void VEngine::VKRenderer::destroyMaterials(size_t count, MaterialHandle *handles)
+void VEngine::VKRenderer::destroyMaterials(uint32_t count, MaterialHandle *handles)
 {
 	m_materialManager->destroyMaterials(count, handles);
 }

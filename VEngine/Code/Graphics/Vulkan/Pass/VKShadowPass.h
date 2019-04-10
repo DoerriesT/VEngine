@@ -16,10 +16,10 @@ namespace VEngine
 			uint32_t width,
 			uint32_t height,
 			size_t resourceIndex,
-			size_t subMeshInstanceCount,
+			uint32_t subMeshInstanceCount,
 			const SubMeshInstanceData *subMeshInstances,
 			const SubMeshData *subMeshData,
-			size_t shadowJobCount,
+			uint32_t shadowJobCount,
 			const ShadowJob *shadowJobs);
 
 		void addToGraph(FrameGraph::Graph &graph,
@@ -36,7 +36,7 @@ namespace VEngine
 		size_t m_subMeshInstanceCount;
 		const SubMeshInstanceData *m_subMeshInstances;
 		const SubMeshData *m_subMeshData;
-		size_t m_shadowJobCount;
+		uint32_t m_shadowJobCount;
 		const ShadowJob *m_shadowJobs;
 		VKGraphicsPipelineDescription m_pipelineDesc;
 	};

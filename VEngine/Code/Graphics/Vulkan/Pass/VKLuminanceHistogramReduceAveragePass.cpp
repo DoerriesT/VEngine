@@ -54,8 +54,8 @@ void VEngine::VKLuminanceHistogramReduceAveragePass::record(VkCommandBuffer cmdB
 
 	PushConsts pushConsts;
 	pushConsts.precomputedTerm = 1.0f - exp(-m_timeDelta * 1.1f);
-	pushConsts.lowerBound = m_width * m_height * lowerBoundPercentage;
-	pushConsts.upperBound = m_width * m_height * upperBoundPercentage;
+	pushConsts.lowerBound = static_cast<uint32_t>(m_width * m_height * lowerBoundPercentage);
+	pushConsts.upperBound = static_cast<uint32_t>(m_width * m_height * upperBoundPercentage);
 	pushConsts.invScale = m_logMax - m_logMin;
 	pushConsts.bias = -m_logMin * (1.0f / pushConsts.invScale);
 

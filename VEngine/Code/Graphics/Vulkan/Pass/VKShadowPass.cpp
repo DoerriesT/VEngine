@@ -11,10 +11,10 @@ VEngine::VKShadowPass::VKShadowPass(
 	uint32_t width,
 	uint32_t height,
 	size_t resourceIndex,
-	size_t subMeshInstanceCount,
+	uint32_t subMeshInstanceCount,
 	const SubMeshInstanceData *subMeshInstances,
 	const SubMeshData *subMeshData,
-	size_t shadowJobCount,
+	uint32_t shadowJobCount,
 	const ShadowJob *shadowJobs)
 	:m_renderResources(renderResources),
 	m_width(width),
@@ -95,7 +95,7 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 {
 	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-	VkViewport viewport = { 0, 0, m_width, m_height , 0.0f, 1.0f };
+	VkViewport viewport = { 0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f };
 	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 
 	// clear the relevant areas in the atlas
@@ -127,8 +127,8 @@ void VEngine::VKShadowPass::record(VkCommandBuffer cmdBuf, const FrameGraph::Res
 		const ShadowJob &job = m_shadowJobs[i];
 
 		// set viewport and scissor
-		VkViewport viewport = { job.m_offsetX, job.m_offsetY, job.m_size, job.m_size, 0.0f, 1.0f };
-		VkRect2D scissor = { { job.m_offsetX, job.m_offsetY }, { job.m_size, job.m_size } };
+		VkViewport viewport = { static_cast<float>(job.m_offsetX), static_cast<float>(job.m_offsetY), static_cast<float>(job.m_size), static_cast<float>(job.m_size), 0.0f, 1.0f };
+		VkRect2D scissor = { { static_cast<int32_t>(job.m_offsetX), static_cast<int32_t>(job.m_offsetY) }, { job.m_size, job.m_size } };
 
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);

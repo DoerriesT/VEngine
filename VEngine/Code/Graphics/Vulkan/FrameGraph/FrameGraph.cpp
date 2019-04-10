@@ -636,7 +636,7 @@ void Graph::reset()
 	if (m_recordTimings && m_timestampQueryCount)
 	{
 		m_timingInfoCount = 0;
-		size_t currentQueryCount = 0;
+		uint32_t currentQueryCount = 0;
 
 		for (size_t i = 0; i < m_passCount; ++i)
 		{
@@ -968,7 +968,7 @@ void Graph::createResources()
 		// find usage flags and used queues
 		VkFlags usageFlags = 0;
 		uint32_t queueFamilyIndices[3] = {};
-		size_t queueFamilyCount = 0;
+		uint32_t queueFamilyCount = 0;
 		for (size_t passIndex = 0; passIndex < m_passCount; ++passIndex)
 		{
 			if (m_culledPasses[passIndex])
@@ -981,7 +981,7 @@ void Graph::createResources()
 
 					// is index already in array?
 					bool containsIndex = false;
-					for (size_t i = 0; i < queueFamilyCount; ++i)
+					for (uint32_t i = 0; i < queueFamilyCount; ++i)
 					{
 						if (queueFamilyIndices[i] == queueFamilyIndex)
 						{
@@ -1487,7 +1487,7 @@ void Graph::writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescript
 	} infos[MAX_DESCRIPTOR_WRITES];
 
 	VkWriteDescriptorSet writes[MAX_DESCRIPTOR_WRITES];
-	size_t writeCount = 0;
+	uint32_t writeCount = 0;
 
 	for (size_t i = 0; i < m_descriptorWriteCount; ++i)
 	{
@@ -1680,7 +1680,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 	// multiple passes can be recorded into one command buffer, so save wait semaphores here
 	struct
 	{
-		size_t m_count = 0;
+		uint32_t m_count = 0;
 		VkSemaphore m_waitSemaphores[MAX_WAIT_SEMAPHORES] = {};
 		VkPipelineStageFlags m_waitDstStageMask = 0;
 	} waitSemaphoreData[3];
@@ -1821,8 +1821,8 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 		{
 			VkImageMemoryBarrier imageBarriers[MAX_RESOURCE_BARRIERS];
 			VkBufferMemoryBarrier bufferBarriers[MAX_RESOURCE_BARRIERS];
-			size_t imageBarrierCount = 0;
-			size_t bufferBarrierCount = 0;
+			uint32_t imageBarrierCount = 0;
+			uint32_t bufferBarrierCount = 0;
 
 			// fill resource barriers arrays
 			{
@@ -2040,8 +2040,8 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			VkImageMemoryBarrier imageBarriers[MAX_RESOURCE_BARRIERS];
 			VkBufferMemoryBarrier bufferBarriers[MAX_RESOURCE_BARRIERS];
 
-			size_t imageBarrierCount = 0;
-			size_t bufferBarrierCount = 0;
+			uint32_t imageBarrierCount = 0;
+			uint32_t bufferBarrierCount = 0;
 
 			VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 

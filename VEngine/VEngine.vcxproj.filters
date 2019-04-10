@@ -201,6 +201,9 @@
     <ClInclude Include="Code\Graphics\RenderData.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Utility\TLSFAllocator.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -319,6 +322,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMaterialManager.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utility\TLSFAllocator.cpp">
+      <Filter>Code\Utility</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

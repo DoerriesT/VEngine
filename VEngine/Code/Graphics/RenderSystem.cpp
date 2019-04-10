@@ -99,14 +99,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 					* glm::mat4_cast(transformationComponent.m_orientation)
 					* glm::scale(glm::vec3(transformationComponent.m_scale));
 
-				uint32_t transformIndex = m_transformData.size();
+				uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
 
 				m_transformData.push_back(transformationComponent.m_transformation);
 
 				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 				{
 					SubMeshInstanceData instanceData;
-					instanceData.m_subMeshIndex = m_subMeshData.size();
+					instanceData.m_subMeshIndex = static_cast<uint32_t>(m_subMeshData.size());
 					instanceData.m_transformIndex = transformIndex;
 					instanceData.m_materialIndex = p.second;
 
@@ -225,13 +225,13 @@ void VEngine::RenderSystem::update(float timeDelta)
 		m_commonRenderData.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
 
 		RenderData renderData;
-		renderData.m_transformDataCount = m_transformData.size();
+		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
 		renderData.m_transformData = m_transformData.data();
-		renderData.m_subMeshDataCount = m_subMeshData.size();
+		renderData.m_subMeshDataCount = static_cast<uint32_t>(m_subMeshData.size());
 		renderData.m_subMeshData = m_subMeshData.data();
-		renderData.m_opaqueSubMeshInstanceDataCount = m_opaqueSubMeshInstanceData.size();
+		renderData.m_opaqueSubMeshInstanceDataCount = static_cast<uint32_t>(m_opaqueSubMeshInstanceData.size());
 		renderData.m_opaqueSubMeshInstanceData = m_opaqueSubMeshInstanceData.data();
-		renderData.m_maskedSubMeshInstanceDataCount = m_maskedSubMeshInstanceData.size();
+		renderData.m_maskedSubMeshInstanceDataCount = static_cast<uint32_t>(m_maskedSubMeshInstanceData.size());
 		renderData.m_maskedSubMeshInstanceData = m_maskedSubMeshInstanceData.data();
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
@@ -249,7 +249,7 @@ void VEngine::RenderSystem::uploadMeshData(const unsigned char *vertices, uint64
 	m_renderer->uploadMeshData(vertices, vertexSize, indices, indexSize);
 }
 
-uint32_t VEngine::RenderSystem::createTexture(const char *filepath)
+VEngine::TextureHandle VEngine::RenderSystem::createTexture(const char *filepath)
 {
 	return m_renderer->loadTexture(filepath);
 }
@@ -259,19 +259,19 @@ void VEngine::RenderSystem::updateTextureData()
 	m_renderer->updateTextureData();
 }
 
-void VEngine::RenderSystem::createMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::RenderSystem::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
 	m_renderer->createMaterials(count, materials, handles);
 	updateMaterialBatchAssigments(count, materials, handles);
 }
 
-void VEngine::RenderSystem::updateMaterials(size_t count, const Material *materials, MaterialHandle *handles)
+void VEngine::RenderSystem::updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
 {
 	m_renderer->updateMaterials(count, materials, handles);
 	updateMaterialBatchAssigments(count, materials, handles);
 }
 
-void VEngine::RenderSystem::destroyMaterials(size_t count, MaterialHandle *handles)
+void VEngine::RenderSystem::destroyMaterials(uint32_t count, MaterialHandle *handles)
 {
 	m_renderer->destroyMaterials(count, handles);
 }

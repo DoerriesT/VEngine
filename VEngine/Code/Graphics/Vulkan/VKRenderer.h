@@ -27,11 +27,11 @@ namespace VEngine
 		void render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
-		uint32_t loadTexture(const char *filepath);
-		void freeTexture(uint32_t id);
-		void createMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void updateMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void destroyMaterials(size_t count, MaterialHandle *handles);
+		TextureHandle loadTexture(const char *filepath);
+		void freeTexture(TextureHandle id);
+		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void destroyMaterials(uint32_t count, MaterialHandle *handles);
 		void updateTextureData();
 
 	private:
@@ -44,6 +44,6 @@ namespace VEngine
 		uint32_t m_width;
 		uint32_t m_height;
 		uint32_t m_swapChainImageIndex;
-		uint32_t m_fontAtlasTextureIndex;
+		TextureHandle m_fontAtlasTextureIndex;
 	};
 }

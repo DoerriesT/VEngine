@@ -11,14 +11,14 @@ namespace VEngine
 	public:
 		explicit VKMaterialManager(VKBuffer &stagingBuffer, VKBuffer &materialBuffer);
 		~VKMaterialManager();
-		void createMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void updateMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void destroyMaterials(size_t count, MaterialHandle *handles);
+		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void destroyMaterials(uint32_t count, MaterialHandle *handles);
 
 	private:
 		VKBuffer &m_stagingBuffer;
 		VKBuffer &m_materialBuffer;
 		MaterialHandle *m_freeHandles;
-		size_t m_freeHandleCount;
+		uint32_t m_freeHandleCount;
 	};
 }

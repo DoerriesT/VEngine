@@ -5,6 +5,7 @@
 #include "VKImage.h"
 #include "VKBuffer.h"
 #include "Graphics/RendererConsts.h"
+#include "Handles.h"
 
 namespace VEngine
 {
@@ -17,8 +18,8 @@ namespace VEngine
 		VKTextureLoader &operator= (const VKTextureLoader &) = delete;
 		VKTextureLoader &operator= (const VKTextureLoader &&) = delete;
 		~VKTextureLoader();
-		size_t load(const char *filepath);
-		void free(size_t id);
+		TextureHandle load(const char *filepath);
+		void free(TextureHandle handle);
 		void getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count);
 
 	private:

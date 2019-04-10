@@ -39,7 +39,7 @@ void VEngine::Engine::start()
 	while (!m_shutdown && !m_window->shouldClose())
 	{
 		timer.update();
-		double timeDelta = timer.getTimeDelta();
+		float timeDelta = static_cast<float>(timer.getTimeDelta());
 
 		m_window->pollEvents();
 		m_userInput->input();

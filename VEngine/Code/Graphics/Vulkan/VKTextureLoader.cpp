@@ -99,7 +99,7 @@ VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 VEngine::VKTextureLoader::~VKTextureLoader()
 {
 	// free all remaining textures
-	for (size_t i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
+	for (TextureHandle i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
 	{
 		if (m_usedSlots[i])
 		{
@@ -113,16 +113,16 @@ VEngine::VKTextureLoader::~VKTextureLoader()
 	m_dummyTexture.m_image.destroy();
 }
 
-size_t VEngine::VKTextureLoader::load(const char *filepath)
+VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 {
-	// find free id
-	size_t id = 0;
+	// find free handle
+	TextureHandle handle = 0;
 	{
 		bool foundFreeId = false;
 
-		for (; id < RendererConsts::TEXTURE_ARRAY_SIZE; ++id)
+		for (; handle < RendererConsts::TEXTURE_ARRAY_SIZE; ++handle)
 		{
-			if (!m_usedSlots[id])
+			if (!m_usedSlots[handle])
 			{
 				foundFreeId = true;
 				break;
@@ -158,7 +158,7 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 	}
 
 	// create image
-	VKTexture &texture = m_textures[id];
+	VKTexture &texture = m_textures[handle];
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -278,27 +278,27 @@ size_t VEngine::VKTextureLoader::load(const char *filepath)
 
 	// create VkDescriptorImageInfo
 	{
-		m_descriptorImageInfos[id].sampler = texture.m_sampler;
-		m_descriptorImageInfos[id].imageView = texture.m_view;
-		m_descriptorImageInfos[id].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		m_descriptorImageInfos[handle].sampler = texture.m_sampler;
+		m_descriptorImageInfos[handle].imageView = texture.m_view;
+		m_descriptorImageInfos[handle].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	}
 
-	m_usedSlots[id] = true;
+	m_usedSlots[handle] = true;
 
-	// 0 is reserved as null id
-	return id + 1;
+	// 0 is reserved as null handle
+	return handle + 1;
 }
 
-void VEngine::VKTextureLoader::free(size_t id)
+void VEngine::VKTextureLoader::free(TextureHandle handle)
 {
-	assert(id);
+	assert(handle);
 
-	// 0 is reserved as null id
-	--id;
+	// 0 is reserved as null handle
+	--handle;
 
-	assert(m_usedSlots[id]);
+	assert(m_usedSlots[handle]);
 
-	VKTexture &texture = m_textures[id];
+	VKTexture &texture = m_textures[handle];
 
 	// destroy view
 	vkDestroyImageView(g_context.m_device, texture.m_view, nullptr);
@@ -313,11 +313,11 @@ void VEngine::VKTextureLoader::free(size_t id)
 	memset(&texture, 0, sizeof(texture));
 
 	// set VkDescriptorImageInfo to dummy texture
-	m_descriptorImageInfos[id].sampler = m_dummyTexture.m_sampler;
-	m_descriptorImageInfos[id].imageView = m_dummyTexture.m_view;
-	m_descriptorImageInfos[id].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	m_descriptorImageInfos[handle].sampler = m_dummyTexture.m_sampler;
+	m_descriptorImageInfos[handle].imageView = m_dummyTexture.m_view;
+	m_descriptorImageInfos[handle].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	m_usedSlots[id] = false;
+	m_usedSlots[handle] = false;
 }
 
 void VEngine::VKTextureLoader::getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count)

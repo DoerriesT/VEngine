@@ -19,11 +19,11 @@ namespace VEngine
 		void update(float timeDelta);
 		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
 		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
-		uint32_t createTexture(const char *filepath);
+		TextureHandle createTexture(const char *filepath);
 		void updateTextureData();
-		void createMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void updateMaterials(size_t count, const Material *materials, MaterialHandle *handles);
-		void destroyMaterials(size_t count, MaterialHandle *handles);
+		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
+		void destroyMaterials(uint32_t count, MaterialHandle *handles);
 		void setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
 
