@@ -1,8 +1,5 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <cmath>
-#include <bitset>
-#include <vector>
 #include "Utility/ObjectPool.h"
 #include "Utility/TLSFAllocator.h"
 
@@ -37,6 +34,7 @@ namespace VEngine
 	class VKMemoryAllocator
 	{
 	public:
+		VKMemoryAllocator();
 		void init(VkDevice device, VkPhysicalDevice physicalDevice);
 		VkResult alloc(const VKAllocationCreateInfo &allocationCreateInfo, const VkMemoryRequirements &memoryRequirements, VKAllocationHandle &allocationHandle);
 		VkResult createImage(const VKAllocationCreateInfo &allocationCreateInfo, const VkImageCreateInfo &imageCreateInfo, VkImage &image, VKAllocationHandle &allocationHandle);
@@ -92,14 +90,9 @@ namespace VEngine
 		VkPhysicalDeviceMemoryProperties m_memoryProperties;
 		VkDeviceSize m_bufferImageGranularity;
 		VkDeviceSize m_nonCoherentAtomSize;
-		VkDeviceSize m_pageSize;
 		VkDeviceSize m_heapSizeLimits[VK_MAX_MEMORY_HEAPS];
 		VKMemoryPool m_pools[VK_MAX_MEMORY_TYPES];
-		VkDeviceSize m_usedMemorySize;
-		VkDeviceSize m_freeMemorySize;
-		VkDeviceSize m_wastedMemorySize;
-		std::vector<VKAllocationInfo> m_allocationInfos;
-		std::vector<size_t> m_freeAllocationInfos;
+		DynamicObjectPool<VKAllocationInfo> m_allocationInfoPool;
 
 		VkResult findMemoryTypeIndex(uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties, VkMemoryPropertyFlags preferredProperties, uint32_t &memoryTypeIndex);
 	};

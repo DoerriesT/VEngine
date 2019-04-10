@@ -10,7 +10,8 @@ VEngine::TLSFAllocator::TLSFAllocator(uint32_t memorySize, uint32_t pageSize)
 	m_firstPhysicalSpan(nullptr),
 	m_allocationCount(),
 	m_freeSize(memorySize),
-	m_usedSize()
+	m_usedSize(),
+	m_spanPool(256)
 {
 	memset(m_secondLevelBitsets, 0, sizeof(m_secondLevelBitsets));
 	memset(m_freeSpans, 0, sizeof(m_freeSpans));
