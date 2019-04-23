@@ -15,7 +15,7 @@ using uint = uint32_t;
 
 void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
-	graph.addGraphicsPass("Shadow Pass", data.m_width, data.m_height,
+	graph.addGraphicsPass(data.m_alphaMasked ? "Shadow Pass Alpha" : "Shadow Pass", data.m_width, data.m_height,
 		[&](FrameGraph::PassBuilder builder)
 	{
 		builder.readStorageBuffer(data.m_transformDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
