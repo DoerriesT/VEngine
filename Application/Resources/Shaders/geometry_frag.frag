@@ -18,14 +18,6 @@ layout(push_constant) uniform PUSH_CONSTS
 #define ALPHA_MASK_ENABLED 0
 #endif // ALPHA_MASK_ENABLED
 
-#ifndef ALPHA_CUTOFF
-#define ALPHA_CUTOFF (0.9)
-#endif // ALPHA_CUTOFF
-
-#ifndef MIP_SCALE
-#define MIP_SCALE (0.25)
-#endif // MIP_SCALE
-
 #if !ALPHA_MASK_ENABLED
 layout(early_fragment_tests) in;
 #endif // ALPHA_MASK_ENABLED
@@ -71,7 +63,7 @@ void main()
 		{
 #if ALPHA_MASK_ENABLED
 			vec4 albedoTexSample = texture(uTextures[albedoTextureIndex - 1], vTexCoord).rgba;
-			albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[albedoTextureIndex - 1], vTexCoord).x * MIP_SCALE;
+			albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[albedoTextureIndex - 1], vTexCoord).x * ALPHA_MIP_SCALE;
 			if(albedoTexSample.a < ALPHA_CUTOFF)
 			{
 				discard;

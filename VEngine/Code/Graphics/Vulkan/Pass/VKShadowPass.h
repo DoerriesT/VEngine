@@ -24,7 +24,10 @@ namespace VEngine
 			const SubMeshData *m_subMeshData;
 			uint32_t m_shadowJobCount;
 			const ShadowJob *m_shadowJobs;
+			bool m_alphaMasked;
+			bool m_clear;
 			FrameGraph::BufferHandle m_transformDataBufferHandle;
+			FrameGraph::BufferHandle m_materialDataBufferHandle;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
 		};
 

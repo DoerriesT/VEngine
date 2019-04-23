@@ -14,6 +14,14 @@
 #define LUMINANCE_HISTOGRAM_SIZE 256
 #endif // LUMINANCE_HISTOGRAM_SIZE
 
+#ifndef ALPHA_CUTOFF
+#define ALPHA_CUTOFF (0.9)
+#endif // ALPHA_CUTOFF
+
+#ifndef ALPHA_MIP_SCALE
+#define ALPHA_MIP_SCALE (0.25)
+#endif // MIP_SCALE
+
 struct ShadowData
 {
 	mat4 shadowViewProjectionMatrix;

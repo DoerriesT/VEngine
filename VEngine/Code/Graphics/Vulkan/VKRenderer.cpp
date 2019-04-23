@@ -309,23 +309,50 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// draw shadows
-	VKShadowPass::Data shadowPassData;
-	shadowPassData.m_renderResources = m_renderResources.get();
-	shadowPassData.m_pipelineCache = m_pipelineCache.get();
-	shadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	shadowPassData.m_width = g_shadowAtlasSize;
-	shadowPassData.m_height = g_shadowAtlasSize;
-	shadowPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
-	shadowPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
-	shadowPassData.m_subMeshData = renderData.m_subMeshData;
-	shadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
-	shadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
-	shadowPassData.m_transformDataBufferHandle = transformDataBufferHandle;
-	shadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+	VKShadowPass::Data opaqueShadowPassData;
+	opaqueShadowPassData.m_renderResources = m_renderResources.get();
+	opaqueShadowPassData.m_pipelineCache = m_pipelineCache.get();
+	opaqueShadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	opaqueShadowPassData.m_width = g_shadowAtlasSize;
+	opaqueShadowPassData.m_height = g_shadowAtlasSize;
+	opaqueShadowPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	opaqueShadowPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
+	opaqueShadowPassData.m_subMeshData = renderData.m_subMeshData;
+	opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
+	opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
+	opaqueShadowPassData.m_alphaMasked = false;
+	opaqueShadowPassData.m_clear = true;
+	opaqueShadowPassData.m_transformDataBufferHandle = transformDataBufferHandle;
+	opaqueShadowPassData.m_materialDataBufferHandle = materialDataBufferHandle;
+	opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 
-	if (!lightData.m_shadowJobs.empty())
+	if (renderData.m_opaqueSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
 	{
-		VKShadowPass::addToGraph(graph, shadowPassData);
+		VKShadowPass::addToGraph(graph, opaqueShadowPassData);
+	}
+
+
+	// draw masked shadows
+	VKShadowPass::Data maskedShadowPassData;
+	maskedShadowPassData.m_renderResources = m_renderResources.get();
+	maskedShadowPassData.m_pipelineCache = m_pipelineCache.get();
+	maskedShadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	maskedShadowPassData.m_width = g_shadowAtlasSize;
+	maskedShadowPassData.m_height = g_shadowAtlasSize;
+	maskedShadowPassData.m_subMeshInstanceCount = renderData.m_maskedSubMeshInstanceDataCount;
+	maskedShadowPassData.m_subMeshInstances = renderData.m_maskedSubMeshInstanceData;
+	maskedShadowPassData.m_subMeshData = renderData.m_subMeshData;
+	maskedShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
+	maskedShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
+	maskedShadowPassData.m_alphaMasked = true;
+	maskedShadowPassData.m_clear = lightData.m_shadowJobs.empty();
+	maskedShadowPassData.m_transformDataBufferHandle = transformDataBufferHandle;
+	maskedShadowPassData.m_materialDataBufferHandle = materialDataBufferHandle;
+	maskedShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+
+	if (renderData.m_maskedSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
+	{
+		VKShadowPass::addToGraph(graph, maskedShadowPassData);
 	}
 
 
