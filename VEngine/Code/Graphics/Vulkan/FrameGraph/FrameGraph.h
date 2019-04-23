@@ -9,7 +9,7 @@
 #include <bitset>
 #include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
 #include "Graphics/Vulkan/VKMemoryAllocator.h"
-#include "Graphics/Vulkan/VKPipelineManager.h"
+#include "Graphics/Vulkan/VKPipeline.h"
 
 namespace VEngine
 {
@@ -25,7 +25,7 @@ namespace VEngine
 		class Pass
 		{
 		public:
-			virtual void record(VkCommandBuffer cmdBuf, const ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) = 0;
+			virtual void record(VkCommandBuffer cmdBuf, const ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass) = 0;
 		};
 
 		enum class QueueType
@@ -89,25 +89,21 @@ namespace VEngine
 		public:
 			explicit PassBuilder(Graph &graph, size_t passIndex);
 			void readDepthStencil(ImageHandle handle);
-			void readInputAttachment(ImageHandle handle, uint32_t index, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readTexture(ImageHandle handle, VkPipelineStageFlags stageFlags, VkSampler sampler, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readUniformBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readUniformBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readInputAttachment(ImageHandle handle, uint32_t index);
+			void readTexture(ImageHandle handle, VkPipelineStageFlags stageFlags);
+			void readStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags);
+			void readStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
+			void readUniformBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
 			void readVertexBuffer(BufferHandle handle);
 			void readIndexBuffer(BufferHandle handle);
 			void readIndirectBuffer(BufferHandle handle);
 			void readImageTransfer(ImageHandle handle);
-			void readWriteStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readWriteStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void readWriteStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void readWriteStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags);
+			void readWriteStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
 			void writeDepthStencil(ImageHandle handle);
 			void writeColorAttachment(ImageHandle handle, uint32_t index);
-			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void writeStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
-			void writeStorageBufferDynamic(BufferHandle handle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement = 0);
+			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags);
+			void writeStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
 			void writeImageTransfer(ImageHandle handle);
 			void writeBufferFromHost(BufferHandle handle);
 			ImageHandle createImage(const ImageDescription &imageDesc);
@@ -121,10 +117,12 @@ namespace VEngine
 		class ResourceRegistry
 		{
 		public:
-			explicit ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VKAllocationHandle *allocations);
+			explicit ResourceRegistry(Graph &graph, size_t passIndex);
 			VkImage getImage(ImageHandle handle) const;
 			VkImageView getImageView(ImageHandle handle) const;
+			VkDescriptorImageInfo getImageInfo(ImageHandle handle) const;
 			VkBuffer getBuffer(BufferHandle handle) const;
+			VkDescriptorBufferInfo getBufferInfo(BufferHandle handle) const;
 			const VKAllocationHandle &getAllocation(ResourceHandle handle) const;
 			const VKAllocationHandle &getAllocation(ImageHandle handle) const;
 			const VKAllocationHandle &getAllocation(BufferHandle handle) const;
@@ -132,33 +130,34 @@ namespace VEngine
 			void unmapMemory(BufferHandle handle) const;
 
 		private:
-			const VkImage *m_images;
-			const VkImageView *m_imageViews;
-			const VkBuffer *m_buffers;
-			const VKAllocationHandle *m_allocations;
+			Graph &m_graph;
+			size_t m_passIndex;
 		};
 
 		class Graph
 		{
 			friend class PassBuilder;
+			friend class ResourceRegistry;
 		public:
-			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator, VKPipelineManager &pipelineManager);
+			typedef std::function<void(VkCommandBuffer cmdBuf, const ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)> RecordFunc;
+
+			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator);
 			Graph(const Graph &) = delete;
 			Graph(const Graph &&) = delete;
 			Graph &operator= (const Graph &) = delete;
 			Graph &operator= (const Graph &&) = delete;
 			~Graph();
-			PassBuilder addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc, uint32_t width, uint32_t height);
-			PassBuilder addComputePass(const char *name, Pass *pass, const VKComputePipelineDescription *pipelineDesc, QueueType queueType);
-			PassBuilder addGenericPass(const char *name, Pass *pass, QueueType queueType);
-			PassBuilder addHostAccessPass(const char *name, Pass *pass);
+			void addGraphicsPass(const char *name, uint32_t width, uint32_t height, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc);
+			void addComputePass(const char *name, QueueType queueType, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc);
+			void addGenericPass(const char *name, QueueType queueType, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc);
+			void addHostAccessPass(const char *name, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc);
 
 			void execute(ResourceHandle finalResourceHandle, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 			void reset();
 			ImageHandle createImage(const ImageDescription &imageDescription);
 			BufferHandle createBuffer(const BufferDescription &bufferDescription);
 			ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
-			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
 			void getTimingInfo(size_t &count, PassTimingInfo *data);
 
 		private:
@@ -171,8 +170,6 @@ namespace VEngine
 				MAX_SIGNAL_SEMAPHORES = 8,
 				MAX_WAIT_EVENTS = 8,
 				MAX_SIGNAL_EVENTS = 8,
-				MAX_DESCRIPTOR_SETS = 64,
-				MAX_DESCRIPTOR_WRITES = 256,
 				MAX_RESOURCE_BARRIERS = 16,
 			};
 
@@ -221,18 +218,6 @@ namespace VEngine
 				VkAccessFlags m_memoryBarrierDstAccessMask = 0;
 			};
 
-			struct DescriptorWrite
-			{
-				size_t m_descriptorSetIndex;
-				size_t m_resourceIndex;
-				uint32_t m_binding;
-				uint32_t m_arrayIndex;
-				VkDescriptorType m_descriptorType;
-				VkSampler m_sampler;
-				VkImageLayout m_imageLayout;
-				VkDeviceSize m_dynamicBufferSize;
-			};
-
 			struct TimestampQueryIndices
 			{
 				uint32_t m_beforeSync;
@@ -242,11 +227,10 @@ namespace VEngine
 			};
 
 			VKSyncPrimitiveAllocator &m_syncPrimitiveAllocator;
-			VKPipelineManager &m_pipelineManager;
 			const char *m_resourceNames[MAX_RESOURCES];
 			const char *m_passNames[MAX_PASSES];
 			VkImageLayout *m_externalLayouts[MAX_RESOURCES];
-			Pass *m_passes[MAX_PASSES];
+			RecordFunc m_recordFunctions[MAX_PASSES];
 			ClearValue m_clearValues[MAX_RESOURCES];
 			PassType m_passTypes[MAX_PASSES];
 			QueueType m_queueType[MAX_PASSES];
@@ -254,9 +238,6 @@ namespace VEngine
 			VkCommandBuffer m_commandBuffers[3][MAX_PASSES];
 			bool m_recordTimings = true;
 			size_t m_timingInfoCount = 0;
-			const void *m_pipelineDescriptions[MAX_PASSES];
-			VkPipelineLayout m_layouts[MAX_PASSES];
-			VkPipeline m_pipelines[MAX_PASSES];
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //
@@ -271,15 +252,12 @@ namespace VEngine
 			size_t m_transferCommandBufferCount = 0;
 			size_t m_resourceCount = 0;
 			size_t m_passCount = 0;
-			size_t m_descriptorSetCount = 0;
-			size_t m_descriptorWriteCount = 0;
 			uint32_t m_timestampQueryCount = 0;
 			// each element holds a bitset that specifies if the resource is read/written in the pass
 			std::bitset<MAX_PASSES> m_writeResources[MAX_RESOURCES];
 			std::bitset<MAX_PASSES> m_readResources[MAX_RESOURCES];
 			std::bitset<MAX_PASSES> m_accessedResources[MAX_RESOURCES];
 			std::bitset<MAX_PASSES> m_attachmentResources[MAX_RESOURCES];
-			std::bitset<MAX_PASSES> m_accessedDescriptorSets[MAX_DESCRIPTOR_SETS];
 			std::bitset<MAX_PASSES> m_culledPasses;
 			std::bitset<MAX_RESOURCES> m_culledResources;
 			std::bitset<MAX_RESOURCES> m_concurrentResources;
@@ -299,28 +277,16 @@ namespace VEngine
 			VKAllocationHandle m_allocations[MAX_RESOURCES];
 			std::pair<VkRenderPass, VkFramebuffer> m_renderpassFramebufferHandles[MAX_PASSES];
 			VkPipelineStageFlags m_passStageMasks[MAX_PASSES];
-			VkDescriptorSet m_descriptorSets[MAX_DESCRIPTOR_SETS];
-			DescriptorWrite m_descriptorWrites[MAX_DESCRIPTOR_WRITES];
 			PassTimingInfo m_timingInfos[MAX_PASSES];
 
-			void cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
+			void cull(size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
 			void createClearPasses(size_t *firstResourceUses);
 			void createResources();
 			void createRenderPasses(size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle);
 			void createSynchronization(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits);
-			void writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets);
-			void retrievePipelines();
 			void recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses, SyncBits *syncBits, ResourceHandle finalResourceHandle, VkImageLayout finalLayout);
 			uint32_t queueIndexFromQueueType(QueueType queueType);
-			void addDescriptorWrite(size_t passIndex,
-				size_t resourceIndex,
-				VkDescriptorSet set,
-				uint32_t binding,
-				uint32_t arrayElement,
-				VkDescriptorType type,
-				VkImageLayout imageLayout,
-				VkSampler sampler,
-				VkDeviceSize dynamicBufferSize);
+			void createRenderPassDescription(size_t passIndex, VKRenderPassDescription &renderPassDescription);
 		};
 	}
 }

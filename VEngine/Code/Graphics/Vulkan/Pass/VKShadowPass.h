@@ -3,41 +3,31 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 	struct SubMeshData;
 	struct SubMeshInstanceData;
 	struct ShadowJob;
 
-	class VKShadowPass : FrameGraph::Pass
+	namespace VKShadowPass
 	{
-	public:
-		explicit VKShadowPass(
-			VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex,
-			uint32_t subMeshInstanceCount,
-			const SubMeshInstanceData *subMeshInstances,
-			const SubMeshData *subMeshData,
-			uint32_t shadowJobCount,
-			const ShadowJob *shadowJobs);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			size_t m_subMeshInstanceCount;
+			const SubMeshInstanceData *m_subMeshInstances;
+			const SubMeshData *m_subMeshData;
+			uint32_t m_shadowJobCount;
+			const ShadowJob *m_shadowJobs;
+			FrameGraph::BufferHandle m_transformDataBufferHandle;
+			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph,
-			FrameGraph::BufferHandle perFrameDataBufferHandle,
-			FrameGraph::BufferHandle transformDataBufferHandle,
-			FrameGraph::ImageHandle shadowTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		size_t m_subMeshInstanceCount;
-		const SubMeshInstanceData *m_subMeshInstances;
-		const SubMeshData *m_subMeshData;
-		uint32_t m_shadowJobCount;
-		const ShadowJob *m_shadowJobs;
-		VKGraphicsPipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }

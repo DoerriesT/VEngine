@@ -3,16 +3,45 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-#include "common.h"
+#ifndef PI
+#define PI (3.14159265359)
+#endif // PI
 
-#define DEPTH_TEXTURE_INDEX 0
-#define ALBEDO_TEXTURE_INDEX 1
-#define NORMAL_TEXTURE_INDEX 2
-#define MRO_TEXTURE_INDEX 3
+#include "lighting_bindings.h"
 
-layout(set = 1, binding = 0, rgba16f) uniform writeonly image2D uLightingResultImage;
-layout(set = 1, binding = 1) uniform sampler2D uGBufferTextures[4];
-layout(set = 1, binding = 2) uniform sampler2DShadow uShadowTexture;
+layout(set = CONSTANT_DATA_SET, binding = CONSTANT_DATA_BINDING) uniform CONSTANT_DATA
+{
+	ConstantData uConstantData;
+};
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uLightingResultImage;
+layout(set = GBUFFER_IMAGES_SET, binding = GBUFFER_IMAGES_BINDING) uniform sampler2D uGBufferTextures[4];
+layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DShadow uShadowTexture;
+
+layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
+{
+	DirectionalLightData uDirectionalLightData[];
+};
+
+layout(set = POINT_LIGHT_DATA_SET, binding = POINT_LIGHT_DATA_BINDING) readonly buffer POINT_LIGHT_DATA
+{
+	PointLightData uPointLightData[];
+};
+
+layout(set = SHADOW_DATA_SET, binding = SHADOW_DATA_BINDING) readonly buffer SHADOW_DATA
+{
+	ShadowData uShadowData[];
+};
+
+layout(set = POINT_LIGHT_Z_BINS_SET, binding = POINT_LIGHT_Z_BINS_BINDING) readonly buffer POINT_LIGHT_Z_BINS
+{
+	uint uPointLightZBins[];
+};
+
+layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly buffer POINT_LIGHT_BITMASK 
+{
+	uint uPointLightBitMask[];
+};
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -82,10 +111,10 @@ vec3 evaluatePointLight(
 	inout float roughness,
 	uint index)
 {
-	vec4 positionRadius = uPointLightData.lights[index].positionRadius;
+	vec4 positionRadius = uPointLightData[index].positionRadius;
 	vec3 unnormalizedLightVector = positionRadius.xyz - viewSpacePosition;
 	vec3 L = normalize(unnormalizedLightVector);
-	float att = getDistanceAtt(unnormalizedLightVector, uPointLightData.lights[index].colorInvSqrAttRadius.w);
+	float att = getDistanceAtt(unnormalizedLightVector, uPointLightData[index].colorInvSqrAttRadius.w);
 
 	vec3 H = normalize(V + L);
 	float NdotL = max(dot(N, L), 0.0);
@@ -105,7 +134,7 @@ vec3 evaluatePointLight(
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
 
-	vec3 radiance = uPointLightData.lights[index].colorInvSqrAttRadius.rgb * att;
+	vec3 radiance = uPointLightData[index].colorInvSqrAttRadius.rgb * att;
 	return (kD * albedo * (1.0 / PI) + specular) * radiance * NdotL;
 }
 
@@ -121,7 +150,7 @@ vec3 evaluateDirectionalLight(
 	inout float roughness,
 	uint index)
 {
-	vec3 L = viewMatrix * uDirectionalLightData.lights[index].direction.xyz;
+	vec3 L = viewMatrix * uDirectionalLightData[index].direction.xyz;
 	vec3 H = normalize(V + L);
     
 	float NdotL = max(dot(N, L), 0.0);
@@ -140,21 +169,21 @@ vec3 evaluateDirectionalLight(
 	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
 	kD *= 1.0 - metallic;
     
-	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLightData.lights[index].color.rgb;
+	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLightData[index].color.rgb;
 	
-	uint shadowDataCount = uDirectionalLightData.lights[index].shadowDataCount;
+	uint shadowDataCount = uDirectionalLightData[index].shadowDataCount;
 	if(shadowDataCount > 0)
 	{		
-		uint shadowDataOffset = uDirectionalLightData.lights[index].shadowDataOffset;
+		uint shadowDataOffset = uDirectionalLightData[index].shadowDataOffset;
 		vec3 shadowCoord = vec3(2.0);
 		vec2 invShadowTextureSize = 1.0 / textureSize(uShadowTexture, 0).xy;
-		vec4 offsetPos = uPerFrameData.invViewMatrix * vec4(0.1 * L + viewSpacePosition, 1.0);
-
+		vec4 offsetPos = uConstantData.invViewMatrix * vec4(0.1 * L + viewSpacePosition, 1.0);
+    
 		uint split = 0;
 		for (; split < shadowDataCount; ++split)
 		{
 			const vec4 projCoords4 = 
-			uShadowData.data[shadowDataOffset + split].shadowViewProjectionMatrix * offsetPos;
+			uShadowData[shadowDataOffset + split].shadowViewProjectionMatrix * offsetPos;
 			shadowCoord = (projCoords4.xyz / projCoords4.w);
 			shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; 
 			
@@ -162,7 +191,7 @@ vec3 evaluateDirectionalLight(
 			// add small guard band at edges to avoid PCF sampling outside texture
 			if(all(greaterThanEqual(shadowCoord.xy, vec2(0.003))) && all(lessThan(shadowCoord.xy, vec2(1.0 - 0.003))))
 			{
-				vec4 scaleBias = uShadowData.data[shadowDataOffset + split].shadowCoordScaleBias;
+				vec4 scaleBias = uShadowData[shadowDataOffset + split].shadowCoordScaleBias;
 				shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
 				break;
 			}
@@ -172,12 +201,12 @@ vec3 evaluateDirectionalLight(
 		float shadow = 0.0;
 		
 		const float noise = interleavedGradientNoise(vec2(gl_GlobalInvocationID.xy));// * 0.5 + (uOddFrame ? 0.5 : 0.0);
-
+    
 		const float rotSin = sin(2.0 * PI * noise);
 		const float rotCos = cos(2.0 * PI * noise);
-
+    
 		const mat2 rotation = mat2(rotCos, rotSin, -rotSin, rotCos);
-
+    
 		const vec2 samples[8] = 
 		{ 
 			vec2(-0.7071, 0.7071),
@@ -189,9 +218,9 @@ vec3 evaluateDirectionalLight(
 			vec2(-0.1768, -0.1768),
 			vec2(0.125, 0.0)
 		};
-
+    
 		const float splitMult = split == 0 ? 5.0 : split == 1 ? 2.0 : 1.0;
-
+    
 		for(int i = 0; i < 8; ++i)
 		{
 			vec2 offset = rotation * samples[i];
@@ -253,6 +282,14 @@ vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLi
     }
 }
 
+vec3 accurateSRGBToLinear(in vec3 sRGBCol)
+{
+	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
+	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
+	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
+	return linearRGB;
+}
+
 void main() 
 {
 	float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
@@ -267,10 +304,10 @@ void main()
 	vec2 texelSize = vec2(1.0 / domainSize);
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
-	vec4 viewSpacePosition = uPerFrameData.invJitteredProjectionMatrix * clipSpacePosition;
+	vec4 viewSpacePosition = uConstantData.invJitteredProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
 	
-	mat3 viewMatrix = mat3(uPerFrameData.viewMatrix);
+	mat3 viewMatrix = mat3(uConstantData.viewMatrix);
 	vec3 albedo = accurateSRGBToLinear(texelFetch(uGBufferTextures[ALBEDO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).rgb);
 	vec3 N = texelFetch(uGBufferTextures[NORMAL_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xyz;
 	float metallic = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
@@ -285,21 +322,21 @@ void main()
 	result += 1.0 * albedo;
 	
 	// directional lights
-	for (uint i = 0; i < uPerFrameData.directionalLightCount; ++i)
+	for (uint i = 0; i < 1; ++i)
 	{
 		result += evaluateDirectionalLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, i);
 	}
 	
 	// point lights
-	if (uPerFrameData.pointLightCount > 0)
+	if (uConstantData.pointLightCount > 0)
 	{
 		uint wordMin = 0;
-		const uint wordCount = (uPerFrameData.pointLightCount + 31) / 32;
+		const uint wordCount = (uConstantData.pointLightCount + 31) / 32;
 		uint wordMax = wordCount - 1;
 		
 		uint address = getTileAddress() * wordCount;
 		uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
-		uint zBinData = uPointLightZBins.bins[zBinAddress];
+		uint zBinData = uPointLightZBins[zBinAddress];
 		uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
 		uint maxIndex = zBinData & uint(0xFFFF);
 		// mergedMin scalar from this point
@@ -311,7 +348,7 @@ void main()
 		
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = uPointLightBitMask.mask[address + wordIndex];
+			uint mask = uPointLightBitMask[address + wordIndex];
 			
 			// mask by zbin mask
 			const int localBaseIndex = int(wordIndex * 32);

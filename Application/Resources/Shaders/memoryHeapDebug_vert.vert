@@ -1,12 +1,13 @@
 #version 450
 
+#include "memoryHeapDebug_bindings.h"
+
 layout(location = 0) out flat vec3 vColor;
 
-layout(push_constant) uniform PushConsts 
+layout(push_constant) uniform PUSH_CONSTS 
 {
-	vec4 scaleBias;
-	vec3 color;
-} uPushConsts;
+	PushConsts uPushConsts;
+};
 
 void main() 
 {
@@ -16,6 +17,6 @@ void main()
 	pos = pos * uPushConsts.scaleBias.xy + uPushConsts.scaleBias.zw;
 	pos = pos * 2.0 - 1.0;
     gl_Position = vec4(pos, 0.0, 1.0);
-	vColor = uPushConsts.color;
+	vColor = uPushConsts.color.rgb;
 }
 

@@ -1,38 +1,37 @@
 #pragma once
 #include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
+#include "Graphics/RenderData.h"
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	class VKLightingPass : FrameGraph::Pass
+	namespace VKLightingPass
 	{
-	public:
-		explicit VKLightingPass(VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			const CommonRenderData *m_commonRenderData;
+			uint32_t m_width;
+			uint32_t m_height;
+			FrameGraph::BufferHandle m_constantDataBufferHandle;
+			FrameGraph::BufferHandle m_directionalLightDataBufferHandle;
+			FrameGraph::BufferHandle m_pointLightDataBufferHandle;
+			FrameGraph::BufferHandle m_shadowDataBufferHandle;
+			FrameGraph::BufferHandle m_pointLightZBinsBufferHandle;
+			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
+			FrameGraph::ImageHandle m_depthImageHandle;
+			FrameGraph::ImageHandle m_albedoImageHandle;
+			FrameGraph::ImageHandle m_normalImageHandle;
+			FrameGraph::ImageHandle m_metalnessRougnessOcclusionImageHandle;
+			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
+			FrameGraph::ImageHandle m_resultImageHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph,
-			FrameGraph::BufferHandle perFrameDataBufferHandle,
-			FrameGraph::BufferHandle directionalLightDataBufferHandle,
-			FrameGraph::BufferHandle pointLightDataBufferHandle,
-			FrameGraph::BufferHandle shadowDataBufferHandle,
-			FrameGraph::BufferHandle pointLightZBinsBufferHandle,
-			FrameGraph::BufferHandle pointLightBitMaskBufferHandle,
-			FrameGraph::ImageHandle depthTextureHandle,
-			FrameGraph::ImageHandle albedoTextureHandle,
-			FrameGraph::ImageHandle normalTextureHandle,
-			FrameGraph::ImageHandle materialTextureHandle,
-			FrameGraph::ImageHandle shadowTextureHandle,
-			FrameGraph::ImageHandle lightTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		VKComputePipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, Data &data);
+	}
 }

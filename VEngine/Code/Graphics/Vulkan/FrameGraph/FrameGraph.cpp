@@ -35,7 +35,7 @@ void PassBuilder::readDepthStencil(ImageHandle imageHandle)
 	m_graph.m_framebufferInfo[m_passIndex].m_depthStencilAttachment = imageHandle;
 }
 
-void PassBuilder::readInputAttachment(ImageHandle imageHandle, uint32_t index, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readInputAttachment(ImageHandle imageHandle, uint32_t index)
 {
 	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
@@ -51,10 +51,9 @@ void PassBuilder::readInputAttachment(ImageHandle imageHandle, uint32_t index, V
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, resourceUsage.m_imageLayout, VK_NULL_HANDLE, 0);
 }
 
-void PassBuilder::readTexture(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkSampler sampler, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readTexture(ImageHandle imageHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
@@ -69,10 +68,9 @@ void PassBuilder::readTexture(ImageHandle imageHandle, VkPipelineStageFlags stag
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, resourceUsage.m_imageLayout, sampler, 0);
 }
 
-void PassBuilder::readStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
@@ -87,10 +85,9 @@ void PassBuilder::readStorageImage(ImageHandle imageHandle, VkPipelineStageFlags
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, resourceUsage.m_imageLayout, VK_NULL_HANDLE, 0);
 }
 
-void PassBuilder::readStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
@@ -104,27 +101,9 @@ void PassBuilder::readStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFl
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, 0);
 }
 
-void PassBuilder::readStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
-{
-	assert(bufferHandle);
-	size_t resourceIndex = (size_t)bufferHandle - 1;
-
-	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
-	m_graph.m_readResources[resourceIndex][m_passIndex] = true;
-
-	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
-	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_READ_BIT;
-	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, dynamicBufferSize);
-}
-
-void PassBuilder::readUniformBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readUniformBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
@@ -138,24 +117,6 @@ void PassBuilder::readUniformBuffer(BufferHandle bufferHandle, VkPipelineStageFl
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, 0);
-}
-
-void PassBuilder::readUniformBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
-{
-	assert(bufferHandle);
-	size_t resourceIndex = (size_t)bufferHandle - 1;
-
-	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
-	m_graph.m_readResources[resourceIndex][m_passIndex] = true;
-
-	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
-	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_UNIFORM_READ_BIT;
-	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-
-	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, dynamicBufferSize);
 }
 
 void PassBuilder::readVertexBuffer(BufferHandle bufferHandle)
@@ -223,7 +184,7 @@ void PassBuilder::readImageTransfer(ImageHandle imageHandle)
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
 }
 
-void PassBuilder::readWriteStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readWriteStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
@@ -239,10 +200,9 @@ void PassBuilder::readWriteStorageImage(ImageHandle imageHandle, VkPipelineStage
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, resourceUsage.m_imageLayout, VK_NULL_HANDLE, 0);
 }
 
-void PassBuilder::readWriteStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::readWriteStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
@@ -257,24 +217,6 @@ void PassBuilder::readWriteStorageBuffer(BufferHandle bufferHandle, VkPipelineSt
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, 0);
-}
-
-void PassBuilder::readWriteStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
-{
-	assert(bufferHandle);
-	size_t resourceIndex = (size_t)bufferHandle - 1;
-
-	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
-	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
-
-	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
-	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
-	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, dynamicBufferSize);
 }
 
 void PassBuilder::writeDepthStencil(ImageHandle imageHandle)
@@ -315,7 +257,7 @@ void PassBuilder::writeColorAttachment(ImageHandle imageHandle, uint32_t index)
 	m_graph.m_framebufferInfo[m_passIndex].m_colorAttachments[index] = imageHandle;
 }
 
-void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(imageHandle);
 	size_t resourceIndex = (size_t)imageHandle - 1;
@@ -330,10 +272,9 @@ void PassBuilder::writeStorageImage(ImageHandle imageHandle, VkPipelineStageFlag
 	resourceUsage.m_imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, resourceUsage.m_imageLayout, VK_NULL_HANDLE, 0);
 }
 
-void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
+void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags)
 {
 	assert(bufferHandle);
 	size_t resourceIndex = (size_t)bufferHandle - 1;
@@ -347,24 +288,6 @@ void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageF
 	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, 0);
-}
-
-void PassBuilder::writeStorageBufferDynamic(BufferHandle bufferHandle, VkPipelineStageFlags stageFlags, VkDeviceSize dynamicBufferSize, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement)
-{
-	assert(bufferHandle);
-	size_t resourceIndex = (size_t)bufferHandle - 1;
-
-	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
-	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
-
-	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
-	resourceUsage.m_stageMask = stageFlags;
-	resourceUsage.m_accessMask = VK_ACCESS_SHADER_WRITE_BIT;
-	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-
-	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
-	m_graph.addDescriptorWrite(m_passIndex, resourceIndex, set, binding, arrayElement, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, VK_IMAGE_LAYOUT_UNDEFINED, VK_NULL_HANDLE, dynamicBufferSize);
 }
 
 void VEngine::FrameGraph::PassBuilder::writeImageTransfer(ImageHandle imageHandle)
@@ -410,9 +333,8 @@ BufferHandle PassBuilder::createBuffer(const BufferDescription &bufferDesc)
 	return m_graph.createBuffer(bufferDesc);
 }
 
-Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator, VEngine::VKPipelineManager &pipelineManager)
-	:m_syncPrimitiveAllocator(syncPrimitiveAllocator),
-	m_pipelineManager(pipelineManager)
+Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator)
+	:m_syncPrimitiveAllocator(syncPrimitiveAllocator)
 {
 	VkCommandPoolCreateInfo poolCreateInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -481,7 +403,7 @@ Graph::~Graph()
 	vkDestroyQueryPool(g_context.m_device, m_queryPool, nullptr);
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *pass, const VKGraphicsPipelineDescription *pipelineDesc, uint32_t width, uint32_t height)
+void VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, uint32_t width, uint32_t height, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc)
 {
 	assert(m_passCount + 1 < MAX_PASSES);
 	m_passCount += 2;
@@ -496,16 +418,14 @@ PassBuilder VEngine::FrameGraph::Graph::addGraphicsPass(const char *name, Pass *
 	m_passNames[passIndex] = name;
 	m_passTypes[passIndex] = PassType::GRAPHICS;
 	m_queueType[passIndex] = QueueType::GRAPHICS;
-	m_pipelineDescriptions[passIndex] = pipelineDesc;
 	m_framebufferInfo[passIndex].m_width = width;
 	m_framebufferInfo[passIndex].m_height = height;
 
-	m_passes[passIndex] = pass;
-
-	return PassBuilder(*this, passIndex);
+	m_recordFunctions[passIndex] = recordFunc;
+	setupFunc(PassBuilder(*this, passIndex));
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addComputePass(const char *name, Pass *pass, const VKComputePipelineDescription *pipelineDesc, QueueType queueType)
+void VEngine::FrameGraph::Graph::addComputePass(const char * name, QueueType queueType, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc)
 {
 	assert(m_passCount + 1 < MAX_PASSES);
 	m_passCount += 2;
@@ -520,14 +440,12 @@ PassBuilder VEngine::FrameGraph::Graph::addComputePass(const char *name, Pass *p
 	m_passNames[passIndex] = name;
 	m_passTypes[passIndex] = PassType::COMPUTE;
 	m_queueType[passIndex] = queueType;
-	m_pipelineDescriptions[passIndex] = pipelineDesc;
 
-	m_passes[passIndex] = pass;
-
-	return PassBuilder(*this, passIndex);
+	m_recordFunctions[passIndex] = recordFunc;
+	setupFunc(PassBuilder(*this, passIndex));
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addGenericPass(const char *name, Pass *pass, QueueType queueType)
+void VEngine::FrameGraph::Graph::addGenericPass(const char * name, QueueType queueType, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc)
 {
 	assert(m_passCount < MAX_PASSES);
 	size_t passIndex = m_passCount++;
@@ -537,12 +455,11 @@ PassBuilder VEngine::FrameGraph::Graph::addGenericPass(const char *name, Pass *p
 	m_passTypes[passIndex] = PassType::GENERIC;
 	m_queueType[passIndex] = queueType;
 
-	m_passes[passIndex] = pass;
-
-	return PassBuilder(*this, passIndex);
+	m_recordFunctions[passIndex] = recordFunc;
+	setupFunc(PassBuilder(*this, passIndex));
 }
 
-PassBuilder VEngine::FrameGraph::Graph::addHostAccessPass(const char * name, Pass * pass)
+void VEngine::FrameGraph::Graph::addHostAccessPass(const char * name, std::function<void(PassBuilder)> setupFunc, RecordFunc recordFunc)
 {
 	assert(m_passCount < MAX_PASSES);
 	size_t passIndex = m_passCount++;
@@ -552,25 +469,21 @@ PassBuilder VEngine::FrameGraph::Graph::addHostAccessPass(const char * name, Pas
 	m_passTypes[passIndex] = PassType::HOST_ACCESS;
 	m_queueType[passIndex] = QueueType::NONE;
 
-	m_passes[passIndex] = pass;
-
-	return PassBuilder(*this, passIndex);
+	m_recordFunctions[passIndex] = recordFunc;
+	setupFunc(PassBuilder(*this, passIndex));
 }
 
 void Graph::execute(ResourceHandle finalResourceHandle, VkImageLayout finalLayout)
 {
-	std::bitset<MAX_DESCRIPTOR_SETS> culledDescriptorSets;
 	size_t firstResourceUses[MAX_RESOURCES];
 	size_t lastResourceUses[MAX_RESOURCES];
 	SyncBits syncBits[MAX_PASSES] = {};
 
-	cull(culledDescriptorSets, firstResourceUses, lastResourceUses, finalResourceHandle);
+	cull(firstResourceUses, lastResourceUses, finalResourceHandle);
 	createClearPasses(firstResourceUses);
 	createResources();
 	createRenderPasses(firstResourceUses, lastResourceUses, finalResourceHandle);
 	createSynchronization(firstResourceUses, lastResourceUses, syncBits);
-	writeDescriptorSets(culledDescriptorSets);
-	retrievePipelines();
 	recordAndSubmit(firstResourceUses, lastResourceUses, syncBits, finalResourceHandle, finalLayout);
 }
 
@@ -674,14 +587,11 @@ void Graph::reset()
 	m_transferCommandBufferCount = 0;
 	m_resourceCount = 0;
 	m_passCount = 0;
-	m_descriptorSetCount = 0;
-	m_descriptorWriteCount = 0;
 	m_timestampQueryCount = 0;
 	memset(&m_writeResources, 0, sizeof(m_writeResources));
 	memset(&m_readResources, 0, sizeof(m_readResources));
 	memset(&m_accessedResources, 0, sizeof(m_accessedResources));
 	memset(&m_attachmentResources, 0, sizeof(m_attachmentResources));
-	memset(&m_accessedDescriptorSets, 0, sizeof(m_accessedDescriptorSets));
 	m_culledPasses = 0;
 	m_culledResources = 0;
 	m_concurrentResources = 0;
@@ -694,8 +604,6 @@ void Graph::reset()
 	memset(m_semaphores, 0, sizeof(m_semaphores));
 	memset(m_events, 0, sizeof(m_events));
 	memset(m_passStageMasks, 0, sizeof(m_passStageMasks));
-	memset(m_descriptorSets, 0, sizeof(m_descriptorSets));
-	memset(m_descriptorWrites, 0, sizeof(m_descriptorWrites));
 }
 
 ImageHandle Graph::createImage(const ImageDescription &imageDesc)
@@ -758,7 +666,7 @@ ImageHandle Graph::importImage(const ImageDescription &imageDescription, VkImage
 	return ImageHandle(resourceIndex + 1);
 }
 
-BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
+BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VEngine::VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
 {
 	size_t resourceIndex = m_resourceCount++;
 
@@ -771,6 +679,8 @@ BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkB
 	m_resourceDescriptions[resourceIndex].m_hostVisible = bufferDescription.m_hostVisible;
 
 	m_buffers[resourceIndex] = buffer;
+
+	m_allocations[resourceIndex] = allocation;
 
 	m_semaphores[MAX_PASSES + resourceIndex * 2] = waitSemaphore;
 	m_semaphores[MAX_PASSES + resourceIndex * 2 + 1] = signalSemaphore;
@@ -787,7 +697,7 @@ void VEngine::FrameGraph::Graph::getTimingInfo(size_t &count, PassTimingInfo *da
 	}
 }
 
-void Graph::cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle)
+void Graph::cull(size_t *firstResourceUses, size_t *lastResourceUses, ResourceHandle finalResourceHandle)
 {
 	// indexed by pass index
 	uint32_t passRefCounts[MAX_PASSES] = {};
@@ -889,27 +799,6 @@ void Graph::cull(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets, size_t 
 				m_accessedResources[resourceIndex][passIndex] = false;
 				m_writeResources[resourceIndex][passIndex] = false;
 				m_readResources[resourceIndex][passIndex] = false;
-			}
-		}
-	}
-
-	// cull descriptor sets
-	for (size_t descriptorSetIndex = 0; descriptorSetIndex < m_descriptorSetCount; ++descriptorSetIndex)
-	{
-		for (size_t passIndex = 0; passIndex < m_passCount; ++passIndex)
-		{
-			// skip culled passes and remove their bit
-			if (!m_culledPasses[passIndex])
-			{
-				m_accessedDescriptorSets[descriptorSetIndex][passIndex] = false;
-				continue;
-			}
-
-			// if we found a pass using this descriptor set, we can stop searching
-			if (m_accessedDescriptorSets[descriptorSetIndex][passIndex])
-			{
-				culledDescriptorSets[descriptorSetIndex] = true;
-				break;
 			}
 		}
 	}
@@ -1300,7 +1189,7 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 			}
 		}
 
-		size_t previousPassIndex = firstUseIndex;
+		size_t previousPassIndex = ~size_t(0);
 		VkImageLayout previousLayout = imageResource && m_externalResources[resourceIndex] ? *m_externalLayouts[resourceIndex] : VK_IMAGE_LAYOUT_UNDEFINED;
 		bool previousWrite = false;
 		QueueType previousQueueType = QueueType::NONE;
@@ -1311,6 +1200,11 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 			if (!m_culledPasses[passIndex] || !m_accessedResources[resourceIndex][passIndex] || m_passTypes[passIndex] == PassType::HOST_ACCESS)
 			{
 				continue;
+			}
+
+			if (previousPassIndex == ~size_t(0))
+			{
+				previousPassIndex = passIndex;
 			}
 
 			// layout transitions of renderpass attachments are handled automatically, so dont include them here
@@ -1474,156 +1368,6 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 				assert(syncBits[passIndex].m_signalSemaphoreCount < MAX_SIGNAL_SEMAPHORES);
 				syncBits[passIndex].m_signalSemaphores[MAX_PASSES + resourceIndex * 2 + 1] = true;
 			}
-		}
-	}
-}
-
-void Graph::writeDescriptorSets(std::bitset<MAX_DESCRIPTOR_SETS> &culledDescriptorSets)
-{
-	union
-	{
-		VkDescriptorImageInfo m_imageInfo;
-		VkDescriptorBufferInfo m_bufferInfo;
-	} infos[MAX_DESCRIPTOR_WRITES];
-
-	VkWriteDescriptorSet writes[MAX_DESCRIPTOR_WRITES];
-	uint32_t writeCount = 0;
-
-	for (size_t i = 0; i < m_descriptorWriteCount; ++i)
-	{
-		const auto &write = m_descriptorWrites[i];
-
-		// skip culled sets and resources
-		if (!culledDescriptorSets[write.m_descriptorSetIndex] || !m_culledResources[write.m_resourceIndex])
-		{
-			continue;
-		}
-
-		VkWriteDescriptorSet &descriptorWrite = writes[writeCount];
-		descriptorWrite = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-		descriptorWrite.dstSet = m_descriptorSets[write.m_descriptorSetIndex];
-		descriptorWrite.dstBinding = write.m_binding;
-		descriptorWrite.dstArrayElement = write.m_arrayIndex;
-		descriptorWrite.descriptorType = write.m_descriptorType;
-		descriptorWrite.descriptorCount = 1;
-
-		if (m_imageResources[write.m_resourceIndex])
-		{
-			VkDescriptorImageInfo &imageInfo = infos[writeCount].m_imageInfo;
-			imageInfo.sampler = write.m_sampler;
-			imageInfo.imageView = m_imageViews[write.m_resourceIndex];
-			imageInfo.imageLayout = write.m_imageLayout;
-
-			descriptorWrite.pImageInfo = &imageInfo;
-		}
-		else
-		{
-			VkDescriptorBufferInfo &bufferInfo = infos[writeCount].m_bufferInfo;
-			bufferInfo.buffer = m_buffers[write.m_resourceIndex];
-			bufferInfo.offset = 0;
-			bufferInfo.range = write.m_dynamicBufferSize ? write.m_dynamicBufferSize : m_resourceDescriptions[write.m_resourceIndex].m_size;
-
-			descriptorWrite.pBufferInfo = &bufferInfo;
-		}
-
-		++writeCount;
-	}
-
-	vkUpdateDescriptorSets(g_context.m_device, writeCount, writes, 0, nullptr);
-}
-
-void VEngine::FrameGraph::Graph::retrievePipelines()
-{
-	for (size_t passIndex = 0; passIndex < m_passCount; ++passIndex)
-	{
-		if (!m_culledPasses[passIndex])
-		{
-			continue;
-		}
-
-		switch (m_passTypes[passIndex])
-		{
-		case PassType::GRAPHICS:
-		{
-			// make copy of original desc and insert correct renderpass description
-			VKGraphicsPipelineDescription graphicsPipelineDesc;
-			memcpy(&graphicsPipelineDesc, m_pipelineDescriptions[passIndex], sizeof(graphicsPipelineDesc));
-
-			VKGraphicsPipelineDescription::RenderPassDescription &renderpassDesc = graphicsPipelineDesc.m_renderpass;
-			memset(&renderpassDesc, 0, sizeof(renderpassDesc));
-
-			uint32_t attachmentIndex = 0;
-
-			// add color attachments
-			for (size_t i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
-			{
-				auto handle = m_framebufferInfo[passIndex].m_colorAttachments[i];
-
-				// skip empty handles
-				if (!handle)
-				{
-					continue;
-				}
-
-				++renderpassDesc.m_colorAttachmentCount;
-
-				size_t resourceIndex = (size_t)handle - 1;
-
-				renderpassDesc.m_colorAttachments[attachmentIndex] =
-				{
-					attachmentIndex,
-					m_resourceUsages[resourceIndex][passIndex].m_imageLayout
-				};
-
-				const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
-				auto &descr = renderpassDesc.m_attachments[attachmentIndex];
-				descr.m_format = resourceDescription.m_format;
-				descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
-
-				++attachmentIndex;
-			}
-
-			// add depthStencil attachment
-			if (m_framebufferInfo[passIndex].m_depthStencilAttachment)
-			{
-				size_t resourceIndex = (size_t)m_framebufferInfo[passIndex].m_depthStencilAttachment - 1;
-
-				const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
-				auto &descr = renderpassDesc.m_attachments[attachmentIndex];
-				descr.m_format = resourceDescription.m_format;
-				descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
-
-				renderpassDesc.m_depthStencilAttachment =
-				{
-					attachmentIndex,
-					m_resourceUsages[resourceIndex][passIndex].m_imageLayout
-				};
-
-				renderpassDesc.m_depthStencilAttachmentPresent = true;
-			}
-
-			const auto pipelinePair = m_pipelineManager.getPipeline(graphicsPipelineDesc, m_renderpassFramebufferHandles[passIndex].first);
-			m_pipelines[passIndex] = pipelinePair.m_pipeline;
-			m_layouts[passIndex] = pipelinePair.m_layout;
-
-			break;
-		}
-		case PassType::COMPUTE:
-		{
-			const auto pipelinePair = m_pipelineManager.getPipeline(*reinterpret_cast<const VKComputePipelineDescription *>(m_pipelineDescriptions[passIndex]));
-			m_pipelines[passIndex] = pipelinePair.m_pipeline;
-			m_layouts[passIndex] = pipelinePair.m_layout;
-			break;
-		}
-		case PassType::GENERIC:
-		case PassType::HOST_ACCESS:
-		case PassType::CLEAR:
-			m_pipelines[passIndex] = VK_NULL_HANDLE;
-			m_layouts[passIndex] = VK_NULL_HANDLE;
-			break;
-		default:
-			assert(false);
-			break;
 		}
 	}
 }
@@ -1977,7 +1721,18 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 		// record commands
 		if (m_passTypes[passIndex] != PassType::CLEAR)
 		{
-			m_passes[passIndex]->record(*cmdBuf, ResourceRegistry(m_images, m_imageViews, m_buffers, m_allocations), m_layouts[passIndex], m_pipelines[passIndex]);
+			VKRenderPassDescription renderPassDescription;
+
+			if (m_passTypes[passIndex] == PassType::GRAPHICS)
+			{
+				createRenderPassDescription(passIndex, renderPassDescription);
+				renderPassDescription.finalize();
+			}
+
+			m_recordFunctions[passIndex](*cmdBuf,
+				ResourceRegistry(*this, passIndex),
+				m_passTypes[passIndex] == PassType::GRAPHICS ? &renderPassDescription : nullptr,
+				m_renderpassFramebufferHandles[passIndex].first);
 		}
 		// clear pass
 		else
@@ -2194,118 +1949,119 @@ uint32_t Graph::queueIndexFromQueueType(QueueType queueType)
 	return 0;
 }
 
-void Graph::addDescriptorWrite(size_t passIndex, size_t resourceIndex, VkDescriptorSet set, uint32_t binding, uint32_t arrayElement, VkDescriptorType type, VkImageLayout imageLayout, VkSampler sampler, VkDeviceSize dynamicBufferSize)
+void VEngine::FrameGraph::Graph::createRenderPassDescription(size_t passIndex, VKRenderPassDescription &renderPassDescription)
 {
-	size_t descriptorSetIndex = 0;
+	assert(m_culledPasses[passIndex] && m_passTypes[passIndex] == PassType::GRAPHICS);
 
-	// find descriptor set index
-	bool foundExistingSet = false;
-	for (size_t i = 0; i < m_descriptorSetCount; ++i)
+	memset(&renderPassDescription, 0, sizeof(renderPassDescription));
+
+	uint32_t attachmentIndex = 0;
+
+	// add color attachments
+	for (size_t i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
 	{
-		if (m_descriptorSets[i] == set)
+		auto handle = m_framebufferInfo[passIndex].m_colorAttachments[i];
+
+		// skip empty handles
+		if (!handle)
 		{
-			foundExistingSet = true;
-			descriptorSetIndex = i;
-			break;
+			continue;
 		}
-	}
 
-	if (!foundExistingSet)
-	{
-		assert(m_descriptorSetCount < MAX_DESCRIPTOR_SETS);
-		descriptorSetIndex = m_descriptorSetCount++;
-	}
+		++renderPassDescription.m_colorAttachmentCount;
 
-	m_descriptorSets[descriptorSetIndex] = set;
+		size_t resourceIndex = (size_t)handle - 1;
 
-	m_accessedDescriptorSets[descriptorSetIndex][passIndex] = true;
-
-	bool foundExistingWrite = false;
-
-	// look for existing write
-	for (size_t i = 0; i < m_descriptorWriteCount; ++i)
-	{
-		const auto &write = m_descriptorWrites[i];
-
-		// found existing
-		if (write.m_descriptorSetIndex == descriptorSetIndex
-			&& write.m_binding == binding
-			&& write.m_arrayIndex == arrayElement)
+		renderPassDescription.m_colorAttachments[attachmentIndex] =
 		{
-			// write must be identical
-			assert(write.m_resourceIndex == resourceIndex);
-			assert(write.m_sampler == sampler);
-			assert(write.m_imageLayout == imageLayout);
-			assert(write.m_dynamicBufferSize == dynamicBufferSize);
+			attachmentIndex,
+			m_resourceUsages[resourceIndex][passIndex].m_imageLayout
+		};
 
-			foundExistingWrite = true;
-			break;
-		}
+		const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
+		auto &descr = renderPassDescription.m_attachments[attachmentIndex];
+		descr.m_format = resourceDescription.m_format;
+		descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
+
+		++attachmentIndex;
 	}
 
-	// if no existing write, add a new one
-	if (!foundExistingWrite)
+	// add depthStencil attachment
+	if (m_framebufferInfo[passIndex].m_depthStencilAttachment)
 	{
-		assert(m_descriptorWriteCount < MAX_DESCRIPTOR_WRITES);
+		size_t resourceIndex = (size_t)m_framebufferInfo[passIndex].m_depthStencilAttachment - 1;
 
-		auto &write = m_descriptorWrites[m_descriptorWriteCount++];
-		write.m_descriptorSetIndex = descriptorSetIndex;
-		write.m_resourceIndex = resourceIndex;
-		write.m_binding = binding;
-		write.m_arrayIndex = arrayElement;
-		write.m_descriptorType = type;
-		write.m_sampler = sampler;
-		write.m_imageLayout = imageLayout;
-		write.m_dynamicBufferSize = dynamicBufferSize;
+		const auto &resourceDescription = m_resourceDescriptions[resourceIndex];
+		auto &descr = renderPassDescription.m_attachments[attachmentIndex];
+		descr.m_format = resourceDescription.m_format;
+		descr.m_samples = VkSampleCountFlagBits(resourceDescription.m_samples);
+
+		renderPassDescription.m_depthStencilAttachment =
+		{
+			attachmentIndex,
+			m_resourceUsages[resourceIndex][passIndex].m_imageLayout
+		};
+
+		renderPassDescription.m_depthStencilAttachmentPresent = true;
 	}
 }
 
-VEngine::FrameGraph::ResourceRegistry::ResourceRegistry(const VkImage *images, const VkImageView *views, const VkBuffer *buffers, const VEngine::VKAllocationHandle *allocations)
-	:m_images(images),
-	m_imageViews(views),
-	m_buffers(buffers),
-	m_allocations(allocations)
+VEngine::FrameGraph::ResourceRegistry::ResourceRegistry(Graph &graph, size_t passIndex)
+	:m_graph(graph),
+	m_passIndex(passIndex)
 {
 }
 
-VkImage ResourceRegistry::getImage(ImageHandle handle) const
+VkImage VEngine::FrameGraph::ResourceRegistry::getImage(ImageHandle handle) const
 {
-	return m_images[(size_t)handle - 1];
+	return m_graph.m_images[(size_t)handle - 1];
 }
 
-VkImageView ResourceRegistry::getImageView(ImageHandle handle) const
+VkImageView VEngine::FrameGraph::ResourceRegistry::getImageView(ImageHandle handle) const
 {
-	return m_imageViews[(size_t)handle - 1];
+	return m_graph.m_imageViews[(size_t)handle - 1];
 }
 
-VkBuffer ResourceRegistry::getBuffer(BufferHandle handle) const
+VkDescriptorImageInfo VEngine::FrameGraph::ResourceRegistry::getImageInfo(ImageHandle handle) const
 {
-	return m_buffers[(size_t)handle - 1];
+	const size_t resourceIndex = (size_t)handle - 1;
+	return { VK_NULL_HANDLE, m_graph.m_imageViews[resourceIndex], m_graph.m_resourceUsages[resourceIndex][m_passIndex].m_imageLayout };
+}
+
+VkBuffer VEngine::FrameGraph::ResourceRegistry::getBuffer(BufferHandle handle) const
+{
+	return m_graph.m_buffers[(size_t)handle - 1];
+}
+
+VkDescriptorBufferInfo VEngine::FrameGraph::ResourceRegistry::getBufferInfo(BufferHandle handle) const
+{
+	const size_t resourceIndex = (size_t)handle - 1;
+	return { m_graph.m_buffers[resourceIndex], 0, m_graph.m_resourceDescriptions[resourceIndex].m_size };
 }
 
 const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(ResourceHandle handle) const
 {
-	return m_allocations[(size_t)handle - 1];
+	return m_graph.m_allocations[(size_t)handle - 1];
 }
 
 const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(ImageHandle handle) const
 {
-	return m_allocations[(size_t)handle - 1];
+	return m_graph.m_allocations[(size_t)handle - 1];
 }
 
 const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(BufferHandle handle) const
 {
-	return m_allocations[(size_t)handle - 1];
+	return m_graph.m_allocations[(size_t)handle - 1];
 }
 
 void *ResourceRegistry::mapMemory(BufferHandle handle) const
 {
 	void *data;
-	g_context.m_allocator.mapMemory(m_allocations[(size_t)handle - 1], &data);
+	g_context.m_allocator.mapMemory(m_graph.m_allocations[(size_t)handle - 1], &data);
 	return data;
 }
 
 void ResourceRegistry::unmapMemory(BufferHandle handle) const
 {
-	g_context.m_allocator.unmapMemory(m_allocations[(size_t)handle - 1]);
+	g_context.m_allocator.unmapMemory(m_graph.m_allocations[(size_t)handle - 1]);
 }

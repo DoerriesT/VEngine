@@ -1,17 +1,13 @@
 #version 450
 
-layout(location = 0) out flat vec3 vColor;
-layout(location = 1) out vec2 vTexCoords;
-layout(location = 2) out flat uint vTextureIndex;
+#include "text_bindings.h"
 
-layout(push_constant) uniform PushConsts 
+layout(push_constant) uniform PUSH_CONSTS 
 {
-	vec4 scaleBias;
-	vec4 color;
-	vec2 texCoordOffset;
-	vec2 texCoordSize;
-	uint textureIndex;
-} uPushConsts;
+	PushConsts uPushConsts;
+};
+
+layout(location = 0) out vec2 vTexCoords;
 
 void main() 
 {
@@ -22,7 +18,5 @@ void main()
 	pos = pos * uPushConsts.scaleBias.xy + uPushConsts.scaleBias.zw;
 	pos = pos * 2.0 - 1.0;
     gl_Position = vec4(pos, 0.0, 1.0);
-	vColor = uPushConsts.color.rgb;
-	vTextureIndex = uPushConsts.textureIndex;
 }
 

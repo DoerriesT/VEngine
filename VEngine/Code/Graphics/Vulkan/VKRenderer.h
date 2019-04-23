@@ -14,6 +14,8 @@ namespace VEngine
 	class VKTextureLoader;
 	class VKSwapChain;
 	class VKMaterialManager;
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct CommonRenderData;
 	struct RenderData;
 	struct LightData;
@@ -36,6 +38,8 @@ namespace VEngine
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
+		std::unique_ptr<VKPipelineCache> m_pipelineCache;
+		std::unique_ptr<VKDescriptorSetCache> m_descriptorSetCache;
 		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKMaterialManager> m_materialManager;
 		std::unique_ptr<VKSwapChain> m_swapChain;

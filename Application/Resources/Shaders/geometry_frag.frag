@@ -1,6 +1,18 @@
 #version 450
 
-#include "common.h"
+#include "geometry_bindings.h"
+
+layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
+{
+    MaterialData uMaterialData[];
+};
+
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
 
 #ifndef ALPHA_MASK_ENABLED
 #define ALPHA_MASK_ENABLED 0
@@ -14,12 +26,6 @@
 #define MIP_SCALE (0.25)
 #endif // MIP_SCALE
 
-layout(push_constant) uniform PushConsts 
-{
-	uint transformIndex;
-	uint materialIndex;
-} uPushConsts;
-
 #if !ALPHA_MASK_ENABLED
 layout(early_fragment_tests) in;
 #endif // ALPHA_MASK_ENABLED
@@ -28,9 +34,9 @@ layout(location = 0) in vec2 vTexCoord;
 layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec3 vWorldPos;
 
-layout(location = 0) out vec4 oAlbedo;
-layout(location = 1) out vec4 oNormalEmissive;
-layout(location = 2) out vec4 oMetalnessRoughnessOcclusion;
+layout(location = OUT_ALBEDO) out vec4 oAlbedo;
+layout(location = OUT_NORMAL) out vec4 oNormalEmissive;
+layout(location = OUT_METALNESS_ROUGHNESS_OCCLUSION) out vec4 oMetalnessRoughnessOcclusion;
 //layout(location = 3) out vec4 oVelocity;
 
 // based on http://www.thetenthplanet.de/archives/1180
@@ -55,7 +61,7 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
 
 void main() 
 {
-	MaterialData materialData = uMaterialData.data[uPushConsts.materialIndex - 1];
+	MaterialData materialData = uMaterialData[uPushConsts.materialIndex - 1];
 	
 	// albedo
 	{

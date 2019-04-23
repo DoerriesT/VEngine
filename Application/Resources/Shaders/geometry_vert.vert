@@ -1,12 +1,21 @@
 #version 450
 
-#include "common.h"
+#include "geometry_bindings.h"
 
-layout(push_constant) uniform PushConsts 
+layout(set = CONSTANT_DATA_SET, binding = CONSTANT_DATA_BINDING) uniform CONSTANT_DATA
 {
-	uint transformIndex;
-	uint materialIndex;
-} uPushConsts;
+	ConstantData uConstantData;
+};
+
+layout(set = TRANSFORM_DATA_SET, binding = TRANSFORM_DATA_BINDING) readonly buffer TRANSFORM_DATA 
+{
+    mat4 uTransformData[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -18,10 +27,10 @@ layout(location = 2) out vec3 vWorldPos;
 
 void main() 
 {
-	mat4 modelMatrix = uTransformData.data[uPushConsts.transformIndex];
-    gl_Position = uPerFrameData.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
+	mat4 modelMatrix = uTransformData[uPushConsts.transformIndex];
+    gl_Position = uConstantData.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
 	vTexCoord = inTexCoord;
-	vNormal = mat3(uPerFrameData.viewMatrix * modelMatrix) * inNormal;
-	vWorldPos = (uPerFrameData.viewMatrix * modelMatrix * vec4(inPosition, 1.0)).xyz;
+	vNormal = mat3(uConstantData.viewMatrix * modelMatrix) * inNormal;
+	vWorldPos = (uConstantData.viewMatrix * modelMatrix * vec4(inPosition, 1.0)).xyz;
 }
 

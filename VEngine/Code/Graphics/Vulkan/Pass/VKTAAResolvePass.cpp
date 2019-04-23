@@ -2,67 +2,118 @@
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
 #include "GlobalVar.h"
+#include "Graphics/Vulkan/VKPipelineCache.h"
+#include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/VKContext.h"
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
 
-struct PushConsts
+using vec4 = glm::vec4;
+using mat4 = glm::mat4;
+using uint = uint32_t;
+#include "../../../../../Application/Resources/Shaders/taaResolve_bindings.h"
+
+void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
-	float bicubicSharpness;
-	float temporalContrastThreshold;
-	float lowStrengthAlpha;
-	float highStrengthAlpha;
-	float antiFlickeringAlpha;
-};
+	graph.addComputePass("TAA Resolve Pass", FrameGraph::QueueType::GRAPHICS,
+		[&](FrameGraph::PassBuilder builder)
+	{
+		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readTexture(data.m_velocityImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readTexture(data.m_taaHistoryImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readTexture(data.m_lightImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-VEngine::VKTAAResolvePass::VKTAAResolvePass(VKRenderResources *renderResources, uint32_t width, uint32_t height, size_t resourceIndex)
-	:m_renderResources(renderResources),
-	m_width(width),
-	m_height(height),
-	m_resourceIndex(resourceIndex)
-{
-	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/taaResolve_comp.spv");
+		builder.writeStorageImage(data.m_taaResolveImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	},
+		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	{
+		// create pipeline description
+		VKComputePipelineDescription pipelineDesc;
+		{
+			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/taaResolve_comp.spv");
 
-	m_pipelineDesc.m_layout.m_setLayoutCount = 2;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
-	m_pipelineDesc.m_layout.m_setLayouts[1] = m_renderResources->m_descriptorSetLayouts[TAA_RESOLVE_SET_INDEX];
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConsts) };
-}
+			pipelineDesc.finalize();
+		}
 
-void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph,
-	FrameGraph::BufferHandle perFrameDataBufferHandle,
-	FrameGraph::ImageHandle depthTextureHandle,
-	FrameGraph::ImageHandle velocityTextureHandle,
-	FrameGraph::ImageHandle taaHistoryTextureHandle,
-	FrameGraph::ImageHandle lightTextureHandle,
-	FrameGraph::ImageHandle taaResolveTextureHandle)
-{
-	auto builder = graph.addComputePass("TAA Resolve Pass", this, &m_pipelineDesc, FrameGraph::QueueType::GRAPHICS);
+		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
 
-	// common set
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
+		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
-	// taa resolve set
-	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], TAAResolveSetBindings::DEPTH_TEXTURE_BINDING);
-	builder.readTexture(velocityTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], TAAResolveSetBindings::VELOCITY_TEXTURE_BINDING);
-	builder.readTexture(taaHistoryTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_linearSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], TAAResolveSetBindings::HISTORY_IMAGE_BINDING);
-	builder.readTexture(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], TAAResolveSetBindings::SOURCE_TEXTURE_BINDING);
-	builder.writeStorageImage(taaResolveTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], TAAResolveSetBindings::RESULT_IMAGE_BINDING);
-}
+		// update descriptor sets
+		{
+			VkWriteDescriptorSet descriptorWrites[5] = {};
 
-void VEngine::VKTAAResolvePass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
-{
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+			// result image
+			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_taaResolveImageHandle);
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = RESULT_IMAGE_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descriptorWrites[0].pImageInfo = &resultImageInfo;
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 1, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][TAA_RESOLVE_SET_INDEX], 0, nullptr);
+			// depth image
+			VkDescriptorImageInfo depthImageInfo = registry.getImageInfo(data.m_depthImageHandle);
+			depthImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
+			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].dstBinding = DEPTH_IMAGE_BINDING;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].pImageInfo = &depthImageInfo;
 
-	PushConsts pushConsts;
-	pushConsts.bicubicSharpness = g_TAABicubicSharpness;
-	pushConsts.temporalContrastThreshold = g_TAATemporalContrastThreshold;
-	pushConsts.lowStrengthAlpha = g_TAALowStrengthAlpha;
-	pushConsts.highStrengthAlpha = g_TAAHighStrengthAlpha;
-	pushConsts.antiFlickeringAlpha = g_TAAAntiFlickeringAlpha;
+			// velocity image
+			VkDescriptorImageInfo velocityImageInfo = registry.getImageInfo(data.m_velocityImageHandle);
+			velocityImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
+			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[2].dstSet = descriptorSet;
+			descriptorWrites[2].dstBinding = VELOCITY_IMAGE_BINDING;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].pImageInfo = &velocityImageInfo;
 
-	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+			// history image
+			VkDescriptorImageInfo historyImageInfo = registry.getImageInfo(data.m_taaHistoryImageHandle);
+			historyImageInfo.sampler = data.m_renderResources->m_linearSamplerClamp;
+			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[3].dstSet = descriptorSet;
+			descriptorWrites[3].dstBinding = HISTORY_IMAGE_BINDING;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[3].pImageInfo = &historyImageInfo;
 
-	VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 8, 8, 1);
+			// source image
+			VkDescriptorImageInfo lightImageInfo = registry.getImageInfo(data.m_lightImageHandle);
+			lightImageInfo.sampler = data.m_renderResources->m_linearSamplerClamp;
+			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[4].dstSet = descriptorSet;
+			descriptorWrites[4].dstBinding = SOURCE_IMAGE_BINDING;
+			descriptorWrites[4].dstArrayElement = 0;
+			descriptorWrites[4].descriptorCount = 1;
+			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[4].pImageInfo = &lightImageInfo;
+
+			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+		}
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
+
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
+
+		PushConsts pushConsts;
+		pushConsts.bicubicSharpness = g_TAABicubicSharpness;
+		pushConsts.temporalContrastThreshold = g_TAATemporalContrastThreshold;
+		pushConsts.lowStrengthAlpha = g_TAALowStrengthAlpha;
+		pushConsts.highStrengthAlpha = g_TAAHighStrengthAlpha;
+		pushConsts.antiFlickeringAlpha = g_TAAAntiFlickeringAlpha;
+		pushConsts.jitterOffsetWeight = exp(-2.29f * (data.m_jitterOffsetX * data.m_jitterOffsetX + data.m_jitterOffsetY * data.m_jitterOffsetY));
+
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+		VKUtility::dispatchComputeHelper(cmdBuf, data.m_width, data.m_height, 1, 8, 8, 1);
+	});
 }

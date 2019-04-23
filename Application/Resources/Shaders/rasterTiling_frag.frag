@@ -2,10 +2,17 @@
 
 #extension GL_KHR_shader_subgroup_ballot : enable
 
-#include "common.h"
+#include "rasterTiling_bindings.h"
 
-layout(location = 0) in flat uint vIndex;
-layout(location = 1) in flat uint vAlignedDomainSizeX;
+layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) buffer POINT_LIGHT_BITMASK 
+{
+	uint uPointLightBitMask[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
 
 uint subgroupCompactValue(uint checkValue)
 {
@@ -31,19 +38,19 @@ uint subgroupCompactValue(uint checkValue)
 void main() 
 {
 	uvec2 tile = (uvec2(gl_FragCoord.xy) * 2) / TILE_SIZE;
-	uint tileIndex = tile.x + tile.y * vAlignedDomainSizeX;
+	uint tileIndex = tile.x + tile.y * uPushConsts.alignedDomainSizeX;
 	
-	const uint lightBit = 1 << (vIndex % 32);
-	const uint word = vIndex / 32;
-	const uint wordCount = (uPerFrameData.pointLightCount + 31) / 32;
-	const uint wordIndex = tileIndex * wordCount + word;
+	const uint lightBit = 1 << (uPushConsts.index % 32);
+	const uint word = uPushConsts.index / 32;
+	//const uint wordCount = (uPerFrameData.pointLightCount + 31) / 32;
+	const uint wordIndex = tileIndex * uPushConsts.wordCount + word;
 	
 	const uint hash = subgroupCompactValue(wordIndex);
 	
 	// branch only for first occurrence of unique key within subgroup
 	if (hash == 0)
 	{
-		atomicOr(uPointLightBitMask.mask[wordIndex], lightBit);
+		atomicOr(uPointLightBitMask[wordIndex], lightBit);
 	}
 }
 

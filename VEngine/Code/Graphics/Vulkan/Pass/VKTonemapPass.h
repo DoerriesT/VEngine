@@ -3,27 +3,25 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	class VKTonemapPass : FrameGraph::Pass
+	namespace VKTonemapPass
 	{
-	public:
-		explicit VKTonemapPass(VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			uint32_t m_resourceIndex;
+			FrameGraph::ImageHandle m_srcImageHandle;
+			FrameGraph::ImageHandle m_dstImageHandle;
+			FrameGraph::BufferHandle m_avgLuminanceBufferHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph,
-			FrameGraph::ImageHandle srcImageHandle,
-			FrameGraph::ImageHandle dstImageHandle,
-			FrameGraph::BufferHandle avgLuminanceBufferHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		VKComputePipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }

@@ -4,6 +4,40 @@
 
 namespace VEngine
 {
+	struct VKRenderPassDescription
+	{
+		enum
+		{
+			MAX_INPUT_ATTACHMENTS = 8,
+			MAX_COLOR_ATTACHMENTS = 8,
+			MAX_RESOLVE_ATTACHMENTS = 8,
+			MAX_ATTACHMENTS = MAX_INPUT_ATTACHMENTS + MAX_COLOR_ATTACHMENTS + MAX_RESOLVE_ATTACHMENTS + 1, // +1 is for depth attachment
+		};
+
+		struct AttachmentDescription
+		{
+			VkFormat m_format;
+			VkSampleCountFlagBits m_samples;
+		};
+
+		uint32_t m_attachmentCount;
+		AttachmentDescription m_attachments[MAX_ATTACHMENTS] = {};
+		uint32_t m_inputAttachmentCount;
+		VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
+		uint32_t m_colorAttachmentCount;
+		VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
+		uint32_t m_resolveAttachmentCount;
+		VkAttachmentReference m_resolveAttachments[MAX_RESOLVE_ATTACHMENTS] = {};
+		bool m_depthStencilAttachmentPresent;
+		VkAttachmentReference m_depthStencilAttachment;
+		size_t m_hashValue;
+
+		VKRenderPassDescription();
+
+		// cleans up array elements past array count and precomputes a hash value
+		void finalize();
+	};
+
 	struct VKGraphicsPipelineDescription
 	{
 		enum
@@ -15,15 +49,13 @@ namespace VEngine
 			MAX_SCISSORS = 1,
 			MAX_COLOR_BLEND_ATTACHMENT_STATES = 8,
 			MAX_DYNAMIC_STATES = 9,
-			MAX_DESCRIPTOR_SET_LAYOUTS = 8,
-			MAX_PUSH_CONSTANT_RANGES = 5,
 		};
 
 		struct ShaderStages
 		{
 			char m_vertexShaderPath[MAX_PATH_LENGTH + 1] = {};
-			char m_tesselationControlShaderPass[MAX_PATH_LENGTH + 1] = {};
-			char m_tesselationEvaluationShaderPass[MAX_PATH_LENGTH + 1] = {};
+			char m_tesselationControlShaderPath[MAX_PATH_LENGTH + 1] = {};
+			char m_tesselationEvaluationShaderPath[MAX_PATH_LENGTH + 1] = {};
 			char m_geometryShaderPath[MAX_PATH_LENGTH + 1] = {};
 			char m_fragmentShaderPath[MAX_PATH_LENGTH + 1] = {};
 		};
@@ -107,42 +139,6 @@ namespace VEngine
 			VkDynamicState m_dynamicStates[MAX_DYNAMIC_STATES] = {};
 		};
 
-		struct Layout
-		{
-			uint32_t m_setLayoutCount;
-			VkDescriptorSetLayout m_setLayouts[MAX_DESCRIPTOR_SET_LAYOUTS] = {};
-			uint32_t m_pushConstantRangeCount;
-			VkPushConstantRange m_pushConstantRanges[MAX_PUSH_CONSTANT_RANGES] = {};
-		};
-
-		struct RenderPassDescription
-		{
-			enum
-			{
-				MAX_ATTACHMENTS = 9,
-				MAX_INPUT_ATTACHMENTS = 8,
-				MAX_COLOR_ATTACHMENTS = 8,
-				MAX_RESOLVE_ATTACHMENTS = 8,
-			};
-
-			struct AttachmentDescription
-			{
-				VkFormat m_format;
-				VkSampleCountFlagBits m_samples;
-			};
-
-			uint32_t m_attachmentCount;
-			AttachmentDescription m_attachments[MAX_ATTACHMENTS] = {};
-			uint32_t m_inputAttachmentCount;
-			VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
-			uint32_t m_colorAttachmentCount;
-			VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
-			uint32_t m_resolveAttachmentCount;
-			VkAttachmentReference m_resolveAttachments[MAX_RESOLVE_ATTACHMENTS] = {};
-			bool m_depthStencilAttachmentPresent;
-			VkAttachmentReference m_depthStencilAttachment;
-		};
-
 		ShaderStages m_shaderStages;
 		VertexInputState m_vertexInputState;
 		InputAssemblyState m_inputAssemblyState;
@@ -153,13 +149,12 @@ namespace VEngine
 		DepthStencilState m_depthStencilState;
 		BlendState m_blendState;
 		DynamicState m_dynamicState;
-		Layout m_layout;
-		RenderPassDescription m_renderpass;
+		size_t m_hashValue;
 
-		VKGraphicsPipelineDescription()
-		{
-			memset(this, 0, sizeof(*this));
-		}
+		VKGraphicsPipelineDescription();
+
+		// cleans up array elements past array count and precomputes a hash value
+		void finalize();
 	};
 
 	struct VKComputePipelineDescription
@@ -167,26 +162,27 @@ namespace VEngine
 		enum
 		{
 			MAX_PATH_LENGTH = 256,
-			MAX_DESCRIPTOR_SET_LAYOUTS = 8,
-			MAX_PUSH_CONSTANT_RANGES = 1,
-		};
-
-		struct Layout
-		{
-			uint32_t m_setLayoutCount;
-			VkDescriptorSetLayout m_setLayouts[MAX_DESCRIPTOR_SET_LAYOUTS] = {};
-			uint32_t m_pushConstantRangeCount;
-			VkPushConstantRange m_pushConstantRanges[MAX_PUSH_CONSTANT_RANGES] = {};
 		};
 
 		char m_computeShaderPath[MAX_PATH_LENGTH + 1] = {};
-		Layout m_layout;
+		size_t m_hashValue;
 
-		VKComputePipelineDescription()
-		{
-			memset(this, 0, sizeof(*this));
-		}
+		VKComputePipelineDescription();
+
+		// cleans up array elements past array count and precomputes a hash value
+		void finalize();
 	};
+
+	struct VKCombinedGraphicsPipelineRenderPassDescription
+	{
+		VKGraphicsPipelineDescription m_graphicsPipelineDescription;
+		VKRenderPassDescription m_renderPassDescription;
+	};
+
+	inline bool operator==(const VKRenderPassDescription &lhs, const VKRenderPassDescription &rhs)
+	{
+		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+	}
 
 	inline bool operator==(const VKGraphicsPipelineDescription &lhs, const VKGraphicsPipelineDescription &rhs)
 	{
@@ -198,6 +194,16 @@ namespace VEngine
 		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
 	}
 
+	inline bool operator==(const VKCombinedGraphicsPipelineRenderPassDescription &lhs, const VKCombinedGraphicsPipelineRenderPassDescription &rhs)
+	{
+		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+	}
+
+	struct VKRenderPassDescriptionHash
+	{
+		size_t operator()(const VKRenderPassDescription &value) const;
+	};
+
 	struct VKGraphicsPipelineDescriptionHash
 	{
 		size_t operator()(const VKGraphicsPipelineDescription &value) const;
@@ -206,6 +212,11 @@ namespace VEngine
 	struct VKComputePipelineDescriptionHash
 	{
 		size_t operator()(const VKComputePipelineDescription &value) const;
+	};
+
+	struct VKCombinedGraphicsPipelineRenderPassDescriptionHash
+	{
+		size_t operator()(const VKCombinedGraphicsPipelineRenderPassDescription &value) const;
 	};
 
 }

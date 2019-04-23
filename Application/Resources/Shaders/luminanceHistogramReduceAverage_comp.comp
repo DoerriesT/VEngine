@@ -1,17 +1,23 @@
 #version 450
 
-#include "common.h"
+#include "luminanceHistogramReduceAverage_bindings.h"
 
 #define LOCAL_SIZE_X 64
 
-layout(push_constant) uniform PushConsts 
+layout(set = LUMINANCE_HISTOGRAM_SET, binding = LUMINANCE_HISTOGRAM_BINDING) buffer LUMINANCE_HISTOGRAM
 {
-	float precomputedTerm;
-	uint lowerBound;
-	uint upperBound;
-	float invScale;
-	float bias;
-} uPushConsts;
+    uint uLuminanceHistogram[];
+};
+
+layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LUMINANCE_VALUES
+{
+    float uLuminanceValues[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
 
 layout (local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
@@ -24,7 +30,7 @@ void main()
 	// fill local histogram
 	for (uint i = threadId; i < LUMINANCE_HISTOGRAM_SIZE; i += LOCAL_SIZE_X)
 	{
-		localHistogram[i] = uLuminanceHistogram.data[i];
+		localHistogram[i] = uLuminanceHistogram[i];
 	}
 	
 	barrier();
@@ -69,9 +75,9 @@ void main()
 		
 		avgLuminance /= (upperBound - lowerBound);
 		
-		float previousLum = uPersistentValues.luminance[uPerFrameData.previousResourceIndex];
+		float previousLum = uLuminanceValues[uPushConsts.previousResourceIndex];
 	
 		// Adapt the luminance using Pattanaik's technique
-		uPersistentValues.luminance[uPerFrameData.currentResourceIndex] = previousLum + (avgLuminance - previousLum) * uPushConsts.precomputedTerm;
+		uLuminanceValues[uPushConsts.currentResourceIndex] = previousLum + (avgLuminance - previousLum) * uPushConsts.precomputedTerm;
 	}
 }

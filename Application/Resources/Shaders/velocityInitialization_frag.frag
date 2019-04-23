@@ -1,15 +1,17 @@
 #version 450
 
+#include "velocityInitialization_bindings.h"
+
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts  uPushConsts;
+};
+
 layout(location = 0) in vec2 vTexCoords;
 
 layout(location = 0) out vec4 oResult;
-
-layout(set = 0, binding = 0) uniform sampler2D uDepthImage;
-
-layout(push_constant) uniform PushConsts 
-{
-	mat4 reprojectionMatrix;
-} uPushConsts;
 
 void main() 
 {

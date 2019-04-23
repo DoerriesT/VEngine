@@ -4,153 +4,193 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/Vulkan/VKPipelineCache.h"
+#include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include <iostream>
 
-struct PushConsts
+using vec4 = glm::vec4;
+using mat4 = glm::mat4;
+using uint = uint32_t;
+#include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
+
+void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 {
-	uint32_t transformIndex;
-	uint32_t materialIndex;
-};
-
-VEngine::VKGeometryPass::VKGeometryPass(
-	VKRenderResources *renderResources,
-	uint32_t width,
-	uint32_t height,
-	size_t resourceIndex,
-	size_t subMeshInstanceCount,
-	const SubMeshInstanceData *subMeshInstances,
-	const SubMeshData *subMeshData,
-	bool alphaMasked)
-	:m_renderResources(renderResources),
-	m_width(width),
-	m_height(height),
-	m_resourceIndex(resourceIndex),
-	m_subMeshInstanceCount(subMeshInstanceCount),
-	m_subMeshInstances(subMeshInstances),
-	m_subMeshData(subMeshData),
-	m_alphaMasked(alphaMasked)
-{
-	// create pipeline description
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/geometry_vert.spv");
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_fragmentShaderPath, m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
-
-	m_pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
-	m_pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
-
-	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 3;
-	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) };
-	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), };
-	m_pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord), };
-
-	m_pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	m_pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
-
-	m_pipelineDesc.m_viewportState.m_viewportCount = 1;
-	m_pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
-	m_pipelineDesc.m_viewportState.m_scissorCount = 1;
-	m_pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
-
-	m_pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
-	m_pipelineDesc.m_rasterizationState.m_cullMode = m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
-	m_pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	m_pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
-
-	m_pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	m_pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
-	m_pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
-
-	m_pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
-	m_pipelineDesc.m_depthStencilState.m_depthWriteEnable = true;
-	m_pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	m_pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
-	m_pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
-
-	VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
-	defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	defaultBlendAttachment.blendEnable = VK_FALSE;
-
-	m_pipelineDesc.m_blendState.m_logicOpEnable = false;
-	m_pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-	m_pipelineDesc.m_blendState.m_attachmentCount = 3; // 4
-	m_pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
-	m_pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
-	m_pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
-	//m_pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
-
-	m_pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
-	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
-	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
-
-	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConsts) };
-}
-
-void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph,
-	FrameGraph::BufferHandle perFrameDataBufferHandle,
-	FrameGraph::BufferHandle materialDataBufferHandle,
-	FrameGraph::BufferHandle transformDataBufferHandle,
-	FrameGraph::ImageHandle depthTextureHandle,
-	FrameGraph::ImageHandle albedoTextureHandle,
-	FrameGraph::ImageHandle normalTextureHandle,
-	FrameGraph::ImageHandle materialTextureHandle,
-	FrameGraph::ImageHandle velocityTextureHandle)
-{
-	auto builder = graph.addGraphicsPass(m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", this, &m_pipelineDesc, m_width, m_height);
-
-	// common set
-	builder.readUniformBuffer(perFrameDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::PER_FRAME_DATA_BINDING);
-	builder.readStorageBuffer(materialDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::MATERIAL_DATA_BINDING);
-	builder.readStorageBuffer(transformDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::TRANSFORM_DATA_BINDING);
-
-	builder.writeDepthStencil(depthTextureHandle);
-	builder.writeColorAttachment(albedoTextureHandle, 0);
-	builder.writeColorAttachment(normalTextureHandle, 1);
-	builder.writeColorAttachment(materialTextureHandle, 2);
-	//builder.writeColorAttachment(velocityTextureHandle, 3);
-}
-
-void VEngine::VKGeometryPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline)
-{
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-	VkViewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(m_width);
-	viewport.height = static_cast<float>(m_height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = { m_width, m_height };
-
-	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
-	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
-
-	vkCmdBindIndexBuffer(cmdBuf, m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
-
-	VkBuffer vertexBuffer = m_renderResources->m_vertexBuffer.getBuffer();
-
-	for (uint32_t i = 0; i < m_subMeshInstanceCount; ++i)
+	graph.addGraphicsPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", data.m_width, data.m_height,
+		[&](FrameGraph::PassBuilder builder)
 	{
-		const SubMeshInstanceData &instance = m_subMeshInstances[i];
-		const SubMeshData &subMesh = m_subMeshData[instance.m_subMeshIndex];
+		// constant data buffer
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "Geometry Pass Constant Data Buffer";
+			desc.m_concurrent = true;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(ConstantData);
+			desc.m_hostVisible = true;
 
-		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &subMesh.m_vertexOffset);
+			data.m_constantDataBufferHandle = graph.createBuffer(desc);
+		}
 
-		PushConsts pushConsts;
-		pushConsts.transformIndex = instance.m_transformIndex;
-		pushConsts.materialIndex = instance.m_materialIndex;
+		builder.readUniformBuffer(data.m_constantDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+		builder.readStorageBuffer(data.m_materialDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		builder.readStorageBuffer(data.m_transformDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
-		vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+		builder.writeDepthStencil(data.m_depthImageHandle);
+		builder.writeColorAttachment(data.m_albedoImageHandle, OUT_ALBEDO);
+		builder.writeColorAttachment(data.m_normalImageHandle, OUT_NORMAL);
+		builder.writeColorAttachment(data.m_metalnessRougnessOcclusionImageHandle, OUT_METALNESS_ROUGHNESS_OCCLUSION);
+		//builder.writeColorAttachment(velocityTextureHandle, 3);
+	},
+		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	{
+		// create pipeline description
+		VKGraphicsPipelineDescription pipelineDesc;
+		{
+			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/geometry_vert.spv");
+			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
 
-		vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, 0, 0);
-	}
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 3;
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) };
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), };
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord), };
+
+			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
+
+			pipelineDesc.m_viewportState.m_viewportCount = 1;
+			pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
+			pipelineDesc.m_viewportState.m_scissorCount = 1;
+			pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
+
+			pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
+			pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
+			pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
+			pipelineDesc.m_rasterizationState.m_cullMode = data.m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+			pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
+			pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
+
+			pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
+			pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
+
+			pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
+			pipelineDesc.m_depthStencilState.m_depthWriteEnable = true;
+			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
+			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
+
+			VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
+			defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			defaultBlendAttachment.blendEnable = VK_FALSE;
+
+			pipelineDesc.m_blendState.m_logicOpEnable = false;
+			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
+			pipelineDesc.m_blendState.m_attachmentCount = 3; // 4
+			pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
+			pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
+			pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
+			//pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
+
+			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
+			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
+			pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
+
+			pipelineDesc.finalize();
+		}
+
+		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc, *renderPassDescription, renderPass);
+
+		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+
+		// update descriptor sets
+		{
+			VkWriteDescriptorSet descriptorWrites[3] = {};
+
+			// constant data
+			VkDescriptorBufferInfo constantBufferInfo = registry.getBufferInfo(data.m_constantDataBufferHandle);
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = CONSTANT_DATA_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].pBufferInfo = &constantBufferInfo;
+
+			// transform data
+			VkDescriptorBufferInfo transformBufferInfo = registry.getBufferInfo(data.m_transformDataBufferHandle);
+			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].pBufferInfo = &transformBufferInfo;
+
+			// material data
+			VkDescriptorBufferInfo materialBufferInfo = registry.getBufferInfo(data.m_materialDataBufferHandle);
+			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[2].dstSet = descriptorSet;
+			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[2].pBufferInfo = &materialBufferInfo;
+
+			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+		}
+
+		// write constant data
+		{
+			ConstantData *constantData = (ConstantData *)registry.mapMemory(data.m_constantDataBufferHandle);
+			{
+				constantData->jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
+				constantData->viewMatrix = data.m_commonRenderData->m_viewMatrix;
+			}
+			registry.unmapMemory(data.m_constantDataBufferHandle);
+		}
+
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
+
+		VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_renderResources->m_textureDescriptorSet };
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 2, descriptorSets, 0, nullptr);
+
+		VkViewport viewport;
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(data.m_width);
+		viewport.height = static_cast<float>(data.m_height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor;
+		scissor.offset = { 0, 0 };
+		scissor.extent = { data.m_width, data.m_height };
+
+		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
+		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+
+		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
+
+		for (uint32_t i = 0; i < data.m_subMeshInstanceCount; ++i)
+		{
+			const SubMeshInstanceData &instance = data.m_subMeshInstances[i];
+			const SubMeshData &subMesh = data.m_subMeshData[instance.m_subMeshIndex];
+
+			vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &subMesh.m_vertexOffset);
+
+			PushConsts pushConsts;
+			pushConsts.transformIndex = instance.m_transformIndex;
+			pushConsts.materialIndex = instance.m_materialIndex;
+
+			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+			vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, 0, 0);
+		}
+	});
 }

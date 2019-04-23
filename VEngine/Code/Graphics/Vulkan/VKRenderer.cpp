@@ -21,16 +21,19 @@
 #include "Pass/VKLuminanceHistogramDebugPass.h"
 #include "Pass/VKTonemapPass.h"
 #include "Pass/VKTAAResolvePass.h"
-#include "Pass/VKVelocityCompositionPass.h"
 #include "Pass/VKVelocityInitializationPass.h"
-#include "VKPipelineManager.h"
+#include "VKPipelineCache.h"
+#include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
+#include "VKResourceDefinitions.h"
 #include <iostream>
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
 	g_context.init(static_cast<GLFWwindow *>(windowHandle));
 
+	m_pipelineCache = std::make_unique<VKPipelineCache>();
+	m_descriptorSetCache = std::make_unique<VKDescriptorSetCache>();
 	m_renderResources = std::make_unique<VKRenderResources>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
@@ -45,7 +48,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator, *m_renderResources->m_pipelineManager);
+		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator);
 	}
 }
 
@@ -70,26 +73,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::Graph &graph = *m_frameGraphs[perFrameData.m_currentResourceIndex];
 	graph.reset();
 
-	FrameGraph::ImageHandle swapchainTextureHandle = 0;
+	m_descriptorSetCache->update(perFrameData.m_frame, perFrameData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 
-	FrameGraph::ImageHandle finalTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "Final Texture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+	// import resources into graph
 
-		finalTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle shadowTextureHandle = 0;
+	FrameGraph::ImageHandle shadowAtlasImageHandle = 0;
 	{
 		FrameGraph::ImageDescription desc = {};
 		desc.m_name = "Shadow Atlas";
@@ -100,7 +88,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_height = g_shadowAtlasSize;
 		desc.m_format = m_renderResources->m_shadowTexture.getFormat();
 
-		shadowTextureHandle = graph.importImage(desc,
+		shadowAtlasImageHandle = graph.importImage(desc,
 			m_renderResources->m_shadowTexture.getImage(),
 			m_renderResources->m_shadowTextureView,
 			&m_renderResources->m_shadowTextureLayout,
@@ -108,7 +96,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			m_renderResources->m_shadowTextureSemaphores[perFrameData.m_currentResourceIndex]);
 	}
 
-	FrameGraph::ImageHandle taaHistoryTextureHandle = 0;
+	FrameGraph::ImageHandle taaHistoryImageHandle = 0;
 	{
 		FrameGraph::ImageDescription desc = {};
 		desc.m_name = "TAA History Texture";
@@ -119,7 +107,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_height = m_height;
 		desc.m_format = m_renderResources->m_taaHistoryTextures[perFrameData.m_previousResourceIndex].getFormat();
 
-		taaHistoryTextureHandle = graph.importImage(desc,
+		taaHistoryImageHandle = graph.importImage(desc,
 			m_renderResources->m_taaHistoryTextures[perFrameData.m_previousResourceIndex].getImage(),
 			m_renderResources->m_taaHistoryTextureViews[perFrameData.m_previousResourceIndex],
 			&m_renderResources->m_taaHistoryTextureLayouts[perFrameData.m_previousResourceIndex],
@@ -127,7 +115,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			VK_NULL_HANDLE);
 	}
 
-	FrameGraph::ImageHandle taaResolveTextureHandle = 0;
+	FrameGraph::ImageHandle taaResolveImageHandle = 0;
 	{
 		FrameGraph::ImageDescription desc = {};
 		desc.m_name = "TAA Resolve Texture";
@@ -138,228 +126,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_height = m_height;
 		desc.m_format = m_renderResources->m_taaHistoryTextures[perFrameData.m_currentResourceIndex].getFormat();
 
-		taaResolveTextureHandle = graph.importImage(desc,
+		taaResolveImageHandle = graph.importImage(desc,
 			m_renderResources->m_taaHistoryTextures[perFrameData.m_currentResourceIndex].getImage(),
 			m_renderResources->m_taaHistoryTextureViews[perFrameData.m_currentResourceIndex],
 			&m_renderResources->m_taaHistoryTextureLayouts[perFrameData.m_currentResourceIndex],
 			VK_NULL_HANDLE,
 			VK_NULL_HANDLE);
-	}
-
-	FrameGraph::ImageHandle depthTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "DepthTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = true;
-		desc.m_clearValue.m_imageClearValue.depthStencil.depth = 1.0f;
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_D32_SFLOAT;
-
-		depthTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle albedoTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "AlbedoTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-
-		albedoTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle normalTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "NormalTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-
-		normalTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle materialTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "MaterialTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
-
-		materialTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle velocityTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "VelocityTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R16G16_SFLOAT;
-
-		velocityTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::ImageHandle lightTextureHandle = 0;
-	{
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "LightTexture";
-		desc.m_concurrent = false;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-
-		lightTextureHandle = graph.createImage(desc);
-	}
-
-	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = 0;
-	{
-		uint32_t w = m_width / RendererConsts::LIGHTING_TILE_SIZE + ((m_width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
-		uint32_t h = m_height / RendererConsts::LIGHTING_TILE_SIZE + ((m_height % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
-		uint32_t tileCount = w * h;
-		VkDeviceSize bufferSize = Utility::alignUp(lightData.m_pointLightData.size(), VkDeviceSize(32)) / 32 * sizeof(uint32_t) * tileCount;
-
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Point Light Index Buffer";
-		desc.m_concurrent = false;
-		desc.m_clear = true;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = bufferSize;
-		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
-		desc.m_hostVisible = false;
-
-		pointLightBitMaskBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle perFrameDataBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Per Frame Data Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(CommonRenderData);
-		desc.m_hostVisible = true;
-
-		perFrameDataBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle transformDataBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Per Draw Data Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(glm::mat4) * renderData.m_transformDataCount;
-		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
-		desc.m_hostVisible = true;
-
-		transformDataBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle directionalLightDataBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "DirectionalLight Data Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(DirectionalLightData) * lightData.m_directionalLightData.size();
-		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
-		desc.m_hostVisible = true;
-
-		directionalLightDataBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle pointLightDataBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "PointLight Data Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(PointLightData) * lightData.m_pointLightData.size();
-		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
-		desc.m_hostVisible = true;
-
-		pointLightDataBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle shadowDataBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Shadow Data Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(ShadowData) * lightData.m_shadowData.size();
-		desc.m_size = desc.m_size < 4 ? 4 : desc.m_size;
-		desc.m_hostVisible = true;
-
-		shadowDataBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle pointLightZBinsBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Z-Bin Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * RendererConsts::Z_BINS;
-		desc.m_hostVisible = true;
-
-		pointLightZBinsBufferHandle = graph.createBuffer(desc);
-	}
-
-	FrameGraph::BufferHandle luminanceHistogramBufferHandle = 0;
-	{
-		FrameGraph::BufferDescription desc = {};
-		desc.m_name = "Luminance Histogram Buffer";
-		desc.m_concurrent = false;
-		desc.m_clear = true;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * RendererConsts::LUMINANCE_HISTOGRAM_SIZE;
-		desc.m_hostVisible = false;
-
-		luminanceHistogramBufferHandle = graph.createBuffer(desc);
 	}
 
 	FrameGraph::BufferHandle avgLuminanceBufferHandle = 0;
@@ -369,10 +141,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_concurrent = false;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT;
+		desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT + 4;
 		desc.m_hostVisible = false;
 
-		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), m_renderResources->m_avgLuminanceBuffer.getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
 	}
 
 	FrameGraph::BufferHandle materialDataBufferHandle = 0;
@@ -385,55 +157,362 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_size = sizeof(MaterialData) * RendererConsts::MAX_MATERIALS;
 		desc.m_hostVisible = false;
 
-		materialDataBufferHandle = graph.importBuffer(desc, m_renderResources->m_materialBuffer.getBuffer(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+		materialDataBufferHandle = graph.importBuffer(desc, m_renderResources->m_materialBuffer.getBuffer(), m_renderResources->m_materialBuffer.getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
+
+	// create graph managed resources
+	FrameGraph::ImageHandle swapchainTextureHandle = 0;
+	FrameGraph::ImageHandle finalImageHandle = VKResourceDefinitions::createFinalImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle depthImageHandle = VKResourceDefinitions::createDepthImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle albedoImageHandle = VKResourceDefinitions::createAlbedoImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle normalImageHandle = VKResourceDefinitions::createNormalImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle materialImageHandle = VKResourceDefinitions::createMaterialImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle velocityImageHandle = VKResourceDefinitions::createVelocityImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
+	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
+	FrameGraph::BufferHandle transformDataBufferHandle = VKResourceDefinitions::createTransformDataBufferHandle(graph, renderData.m_transformDataCount);
+	FrameGraph::BufferHandle directionalLightDataBufferHandle = VKResourceDefinitions::createDirectionalLightDataBufferHandle(graph, static_cast<uint32_t>(lightData.m_directionalLightData.size()));
+	FrameGraph::BufferHandle pointLightDataBufferHandle = VKResourceDefinitions::createPointLightDataBufferHandle(graph, static_cast<uint32_t>(lightData.m_pointLightData.size()));
+	FrameGraph::BufferHandle shadowDataBufferHandle = VKResourceDefinitions::createShadowDataBufferHandle(graph, static_cast<uint32_t>(lightData.m_shadowData.size()));
+	FrameGraph::BufferHandle pointLightZBinsBufferHandle = VKResourceDefinitions::createPointLightZBinsBufferHandle(graph);
+	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
+
+
+	// host write passes
+
+	VKHostWritePass::Data transformDataWriteData;
+	transformDataWriteData.m_data = (unsigned char *)renderData.m_transformData;
+	transformDataWriteData.m_srcOffset = 0;
+	transformDataWriteData.m_dstOffset = 0;
+	transformDataWriteData.m_srcItemSize = sizeof(glm::mat4) * renderData.m_transformDataCount;
+	transformDataWriteData.m_dstItemSize = sizeof(glm::mat4) * renderData.m_transformDataCount;
+	transformDataWriteData.m_srcItemStride = sizeof(glm::mat4) * renderData.m_transformDataCount;
+	transformDataWriteData.m_count = 1;
+	transformDataWriteData.m_bufferHandle = transformDataBufferHandle;
+
+	if (renderData.m_opaqueSubMeshInstanceDataCount || renderData.m_maskedSubMeshInstanceData)
+	{
+		VKHostWritePass::addToGraph(graph, transformDataWriteData, "Transform Data Write Pass");
 	}
 
 
-	// passes
-	VKHostWritePass perFrameDataWritePass("Per Frame Data Write Pass", (unsigned char *)&perFrameData, 0, 0, sizeof(perFrameData), sizeof(perFrameData), sizeof(perFrameData), 1);
+	VKHostWritePass::Data directionalLightDataWriteData;
+	directionalLightDataWriteData.m_data = (unsigned char *)lightData.m_directionalLightData.data();
+	directionalLightDataWriteData.m_srcOffset = 0;
+	directionalLightDataWriteData.m_dstOffset = 0;
+	directionalLightDataWriteData.m_srcItemSize = lightData.m_directionalLightData.size() * sizeof(DirectionalLightData);
+	directionalLightDataWriteData.m_dstItemSize = lightData.m_directionalLightData.size() * sizeof(DirectionalLightData);
+	directionalLightDataWriteData.m_srcItemStride = lightData.m_directionalLightData.size() * sizeof(DirectionalLightData);
+	directionalLightDataWriteData.m_count = 1;
+	directionalLightDataWriteData.m_bufferHandle = directionalLightDataBufferHandle;
 
-	VKHostWritePass transformDataWritePass("Transform Data Write Pass", (unsigned char *)renderData.m_transformData,
-		0, 0, sizeof(glm::mat4), sizeof(glm::mat4), sizeof(glm::mat4), renderData.m_transformDataCount);
+	if (!lightData.m_directionalLightData.empty())
+	{
+		VKHostWritePass::addToGraph(graph, directionalLightDataWriteData, "Directional Light Data Write Pass");
+	}
 
-	VKHostWritePass directionalLightDataWritePass("Directional Light Data Write Pass", (unsigned char *)lightData.m_directionalLightData.data(),
-		0, 0, lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), lightData.m_directionalLightData.size(), 1);
 
-	VKHostWritePass pointLightDataWritePass("Point Light Data Write Pass", (unsigned char *)lightData.m_pointLightData.data(),
-		0, 0, lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size() * sizeof(PointLightData), lightData.m_pointLightData.size(), 1);
+	VKHostWritePass::Data pointLightDataWriteData;
+	pointLightDataWriteData.m_data = (unsigned char *)lightData.m_pointLightData.data();
+	pointLightDataWriteData.m_srcOffset = 0;
+	pointLightDataWriteData.m_dstOffset = 0;
+	pointLightDataWriteData.m_srcItemSize = lightData.m_pointLightData.size() * sizeof(PointLightData);
+	pointLightDataWriteData.m_dstItemSize = lightData.m_pointLightData.size() * sizeof(PointLightData);
+	pointLightDataWriteData.m_srcItemStride = lightData.m_pointLightData.size() * sizeof(PointLightData);
+	pointLightDataWriteData.m_count = 1;
+	pointLightDataWriteData.m_bufferHandle = pointLightDataBufferHandle;
 
-	VKHostWritePass spotLightDataWritePass("Spot Light Data Write Pass", (unsigned char *)lightData.m_spotLightData.data(),
-		0, 0, lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size() * sizeof(SpotLightData), lightData.m_spotLightData.size(), 1);
+	VKHostWritePass::Data pointLightZBinsWriteData;
+	pointLightZBinsWriteData.m_data = (unsigned char *)lightData.m_zBins.data();
+	pointLightZBinsWriteData.m_srcOffset = 0;
+	pointLightZBinsWriteData.m_dstOffset = 0;
+	pointLightZBinsWriteData.m_srcItemSize = lightData.m_zBins.size() * sizeof(uint32_t);
+	pointLightZBinsWriteData.m_dstItemSize = lightData.m_zBins.size() * sizeof(uint32_t);
+	pointLightZBinsWriteData.m_srcItemStride = lightData.m_zBins.size() * sizeof(uint32_t);
+	pointLightZBinsWriteData.m_count = 1;
+	pointLightZBinsWriteData.m_bufferHandle = pointLightZBinsBufferHandle;
 
-	VKHostWritePass shadowDataWritePass("Shadow Data Write Pass", (unsigned char *)lightData.m_shadowData.data(),
-		0, 0, lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size() * sizeof(ShadowData), lightData.m_shadowData.size(), 1);
+	if (!lightData.m_pointLightData.empty())
+	{
+		VKHostWritePass::addToGraph(graph, pointLightDataWriteData, "Point Light Data Write Pass");
+		VKHostWritePass::addToGraph(graph, pointLightZBinsWriteData, "Point Light Z-Bins Write Pass");
+	}
 
-	VKHostWritePass pointLightZBinsWritePass("Point Light Z-Bins Write Pass", (unsigned char *)lightData.m_zBins.data(),
-		0, 0, lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size() * sizeof(uint32_t), lightData.m_zBins.size(), 1);
 
-	VKGeometryPass geometryPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, false);
+	VKHostWritePass::Data shadowDataWriteData;
+	shadowDataWriteData.m_data = (unsigned char *)lightData.m_shadowData.data();
+	shadowDataWriteData.m_srcOffset = 0;
+	shadowDataWriteData.m_dstOffset = 0;
+	shadowDataWriteData.m_srcItemSize = lightData.m_shadowData.size() * sizeof(ShadowData);
+	shadowDataWriteData.m_dstItemSize = lightData.m_shadowData.size() * sizeof(ShadowData);
+	shadowDataWriteData.m_srcItemStride = lightData.m_shadowData.size() * sizeof(ShadowData);
+	shadowDataWriteData.m_count = 1;
+	shadowDataWriteData.m_bufferHandle = shadowDataBufferHandle;
 
-	VKGeometryPass geometryAlphaMaskedPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, renderData.m_maskedSubMeshInstanceDataCount, renderData.m_maskedSubMeshInstanceData, renderData.m_subMeshData, true);
+	if (!lightData.m_shadowData.empty())
+	{
+		VKHostWritePass::addToGraph(graph, shadowDataWriteData, "Shadow Data Write Pass");
+	}
 
-	VKVelocityInitializationPass velocityInitializationPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix);
 
-	VKShadowPass shadowPass(m_renderResources.get(), g_shadowAtlasSize, g_shadowAtlasSize, perFrameData.m_currentResourceIndex, renderData.m_opaqueSubMeshInstanceDataCount, renderData.m_opaqueSubMeshInstanceData, renderData.m_subMeshData, static_cast<uint32_t>(lightData.m_shadowJobs.size()), lightData.m_shadowJobs.data());
+	// draw opaque geometry to gbuffer
+	VKGeometryPass::Data opaqueGeometryPassData;
+	opaqueGeometryPassData.m_renderResources = m_renderResources.get();
+	opaqueGeometryPassData.m_pipelineCache = m_pipelineCache.get();
+	opaqueGeometryPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	opaqueGeometryPassData.m_commonRenderData = &commonData;
+	opaqueGeometryPassData.m_width = m_width;
+	opaqueGeometryPassData.m_height = m_height;
+	opaqueGeometryPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	opaqueGeometryPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
+	opaqueGeometryPassData.m_subMeshData = renderData.m_subMeshData;
+	opaqueGeometryPassData.m_alphaMasked = false;
+	opaqueGeometryPassData.m_constantDataBufferHandle = 0;
+	opaqueGeometryPassData.m_materialDataBufferHandle = materialDataBufferHandle;
+	opaqueGeometryPassData.m_transformDataBufferHandle = transformDataBufferHandle;
+	opaqueGeometryPassData.m_depthImageHandle = depthImageHandle;
+	opaqueGeometryPassData.m_albedoImageHandle = albedoImageHandle;
+	opaqueGeometryPassData.m_normalImageHandle = normalImageHandle;
+	opaqueGeometryPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
+	opaqueGeometryPassData.m_velocityImageHandle = velocityImageHandle;
 
-	VKRasterTilingPass rasterTilingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, lightData, perFrameData.m_jitteredProjectionMatrix);
+	if (renderData.m_opaqueSubMeshInstanceDataCount)
+	{
+		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
+	}
 
-	VKLightingPass lightingPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
 
-	VKTAAResolvePass taaResolvePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+	// draw opaque alpha masked geometry to gbuffer
+	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
+	maskedGeometryPassData.m_subMeshInstanceCount = renderData.m_maskedSubMeshInstanceDataCount;
+	maskedGeometryPassData.m_subMeshInstances = renderData.m_maskedSubMeshInstanceData;
+	maskedGeometryPassData.m_alphaMasked = true;
 
-	VKLuminanceHistogramPass luminanceHistogramPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, -10.0f, 17.0f);
+	if (renderData.m_maskedSubMeshInstanceDataCount)
+	{
+		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
+	}
 
-	VKLuminanceHistogramReduceAveragePass luminanceHistogramAveragePass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, perFrameData.m_timeDelta, -10.0f, 17.0f);
 
-	VKTonemapPass tonemapPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex);
+	// initialize velocity of static objects
+	VKVelocityInitializationPass::Data velocityInitializationPassData;
+	velocityInitializationPassData.m_renderResources = m_renderResources.get();
+	velocityInitializationPassData.m_pipelineCache = m_pipelineCache.get();
+	velocityInitializationPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	velocityInitializationPassData.m_width = m_width;
+	velocityInitializationPassData.m_height = m_height;
+	velocityInitializationPassData.m_reprojectionMatrix = perFrameData.m_prevViewProjectionMatrix * perFrameData.m_invViewProjectionMatrix;
+	velocityInitializationPassData.m_depthImageHandle = depthImageHandle;
+	velocityInitializationPassData.m_velocityImageHandle = velocityImageHandle;
 
-	VKMemoryHeapDebugPass memoryHeapDebugPass(m_width, m_height, 0.75f, 0.0f, 0.25f, 0.25f);
+	VKVelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
 
-	VKLuminanceHistogramDebugPass luminanceHistogramDebugPass(m_renderResources.get(), m_width, m_height, perFrameData.m_currentResourceIndex, 0.5f, 0.0f, 0.5f, 1.0f);
 
+	// draw shadows
+	VKShadowPass::Data shadowPassData;
+	shadowPassData.m_renderResources = m_renderResources.get();
+	shadowPassData.m_pipelineCache = m_pipelineCache.get();
+	shadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	shadowPassData.m_width = g_shadowAtlasSize;
+	shadowPassData.m_height = g_shadowAtlasSize;
+	shadowPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	shadowPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
+	shadowPassData.m_subMeshData = renderData.m_subMeshData;
+	shadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
+	shadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
+	shadowPassData.m_transformDataBufferHandle = transformDataBufferHandle;
+	shadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+
+	if (!lightData.m_shadowJobs.empty())
+	{
+		VKShadowPass::addToGraph(graph, shadowPassData);
+	}
+
+
+	// cull lights to tiles
+	VKRasterTilingPass::Data rasterTilingPassData;
+	rasterTilingPassData.m_renderResources = m_renderResources.get();
+	rasterTilingPassData.m_pipelineCache = m_pipelineCache.get();
+	rasterTilingPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	rasterTilingPassData.m_width = m_width;
+	rasterTilingPassData.m_height = m_height;
+	rasterTilingPassData.m_lightData = &lightData;
+	rasterTilingPassData.m_projection = perFrameData.m_jitteredProjectionMatrix;
+	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
+
+	if (!lightData.m_pointLightData.empty())
+	{
+		VKRasterTilingPass::addToGraph(graph, rasterTilingPassData);
+	}
+
+
+	// light gbuffer
+	VKLightingPass::Data lightingPassData;
+	lightingPassData.m_renderResources = m_renderResources.get();
+	lightingPassData.m_pipelineCache = m_pipelineCache.get();
+	lightingPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	lightingPassData.m_commonRenderData = &commonData;
+	lightingPassData.m_width = m_width;
+	lightingPassData.m_height = m_height;
+	lightingPassData.m_constantDataBufferHandle = 0;
+	lightingPassData.m_directionalLightDataBufferHandle = directionalLightDataBufferHandle;
+	lightingPassData.m_pointLightDataBufferHandle = pointLightDataBufferHandle;
+	lightingPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
+	lightingPassData.m_pointLightZBinsBufferHandle = pointLightZBinsBufferHandle;
+	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
+	lightingPassData.m_depthImageHandle = depthImageHandle;
+	lightingPassData.m_albedoImageHandle = albedoImageHandle;
+	lightingPassData.m_normalImageHandle = normalImageHandle;
+	lightingPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
+	lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+	lightingPassData.m_resultImageHandle = lightImageHandle;
+
+	VKLightingPass::addToGraph(graph, lightingPassData);
+
+
+	// calculate luminance histograms
+	VKLuminanceHistogramPass::Data luminanceHistogramPassData;
+	luminanceHistogramPassData.m_renderResources = m_renderResources.get();
+	luminanceHistogramPassData.m_pipelineCache = m_pipelineCache.get();
+	luminanceHistogramPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	luminanceHistogramPassData.m_width = m_width;
+	luminanceHistogramPassData.m_height = m_height;
+	luminanceHistogramPassData.m_logMin = -10.0f;
+	luminanceHistogramPassData.m_logMax = 17.0f;
+	luminanceHistogramPassData.m_lightImageHandle = lightImageHandle;
+	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
+
+	VKLuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
+
+
+	// calculate avg luminance
+	VKLuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
+	luminanceHistogramAvgPassData.m_renderResources = m_renderResources.get();
+	luminanceHistogramAvgPassData.m_pipelineCache = m_pipelineCache.get();
+	luminanceHistogramAvgPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	luminanceHistogramAvgPassData.m_width = m_width;
+	luminanceHistogramAvgPassData.m_height = m_height;
+	luminanceHistogramAvgPassData.m_timeDelta = commonData.m_timeDelta;
+	luminanceHistogramAvgPassData.m_logMin = -10.0f;
+	luminanceHistogramAvgPassData.m_logMax = 17.0f;
+	luminanceHistogramAvgPassData.m_currentResourceIndex = commonData.m_currentResourceIndex;
+	luminanceHistogramAvgPassData.m_previousResourceIndex = commonData.m_previousResourceIndex;
+	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
+	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferHandle;
+
+	VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
+
+
+	VkSwapchainKHR swapChain = m_swapChain->get();
+
+	// get swapchain image
+	{
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			m_swapChain->recreate(m_width, m_height);
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			Utility::fatalExit("Failed to acquire swap chain image!", -1);
+		}
+
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "Swapchain Image";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_swapChain->getExtent().width;
+		desc.m_height = m_swapChain->getExtent().height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = m_swapChain->getImageFormat();
+
+		swapchainTextureHandle = graph.importImage(desc,
+			m_swapChain->getImage(m_swapChainImageIndex),
+			m_swapChain->getImageView(m_swapChainImageIndex),
+			&m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex],
+			m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex],
+			m_renderResources->m_swapChainRenderFinishedSemaphores[perFrameData.m_currentResourceIndex]);
+	}
+
+
+	// taa resolve
+	VKTAAResolvePass::Data taaResolvePassData;
+	taaResolvePassData.m_renderResources = m_renderResources.get();
+	taaResolvePassData.m_pipelineCache = m_pipelineCache.get();
+	taaResolvePassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	taaResolvePassData.m_width = m_width;
+	taaResolvePassData.m_height = m_height;
+	taaResolvePassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
+	taaResolvePassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	taaResolvePassData.m_depthImageHandle = depthImageHandle;
+	taaResolvePassData.m_velocityImageHandle = velocityImageHandle;
+	taaResolvePassData.m_taaHistoryImageHandle = taaHistoryImageHandle;
+	taaResolvePassData.m_lightImageHandle = lightImageHandle;
+	taaResolvePassData.m_taaResolveImageHandle = taaResolveImageHandle;
+
+	if (g_TAAEnabled)
+	{
+		VKTAAResolvePass::addToGraph(graph, taaResolvePassData);
+
+		lightImageHandle = taaResolveImageHandle;
+	}
+
+
+	FrameGraph::ImageHandle tonemapTargetTextureHandle = m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM ? finalImageHandle : swapchainTextureHandle;
+
+	// tonemap
+	VKTonemapPass::Data tonemapPassData;
+	tonemapPassData.m_renderResources = m_renderResources.get();
+	tonemapPassData.m_pipelineCache = m_pipelineCache.get();
+	tonemapPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	tonemapPassData.m_width = m_width;
+	tonemapPassData.m_height = m_height;
+	tonemapPassData.m_resourceIndex = commonData.m_currentResourceIndex;
+	tonemapPassData.m_srcImageHandle = lightImageHandle;
+	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
+	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferHandle;
+
+	VKTonemapPass::addToGraph(graph, tonemapPassData);
+
+
+	// luminance debug pass
+	VKLuminanceHistogramDebugPass::Data luminanceDebugPassData;
+	luminanceDebugPassData.m_renderResources = m_renderResources.get();
+	luminanceDebugPassData.m_pipelineCache = m_pipelineCache.get();
+	luminanceDebugPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	luminanceDebugPassData.m_width = m_width;
+	luminanceDebugPassData.m_height = m_height;
+	luminanceDebugPassData.m_offsetX = 0.5f;
+	luminanceDebugPassData.m_offsetY = 0.0f;
+	luminanceDebugPassData.m_scaleX = 0.5f;
+	luminanceDebugPassData.m_scaleY = 1.0f;
+	luminanceDebugPassData.m_colorImageHandle = tonemapTargetTextureHandle;
+	luminanceDebugPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
+
+	//VKLuminanceHistogramDebugPass::addToGraph(graph, luminanceDebugPassData);
+	
+
+	// memory heap debug pass
+	VKMemoryHeapDebugPass::Data memoryHeapDebugPassData;
+	memoryHeapDebugPassData.m_renderResources = m_renderResources.get();
+	memoryHeapDebugPassData.m_pipelineCache = m_pipelineCache.get();
+	memoryHeapDebugPassData.m_width = m_width;
+	memoryHeapDebugPassData.m_height = m_height;
+	memoryHeapDebugPassData.m_offsetX = 0.75f;
+	memoryHeapDebugPassData.m_offsetY = 0.0f;
+	memoryHeapDebugPassData.m_scaleX = 0.25f;
+	memoryHeapDebugPassData.m_scaleY = 0.25f;
+	memoryHeapDebugPassData.m_colorImageHandle = tonemapTargetTextureHandle;
+
+	//VKMemoryHeapDebugPass::addToGraph(graph, memoryHeapDebugPassData);
+	
+
+	// text pass
 	FrameGraph::PassTimingInfo timingInfos[128];
 	size_t timingInfoCount;
 
@@ -483,8 +562,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
 	++timingInfoCount;
 
-	VKTextPass textPass(m_renderResources.get(), perFrameData.m_currentResourceIndex, m_width, m_height, m_fontAtlasTextureIndex, timingInfoCount, timingInfoStrings);
+	VKTextPass::Data textPassData;
+	textPassData.m_renderResources = m_renderResources.get();
+	textPassData.m_pipelineCache = m_pipelineCache.get();
+	textPassData.m_width = m_width;
+	textPassData.m_height = m_height;
+	textPassData.m_atlasTextureIndex = m_fontAtlasTextureIndex;
+	textPassData.m_stringCount = timingInfoCount;
+	textPassData.m_strings = timingInfoStrings;
+	textPassData.m_colorImageHandle = tonemapTargetTextureHandle;
 
+	VKTextPass::addToGraph(graph, textPassData);
+
+
+	// blit to swapchain image
 	VkOffset3D blitSize;
 	blitSize.x = m_width;
 	blitSize.y = m_height;
@@ -498,153 +589,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	imageBlitRegion.dstSubresource.layerCount = 1;
 	imageBlitRegion.dstOffsets[1] = blitSize;
 
-	VKBlitPass blitPass("Blit Pass", 1, &imageBlitRegion, VK_FILTER_NEAREST);
+	VKBlitPass::Data finalBlitPassData;
+	finalBlitPassData.m_regionCount = 1;
+	finalBlitPassData.m_regions = &imageBlitRegion;
+	finalBlitPassData.m_filter = VK_FILTER_NEAREST;
+	finalBlitPassData.m_srcImage = tonemapTargetTextureHandle;
+	finalBlitPassData.m_dstImage = swapchainTextureHandle;
 
-	// host write passes
-	perFrameDataWritePass.addToGraph(graph, perFrameDataBufferHandle);
-	if (renderData.m_opaqueSubMeshInstanceDataCount || renderData.m_maskedSubMeshInstanceData)
-	{
-		transformDataWritePass.addToGraph(graph, transformDataBufferHandle);
-	}
-	if (!lightData.m_directionalLightData.empty())
-	{
-		directionalLightDataWritePass.addToGraph(graph, directionalLightDataBufferHandle);
-	}
-	if (!lightData.m_pointLightData.empty())
-	{
-		pointLightDataWritePass.addToGraph(graph, pointLightDataBufferHandle);
-		pointLightZBinsWritePass.addToGraph(graph, pointLightZBinsBufferHandle);
-	}
-	if (!lightData.m_shadowData.empty())
-	{
-		shadowDataWritePass.addToGraph(graph, shadowDataBufferHandle);
-	}
-
-	// draw opaque geometry to gbuffer
-	if (renderData.m_opaqueSubMeshInstanceDataCount)
-	{
-		geometryPass.addToGraph(graph,
-			perFrameDataBufferHandle,
-			materialDataBufferHandle,
-			transformDataBufferHandle,
-			depthTextureHandle,
-			albedoTextureHandle,
-			normalTextureHandle,
-			materialTextureHandle,
-			velocityTextureHandle);
-	}
-
-	// draw opaque alpha masked geometry to gbuffer
-	if (renderData.m_maskedSubMeshInstanceDataCount)
-	{
-		geometryAlphaMaskedPass.addToGraph(graph,
-			perFrameDataBufferHandle,
-			materialDataBufferHandle,
-			transformDataBufferHandle,
-			depthTextureHandle,
-			albedoTextureHandle,
-			normalTextureHandle,
-			materialTextureHandle,
-			velocityTextureHandle);
-	}
-
-	velocityInitializationPass.addToGraph(graph, depthTextureHandle, velocityTextureHandle);
-
-	// draw shadows
-	if (!lightData.m_shadowJobs.empty())
-	{
-		shadowPass.addToGraph(graph,
-			perFrameDataBufferHandle,
-			transformDataBufferHandle,
-			shadowTextureHandle);
-	}
-
-	// cull lights to tiles
-	if (!lightData.m_pointLightData.empty())
-	{
-		rasterTilingPass.addToGraph(graph, perFrameDataBufferHandle, pointLightBitMaskBufferHandle);
-	}
-
-	// light gbuffer
-	{
-		lightingPass.addToGraph(graph,
-			perFrameDataBufferHandle,
-			directionalLightDataBufferHandle,
-			pointLightDataBufferHandle,
-			shadowDataBufferHandle,
-			pointLightZBinsBufferHandle,
-			pointLightBitMaskBufferHandle,
-			depthTextureHandle,
-			albedoTextureHandle,
-			normalTextureHandle,
-			materialTextureHandle,
-			shadowTextureHandle,
-			lightTextureHandle);
-	}
-
-	// calculate luminance histograms
-	luminanceHistogramPass.addToGraph(graph, lightTextureHandle, luminanceHistogramBufferHandle);
-
-	// calculate avg luminance
-	luminanceHistogramAveragePass.addToGraph(graph, luminanceHistogramBufferHandle, avgLuminanceBufferHandle);
-
-	VkSwapchainKHR swapChain = m_swapChain->get();
-
-	// get swapchain image
-	{
-		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		{
-			m_swapChain->recreate(m_width, m_height);
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-		{
-			Utility::fatalExit("Failed to acquire swap chain image!", -1);
-		}
-
-		FrameGraph::ImageDescription desc = {};
-		desc.m_name = "Swapchain Image";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_swapChain->getExtent().width;
-		desc.m_height = m_swapChain->getExtent().height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = 1;
-		desc.m_format = m_swapChain->getImageFormat();
-
-		swapchainTextureHandle = graph.importImage(desc,
-			m_swapChain->getImage(m_swapChainImageIndex),
-			m_swapChain->getImageView(m_swapChainImageIndex),
-			&m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex],
-			m_renderResources->m_swapChainImageAvailableSemaphores[perFrameData.m_currentResourceIndex],
-			m_renderResources->m_swapChainRenderFinishedSemaphores[perFrameData.m_currentResourceIndex]);
-	}
-
-	// taa resolve
-	if (g_TAAEnabled)
-	{
-		taaResolvePass.addToGraph(graph, perFrameDataBufferHandle, depthTextureHandle, velocityTextureHandle, taaHistoryTextureHandle, lightTextureHandle, taaResolveTextureHandle);
-
-		lightTextureHandle = taaResolveTextureHandle;
-	}
-
-	// tonemap
-	FrameGraph::ImageHandle tonemapTargetTextureHandle = m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM ? finalTextureHandle : swapchainTextureHandle;
-	tonemapPass.addToGraph(graph, lightTextureHandle, tonemapTargetTextureHandle, avgLuminanceBufferHandle);
-
-	//luminanceHistogramDebugPass.addToGraph(graph, perFrameDataBufferHandle, tonemapTargetTextureHandle, luminanceHistogramBufferHandle);
-	//memoryHeapDebugPass.addToGraph(graph, tonemapTargetTextureHandle);
-	//textPass.addToGraph(graph, tonemapTargetTextureHandle);
-
-	// blit to swapchain image
 	if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
 	{
-		blitPass.addToGraph(graph, tonemapTargetTextureHandle, swapchainTextureHandle);
+		VKBlitPass::addToGraph(graph, finalBlitPassData, "Final Blit Pass");
 	}
+
 
 	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 

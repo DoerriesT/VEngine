@@ -1,16 +1,20 @@
 #version 450
 
-#include "common.h"
+#include "luminanceHistogram_bindings.h"
 
 #define LOCAL_SIZE_X 64
 
-layout(push_constant) uniform PushConsts 
+layout(push_constant) uniform PUSH_CONSTS 
 {
-	float scale;
-	float bias;
-} uPushConsts;
+	PushConsts uPushConsts;
+};
 
-layout(set = 1, binding = 0) uniform sampler2D uSourceTexture;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
+
+layout(set = LUMINANCE_HISTOGRAM_SET, binding = LUMINANCE_HISTOGRAM_BINDING) buffer LUMINANCE_HISTOGRAM
+{
+    uint uLuminanceHistogram[];
+};
 
 layout (local_size_x = LOCAL_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
@@ -50,6 +54,6 @@ void main()
 	
 	for (uint i = threadId; i < LUMINANCE_HISTOGRAM_SIZE; i += LOCAL_SIZE_X)
 	{
-		atomicAdd(uLuminanceHistogram.data[i], localHistogram[i]);
+		atomicAdd(uLuminanceHistogram[i], localHistogram[i]);
 	}
 }

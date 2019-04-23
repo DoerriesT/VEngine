@@ -8,94 +8,7 @@ namespace VEngine
 {
 	class VKRenderer;
 	class VKSyncPrimitiveAllocator;
-	class VKPipelineManager;
-
-	namespace CommonSetBindings
-	{
-		enum
-		{
-			PER_FRAME_DATA_BINDING = 0,
-			MATERIAL_DATA_BINDING = 1,
-			TRANSFORM_DATA_BINDING = 2,
-			SHADOW_DATA_BINDING = 3,
-			DIRECTIONAL_LIGHT_DATA_BINDING = 4,
-			POINT_LIGHT_DATA_BINDING = 5,
-			POINT_LIGHT_Z_BINS_BINDING = 6,
-			POINT_LIGHT_BITMASK_BINDING = 7,
-			PERSISTENT_VALUES_BINDING = 8,
-			LUMINANCE_HISTOGRAM_BINDING = 9,
-			TEXTURES_BINDING = 10,
-		};
-	}
-	
-	namespace LightingSetBindings
-	{
-		enum
-		{
-			RESULT_IMAGE_BINDING = 0,
-			G_BUFFER_TEXTURES_BINDING = 1,
-			SHADOW_TEXTURE_BINDING = 2,
-		};
-	}
-	
-	namespace LuminanceHistogramSetBindings
-	{
-		enum
-		{
-			SOURCE_TEXTURE_BINDING = 0
-		};
-	}
-	
-	namespace TonemapSetBindings
-	{
-		enum
-		{
-			RESULT_IMAGE_BINDING = 0,
-			SOURCE_TEXTURE_BINDING = 1
-		};
-	}
-
-	namespace TAAResolveSetBindings
-	{
-		enum
-		{
-			RESULT_IMAGE_BINDING = 0,
-			DEPTH_TEXTURE_BINDING = 1,
-			VELOCITY_TEXTURE_BINDING = 2,
-			HISTORY_IMAGE_BINDING = 3,
-			SOURCE_TEXTURE_BINDING = 4,
-		};
-	}
-
-	namespace VelocityCompositionSetBindings
-	{
-		enum
-		{
-			VELOCITY_IMAGE_BINDING = 0,
-			DEPTH_IMAGE_BINDING = 1,
-		};
-	}
-
-	namespace VelocityInitializationSetBindings
-	{
-		enum
-		{
-			DEPTH_IMAGE_BINDING = 0,
-		};
-	}
-
-	enum
-	{
-		COMMON_SET_INDEX = 0,
-		LIGHTING_SET_INDEX = 1,
-		LUMINANCE_HISTOGRAM_SET_INDEX = 2,
-		TONEMAP_SET_INDEX = 3,
-		TAA_RESOLVE_SET_INDEX = 4,
-		VELOCITY_COMPOSITION_SET_INDEX = 5,
-		VELOCITY_INITIALIZATION_SET_INDEX,
-		MAX_DESCRIPTOR_SET_INDEX = VELOCITY_INITIALIZATION_SET_INDEX
-	};
-	
+	class VKPipelineCache;
 
 	struct VKRenderResources
 	{
@@ -121,11 +34,6 @@ namespace VEngine
 		VkImageLayout m_taaHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		VkImageLayout m_swapChainImageLayouts[RendererConsts::FRAMES_IN_FLIGHT + 1] = {};
 
-		// descriptors
-		VkDescriptorPool m_descriptorPool;
-		VkDescriptorSetLayout m_descriptorSetLayouts[MAX_DESCRIPTOR_SET_INDEX + 1];
-		VkDescriptorSet m_descriptorSets[RendererConsts::FRAMES_IN_FLIGHT][MAX_DESCRIPTOR_SET_INDEX + 1];
-
 		// samplers
 		VkSampler m_shadowSampler;
 		VkSampler m_linearSamplerClamp;
@@ -139,7 +47,10 @@ namespace VEngine
 		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 
 		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
-		std::unique_ptr<VKPipelineManager> m_pipelineManager;
+
+		VkDescriptorSetLayout m_textureDescriptorSetLayout;
+		VkDescriptorSet m_textureDescriptorSet;
+		VkDescriptorPool m_textureDescriptorSetPool;
 
 		explicit VKRenderResources();
 		VKRenderResources(const VKRenderResources &) = delete;

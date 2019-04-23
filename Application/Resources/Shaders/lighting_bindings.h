@@ -1,0 +1,33 @@
+#include "common.h"
+
+#define CONSTANT_DATA_SET 0
+#define CONSTANT_DATA_BINDING 0
+#define RESULT_IMAGE_SET 0
+#define RESULT_IMAGE_BINDING 1
+#define GBUFFER_IMAGES_SET 0
+#define GBUFFER_IMAGES_BINDING 2
+#define SHADOW_ATLAS_SET 0
+#define SHADOW_ATLAS_BINDING 3
+#define DIRECTIONAL_LIGHT_DATA_SET 0
+#define DIRECTIONAL_LIGHT_DATA_BINDING 4
+#define POINT_LIGHT_DATA_SET 0
+#define POINT_LIGHT_DATA_BINDING 5
+#define SHADOW_DATA_SET 0
+#define SHADOW_DATA_BINDING 6
+#define POINT_LIGHT_Z_BINS_SET 0
+#define POINT_LIGHT_Z_BINS_BINDING 7
+#define POINT_LIGHT_MASK_SET 0
+#define POINT_LIGHT_MASK_BINDING 8
+
+#define DEPTH_TEXTURE_INDEX 0
+#define ALBEDO_TEXTURE_INDEX 1
+#define NORMAL_TEXTURE_INDEX 2
+#define MRO_TEXTURE_INDEX 3
+
+struct ConstantData
+{
+	mat4 viewMatrix;
+	mat4 invViewMatrix;
+	mat4 invJitteredProjectionMatrix;
+	uint pointLightCount;
+};

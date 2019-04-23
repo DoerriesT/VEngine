@@ -3,11 +3,11 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
 	struct VKRenderResources;
 
-	class VKTextPass : FrameGraph::Pass
+	namespace VKTextPass
 	{
-	public:
 		struct String
 		{
 			const char *m_chars;
@@ -15,26 +15,18 @@ namespace VEngine
 			size_t m_positionY;
 		};
 
-		explicit VKTextPass(
-			VKRenderResources *renderResources,
-			size_t resourceIndex,
-			uint32_t width,
-			uint32_t height,
-			uint32_t atlasTextureIndex,
-			size_t stringCount,
-			const String *strings);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			uint32_t m_atlasTextureIndex;
+			size_t m_stringCount;
+			const String *m_strings;
+			FrameGraph::ImageHandle m_colorImageHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle colorTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		size_t m_resourceIndex;
-		uint32_t m_width;
-		uint32_t m_height;
-		uint32_t m_atlasTextureIndex;
-		size_t m_stringCount;
-		const String *m_strings;
-		VKGraphicsPipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }

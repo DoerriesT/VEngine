@@ -3,30 +3,28 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	class VKTAAResolvePass : FrameGraph::Pass
+	namespace VKTAAResolvePass
 	{
-	public:
-		explicit VKTAAResolvePass(VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			float m_jitterOffsetX;
+			float m_jitterOffsetY;
+			FrameGraph::ImageHandle m_depthImageHandle;
+			FrameGraph::ImageHandle m_velocityImageHandle;
+			FrameGraph::ImageHandle m_taaHistoryImageHandle;
+			FrameGraph::ImageHandle m_lightImageHandle;
+			FrameGraph::ImageHandle m_taaResolveImageHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph, 
-			FrameGraph::BufferHandle perFrameDataBufferHandle,
-			FrameGraph::ImageHandle depthTextureHandle,
-			FrameGraph::ImageHandle velocityTextureHandle,
-			FrameGraph::ImageHandle taaHistoryTextureHandle,
-			FrameGraph::ImageHandle lightTextureHandle, 
-			FrameGraph::ImageHandle taaResolveTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		VKComputePipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }

@@ -1,25 +1,21 @@
 #version 450
 
-#include "common.h"
+#include "taaResolve_bindings.h"
 
 #define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
 #define LOCAL_SIZE_X 8
 #define LOCAL_SIZE_Y 8
 
-layout(set = 1, binding = 0, rgba16f) uniform image2D uResultImage;
-layout(set = 1, binding = 1) uniform sampler2D uDepthTexture;
-layout(set = 1, binding = 2) uniform sampler2D uVelocityTexture;
-layout(set = 1, binding = 3) uniform sampler2D uHistoryTexture;
-layout(set = 1, binding = 4) uniform sampler2D uSourceTexture;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthTexture;
+layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityTexture;
+layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform sampler2D uHistoryTexture;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
 
-layout(push_constant) uniform PushConsts 
+layout(push_constant) uniform PUSH_CONSTS 
 {
-	float bicubicSharpness;
-	float temporalContrastThreshold;
-	float lowStrengthAlpha;
-	float highStrengthAlpha;
-	float antiFlickeringAlpha;
-} uPushConsts;
+	PushConsts uPushConsts;
+};
 
 layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = 1) in;
 
@@ -307,8 +303,9 @@ void main()
 	ivec2 previousPosition = ivec2(previousUV * textureSize(uSourceTexture, 0).xy);
 	
 	alpha = any(lessThan(previousPosition - 1, ivec2(0))) || any(greaterThan(previousPosition + 1, ivec2(textureSize(uSourceTexture, 0).xy))) ? 1.0 : alpha;
-	vec2 jitterOffset = uPerFrameData.jitteredProjectionMatrix[2].xy;
-	alpha *= exp(-2.29 * dot(jitterOffset, jitterOffset));
+	//vec2 jitterOffset = uPerFrameData.jitteredProjectionMatrix[2].xy;
+	//alpha *= exp(-2.29 * dot(jitterOffset, jitterOffset));
+	alpha *= uPushConsts.jitterOffsetWeight;
 	
 	vec4 result;
 	result.rgb = inverseTonemap(mix(tonemap(history.rgb), tonemap(neighbors[4]), alpha));

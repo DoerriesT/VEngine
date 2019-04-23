@@ -4,28 +4,24 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	class VKVelocityInitializationPass : FrameGraph::Pass
+	namespace VKVelocityInitializationPass
 	{
-	public:
-		explicit VKVelocityInitializationPass(VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex,
-			const glm::mat4 &reprojectionMatrix);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			glm::mat4 m_reprojectionMatrix;
+			FrameGraph::ImageHandle m_depthImageHandle;
+			FrameGraph::ImageHandle m_velocityImageHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph,
-			FrameGraph::ImageHandle depthTextureHandle,
-			FrameGraph::ImageHandle velocityTextureHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		glm::mat4 m_reprojectionMatrix;
-		VKGraphicsPipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }

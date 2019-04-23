@@ -1,9 +1,19 @@
 #version 450
 
-#include "common.h"
+#include "tonemap_bindings.h"
 
-layout(set = 1, binding = 0, rgba8) uniform writeonly image2D uTonemapResultImage;
-layout(set = 1, binding = 1) uniform sampler2D uSourceTexture;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba8) uniform writeonly image2D uTonemapResultImage;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
+
+layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LUMINANCE_VALUES
+{
+    float uLuminanceValues[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -24,6 +34,14 @@ const float PQ_constant_C3 = (2392.0 / 4096.0 * 32.0);
 vec3 uncharted2Tonemap(vec3 x)
 {
    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+vec3 accurateLinearToSRGB(in vec3 linearCol)
+{
+	vec3 sRGBLo = linearCol * 12.92;
+	vec3 sRGBHi = (pow(abs(linearCol), vec3(1.0/2.4)) * 1.055) - 0.055;
+	vec3 sRGB = mix(sRGBLo, sRGBHi, vec3(greaterThan(linearCol, vec3(0.0031308))));
+	return sRGB;
 }
 
 float computeEV100(float aperture, float shutterTime, float ISO)
@@ -228,7 +246,7 @@ void main()
 {
 	vec3 color = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
 	
-	float avgLuminance = uPersistentValues.luminance[uPerFrameData.currentResourceIndex];
+	float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
 	//float EV100 = computeEV100(16.0, 0.01, 100);
 	float EV100 = computeEV100FromAvgLuminance(avgLuminance);
 	EV100 -= 1.0;

@@ -1,59 +1,77 @@
 #include "VKLuminanceHistogramPass.h"
-#include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
+#include "Graphics/Vulkan/VKRenderResources.h"
+#include "Graphics/Vulkan/VKContext.h"
+#include "Graphics/Vulkan/VKPipelineCache.h"
+#include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
 
-struct PushConsts
+using vec4 = glm::vec4;
+using mat4 = glm::mat4;
+using uint = uint32_t;
+#include "../../../../../Application/Resources/Shaders/luminanceHistogram_bindings.h"
+
+void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
-	float scale;
-	float bias;
-};
+	graph.addComputePass("Luminance Histogram Pass", FrameGraph::QueueType::GRAPHICS,
+		[&](FrameGraph::PassBuilder builder)
+	{
+		builder.readTexture(data.m_lightImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
+		builder.writeStorageBuffer(data.m_luminanceHistogramBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	},
+		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	{
+		// create pipeline description
+		VKComputePipelineDescription pipelineDesc;
+		{
+			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/luminanceHistogram_comp.spv");
 
-VEngine::VKLuminanceHistogramPass::VKLuminanceHistogramPass(VKRenderResources *renderResources, 
-	uint32_t width, 
-	uint32_t height, 
-	size_t resourceIndex,
-	float logMin,
-	float logMax)
-	:m_renderResources(renderResources),
-	m_width(width),
-	m_height(height),
-	m_resourceIndex(resourceIndex),
-	m_logMin(logMin),
-	m_logMax(logMax)
-{
-	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/luminanceHistogram_comp.spv");
+			pipelineDesc.finalize();
+		}
 
-	m_pipelineDesc.m_layout.m_setLayoutCount = 2;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[COMMON_SET_INDEX];
-	m_pipelineDesc.m_layout.m_setLayouts[1] = m_renderResources->m_descriptorSetLayouts[LUMINANCE_HISTOGRAM_SET_INDEX];
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConsts) };
-}
+		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
 
-void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle lightTextureHandle, FrameGraph::BufferHandle luminanceHistogramBufferHandle)
-{
-	auto builder = graph.addComputePass("Luminance Histogram Pass", this, &m_pipelineDesc, FrameGraph::QueueType::GRAPHICS);
+		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
-	// common set
-	builder.writeStorageBuffer(luminanceHistogramBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], CommonSetBindings::LUMINANCE_HISTOGRAM_BINDING);
+		// update descriptor sets
+		{
+			VkWriteDescriptorSet descriptorWrites[2] = {};
 
-	// histogram set
-	builder.readTexture(lightTextureHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][LUMINANCE_HISTOGRAM_SET_INDEX], LuminanceHistogramSetBindings::SOURCE_TEXTURE_BINDING);
-}
+			// source image
+			VkDescriptorImageInfo imageInfo = registry.getImageInfo(data.m_lightImageHandle);
+			imageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = SOURCE_IMAGE_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[0].pImageInfo = &imageInfo;
 
-void VEngine::VKLuminanceHistogramPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
-{
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+			// histogram
+			VkDescriptorBufferInfo bufferInfo = registry.getBufferInfo(data.m_luminanceHistogramBufferHandle);
+			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].dstBinding = LUMINANCE_HISTOGRAM_BINDING;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].pBufferInfo = &bufferInfo;
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][COMMON_SET_INDEX], 0, nullptr);
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, layout, 1, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][LUMINANCE_HISTOGRAM_SET_INDEX], 0, nullptr);
+			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+		}
 
-	PushConsts pushConsts;
-	pushConsts.scale = 1.0f / (m_logMax - m_logMin);
-	pushConsts.bias = -m_logMin * pushConsts.scale;
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+		PushConsts pushConsts;
+		pushConsts.scale = 1.0f / (data.m_logMax - data.m_logMin);
+		pushConsts.bias = -data.m_logMin * pushConsts.scale;
 
-	vkCmdDispatch(cmdBuf, m_height, 1, 1);
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+		vkCmdDispatch(cmdBuf, data.m_height, 1, 1);
+	});
 }

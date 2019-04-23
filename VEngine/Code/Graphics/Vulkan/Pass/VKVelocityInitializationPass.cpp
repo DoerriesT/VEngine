@@ -1,97 +1,115 @@
 #include "VKVelocityInitializationPass.h"
+#include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
+#include "Graphics/Vulkan/VKPipelineCache.h"
+#include "Graphics/Vulkan/VKDescriptorSetCache.h"
 
-VEngine::VKVelocityInitializationPass::VKVelocityInitializationPass(VKRenderResources *renderResources, 
-	uint32_t width,
-	uint32_t height, 
-	size_t resourceIndex,
-	const glm::mat4 &reprojectionMatrix)
-	:m_renderResources(renderResources),
-	m_width(width),
-	m_height(height),
-	m_resourceIndex(resourceIndex),
-	m_reprojectionMatrix(reprojectionMatrix)
+using vec4 = glm::vec4;
+using mat4 = glm::mat4;
+using uint = uint32_t;
+#include "../../../../../Application/Resources/Shaders/velocityInitialization_bindings.h"
+
+void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
-	// create pipeline description
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/fullscreenTriangle_vert.spv");
-	strcpy_s(m_pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/velocityInitialization_frag.spv");
+	graph.addGraphicsPass("Velocity Initialization", data.m_width, data.m_height,
+		[&](FrameGraph::PassBuilder builder)
+	{
+		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-	m_pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	m_pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
+		builder.writeColorAttachment(data.m_velocityImageHandle, 0);
+	},
+		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	{
+		// create pipeline description
+		VKGraphicsPipelineDescription pipelineDesc;
+		{
+			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/fullscreenTriangle_vert.spv");
+			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/velocityInitialization_frag.spv");
 
-	m_pipelineDesc.m_viewportState.m_viewportCount = 1;
-	m_pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
-	m_pipelineDesc.m_viewportState.m_scissorCount = 1;
-	m_pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
+			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
 
-	m_pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
-	m_pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_NONE;
-	m_pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	m_pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
-	m_pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
+			pipelineDesc.m_viewportState.m_viewportCount = 1;
+			pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
+			pipelineDesc.m_viewportState.m_scissorCount = 1;
+			pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
 
-	m_pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	m_pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
-	m_pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
+			pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
+			pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
+			pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
+			pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_NONE;
+			pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
+			pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
 
-	m_pipelineDesc.m_depthStencilState.m_depthTestEnable = false;
-	m_pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
-	m_pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-	m_pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
-	m_pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
+			pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
+			pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
 
-	VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
-	defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	defaultBlendAttachment.blendEnable = VK_FALSE;
+			pipelineDesc.m_depthStencilState.m_depthTestEnable = false;
+			pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
+			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
+			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
 
-	m_pipelineDesc.m_blendState.m_logicOpEnable = false;
-	m_pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-	m_pipelineDesc.m_blendState.m_attachmentCount = 1;
-	m_pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
+			VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
+			defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			defaultBlendAttachment.blendEnable = VK_FALSE;
 
-	m_pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
-	m_pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
-	m_pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
+			pipelineDesc.m_blendState.m_logicOpEnable = false;
+			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
+			pipelineDesc.m_blendState.m_attachmentCount = 1;
+			pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
 
-	m_pipelineDesc.m_layout.m_setLayoutCount = 1;
-	m_pipelineDesc.m_layout.m_setLayouts[0] = m_renderResources->m_descriptorSetLayouts[VELOCITY_INITIALIZATION_SET_INDEX];
-	m_pipelineDesc.m_layout.m_pushConstantRangeCount = 1;
-	m_pipelineDesc.m_layout.m_pushConstantRanges[0] = { VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::mat4) };
-}
+			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
+			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
+			pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
 
-void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle depthTextureHandle, FrameGraph::ImageHandle velocityTextureHandle)
-{
-	auto builder = graph.addGraphicsPass("Velocity Initialization", this, &m_pipelineDesc, m_width, m_height);
+			pipelineDesc.finalize();
+		}
 
-	builder.readTexture(depthTextureHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, m_renderResources->m_pointSamplerClamp, m_renderResources->m_descriptorSets[m_resourceIndex][VELOCITY_INITIALIZATION_SET_INDEX], VelocityInitializationSetBindings::DEPTH_IMAGE_BINDING);
+		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc, *renderPassDescription, renderPass);
 
-	builder.writeColorAttachment(velocityTextureHandle, 0);
-}
+		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
-void VEngine::VKVelocityInitializationPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
-{
-	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		// update descriptor sets
+		{
+			VkWriteDescriptorSet descriptorWrites[1] = {};
 
-	VkViewport viewport;
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(m_width);
-	viewport.height = static_cast<float>(m_height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+			// depth image
+			VkDescriptorImageInfo imageInfo = registry.getImageInfo(data.m_depthImageHandle);
+			imageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = DEPTH_IMAGE_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[0].pImageInfo = &imageInfo;
 
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = { m_width, m_height };
+			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+		}
 
-	vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
-	vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-	vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_renderResources->m_descriptorSets[m_resourceIndex][VELOCITY_INITIALIZATION_SET_INDEX], 0, nullptr);
+		VkViewport viewport;
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(data.m_width);
+		viewport.height = static_cast<float>(data.m_height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
 
-	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(m_reprojectionMatrix), &m_reprojectionMatrix);
+		VkRect2D scissor;
+		scissor.offset = { 0, 0 };
+		scissor.extent = { data.m_width, data.m_height };
 
-	vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
+		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(data.m_reprojectionMatrix), &data.m_reprojectionMatrix);
+
+		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+	});
 }

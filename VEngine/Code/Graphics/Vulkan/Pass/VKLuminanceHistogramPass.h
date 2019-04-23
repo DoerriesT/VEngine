@@ -3,30 +3,25 @@
 
 namespace VEngine
 {
+	class VKPipelineCache;
+	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	class VKLuminanceHistogramPass : FrameGraph::Pass
+	namespace VKLuminanceHistogramPass
 	{
-	public:
-		explicit VKLuminanceHistogramPass(VKRenderResources *renderResources,
-			uint32_t width,
-			uint32_t height,
-			size_t resourceIndex,
-			float logMin,
-			float logMax);
+		struct Data
+		{
+			VKRenderResources *m_renderResources;
+			VKPipelineCache *m_pipelineCache;
+			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
+			float m_logMin;
+			float m_logMax;
+			FrameGraph::ImageHandle m_lightImageHandle;
+			FrameGraph::BufferHandle m_luminanceHistogramBufferHandle;
+		};
 
-		void addToGraph(FrameGraph::Graph &graph,
-			FrameGraph::ImageHandle lightTextureHandle,
-			FrameGraph::BufferHandle luminanceHistogramBufferHandle);
-		void record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, VkPipelineLayout layout, VkPipeline pipeline) override;
-
-	private:
-		VKRenderResources *m_renderResources;
-		uint32_t m_width;
-		uint32_t m_height;
-		size_t m_resourceIndex;
-		float m_logMin;
-		float m_logMax;
-		VKComputePipelineDescription m_pipelineDesc;
-	};
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+	}
 }
