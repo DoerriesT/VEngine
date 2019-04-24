@@ -35,6 +35,12 @@ public:
 		entityRegistry.assign<VEngine::MeshComponent>(objectEntity, scene.m_meshes["Resources/Models/sponza.mat"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(objectEntity);
 
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/aventador.mat");
+		entt::entity carEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(carEntity, VEngine::TransformationComponent::Mobility::DYNAMIC);
+		entityRegistry.assign<VEngine::MeshComponent>(carEntity, scene.m_meshes["Resources/Models/aventador.mat"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(carEntity);
+
 		std::default_random_engine e;
 		std::uniform_real_distribution<float> px(-14.0f, 14.0f);
 		std::uniform_real_distribution<float> py(0.0f, 10.0f);

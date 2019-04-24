@@ -1,0 +1,1188 @@
+{
+    "IndexSize": 2188392,
+    "Max": [
+        2.5964200496673584,
+        1.3273199796676636,
+        1.2715100049972534
+    ],
+    "MeshFile": "Resources/Models/aventador.mesh",
+    "Min": [
+        -2.8364200592041016,
+        1.5999999959603883e-05,
+        -1.3115099668502808
+    ],
+    "SubMeshCount": 30,
+    "SubMeshes": [
+        {
+            "IndexOffset": 0,
+            "IndexSize": 472824,
+            "Material": {
+                "AlbedoFactor": [
+                    0.7,
+                    0.7,
+                    0.7
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.2,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.7569000720977783,
+                0.6125779747962952,
+                0.9497500061988831
+            ],
+            "Min": [
+                -1.7759000062942505,
+                0.16217400133609772,
+                -0.9897500276565552
+            ],
+            "Name": "brake_disk",
+            "VertexOffset": 0,
+            "VertexSize": 1815936
+        },
+        {
+            "IndexOffset": 472824,
+            "IndexSize": 78852,
+            "Material": {
+                "AlbedoFactor": [
+                    0.7,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.5,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.7492499351501465,
+                0.5595930218696594,
+                0.9912400245666504
+            ],
+            "Min": [
+                -1.4247300624847412,
+                0.21514500677585602,
+                -1.0312399864196777
+            ],
+            "Name": "brake",
+            "VertexOffset": 1815936,
+            "VertexSize": 340544
+        },
+        {
+            "IndexOffset": 551676,
+            "IndexSize": 370752,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.07,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.5964200496673584,
+                1.3273199796676636,
+                1.2715100049972534
+            ],
+            "Min": [
+                -2.8364200592041016,
+                0.14988400042057037,
+                -1.3115099668502808
+            ],
+            "Name": "hull",
+            "VertexOffset": 2156480,
+            "VertexSize": 1422752
+        },
+        {
+            "IndexOffset": 922428,
+            "IndexSize": 432,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.05,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.683459997177124,
+                1.026170015335083,
+                0.3851200044155121
+            ],
+            "Min": [
+                1.5994999408721924,
+                0.9607059955596924,
+                -0.4417000114917755
+            ],
+            "Name": "engine_bar",
+            "VertexOffset": 3579232,
+            "VertexSize": 3456
+        },
+        {
+            "IndexOffset": 922860,
+            "IndexSize": 288,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.05,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.6335099935531616,
+                0.990909993648529,
+                0.4500899910926819
+            ],
+            "Min": [
+                0.7373080253601074,
+                0.9579190015792847,
+                -0.49118000268936157
+            ],
+            "Name": "engine_cross",
+            "VertexOffset": 3582688,
+            "VertexSize": 1792
+        },
+        {
+            "IndexOffset": 923148,
+            "IndexSize": 244752,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.4,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.9198100566864014,
+                0.785742998123169,
+                1.1341999769210815
+            ],
+            "Min": [
+                -1.9451299905776978,
+                0.00010299999848939478,
+                -1.1742000579833984
+            ],
+            "Name": "rims",
+            "VertexOffset": 3584480,
+            "VertexSize": 1886688
+        },
+        {
+            "IndexOffset": 1167900,
+            "IndexSize": 240,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.7,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -2.7014999389648438,
+                0.6021779775619507,
+                0.0026000000070780516
+            ],
+            "Min": [
+                -2.7432899475097656,
+                0.5740969777107239,
+                -0.039980001747608185
+            ],
+            "Name": "logo0",
+            "VertexOffset": 5471168,
+            "VertexSize": 4992
+        },
+        {
+            "IndexOffset": 1168140,
+            "IndexSize": 5880,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 2,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                0.6600779891014099,
+                1.2428300380706787,
+                0.9565899968147278
+            ],
+            "Min": [
+                -1.6766400337219238,
+                0.8578910231590271,
+                -0.9965900182723999
+            ],
+            "Name": "windows",
+            "VertexOffset": 5476160,
+            "VertexSize": 45952
+        },
+        {
+            "IndexOffset": 1174020,
+            "IndexSize": 5208,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    50.0,
+                    50.0,
+                    50.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -2.1084299087524414,
+                0.773231029510498,
+                0.9075999855995178
+            ],
+            "Min": [
+                -2.502959966659546,
+                0.6089439988136292,
+                -0.9476000070571899
+            ],
+            "Name": "lights_front",
+            "VertexOffset": 5522112,
+            "VertexSize": 41664
+        },
+        {
+            "IndexOffset": 1179228,
+            "IndexSize": 1176,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    50.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.526050090789795,
+                0.9710999727249146,
+                0.9459800124168396
+            ],
+            "Min": [
+                2.2070600986480713,
+                0.8499420285224915,
+                -0.9859799742698669
+            ],
+            "Name": "lights_back",
+            "VertexOffset": 5563776,
+            "VertexSize": 8928
+        },
+        {
+            "IndexOffset": 1180404,
+            "IndexSize": 42984,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.5342800617218018,
+                0.9755600094795227,
+                1.1364699602127075
+            ],
+            "Min": [
+                -2.0936100482940674,
+                0.537667989730835,
+                -1.177549958229065
+            ],
+            "Name": "lights_side",
+            "VertexOffset": 5572704,
+            "VertexSize": 326176
+        },
+        {
+            "IndexOffset": 1223388,
+            "IndexSize": 18816,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -2.3239800930023193,
+                0.7106199860572815,
+                0.7088000178337097
+            ],
+            "Min": [
+                -2.4389700889587402,
+                0.6321719884872437,
+                -0.7487999796867371
+            ],
+            "Name": "lights_front_1",
+            "VertexOffset": 5898880,
+            "VertexSize": 150432
+        },
+        {
+            "IndexOffset": 1242204,
+            "IndexSize": 1296,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.5,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.45563006401062,
+                0.8544340133666992,
+                0.6066700220108032
+            ],
+            "Min": [
+                1.9402599334716797,
+                0.20086699724197388,
+                -0.6477500200271606
+            ],
+            "Name": "license_plate_light_and_fill",
+            "VertexOffset": 6049312,
+            "VertexSize": 7808
+        },
+        {
+            "IndexOffset": 1243500,
+            "IndexSize": 5400,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -2.682690143585205,
+                0.6105430126190186,
+                0.020080000162124634
+            ],
+            "Min": [
+                -2.7606000900268555,
+                0.5561109781265259,
+                -0.061469998210668564
+            ],
+            "Name": "logo1",
+            "VertexOffset": 6057120,
+            "VertexSize": 28352
+        },
+        {
+            "IndexOffset": 1248900,
+            "IndexSize": 10812,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -2.6830599308013916,
+                0.6132609844207764,
+                0.020080000162124634
+            ],
+            "Min": [
+                -2.7632598876953125,
+                0.5561109781265259,
+                -0.061469998210668564
+            ],
+            "Name": "logo2",
+            "VertexOffset": 6085472,
+            "VertexSize": 60768
+        },
+        {
+            "IndexOffset": 1259712,
+            "IndexSize": 13116,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.05,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.6652799844741821,
+                1.0444400310516357,
+                0.41203999519348145
+            ],
+            "Min": [
+                0.8178579807281494,
+                0.8244689702987671,
+                -0.4684799909591675
+            ],
+            "Name": "engine0",
+            "VertexOffset": 6146240,
+            "VertexSize": 104704
+        },
+        {
+            "IndexOffset": 1272828,
+            "IndexSize": 600,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.484017014503479,
+                1.2419899702072144,
+                0.09316900372505188
+            ],
+            "Min": [
+                -0.7436149716377258,
+                1.130560040473938,
+                -0.48481398820877075
+            ],
+            "Name": "interior_mirrors",
+            "VertexOffset": 6250944,
+            "VertexSize": 1728
+        },
+        {
+            "IndexOffset": 1273428,
+            "IndexSize": 35976,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                1.9210699796676636,
+                0.7858409881591797,
+                1.1287200450897217
+            ],
+            "Min": [
+                -1.9472699165344238,
+                1.5999999959603883e-05,
+                -1.169800043106079
+            ],
+            "Name": "wheels",
+            "VertexOffset": 6252672,
+            "VertexSize": 255616
+        },
+        {
+            "IndexOffset": 1309404,
+            "IndexSize": 282948,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.5,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.5682201385498047,
+                1.2990000247955322,
+                1.137619972229004
+            ],
+            "Min": [
+                -2.8198800086975098,
+                0.1499049961566925,
+                -1.1786999702453613
+            ],
+            "Name": "hull1",
+            "VertexOffset": 6508288,
+            "VertexSize": 1477664
+        },
+        {
+            "IndexOffset": 1592352,
+            "IndexSize": 73620,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.01,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.572050094604492,
+                0.942870020866394,
+                0.9154800176620483
+            ],
+            "Min": [
+                -2.522580146789551,
+                0.29673200845718384,
+                -0.9554799795150757
+            ],
+            "Name": "back_deco",
+            "VertexOffset": 7985952,
+            "VertexSize": 404224
+        },
+        {
+            "IndexOffset": 1665972,
+            "IndexSize": 816,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 1.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.7758920192718506,
+                1.0637600421905518,
+                1.2645100355148315
+            ],
+            "Min": [
+                -0.9070919752120972,
+                0.9383699893951416,
+                -1.3045099973678589
+            ],
+            "Name": "mirrors",
+            "VertexOffset": 8390176,
+            "VertexSize": 4416
+        },
+        {
+            "IndexOffset": 1666788,
+            "IndexSize": 96,
+            "Material": {
+                "AlbedoFactor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.8819720149040222,
+                0.8594390153884888,
+                0.9599199891090393
+            ],
+            "Min": [
+                -0.8963819742202759,
+                0.8428500294685364,
+                -0.9999200105667114
+            ],
+            "Name": "",
+            "VertexOffset": 8394592,
+            "VertexSize": 640
+        },
+        {
+            "IndexOffset": 1666884,
+            "IndexSize": 12192,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 2,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.5347700119018555,
+                1.2270699739456177,
+                0.9666900038719177
+            ],
+            "Min": [
+                -2.528019905090332,
+                0.6102809906005859,
+                -1.0066900253295898
+            ],
+            "Name": "light_glass",
+            "VertexOffset": 8395232,
+            "VertexSize": 92096
+        },
+        {
+            "IndexOffset": 1679076,
+            "IndexSize": 10608,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 0.5,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                2.0621399879455566,
+                1.259950041770935,
+                1.2677199840545654
+            ],
+            "Min": [
+                -2.512730121612549,
+                0.14987300336360931,
+                -1.3077199459075928
+            ],
+            "Name": "hull2",
+            "VertexOffset": 8487328,
+            "VertexSize": 59296
+        },
+        {
+            "IndexOffset": 1689684,
+            "IndexSize": 6528,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -1.4740300178527832,
+                0.9447529911994934,
+                0.9212599992752075
+            ],
+            "Min": [
+                -1.8872499465942383,
+                0.8459579944610596,
+                -0.9623399972915649
+            ],
+            "Name": "hull3",
+            "VertexOffset": 8546624,
+            "VertexSize": 26624
+        },
+        {
+            "IndexOffset": 1696212,
+            "IndexSize": 471336,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                0.6659449934959412,
+                1.305722951889038,
+                0.9608629941940308
+            ],
+            "Min": [
+                -1.675920009613037,
+                0.17572399973869324,
+                -1.0041199922561646
+            ],
+            "Name": "interior0",
+            "VertexOffset": 8573248,
+            "VertexSize": 1145664
+        },
+        {
+            "IndexOffset": 2167548,
+            "IndexSize": 14256,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    3.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.21019400656223297,
+                1.243649959564209,
+                0.7949720025062561
+            ],
+            "Min": [
+                -0.8994029760360718,
+                0.520421028137207,
+                -0.8332139849662781
+            ],
+            "Name": "dial_back_light",
+            "VertexOffset": 9718912,
+            "VertexSize": 48896
+        },
+        {
+            "IndexOffset": 2181804,
+            "IndexSize": 216,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    3.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.5380340218544006,
+                0.8716099858283997,
+                0.42615100741386414
+            ],
+            "Min": [
+                -0.8483089804649353,
+                0.7728589773178101,
+                -0.45128899812698364
+            ],
+            "Name": "interior1",
+            "VertexOffset": 9767808,
+            "VertexSize": 736
+        },
+        {
+            "IndexOffset": 2182020,
+            "IndexSize": 6072,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.25678500533103943,
+                1.2348099946975708,
+                0.7941799759864807
+            ],
+            "Min": [
+                -1.0382200479507446,
+                0.5283650159835815,
+                -0.8277400135993958
+            ],
+            "Name": "dials0",
+            "VertexOffset": 9768544,
+            "VertexSize": 25600
+        },
+        {
+            "IndexOffset": 2188092,
+            "IndexSize": 300,
+            "Material": {
+                "AlbedoFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "AlbedoTexture": "",
+                "Alpha": 0,
+                "DisplacementTexture": "",
+                "EmissiveFactor": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "EmissiveTexture": "",
+                "MetallicFactor": 0.0,
+                "MetallicTexture": "",
+                "NormalTexture": "",
+                "OcclusionTexture": "",
+                "RoughnessFactor": 1.0,
+                "RoughnessTexture": ""
+            },
+            "Max": [
+                -0.8260080218315125,
+                0.9782999753952026,
+                0.6104710102081299
+            ],
+            "Min": [
+                -0.8604260087013245,
+                0.8169969916343689,
+                0.21527199447155
+            ],
+            "Name": "dials1",
+            "VertexOffset": 9794144,
+            "VertexSize": 864
+        }
+    ],
+    "VertexSize": 9795008
+}
