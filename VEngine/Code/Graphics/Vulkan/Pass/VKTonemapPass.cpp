@@ -7,44 +7,13 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/tonemap_bindings.h"
-
-//VEngine::VKTonemapPass::VKTonemapPass(VKRenderResources *renderResources, 
-//	uint32_t width, 
-//	uint32_t height, 
-//	size_t resourceIndex)
-//	:m_renderResources(renderResources),
-//	m_width(width),
-//	m_height(height),
-//	m_resourceIndex(resourceIndex)
-//{
-//	strcpy_s(m_pipelineDesc.m_computeShaderPath, "Resources/Shaders/tonemap_comp.spv");
-//}
-//
-//void VEngine::VKTonemapPass::addToGraph(FrameGraph::Graph &graph, FrameGraph::ImageHandle srcImageHandle, FrameGraph::ImageHandle dstImageHandle, FrameGraph::BufferHandle avgLuminanceBufferHandle)
-//{
-//	auto builder = graph.addComputePass("Tonemap Pass", this, &m_pipelineDesc, FrameGraph::QueueType::GRAPHICS);
-//
-//	// common set
-//	builder.readStorageBuffer(avgLuminanceBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-//
-//	// tonemap set
-//	builder.readTexture(srcImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-//	builder.writeStorageImage(dstImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-//}
-//
-//void VEngine::VKTonemapPass::record(VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry & registry, VkPipelineLayout layout, VkPipeline pipeline)
-//{
-//	vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-//
-//	uint32_t luminanceIndex = static_cast<uint32_t>(m_resourceIndex);
-//	vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(luminanceIndex), &luminanceIndex);
-//
-//	VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 8, 8, 1);
-//}
+}
 
 void VEngine::VKTonemapPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {

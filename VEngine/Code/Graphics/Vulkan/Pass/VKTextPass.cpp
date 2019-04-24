@@ -6,11 +6,14 @@
 #include <glm/vec2.hpp>
 #include <glm/mat4x4.hpp>
 
-using vec2 = glm::vec2;
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec2 = glm::vec2;
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/text_bindings.h"
+}
 
 void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
@@ -161,7 +164,7 @@ void VEngine::VKTextPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 
 					offsetX += static_cast<size_t>(symbolWidth * scaleX);
 
-					if (offsetX + static_cast<size_t>(symbolWidth * scaleX)> data.m_width)
+					if (offsetX + static_cast<size_t>(symbolWidth * scaleX) > data.m_width)
 					{
 						offsetY += static_cast<size_t>(symbolHeight * scaleY);
 						offsetX = str.m_positionX;

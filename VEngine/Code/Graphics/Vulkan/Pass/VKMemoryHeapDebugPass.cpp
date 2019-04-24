@@ -8,11 +8,14 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
-using vec3 = glm::vec3;
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec3 = glm::vec3;
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/memoryHeapDebug_bindings.h"
+}
 
 void VEngine::VKMemoryHeapDebugPass::addToGraph(FrameGraph::Graph & graph, const Data & data)
 {

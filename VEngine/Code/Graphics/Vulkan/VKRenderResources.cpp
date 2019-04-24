@@ -106,6 +106,56 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
+	// mappable blocks
+	{
+		uint32_t queueFamilyIndices[] = 
+		{ 
+			g_context.m_queueFamilyIndices.m_graphicsFamily, 
+			g_context.m_queueFamilyIndices.m_computeFamily, 
+			g_context.m_queueFamilyIndices.m_transferFamily 
+		};
+
+		// ubo
+		{
+			VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+			bufferCreateInfo.size = RendererConsts::MAPPABLE_UBO_BLOCK_SIZE;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+			bufferCreateInfo.queueFamilyIndexCount = 3;
+			bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+			VKAllocationCreateInfo allocCreateInfo = {};
+			allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+			{
+				m_uboBuffers[i].create(bufferCreateInfo, allocCreateInfo);
+				m_mappableUBOBlock[i] = std::make_unique<VKMappableBufferBlock>(m_uboBuffers[i], g_context.m_properties.limits.minUniformBufferOffsetAlignment);
+			}
+		}
+		
+		// ssbo
+		{
+			VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+			bufferCreateInfo.size = RendererConsts::MAPPABLE_SSBO_BLOCK_SIZE;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+			bufferCreateInfo.queueFamilyIndexCount = 3;
+			bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+			VKAllocationCreateInfo allocCreateInfo = {};
+			allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+			{
+				m_ssboBuffers[i].create(bufferCreateInfo, allocCreateInfo);
+				m_mappableSSBOBlock[i] = std::make_unique<VKMappableBufferBlock>(m_ssboBuffers[i], g_context.m_properties.limits.minStorageBufferOffsetAlignment);
+			}
+		}
+	}
+
 	// avg luminance buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };

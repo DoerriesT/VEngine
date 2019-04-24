@@ -6,12 +6,14 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
-#include <iostream>
 
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
+}
 
 void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 {
@@ -20,26 +22,22 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 	{
 		// constant data buffer
 		{
-			FrameGraph::BufferDescription desc = {};
-			desc.m_name = "Geometry Pass Constant Data Buffer";
-			desc.m_concurrent = true;
-			desc.m_clear = false;
-			desc.m_clearValue.m_bufferClearValue = 0;
-			desc.m_size = sizeof(ConstantData);
-			desc.m_hostVisible = true;
-
-			data.m_constantDataBufferHandle = graph.createBuffer(desc);
+			uint8_t *bufferPtr;
+			data.m_constantDataBufferInfo.range = sizeof(ConstantData);
+			data.m_renderResources->m_mappableUBOBlock[data.m_resourceIndex]->allocate(data.m_constantDataBufferInfo.range, 
+				data.m_constantDataBufferInfo.offset, data.m_constantDataBufferInfo.buffer, bufferPtr);
+			
+			ConstantData constantData;
+			constantData.jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
+			constantData.viewMatrix = data.m_commonRenderData->m_viewMatrix;
+		
+			memcpy(bufferPtr, &constantData, sizeof(constantData));
 		}
-
-		builder.readUniformBuffer(data.m_constantDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-		builder.readStorageBuffer(data.m_materialDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-		builder.readStorageBuffer(data.m_transformDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-
+		
 		builder.writeDepthStencil(data.m_depthImageHandle);
 		builder.writeColorAttachment(data.m_albedoImageHandle, OUT_ALBEDO);
 		builder.writeColorAttachment(data.m_normalImageHandle, OUT_NORMAL);
 		builder.writeColorAttachment(data.m_metalnessRougnessOcclusionImageHandle, OUT_METALNESS_ROUGHNESS_OCCLUSION);
-		//builder.writeColorAttachment(velocityTextureHandle, 3);
 	},
 		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
 	{
@@ -111,46 +109,33 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 			VkWriteDescriptorSet descriptorWrites[3] = {};
 
 			// constant data
-			VkDescriptorBufferInfo constantBufferInfo = registry.getBufferInfo(data.m_constantDataBufferHandle);
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
 			descriptorWrites[0].dstBinding = CONSTANT_DATA_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].pBufferInfo = &constantBufferInfo;
+			descriptorWrites[0].pBufferInfo = &data.m_constantDataBufferInfo;
 
 			// transform data
-			VkDescriptorBufferInfo transformBufferInfo = registry.getBufferInfo(data.m_transformDataBufferHandle);
 			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[1].dstSet = descriptorSet;
 			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &transformBufferInfo;
+			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
 
 			// material data
-			VkDescriptorBufferInfo materialBufferInfo = registry.getBufferInfo(data.m_materialDataBufferHandle);
 			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[2].dstSet = descriptorSet;
 			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
 			descriptorWrites[2].dstArrayElement = 0;
 			descriptorWrites[2].descriptorCount = 1;
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &materialBufferInfo;
+			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
-		}
-
-		// write constant data
-		{
-			ConstantData *constantData = (ConstantData *)registry.mapMemory(data.m_constantDataBufferHandle);
-			{
-				constantData->jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
-				constantData->viewMatrix = data.m_commonRenderData->m_viewMatrix;
-			}
-			registry.unmapMemory(data.m_constantDataBufferHandle);
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);

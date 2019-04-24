@@ -4,10 +4,13 @@
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/velocityInitialization_bindings.h"
+}
 
 void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {

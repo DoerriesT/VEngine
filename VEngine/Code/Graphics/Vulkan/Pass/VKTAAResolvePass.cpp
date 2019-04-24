@@ -8,10 +8,13 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/taaResolve_bindings.h"
+}
 
 void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {

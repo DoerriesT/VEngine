@@ -26,8 +26,8 @@ namespace VEngine
 			const ShadowJob *m_shadowJobs;
 			bool m_alphaMasked;
 			bool m_clear;
-			FrameGraph::BufferHandle m_transformDataBufferHandle;
-			FrameGraph::BufferHandle m_materialDataBufferHandle;
+			VkDescriptorBufferInfo m_materialDataBufferInfo;
+			VkDescriptorBufferInfo m_transformDataBufferInfo;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
 		};
 

@@ -3,12 +3,14 @@
 #include "VKBuffer.h"
 #include <memory>
 #include "Graphics/RendererConsts.h"
+#include "VKMappableBufferBlock.h"
 
 namespace VEngine
 {
 	class VKRenderer;
 	class VKSyncPrimitiveAllocator;
 	class VKPipelineCache;
+	class VKMappableBufferBlock;
 
 	struct VKRenderResources
 	{
@@ -28,6 +30,12 @@ namespace VEngine
 		VKBuffer m_avgLuminanceBuffer;
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
+		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+
+		// mappable buffer blocks
+		std::unique_ptr<VKMappableBufferBlock> m_mappableUBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
+		std::unique_ptr<VKMappableBufferBlock> m_mappableSSBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;

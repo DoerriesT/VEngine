@@ -6,11 +6,14 @@
 #include "Graphics/LightData.h"
 #include <glm/gtx/transform.hpp>
 
-using vec3 = glm::vec3;
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec3 = glm::vec3;
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/rasterTiling_bindings.h"
+}
 
 void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {

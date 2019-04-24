@@ -18,11 +18,12 @@ namespace VEngine
 			const CommonRenderData *m_commonRenderData;
 			uint32_t m_width;
 			uint32_t m_height;
-			FrameGraph::BufferHandle m_constantDataBufferHandle;
-			FrameGraph::BufferHandle m_directionalLightDataBufferHandle;
-			FrameGraph::BufferHandle m_pointLightDataBufferHandle;
-			FrameGraph::BufferHandle m_shadowDataBufferHandle;
-			FrameGraph::BufferHandle m_pointLightZBinsBufferHandle;
+			size_t m_resourceIndex;
+			VkDescriptorBufferInfo m_constantDataBufferInfo;
+			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
+			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
+			VkDescriptorBufferInfo m_shadowDataBufferInfo;
+			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
 			FrameGraph::ImageHandle m_depthImageHandle;
 			FrameGraph::ImageHandle m_albedoImageHandle;

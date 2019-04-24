@@ -3,7 +3,7 @@
 
 VEngine::VKRenderPassDescription::VKRenderPassDescription()
 {
-	memset(this, sizeof(VKRenderPassDescription), 0);
+	memset(this, 0, sizeof(VKRenderPassDescription));
 }
 
 void VEngine::VKRenderPassDescription::finalize()

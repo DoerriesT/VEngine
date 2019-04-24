@@ -84,6 +84,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 			m_commonRenderData.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
 			m_commonRenderData.m_width = g_windowWidth;
 			m_commonRenderData.m_height = g_windowHeight;
+			m_commonRenderData.m_currentResourceIndex = m_commonRenderData.m_frame % RendererConsts::FRAMES_IN_FLIGHT;
+			m_commonRenderData.m_previousResourceIndex = (m_commonRenderData.m_frame + RendererConsts::FRAMES_IN_FLIGHT - 1) % RendererConsts::FRAMES_IN_FLIGHT;
 			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
 		}
 

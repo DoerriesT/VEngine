@@ -21,13 +21,14 @@ namespace VEngine
 			const CommonRenderData *m_commonRenderData;
 			uint32_t m_width;
 			uint32_t m_height;
+			size_t m_resourceIndex;
 			size_t m_subMeshInstanceCount;
 			const SubMeshInstanceData *m_subMeshInstances;
 			const SubMeshData *m_subMeshData;
 			bool m_alphaMasked;
-			FrameGraph::BufferHandle m_constantDataBufferHandle;
-			FrameGraph::BufferHandle m_materialDataBufferHandle;
-			FrameGraph::BufferHandle m_transformDataBufferHandle;
+			VkDescriptorBufferInfo m_constantDataBufferInfo;
+			VkDescriptorBufferInfo m_materialDataBufferInfo;
+			VkDescriptorBufferInfo m_transformDataBufferInfo;
 			FrameGraph::ImageHandle m_depthImageHandle;
 			FrameGraph::ImageHandle m_albedoImageHandle;
 			FrameGraph::ImageHandle m_normalImageHandle;

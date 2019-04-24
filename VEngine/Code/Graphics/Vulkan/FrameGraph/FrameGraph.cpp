@@ -505,7 +505,7 @@ void Graph::reset()
 	}
 
 	// release events
-	for (size_t i = 0; i < MAX_PASSES * 2; ++i)
+	for (size_t i = 0; i < MAX_PASSES; ++i)
 	{
 		if (m_events[i] != VK_NULL_HANDLE)
 		{

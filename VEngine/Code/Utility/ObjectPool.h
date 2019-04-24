@@ -27,6 +27,8 @@ namespace VEngine
 
 	template<typename T, size_t Count>
 	inline StaticObjectPool<T, Count>::StaticObjectPool()
+		:m_firstFreeIndex(),
+		m_allocationCount()
 	{
 		// setup linked list
 		for (size_t i = 0; i < Count; ++i)
@@ -107,7 +109,8 @@ namespace VEngine
 
 	template<typename T>
 	inline DynamicObjectPool<T>::DynamicObjectPool(size_t firstBlockCapacity)
-		:m_firstBlockCapacity(firstBlockCapacity)
+		:m_firstBlockCapacity(firstBlockCapacity),
+		m_allocationCount()
 	{
 		assert(m_firstBlockCapacity > 1);
 	}

@@ -207,6 +207,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKResourceDefinitions.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKMappableBufferBlock.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -327,6 +330,9 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKDescriptorSetCache.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKMappableBufferBlock.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>

@@ -345,7 +345,7 @@ bool VEngine::TLSFAllocator::findFreeSpan(uint32_t &firstLevelIndex, uint32_t &s
 	assert(firstLevelIndex < MAX_FIRST_LEVELS);
 	assert(secondLevelIndex < MAX_SECOND_LEVELS);
 
-	uint32_t bitsetTmp = m_secondLevelBitsets[firstLevelIndex] & (~0 << secondLevelIndex);
+	uint32_t bitsetTmp = m_secondLevelBitsets[firstLevelIndex] & (~0u << secondLevelIndex);
 
 	if (bitsetTmp)
 	{
@@ -354,7 +354,7 @@ bool VEngine::TLSFAllocator::findFreeSpan(uint32_t &firstLevelIndex, uint32_t &s
 	}
 	else
 	{
-		firstLevelIndex = Utility::findFirstSetBit(m_firstLevelBitset & (~0 << (firstLevelIndex + 1)));
+		firstLevelIndex = Utility::findFirstSetBit(m_firstLevelBitset & (~0u << (firstLevelIndex + 1)));
 		if (firstLevelIndex != (uint32_t(0) - 1))
 		{
 			secondLevelIndex = Utility::findFirstSetBit(m_secondLevelBitsets[firstLevelIndex]);

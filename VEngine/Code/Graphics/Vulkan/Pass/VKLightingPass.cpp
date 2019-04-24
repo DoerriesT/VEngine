@@ -5,10 +5,13 @@
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 
-using vec4 = glm::vec4;
-using mat4 = glm::mat4;
-using uint = uint32_t;
+namespace
+{
+	using vec4 = glm::vec4;
+	using mat4 = glm::mat4;
+	using uint = uint32_t;
 #include "../../../../../Application/Resources/Shaders/lighting_bindings.h"
+}
 
 void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 {
@@ -17,22 +20,20 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 	{
 		// constant data buffer
 		{
-			FrameGraph::BufferDescription desc = {};
-			desc.m_name = "Lighting Pass Constant Data Buffer";
-			desc.m_concurrent = true;
-			desc.m_clear = false;
-			desc.m_clearValue.m_bufferClearValue = 0;
-			desc.m_size = sizeof(ConstantData);
-			desc.m_hostVisible = true;
+			uint8_t *bufferPtr;
+			data.m_constantDataBufferInfo.range = sizeof(ConstantData);
+			data.m_renderResources->m_mappableUBOBlock[data.m_resourceIndex]->allocate(data.m_constantDataBufferInfo.range,
+				data.m_constantDataBufferInfo.offset, data.m_constantDataBufferInfo.buffer, bufferPtr);
 
-			data.m_constantDataBufferHandle = graph.createBuffer(desc);
+			ConstantData constantData;
+			constantData.viewMatrix = data.m_commonRenderData->m_viewMatrix;
+			constantData.invViewMatrix = data.m_commonRenderData->m_invViewMatrix;
+			constantData.invJitteredProjectionMatrix = data.m_commonRenderData->m_invJitteredProjectionMatrix;
+			constantData.pointLightCount = data.m_commonRenderData->m_pointLightCount;
+
+			memcpy(bufferPtr, &constantData, sizeof(constantData));
 		}
 
-		builder.readUniformBuffer(data.m_constantDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readStorageBuffer(data.m_directionalLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readStorageBuffer(data.m_pointLightDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readStorageBuffer(data.m_pointLightZBinsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readStorageBuffer(data.m_pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_albedoImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
@@ -61,14 +62,13 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 			VkWriteDescriptorSet descriptorWrites[9] = {};
 
 			// constant data
-			VkDescriptorBufferInfo constantBufferInfo = registry.getBufferInfo(data.m_constantDataBufferHandle);
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
 			descriptorWrites[0].dstBinding = CONSTANT_DATA_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].pBufferInfo = &constantBufferInfo;
+			descriptorWrites[0].pBufferInfo = &data.m_constantDataBufferInfo;
 
 			// result image
 			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_resultImageHandle);
@@ -113,44 +113,40 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 			descriptorWrites[3].pImageInfo = &shadowAtlasImageInfo;
 
 			// directional light
-			VkDescriptorBufferInfo directionalLightBufferInfo = registry.getBufferInfo(data.m_directionalLightDataBufferHandle);
 			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[4].dstSet = descriptorSet;
 			descriptorWrites[4].dstBinding = DIRECTIONAL_LIGHT_DATA_BINDING;
 			descriptorWrites[4].dstArrayElement = 0;
 			descriptorWrites[4].descriptorCount = 1;
 			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].pBufferInfo = &directionalLightBufferInfo;
+			descriptorWrites[4].pBufferInfo = &data.m_directionalLightDataBufferInfo;
 
 			// point light
-			VkDescriptorBufferInfo pointLightBufferInfo = registry.getBufferInfo(data.m_pointLightDataBufferHandle);
 			descriptorWrites[5] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[5].dstSet = descriptorSet;
 			descriptorWrites[5].dstBinding = POINT_LIGHT_DATA_BINDING;
 			descriptorWrites[5].dstArrayElement = 0;
 			descriptorWrites[5].descriptorCount = 1;
 			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].pBufferInfo = &pointLightBufferInfo;
+			descriptorWrites[5].pBufferInfo = &data.m_pointLightDataBufferInfo;
 
 			// shadow data
-			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
 			descriptorWrites[6] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[6].dstSet = descriptorSet;
 			descriptorWrites[6].dstBinding = SHADOW_DATA_BINDING;
 			descriptorWrites[6].dstArrayElement = 0;
 			descriptorWrites[6].descriptorCount = 1;
 			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[6].pBufferInfo = &shadowDataBufferInfo;
+			descriptorWrites[6].pBufferInfo = &data.m_shadowDataBufferInfo;
 
 			// point light z bins
-			VkDescriptorBufferInfo pointLightZBinsbufferInfo = registry.getBufferInfo(data.m_pointLightZBinsBufferHandle);
 			descriptorWrites[7] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[7].dstSet = descriptorSet;
 			descriptorWrites[7].dstBinding = POINT_LIGHT_Z_BINS_BINDING;
 			descriptorWrites[7].dstArrayElement = 0;
 			descriptorWrites[7].descriptorCount = 1;
 			descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[7].pBufferInfo = &pointLightZBinsbufferInfo;
+			descriptorWrites[7].pBufferInfo = &data.m_pointLightZBinsBufferInfo;
 
 			// point light mask
 			VkDescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
@@ -163,18 +159,6 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 			descriptorWrites[8].pBufferInfo = &pointLightMaskBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
-		}
-
-		// write constant data
-		{
-			ConstantData *constantData = (ConstantData *)registry.mapMemory(data.m_constantDataBufferHandle);
-			{
-				constantData->viewMatrix = data.m_commonRenderData->m_viewMatrix;
-				constantData->invViewMatrix = data.m_commonRenderData->m_invViewMatrix;
-				constantData->invJitteredProjectionMatrix = data.m_commonRenderData->m_invJitteredProjectionMatrix;
-				constantData->pointLightCount = data.m_commonRenderData->m_pointLightCount;
-			}
-			registry.unmapMemory(data.m_constantDataBufferHandle);
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
