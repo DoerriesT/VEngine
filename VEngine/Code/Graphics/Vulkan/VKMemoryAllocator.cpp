@@ -73,6 +73,9 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::free(VKAllocationInfo allocationI
 {
 	m_allocators[allocationInfo.m_blockIndex]->free(allocationInfo.m_poolData);
 
+	assert(m_mapCount[allocationInfo.m_blockIndex] >= allocationInfo.m_mapCount);
+	m_mapCount[allocationInfo.m_blockIndex] -= allocationInfo.m_mapCount;
+
 	if (m_allocators[allocationInfo.m_blockIndex]->getAllocationCount() == 0)
 	{
 		vkFreeMemory(m_device, m_memory[allocationInfo.m_blockIndex], nullptr);
@@ -182,6 +185,7 @@ bool VEngine::VKMemoryAllocator::VKMemoryPool::allocFromBlock(size_t blockIndex,
 		allocationInfo.m_memoryType = m_memoryType;
 		allocationInfo.m_poolIndex = m_memoryType;
 		allocationInfo.m_blockIndex = blockIndex;
+		allocationInfo.m_mapCount = 0;
 
 		return true;
 	}
@@ -328,7 +332,14 @@ VkResult VEngine::VKMemoryAllocator::mapMemory(VKAllocationHandle allocationHand
 
 	assert(m_memoryProperties.memoryTypes[allocationInfo->m_memoryType].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-	return m_pools[allocationInfo->m_poolIndex].mapMemory(allocationInfo->m_blockIndex, allocationInfo->m_offset, data);
+	VkResult result = m_pools[allocationInfo->m_poolIndex].mapMemory(allocationInfo->m_blockIndex, allocationInfo->m_offset, data);
+
+	if (result == VK_SUCCESS)
+	{
+		++allocationInfo->m_mapCount;
+	}
+
+	return result;
 }
 
 void VEngine::VKMemoryAllocator::unmapMemory(VKAllocationHandle allocationHandle)
@@ -338,6 +349,7 @@ void VEngine::VKMemoryAllocator::unmapMemory(VKAllocationHandle allocationHandle
 	assert(m_memoryProperties.memoryTypes[allocationInfo->m_memoryType].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
 	m_pools[allocationInfo->m_poolIndex].unmapMemory(allocationInfo->m_blockIndex);
+	--allocationInfo->m_mapCount;
 }
 
 VEngine::VKAllocationInfo VEngine::VKMemoryAllocator::getAllocationInfo(VKAllocationHandle allocationHandle)

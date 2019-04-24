@@ -290,7 +290,7 @@ void VEngine::VKPipelineCache::createShaderStage(const char *filepath, VkShaderS
 		if (!resources.push_constant_buffers.empty())
 		{
 			auto &resource = resources.push_constant_buffers.front();
-			uint32_t size = comp.get_declared_struct_size(comp.get_type(resource.base_type_id));
+			uint32_t size = static_cast<uint32_t>(comp.get_declared_struct_size(comp.get_type(resource.base_type_id)));
 
 			reflectionInfo.m_pushConstants.m_size = std::max(size, reflectionInfo.m_pushConstants.m_size);
 			reflectionInfo.m_pushConstants.m_stageFlags |= stageFlag;

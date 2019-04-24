@@ -21,6 +21,7 @@ namespace VEngine
 		uint32_t m_memoryType;
 		size_t m_poolIndex;
 		size_t m_blockIndex;
+		size_t m_mapCount;
 		void *m_poolData;
 	};
 
