@@ -114,9 +114,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKMemoryAllocator.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
@@ -210,6 +207,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKMappableBufferBlock.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\VKMeshManager.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -275,9 +275,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
@@ -333,6 +330,9 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMappableBufferBlock.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\VKMeshManager.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>

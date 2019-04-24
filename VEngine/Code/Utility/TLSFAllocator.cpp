@@ -33,6 +33,7 @@ VEngine::TLSFAllocator::TLSFAllocator(uint32_t memorySize, uint32_t pageSize)
 
 bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &spanOffset, void *&backingSpan)
 {
+	assert(size >= 32);
 	uint32_t firstLevelIndex = 0;
 	uint32_t secondLevelIndex = 0;
 

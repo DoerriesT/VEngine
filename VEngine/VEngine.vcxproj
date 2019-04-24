@@ -161,7 +161,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramReduceAveragePass.h" />
@@ -179,6 +178,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKMappableBufferBlock.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKMaterialManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKMemoryAllocator.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\VKMeshManager.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKPipelineCache.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
@@ -210,7 +210,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKHostWritePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.cpp" />
@@ -229,6 +228,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKMappableBufferBlock.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKMaterialManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\VKMeshManager.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKPipelineCache.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />

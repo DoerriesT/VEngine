@@ -14,7 +14,7 @@ VEngine::VKMaterialManager::VKMaterialManager(VKBuffer &stagingBuffer, VKBuffer 
 {
 	for (MaterialHandle i = 0; i < RendererConsts::MAX_MATERIALS; ++i)
 	{
-		m_freeHandles[i] = RendererConsts::MAX_MATERIALS - i;
+		m_freeHandles[i] = RendererConsts::MAX_MATERIALS - i - 1;
 	}
 }
 
@@ -82,7 +82,7 @@ void VEngine::VKMaterialManager::updateMaterials(uint32_t count, const Material 
 		{
 			auto &copy = bufferCopies[i];
 			copy.srcOffset = i * sizeof(MaterialData);
-			copy.dstOffset = (handles[i] - 1) * sizeof(MaterialData);
+			copy.dstOffset = handles[i] * sizeof(MaterialData);
 			copy.size = sizeof(MaterialData);
 		}
 
@@ -100,8 +100,8 @@ void VEngine::VKMaterialManager::destroyMaterials(uint32_t count, MaterialHandle
 {
 	for (uint32_t i = 0; i < count; ++i)
 	{
+		assert(m_freeHandleCount < RendererConsts::MAX_MATERIALS);
 		m_freeHandles[m_freeHandleCount] = handles[i];
 		++m_freeHandleCount;
-		assert(m_freeHandleCount < RendererConsts::MAX_MATERIALS);
 	}
 }

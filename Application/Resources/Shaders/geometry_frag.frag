@@ -53,7 +53,7 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
 
 void main() 
 {
-	MaterialData materialData = uMaterialData[uPushConsts.materialIndex - 1];
+	MaterialData materialData = uMaterialData[uPushConsts.materialIndex];
 	
 	// albedo
 	{

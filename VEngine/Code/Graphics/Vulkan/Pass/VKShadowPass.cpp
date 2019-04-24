@@ -161,7 +161,11 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 			vkCmdClearAttachments(cmdBuf, 1, &clearAttachment, data.m_shadowJobCount, clearRects);
 		}
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_meshBuffer.getBuffer(), RendererConsts::VERTEX_BUFFER_SIZE, VK_INDEX_TYPE_UINT32);
+
+		VkBuffer vertexBuffer = data.m_renderResources->m_meshBuffer.getBuffer();
+		VkDeviceSize vertexOffset = 0;
+		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &vertexOffset);
 
 		for (size_t i = 0; i < data.m_shadowJobCount; ++i)
 		{
@@ -176,14 +180,10 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | (data.m_alphaMasked ? VK_SHADER_STAGE_FRAGMENT_BIT : 0), 0, sizeof(glm::mat4), &job.m_shadowViewProjectionMatrix);
 
-			VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
-
 			for (uint32_t i = 0; i < data.m_subMeshInstanceCount; ++i)
 			{
 				const SubMeshInstanceData &instance = data.m_subMeshInstances[i];
 				const SubMeshData &subMesh = data.m_subMeshData[instance.m_subMeshIndex];
-
-				vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &subMesh.m_vertexOffset);
 
 				vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | (data.m_alphaMasked ? VK_SHADER_STAGE_FRAGMENT_BIT : 0), offsetof(PushConsts, transformIndex), sizeof(instance.m_transformIndex), &instance.m_transformIndex);
 
@@ -192,7 +192,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 					vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offsetof(PushConsts, materialIndex), sizeof(instance.m_materialIndex), &instance.m_materialIndex);
 				}
 
-				vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, 0, 0);
+				vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, subMesh.m_vertexOffset, 0);
 			}
 		}
 	});

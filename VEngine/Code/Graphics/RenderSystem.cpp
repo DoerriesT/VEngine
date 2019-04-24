@@ -31,7 +31,6 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 void VEngine::RenderSystem::update(float timeDelta)
 {
 	m_transformData.clear();
-	m_subMeshData.clear();
 	m_opaqueSubMeshInstanceData.clear();
 	m_maskedSubMeshInstanceData.clear();
 
@@ -108,11 +107,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 				{
 					SubMeshInstanceData instanceData;
-					instanceData.m_subMeshIndex = static_cast<uint32_t>(m_subMeshData.size());
+					instanceData.m_subMeshIndex = p.first;
 					instanceData.m_transformIndex = transformIndex;
 					instanceData.m_materialIndex = p.second;
-
-					m_subMeshData.push_back(p.first);
 
 					auto batchAssigment = m_materialBatchAssignment[p.second - 1];
 
@@ -229,8 +226,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
 		renderData.m_transformData = m_transformData.data();
-		renderData.m_subMeshDataCount = static_cast<uint32_t>(m_subMeshData.size());
-		renderData.m_subMeshData = m_subMeshData.data();
 		renderData.m_opaqueSubMeshInstanceDataCount = static_cast<uint32_t>(m_opaqueSubMeshInstanceData.size());
 		renderData.m_opaqueSubMeshInstanceData = m_opaqueSubMeshInstanceData.data();
 		renderData.m_maskedSubMeshInstanceDataCount = static_cast<uint32_t>(m_maskedSubMeshInstanceData.size());
@@ -241,19 +236,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 	}
 }
 
-void VEngine::RenderSystem::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
-{
-	m_renderer->reserveMeshBuffers(vertexSize, indexSize);
-}
-
-void VEngine::RenderSystem::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
-{
-	m_renderer->uploadMeshData(vertices, vertexSize, indices, indexSize);
-}
-
 VEngine::TextureHandle VEngine::RenderSystem::createTexture(const char *filepath)
 {
 	return m_renderer->loadTexture(filepath);
+}
+
+void VEngine::RenderSystem::destroyTexture(TextureHandle handle)
+{
+	m_renderer->freeTexture(handle);
 }
 
 void VEngine::RenderSystem::updateTextureData()
@@ -276,6 +266,16 @@ void VEngine::RenderSystem::updateMaterials(uint32_t count, const Material *mate
 void VEngine::RenderSystem::destroyMaterials(uint32_t count, MaterialHandle *handles)
 {
 	m_renderer->destroyMaterials(count, handles);
+}
+
+void VEngine::RenderSystem::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles)
+{
+	m_renderer->createSubMeshes(count, vertexSizes, vertexData, indexCounts, indexData, handles);
+}
+
+void VEngine::RenderSystem::destroySubMeshes(uint32_t count, SubMeshHandle *handles)
+{
+	m_renderer->destroySubMeshes(count, handles);
 }
 
 void VEngine::RenderSystem::setCameraEntity(entt::entity cameraEntity)

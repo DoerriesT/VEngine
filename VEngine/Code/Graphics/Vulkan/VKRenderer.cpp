@@ -8,7 +8,6 @@
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 #include "FrameGraph/FrameGraph.h"
-#include "Pass/VKHostWritePass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
 #include "Pass/VKLightingPass.h"
@@ -25,6 +24,7 @@
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
+#include "VKMeshManager.h"
 #include "VKResourceDefinitions.h"
 #include <iostream>
 
@@ -37,6 +37,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_renderResources = std::make_unique<VKRenderResources>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
+	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_meshBuffer);
 	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
@@ -217,7 +218,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_resourceIndex = commonData.m_currentResourceIndex;
 	opaqueGeometryPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
 	opaqueGeometryPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
-	opaqueGeometryPassData.m_subMeshData = renderData.m_subMeshData;
+	opaqueGeometryPassData.m_subMeshData = m_meshManager->getSubMeshData();
 	opaqueGeometryPassData.m_alphaMasked = false;
 	opaqueGeometryPassData.m_constantDataBufferInfo = {};
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
@@ -269,7 +270,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueShadowPassData.m_height = g_shadowAtlasSize;
 	opaqueShadowPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
 	opaqueShadowPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
-	opaqueShadowPassData.m_subMeshData = renderData.m_subMeshData;
+	opaqueShadowPassData.m_subMeshData = m_meshManager->getSubMeshData();
 	opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
 	opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
 	opaqueShadowPassData.m_alphaMasked = false;
@@ -587,16 +588,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 }
 
-void VEngine::VKRenderer::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
-{
-	m_renderResources->reserveMeshBuffers(vertexSize, indexSize);
-}
-
-void VEngine::VKRenderer::uploadMeshData(const unsigned char * vertices, uint64_t vertexSize, const unsigned char * indices, uint64_t indexSize)
-{
-	m_renderResources->uploadMeshData(vertices, vertexSize, indices, indexSize);
-}
-
 VEngine::TextureHandle VEngine::VKRenderer::loadTexture(const char *filepath)
 {
 	return m_textureLoader->load(filepath);
@@ -620,6 +611,16 @@ void VEngine::VKRenderer::updateMaterials(uint32_t count, const Material *materi
 void VEngine::VKRenderer::destroyMaterials(uint32_t count, MaterialHandle *handles)
 {
 	m_materialManager->destroyMaterials(count, handles);
+}
+
+void VEngine::VKRenderer::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles)
+{
+	m_meshManager->createSubMeshes(count, vertexSizes, vertexData, indexCounts, indexData, handles);
+}
+
+void VEngine::VKRenderer::destroySubMeshes(uint32_t count, SubMeshHandle *handles)
+{
+	m_meshManager->destroySubMeshes(count, handles);
 }
 
 void VEngine::VKRenderer::updateTextureData()

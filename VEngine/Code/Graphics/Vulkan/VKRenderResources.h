@@ -23,13 +23,12 @@ namespace VEngine
 		VkImageView m_taaHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// buffers
-		VKBuffer m_vertexBuffer;
-		VKBuffer m_indexBuffer;
 		VKBuffer m_lightProxyVertexBuffer;
 		VKBuffer m_lightProxyIndexBuffer;
 		VKBuffer m_avgLuminanceBuffer;
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
+		VKBuffer m_meshBuffer;
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 

@@ -13,10 +13,8 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		file >> info;
 	}
 
-	uint32_t vertexSize = info["VertexSize"];
-	uint32_t indexSize = info["IndexSize"];
-
-	renderSystem.reserveMeshBuffers(vertexSize, indexSize);
+	uint32_t vertexAreaSize = info["VertexSize"];
+	uint32_t indexAreaSize = info["IndexSize"];
 
 	auto getTextureHandle = [&renderSystem, this](const std::string &filepath) -> uint32_t
 	{
@@ -38,14 +36,23 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		}
 	};
 
+	std::vector<char> meshData = Utility::readBinaryFile(info["MeshFile"].get<std::string>().c_str());
+
 	std::vector<Material> materials;
-	std::vector<std::pair<SubMeshData, MaterialHandle>> mesh;
+	std::vector<std::pair<SubMeshHandle, MaterialHandle>> mesh;
 	for (auto &subMeshInfo : info["SubMeshes"])
 	{
-		SubMeshData subMeshData;
-		subMeshData.m_vertexOffset = subMeshInfo["VertexOffset"].get<uint32_t>();
-		subMeshData.m_baseIndex = subMeshInfo["IndexOffset"].get<uint32_t>() / 4;
-		subMeshData.m_indexCount = subMeshInfo["IndexSize"].get<uint32_t>() / 4;
+		uint32_t vertexOffset = subMeshInfo["VertexOffset"].get<uint32_t>();
+		uint32_t vertexSize = subMeshInfo["VertexSize"].get<uint32_t>();
+		uint8_t *vertexData = (uint8_t *)meshData.data() + vertexOffset;
+
+		uint32_t indexOffset = subMeshInfo["IndexOffset"].get<uint32_t>() + vertexAreaSize;
+		uint32_t indexCount = subMeshInfo["IndexSize"].get<uint32_t>() / 4;
+		uint32_t *indexData = (uint32_t*)(meshData.data() + indexOffset);
+
+		SubMeshHandle subMeshHandle;
+		renderSystem.createSubMeshes(1, &vertexSize, &vertexData, &indexCount, &indexData, &subMeshHandle);
+		
 
 		Material material;
 		material.m_alpha = Material::Alpha(subMeshInfo["Material"]["Alpha"]);
@@ -64,14 +71,11 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		MaterialHandle materialHandle;
 		renderSystem.createMaterials(1, &material, &materialHandle);
 
-		mesh.push_back({ subMeshData, materialHandle });
+		mesh.push_back({ subMeshHandle, materialHandle });
 	}
 
 	m_meshes[filepath] = mesh;
-
-	std::vector<char> meshData = Utility::readBinaryFile(info["MeshFile"].get<std::string>().c_str());
-
-	renderSystem.uploadMeshData((unsigned char *)meshData.data(), vertexSize, (unsigned char *)(meshData.data()) + static_cast<size_t>(vertexSize), indexSize);
+	
 	renderSystem.updateTextureData();
 }
 

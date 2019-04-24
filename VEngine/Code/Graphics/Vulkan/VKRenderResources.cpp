@@ -23,6 +23,13 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		m_swapChainRenderFinishedSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
 	}
 
+	uint32_t queueFamilyIndices[] =
+	{
+		g_context.m_queueFamilyIndices.m_graphicsFamily,
+		g_context.m_queueFamilyIndices.m_computeFamily,
+		g_context.m_queueFamilyIndices.m_transferFamily
+	};
+
 	// shadow atlas
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -108,13 +115,6 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// mappable blocks
 	{
-		uint32_t queueFamilyIndices[] = 
-		{ 
-			g_context.m_queueFamilyIndices.m_graphicsFamily, 
-			g_context.m_queueFamilyIndices.m_computeFamily, 
-			g_context.m_queueFamilyIndices.m_transferFamily 
-		};
-
 		// ubo
 		{
 			VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -162,7 +162,9 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		bufferCreateInfo.size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT;
 		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -176,7 +178,9 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferCreateInfo.size = RendererConsts::STAGING_BUFFER_SIZE;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -189,12 +193,29 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferCreateInfo.size = sizeof(MaterialData) * RendererConsts::MAX_MATERIALS;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_materialBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	// mesh buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = RendererConsts::VERTEX_BUFFER_SIZE + RendererConsts::INDEX_BUFFER_SIZE;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_meshBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
 	// shadow sampler
@@ -511,71 +532,6 @@ void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 {
 }
 
-void VEngine::VKRenderResources::reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize)
-{
-	if (!m_vertexBuffer.isValid() || m_vertexBuffer.getSize() < vertexSize)
-	{
-		m_vertexBuffer.destroy();
-
-		VkBufferCreateInfo vertexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		vertexBufferInfo.size = vertexSize;
-		vertexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		vertexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VKAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-		m_vertexBuffer.create(vertexBufferInfo, allocCreateInfo);
-	}
-
-	if (!m_indexBuffer.isValid() || m_indexBuffer.getSize() < vertexSize)
-	{
-		m_indexBuffer.destroy();
-
-		VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		indexBufferInfo.size = indexSize;
-		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VKAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-		m_indexBuffer.create(indexBufferInfo, allocCreateInfo);
-	}
-}
-
-void VEngine::VKRenderResources::uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize)
-{
-	VKBuffer stagingBuffer;
-
-	VkBufferCreateInfo stagingBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	stagingBufferInfo.size = vertexSize + indexSize;
-	stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	stagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VKAllocationCreateInfo allocCreateInfo = {};
-	allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-	stagingBuffer.create(stagingBufferInfo, allocCreateInfo);
-
-	void *data;
-	g_context.m_allocator.mapMemory(stagingBuffer.getAllocation(), &data);
-	memcpy(data, vertices, (size_t)vertexSize);
-	memcpy(((unsigned char *)data) + vertexSize, indices, (size_t)indexSize);
-	g_context.m_allocator.unmapMemory(stagingBuffer.getAllocation());
-
-	VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-	{
-		VkBufferCopy copyRegionVertex = { 0, 0, vertexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_vertexBuffer.getBuffer(), 1, &copyRegionVertex);
-		VkBufferCopy copyRegionIndex = { vertexSize, 0, indexSize };
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer.getBuffer(), m_indexBuffer.getBuffer(), 1, &copyRegionIndex);
-	}
-	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
-
-	stagingBuffer.destroy();
-}
-
 void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo *data, size_t count)
 {
 	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
@@ -591,7 +547,5 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 }
 
 VEngine::VKRenderResources::VKRenderResources()
-	:m_vertexBuffer(),
-	m_indexBuffer()
 {
 }

@@ -72,8 +72,6 @@ namespace VEngine
 	{
 		uint32_t m_transformDataCount;
 		glm::mat4 *m_transformData;
-		uint32_t m_subMeshDataCount;
-		SubMeshData *m_subMeshData;
 		uint32_t m_opaqueSubMeshInstanceDataCount;
 		SubMeshInstanceData *m_opaqueSubMeshInstanceData;
 		uint32_t m_maskedSubMeshInstanceDataCount;

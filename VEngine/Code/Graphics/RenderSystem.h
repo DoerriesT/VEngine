@@ -17,13 +17,14 @@ namespace VEngine
 	public:
 		explicit RenderSystem(entt::registry &entityRegistry, void *windowHandle);
 		void update(float timeDelta);
-		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
-		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 		TextureHandle createTexture(const char *filepath);
+		void destroyTexture(TextureHandle handle);
 		void updateTextureData();
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
+		void createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles);
+		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
 
@@ -34,7 +35,6 @@ namespace VEngine
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		CommonRenderData m_commonRenderData;
 		std::vector<glm::mat4> m_transformData;
-		std::vector<SubMeshData> m_subMeshData;
 		std::vector<SubMeshInstanceData> m_opaqueSubMeshInstanceData;
 		std::vector<SubMeshInstanceData> m_maskedSubMeshInstanceData;
 		LightData m_lightData;
