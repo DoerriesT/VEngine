@@ -18,7 +18,7 @@ layout(location = 0) in vec2 vTexCoord;
 
 void main() 
 {
-	MaterialData materialData = uMaterialData[uPushConsts.materialIndex - 1];
+	MaterialData materialData = uMaterialData[uPushConsts.materialIndex];
 	
 	float alpha = 1.0;
 	uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
