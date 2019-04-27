@@ -220,7 +220,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
 	opaqueGeometryPassData.m_subMeshData = m_meshManager->getSubMeshData();
 	opaqueGeometryPassData.m_alphaMasked = false;
-	opaqueGeometryPassData.m_constantDataBufferInfo = {};
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	opaqueGeometryPassData.m_depthImageHandle = depthImageHandle;
@@ -324,7 +323,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_width = m_width;
 	lightingPassData.m_height = m_height;
 	lightingPassData.m_resourceIndex = commonData.m_currentResourceIndex;
-	lightingPassData.m_constantDataBufferInfo = {};
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	lightingPassData.m_shadowDataBufferInfo = shadowDataBufferInfo;

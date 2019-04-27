@@ -19,7 +19,6 @@ namespace VEngine
 			uint32_t m_width;
 			uint32_t m_height;
 			size_t m_resourceIndex;
-			VkDescriptorBufferInfo m_constantDataBufferInfo;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_shadowDataBufferInfo;
@@ -33,6 +32,6 @@ namespace VEngine
 			FrameGraph::ImageHandle m_resultImageHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, Data &data);
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
 	}
 }

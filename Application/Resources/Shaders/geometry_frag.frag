@@ -9,11 +9,6 @@ layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
 
-layout(push_constant) uniform PUSH_CONSTS 
-{
-	PushConsts uPushConsts;
-};
-
 #ifndef ALPHA_MASK_ENABLED
 #define ALPHA_MASK_ENABLED 0
 #endif // ALPHA_MASK_ENABLED
@@ -25,6 +20,7 @@ layout(early_fragment_tests) in;
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec3 vWorldPos;
+layout(location = 3) flat in uint vMaterialIndex;
 
 layout(location = OUT_ALBEDO) out vec4 oAlbedo;
 layout(location = OUT_NORMAL) out vec4 oNormalEmissive;
@@ -53,7 +49,7 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
 
 void main() 
 {
-	MaterialData materialData = uMaterialData[uPushConsts.materialIndex];
+	MaterialData materialData = uMaterialData[vMaterialIndex];
 	
 	// albedo
 	{

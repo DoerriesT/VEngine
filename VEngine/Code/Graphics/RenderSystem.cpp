@@ -197,17 +197,15 @@ void VEngine::RenderSystem::update(float timeDelta)
 				}
 			}
 
-			m_lightData.m_directionalLightData.push_back(
-				{
-					glm::vec4(glm::vec3(100.0f), 1.0f),
-					glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 1.0f),
-					0,
-					3
-				}
-			);
+			DirectionalLightData directionalLightData{ glm::vec4(glm::vec3(100.0f), 1.0f), glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.0f), 0, 3 };
 
 			glm::mat4 matrices[3];
-			calculateCascadeViewProjectionMatrices(m_commonRenderData, glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
+			calculateCascadeViewProjectionMatrices(m_commonRenderData, glm::vec3(directionalLightData.m_direction), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
+
+			// transform light dir to view space
+			directionalLightData.m_direction = m_commonRenderData.m_viewMatrix * directionalLightData.m_direction;
+
+			m_lightData.m_directionalLightData.push_back(directionalLightData);
 
 			m_lightData.m_shadowData.push_back({ matrices[0], { 0.25f, 0.25f, 0.0f, 0.0f } });
 			m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f,  0.25f, 0.0f } });

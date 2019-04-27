@@ -3,16 +3,7 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-#ifndef PI
-#define PI (3.14159265359)
-#endif // PI
-
 #include "lighting_bindings.h"
-
-layout(set = CONSTANT_DATA_SET, binding = CONSTANT_DATA_BINDING) uniform CONSTANT_DATA
-{
-	ConstantData uConstantData;
-};
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uLightingResultImage;
 layout(set = GBUFFER_IMAGES_SET, binding = GBUFFER_IMAGES_BINDING) uniform sampler2D uGBufferTextures[4];
@@ -43,202 +34,14 @@ layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly 
 	uint uPointLightBitMask[];
 };
 
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-    float a2 = roughness*roughness;
-    a2 *= a2;
-    float NdotH2 = max(dot(N, H), 0.0);
-    NdotH2 *= NdotH2;
-
-    float nom   = a2;
-    float denom = NdotH2 * (a2 - 1.0) + 1.0;
-
-    denom = PI * denom * denom;
-
-    return nom / max(denom, 0.0000001);
-}
-
-float GeometrySmith(float NdotV, float NdotL, float roughness)
-{
-	float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
-    float ggx2 =  NdotV / max(NdotV * (1.0 - k) + k, 0.0000001);
-    float ggx1 = NdotL / max(NdotL * (1.0 - k) + k, 0.0000001);
-
-    return ggx1 * ggx2;
-}
-
-
-vec3 fresnelSchlick(float HdotV, vec3 F0)
-{
-	float power = (-5.55473 * HdotV - 6.98316) * HdotV;
-	return F0 + (1.0 - F0) * pow(2.0, power);
-}
-
-float interleavedGradientNoise(vec2 v)
-{
-	vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-	return fract(magic.z * dot(v, magic.xy));
-}
-
-float smoothDistanceAtt(float squaredDistance, float invSqrAttRadius)
-{
-	float factor = squaredDistance * invSqrAttRadius;
-	float smoothFactor = clamp(1.0 - factor * factor, 0.0, 1.0);
-	return smoothFactor * smoothFactor;
-}
-
-float getDistanceAtt(vec3 unnormalizedLightVector, float invSqrAttRadius)
-{
-	float sqrDist = dot(unnormalizedLightVector, unnormalizedLightVector);
-	float attenuation = 1.0 / (max(sqrDist, invSqrAttRadius));
-	attenuation *= smoothDistanceAtt(sqrDist, invSqrAttRadius);
-	
-	return attenuation;
-}
-
-vec3 evaluatePointLight(
-	inout mat3 viewMatrix,
-	inout vec3 albedo, 
-	inout vec3 N, 
-	inout vec3 F0, 
-	inout vec3 V,
-	inout vec3 viewSpacePosition,
-	inout float NdotV,
-	inout float metallic, 
-	inout float roughness,
-	uint index)
-{
-	vec4 positionRadius = uPointLightData[index].positionRadius;
-	vec3 unnormalizedLightVector = positionRadius.xyz - viewSpacePosition;
-	vec3 L = normalize(unnormalizedLightVector);
-	float att = getDistanceAtt(unnormalizedLightVector, uPointLightData[index].colorInvSqrAttRadius.w);
-
-	vec3 H = normalize(V + L);
-	float NdotL = max(dot(N, L), 0.0);
-
-	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(N, H, roughness);
-	float G = GeometrySmith(NdotV, NdotL, roughness);
-	vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-	vec3 numerator = NDF * G * F;
-	float denominator = max(4 * NdotV * NdotL, 0.0000001);
-
-	vec3 specular = numerator / denominator;
-
-	// because of energy conversion kD and kS must add up to 1.0
-	vec3 kD = vec3(1.0) - F;
-	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
-	kD *= 1.0 - metallic;
-
-	vec3 radiance = uPointLightData[index].colorInvSqrAttRadius.rgb * att;
-	return (kD * albedo * (1.0 / PI) + specular) * radiance * NdotL;
-}
-
-vec3 evaluateDirectionalLight(
-	inout mat3 viewMatrix,
-	inout vec3 albedo, 
-	inout vec3 N, 
-	inout vec3 F0, 
-	inout vec3 V,
-	inout vec3 viewSpacePosition,
-	inout float NdotV,
-	inout float metallic, 
-	inout float roughness,
-	uint index)
-{
-	vec3 L = viewMatrix * uDirectionalLightData[index].direction.xyz;
-	vec3 H = normalize(V + L);
-    
-	float NdotL = max(dot(N, L), 0.0);
-	
-	float NDF = DistributionGGX(N, H, roughness);
-	float G = GeometrySmith(NdotV, NdotL, roughness);
-	vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    
-	vec3 numerator = NDF * G * F;
-	float denominator = max(4 * NdotV * NdotL, 0.0000001);
-    
-	vec3 specular = numerator / denominator;
-    
-	// because of energy conversion kD and kS must add up to 1.0
-	vec3 kD = vec3(1.0) - F;
-	// multiply kD by the inverse metalness so if a material is metallic, it has no diffuse lighting (and otherwise a blend)
-	kD *= 1.0 - metallic;
-    
-	vec3 result = (kD * albedo * (1.0 / PI) + specular) * NdotL * uDirectionalLightData[index].color.rgb;
-	
-	uint shadowDataCount = uDirectionalLightData[index].shadowDataCount;
-	if(shadowDataCount > 0)
-	{		
-		uint shadowDataOffset = uDirectionalLightData[index].shadowDataOffset;
-		vec3 shadowCoord = vec3(2.0);
-		vec2 invShadowTextureSize = 1.0 / textureSize(uShadowTexture, 0).xy;
-		vec4 offsetPos = uConstantData.invViewMatrix * vec4(0.1 * L + viewSpacePosition, 1.0);
-    
-		uint split = 0;
-		for (; split < shadowDataCount; ++split)
-		{
-			const vec4 projCoords4 = 
-			uShadowData[shadowDataOffset + split].shadowViewProjectionMatrix * offsetPos;
-			shadowCoord = (projCoords4.xyz / projCoords4.w);
-			shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; 
-			
-			// test if projected coordinate is inside texture
-			// add small guard band at edges to avoid PCF sampling outside texture
-			if(all(greaterThanEqual(shadowCoord.xy, vec2(0.003))) && all(lessThan(shadowCoord.xy, vec2(1.0 - 0.003))))
-			{
-				vec4 scaleBias = uShadowData[shadowDataOffset + split].shadowCoordScaleBias;
-				shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
-				break;
-			}
-		}
-		
-		
-		float shadow = 0.0;
-		
-		const float noise = interleavedGradientNoise(vec2(gl_GlobalInvocationID.xy));// * 0.5 + (uOddFrame ? 0.5 : 0.0);
-    
-		const float rotSin = sin(2.0 * PI * noise);
-		const float rotCos = cos(2.0 * PI * noise);
-    
-		const mat2 rotation = mat2(rotCos, rotSin, -rotSin, rotCos);
-    
-		const vec2 samples[8] = 
-		{ 
-			vec2(-0.7071, 0.7071),
-			vec2(0.0, -0.8750),
-			vec2(0.5303, 0.5303),
-			vec2(-0.625, 0.0),
-			vec2(0.3536, -0.3536),
-			vec2(0.0, 0.375),
-			vec2(-0.1768, -0.1768),
-			vec2(0.125, 0.0)
-		};
-    
-		const float splitMult = split == 0 ? 5.0 : split == 1 ? 2.0 : 1.0;
-    
-		for(int i = 0; i < 8; ++i)
-		{
-			vec2 offset = rotation * samples[i];
-			shadow += texture(uShadowTexture, vec3(shadowCoord.xy + offset * invShadowTextureSize * splitMult, shadowCoord.z)).x;
-		}
-		shadow *= 1.0 / 8.0;
-		
-		result *= (1.0 - shadow);
-	}
-	return result;
-}
-
-uint getTileAddress()
-{
-	uvec2 tile = uvec2(gl_GlobalInvocationID.xy) / TILE_SIZE;
-	uint domainSizeX = uint(textureSize(uGBufferTextures[0], 0).x);
-	return tile.x + tile.y * (domainSizeX / TILE_SIZE + ((domainSizeX % TILE_SIZE == 0) ? 0 : 1));
-}
+#include "commonLighting.h"
 
 const vec3 kRadarColors[14] = 
 {
@@ -292,7 +95,7 @@ vec3 accurateSRGBToLinear(in vec3 sRGBCol)
 
 void main() 
 {
-	float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
+	const float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
 	
 	if (depth == 1.0)
 	{
@@ -300,51 +103,64 @@ void main()
 		return;
 	}
 	
-	vec2 domainSize = textureSize(uGBufferTextures[0], 0).xy;
-	vec2 texelSize = vec2(1.0 / domainSize);
-	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
+	const vec2 domainSize = textureSize(uGBufferTextures[0], 0).xy;
+	const vec2 texelSize = vec2(1.0 / domainSize);
+	const vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
-	vec4 viewSpacePosition = uConstantData.invJitteredProjectionMatrix * clipSpacePosition;
+	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
 	
-	mat3 viewMatrix = mat3(uConstantData.viewMatrix);
-	vec3 albedo = accurateSRGBToLinear(texelFetch(uGBufferTextures[ALBEDO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).rgb);
-	vec3 N = texelFetch(uGBufferTextures[NORMAL_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xyz;
-	float metallic = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 V = -normalize(viewSpacePosition.xyz);
-	float NdotV = max(dot(N, V), 0.0);
-	float roughness = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).y;
+	const vec2 metalnessRoughness = texelFetch(uGBufferTextures[MRO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xy;
+	
+	LightingParams lightingParams;
+	lightingParams.albedo = accurateSRGBToLinear(texelFetch(uGBufferTextures[ALBEDO_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).rgb);
+	lightingParams.N = texelFetch(uGBufferTextures[NORMAL_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).xyz;
+	lightingParams.V = -normalize(viewSpacePosition.xyz);
+	lightingParams.viewSpacePosition = viewSpacePosition.xyz;
+	lightingParams.metalness = metalnessRoughness.x;
+	lightingParams.roughness = metalnessRoughness.y;
 	
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	result += 1.0 * albedo;
+	result += 1.0 * lightingParams.albedo;
+	
+	const vec2 pixelCoord = vec2(gl_GlobalInvocationID.xy) + 0.5;
+	const mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0,
+												uPushConsts.invViewMatrixRow1,
+												uPushConsts.invViewMatrixRow2,
+												vec4(0.0, 0.0, 0.0, 1.0)));
 	
 	// directional lights
-	for (uint i = 0; i < 1; ++i)
+	for (uint i = 0; i < uPushConsts.directionalLightCount; ++i)
 	{
-		result += evaluateDirectionalLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, i);
+		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
+		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+		const float shadow = directionalLightData.shadowDataCount > 0 ?
+			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, pixelCoord)
+			: 0.0;
+		
+		result += contribution * (1.0 - shadow);
 	}
 	
 	// point lights
-	if (uConstantData.pointLightCount > 0)
+	if (uPushConsts.pointLightCount > 0)
 	{
 		uint wordMin = 0;
-		const uint wordCount = (uConstantData.pointLightCount + 31) / 32;
+		const uint wordCount = (uPushConsts.pointLightCount + 31) / 32;
 		uint wordMax = wordCount - 1;
 		
-		uint address = getTileAddress() * wordCount;
-		uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
-		uint zBinData = uPointLightZBins[zBinAddress];
-		uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
-		uint maxIndex = zBinData & uint(0xFFFF);
+		const uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
+		const uint zBinData = uPointLightZBins[zBinAddress];
+		const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+		const uint maxIndex = zBinData & uint(0xFFFF);
 		// mergedMin scalar from this point
-		uint mergedMin = subgroupBroadcastFirst(subgroupMin(minIndex)); 
+		const uint mergedMin = subgroupBroadcastFirst(subgroupMin(minIndex)); 
 		// mergedMax scalar from this point
-		uint mergedMax = subgroupBroadcastFirst(subgroupMax(maxIndex)); 
+		const uint mergedMax = subgroupBroadcastFirst(subgroupMax(maxIndex)); 
 		wordMin = max(mergedMin / 32, wordMin);
 		wordMax = min(mergedMax / 32, wordMax);
+		const uint address = getTileAddress(uvec2(gl_GlobalInvocationID.xy), uint(textureSize(uGBufferTextures[0], 0).x), wordCount);
 		
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -363,10 +179,10 @@ void main()
 			
 			while (mergedMask != 0)
 			{
-				uint bitIndex = findLSB(mergedMask);
-				uint index = 32 * wordIndex + bitIndex;
+				const uint bitIndex = findLSB(mergedMask);
+				const uint index = 32 * wordIndex + bitIndex;
 				mergedMask ^= (1 << bitIndex);
-				result += evaluatePointLight(viewMatrix, albedo, N, F0, V, viewSpacePosition.xyz, NdotV, metallic, roughness, index);
+				result += evaluatePointLight(lightingParams, uPointLightData[index]);
 			}
 		}
 	}

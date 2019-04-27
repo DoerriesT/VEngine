@@ -26,7 +26,6 @@ namespace VEngine
 			const SubMeshInstanceData *m_subMeshInstances;
 			const SubMeshData *m_subMeshData;
 			bool m_alphaMasked;
-			VkDescriptorBufferInfo m_constantDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
 			FrameGraph::ImageHandle m_depthImageHandle;
@@ -36,6 +35,6 @@ namespace VEngine
 			FrameGraph::ImageHandle m_velocityImageHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, Data &data);
+		void addToGraph(FrameGraph::Graph &graph, const Data &data);
 	}
 }

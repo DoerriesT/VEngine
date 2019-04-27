@@ -15,25 +15,11 @@ namespace
 #include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
 }
 
-void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
+void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 {
 	graph.addGraphicsPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", data.m_width, data.m_height,
 		[&](FrameGraph::PassBuilder builder)
 	{
-		// constant data buffer
-		{
-			uint8_t *bufferPtr;
-			data.m_constantDataBufferInfo.range = sizeof(ConstantData);
-			data.m_renderResources->m_mappableUBOBlock[data.m_resourceIndex]->allocate(data.m_constantDataBufferInfo.range, 
-				data.m_constantDataBufferInfo.offset, data.m_constantDataBufferInfo.buffer, bufferPtr);
-			
-			ConstantData constantData;
-			constantData.jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
-			constantData.viewMatrix = data.m_commonRenderData->m_viewMatrix;
-		
-			memcpy(bufferPtr, &constantData, sizeof(constantData));
-		}
-		
 		builder.writeDepthStencil(data.m_depthImageHandle);
 		builder.writeColorAttachment(data.m_albedoImageHandle, OUT_ALBEDO);
 		builder.writeColorAttachment(data.m_normalImageHandle, OUT_NORMAL);
@@ -106,34 +92,25 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[3] = {};
-
-			// constant data
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = CONSTANT_DATA_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_constantDataBufferInfo;
+			VkWriteDescriptorSet descriptorWrites[2] = {};
 
 			// transform data
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[0].pBufferInfo = &data.m_transformDataBufferInfo;
+
+			// material data
 			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[1].dstBinding = MATERIAL_DATA_BINDING;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
-
-			// material data
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
+			descriptorWrites[1].pBufferInfo = &data.m_materialDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
@@ -164,16 +141,28 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, Data &data)
 		VkDeviceSize vertexOffset = 0;
 		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &vertexOffset);
 
+		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_commonRenderData->m_viewMatrix);
+
+		PushConsts pushConsts;
+		pushConsts.jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
+		pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
+		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
+		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
+
+		const uint32_t perPassPushConstsSize = offsetof(PushConsts, transformIndex);
+		const uint32_t perInstancePushConstsSize = sizeof(pushConsts) - perPassPushConstsSize;
+
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, perPassPushConstsSize, &pushConsts);
+
 		for (uint32_t i = 0; i < data.m_subMeshInstanceCount; ++i)
 		{
 			const SubMeshInstanceData &instance = data.m_subMeshInstances[i];
 			const SubMeshData &subMesh = data.m_subMeshData[instance.m_subMeshIndex];
 
-			PushConsts pushConsts;
 			pushConsts.transformIndex = instance.m_transformIndex;
 			pushConsts.materialIndex = instance.m_materialIndex;
 
-			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, perPassPushConstsSize, perInstancePushConstsSize, ((uint8_t *)&pushConsts) + perPassPushConstsSize);
 
 			vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, subMesh.m_vertexOffset, 0);
 		}
