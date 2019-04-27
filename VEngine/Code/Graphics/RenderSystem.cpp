@@ -111,7 +111,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 					instanceData.m_transformIndex = transformIndex;
 					instanceData.m_materialIndex = p.second;
 
-					auto batchAssigment = m_materialBatchAssignment[p.second - 1];
+					auto batchAssigment = m_materialBatchAssignment[p.second];
 
 					// opaque batch
 					if (batchAssigment & 1)
@@ -376,7 +376,7 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		auto &batchAssignment = m_materialBatchAssignment[handles[i] - 1];
+		auto &batchAssignment = m_materialBatchAssignment[handles[i]];
 
 		switch (materials[i].m_alpha)
 		{
