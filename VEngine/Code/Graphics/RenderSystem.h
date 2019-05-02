@@ -6,6 +6,7 @@
 #include "LightData.h"
 #include "RendererConsts.h"
 #include "Handles.h"
+#include "Utility/AxisAlignedBoundingBox.h"
 
 namespace VEngine
 {
@@ -23,7 +24,7 @@ namespace VEngine
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
-		void createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles);
+		void createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, AxisAlignedBoundingBox *aabbs, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
@@ -33,6 +34,7 @@ namespace VEngine
 		std::unique_ptr<VKRenderer> m_renderer;
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
+		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;
 		CommonRenderData m_commonRenderData;
 		std::vector<glm::mat4> m_transformData;
 		std::vector<SubMeshInstanceData> m_opaqueSubMeshInstanceData;

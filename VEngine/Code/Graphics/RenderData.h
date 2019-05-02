@@ -54,14 +54,14 @@ namespace VEngine
 		uint32_t m_displacementTexture;
 	};
 
-	struct alignas(16) SubMeshData
+	struct SubMeshData
 	{
-		uint64_t m_vertexOffset;
-		uint32_t m_baseIndex;
 		uint32_t m_indexCount;
+		uint32_t m_firstIndex;
+		int32_t m_vertexOffset;
 	};
 
-	struct alignas(16) SubMeshInstanceData
+	struct SubMeshInstanceData
 	{
 		uint32_t m_subMeshIndex;
 		uint32_t m_transformIndex;

@@ -15,9 +15,11 @@
 VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle)
 	:m_entityRegistry(entityRegistry),
 	m_cameraEntity(entt::null),
-	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS))
+	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS)),
+	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES))
 {
 	memset(m_materialBatchAssignment.get(), 0, RendererConsts::MAX_MATERIALS * sizeof(m_materialBatchAssignment[0]));
+	memset(m_aabbs.get(), 0, RendererConsts::MAX_SUB_MESHES * sizeof(m_aabbs[0]));
 
 	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
@@ -88,21 +90,36 @@ void VEngine::RenderSystem::update(float timeDelta)
 			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
 		}
 
+		glm::mat4 proj = glm::transpose(m_commonRenderData.m_viewProjectionMatrix);
+		glm::vec4 frustumPlaneEquations[] =
+		{
+			glm::normalize(proj[3] + proj[0]),	// left
+			glm::normalize(proj[3] - proj[0]),	// right
+			glm::normalize(proj[3] + proj[1]),	// bottom
+			glm::normalize(proj[3] - proj[1]),	// top
+			glm::normalize(proj[2]),			// near
+			glm::normalize(proj[3] - proj[2])	// far
+		};
+
+		//glm::mat4 shadow = glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f))
 
 		// update all transformations and generate draw lists
 		{
 			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
 
-			view.each([this](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
+			view.each([&frustumPlaneEquations, this](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
 			{
 				transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
+				glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
 				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position)
-					* glm::mat4_cast(transformationComponent.m_orientation)
+					* rotationMatrix
 					* glm::scale(glm::vec3(transformationComponent.m_scale));
 
 				uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
 
 				m_transformData.push_back(transformationComponent.m_transformation);
+
+				glm::mat3 rotationMatrix3x3 = glm::mat3(m_commonRenderData.m_viewMatrix) * glm::mat3(rotationMatrix);
 
 				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 				{
@@ -113,33 +130,56 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 					auto batchAssigment = m_materialBatchAssignment[p.second];
 
-					// opaque batch
-					if (batchAssigment & 1)
+					// frustum cull
+					bool viewFrustumCulled = false;
+					bool shadowFrustumCulled = false;
 					{
-						m_opaqueSubMeshInstanceData.push_back(instanceData);
+						auto aabb = m_aabbs[instanceData.m_subMeshIndex];
+						glm::vec3 center = (aabb.m_max + aabb.m_min) * 0.5f;
+						glm::vec3 half = (aabb.m_max - aabb.m_min) * 0.5f;
+
+						auto cullAgainstPlanes = [](const glm::vec3 center, const glm::vec3 half,size_t count, const glm::vec4 *planes)
+						{
+							for (size_t i = 0; i < count; ++i)
+							{
+								glm::vec3 normal = planes[i];
+								float extent = glm::dot(half, glm::abs(normal));
+								//float extent = half.x * 2.0f * glm::abs(glm::dot(normal, rotationMatrix3x3[0]))
+								//	+ half.y * 2.0f * glm::abs(glm::dot(normal, rotationMatrix3x3[1]))
+								//	+ half.z * 2.0f * glm::abs(glm::dot(normal, rotationMatrix3x3[2]));
+								float s = glm::dot(center, normal) + planes[i].w;
+								if (!((s - extent > 0) || !(s + extent < 0)))
+								{
+									return false;
+								}
+							}
+							return true;
+						};
+
+						viewFrustumCulled = !cullAgainstPlanes(center, half, 6, frustumPlaneEquations);
 					}
-					// masked batch
-					else if (batchAssigment & (1 << 1))
+
+					if (!viewFrustumCulled)
 					{
-						m_maskedSubMeshInstanceData.push_back(instanceData);
+						// opaque batch
+						if (batchAssigment & 1)
+						{
+							m_opaqueSubMeshInstanceData.push_back(instanceData);
+						}
+						// masked batch
+						else if (batchAssigment & (1 << 1))
+						{
+							m_maskedSubMeshInstanceData.push_back(instanceData);
+						}
 					}
 				}
 			});
 		}
 
+		//printf("%d\n", (int)m_opaqueSubMeshInstanceData.size());
+
 		// generate light data
 		{
-			glm::mat4 proj = glm::transpose(m_commonRenderData.m_projectionMatrix);
-			glm::vec4 frustumPlaneEquations[] =
-			{
-				glm::normalize(proj[3] + proj[0]),	// left
-				glm::normalize(proj[3] - proj[0]),	// right
-				glm::normalize(proj[3] + proj[1]),	// bottom
-				glm::normalize(proj[3] - proj[1]),	// top
-				glm::normalize(proj[2]),			// near
-				glm::normalize(proj[3] - proj[2])	// far
-			};
-
 			auto view = m_entityRegistry.view<TransformationComponent, PointLightComponent, RenderableComponent>();
 
 			view.each([this, &frustumPlaneEquations](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
@@ -153,7 +193,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				// frustum cull
 				for (const auto &plane : frustumPlaneEquations)
 				{
-					if (glm::dot(glm::vec4(pos, 1.0f), plane) <= -pl.m_positionRadius.w)
+					if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), plane) <= -pointLightComponent.m_radius)
 					{
 						return;
 					}
@@ -266,9 +306,13 @@ void VEngine::RenderSystem::destroyMaterials(uint32_t count, MaterialHandle *han
 	m_renderer->destroyMaterials(count, handles);
 }
 
-void VEngine::RenderSystem::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles)
+void VEngine::RenderSystem::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, AxisAlignedBoundingBox *aabbs, SubMeshHandle *handles)
 {
 	m_renderer->createSubMeshes(count, vertexSizes, vertexData, indexCounts, indexData, handles);
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		m_aabbs[handles[i]] = aabbs[i];
+	}
 }
 
 void VEngine::RenderSystem::destroySubMeshes(uint32_t count, SubMeshHandle *handles)

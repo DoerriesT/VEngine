@@ -19,15 +19,15 @@ namespace VEngine
 			VKDescriptorSetCache *m_descriptorSetCache;
 			uint32_t m_width;
 			uint32_t m_height;
-			size_t m_subMeshInstanceCount;
-			const SubMeshInstanceData *m_subMeshInstances;
-			const SubMeshData *m_subMeshData;
+			uint32_t m_drawCount;
 			uint32_t m_shadowJobCount;
 			const ShadowJob *m_shadowJobs;
 			bool m_alphaMasked;
 			bool m_clear;
+			VkDescriptorBufferInfo m_instanceDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
+			FrameGraph::BufferHandle m_indirectBufferHandle;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
 		};
 

@@ -2,6 +2,11 @@
 
 #include "geometry_bindings.h"
 
+layout(set = INSTANCE_DATA_SET, binding = INSTANCE_DATA_BINDING) readonly buffer INSTANCE_DATA 
+{
+    SubMeshInstanceData uInstanceData[];
+};
+
 layout(set = TRANSFORM_DATA_SET, binding = TRANSFORM_DATA_BINDING) readonly buffer TRANSFORM_DATA 
 {
     mat4 uTransformData[];
@@ -23,14 +28,15 @@ layout(location = 3) flat out uint vMaterialIndex;
 
 void main() 
 {
+	SubMeshInstanceData instanceData = uInstanceData[gl_InstanceIndex];
 	PushConsts pushConsts = uPushConsts;
-	const mat4 modelMatrix = uTransformData[pushConsts.transformIndex];
+	const mat4 modelMatrix = uTransformData[instanceData.transformIndex];
     gl_Position = pushConsts.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
 	const mat4 viewMatrix = transpose(mat4(pushConsts.viewMatrixRow0, pushConsts.viewMatrixRow1, pushConsts.viewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
 	const mat4 modelViewMatrix = viewMatrix * modelMatrix;										
 	vTexCoord = inTexCoord;
 	vNormal = mat3(modelViewMatrix) * inNormal;
 	vWorldPos = (modelViewMatrix * vec4(inPosition, 1.0)).xyz;
-	vMaterialIndex= pushConsts.materialIndex;
+	vMaterialIndex= instanceData.materialIndex;
 }
 

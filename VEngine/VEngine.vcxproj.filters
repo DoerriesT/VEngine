@@ -210,6 +210,12 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKMeshManager.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Utility\AxisAlignedBoundingBox.h">
+      <Filter>Code\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -334,6 +340,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMeshManager.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

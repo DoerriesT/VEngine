@@ -87,40 +87,58 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 		// update descriptor sets
 		if (data.m_alphaMasked)
 		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
+			VkWriteDescriptorSet descriptorWrites[3] = {};
 
-			// transform data
+			// instance data
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_transformDataBufferInfo;
+			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
 
-			// material data
+			// transform data
 			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_materialDataBufferInfo;
+			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
+
+			// material data
+			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[2].dstSet = descriptorSet;
+			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
 		else
 		{
-			VkWriteDescriptorSet descriptorWrites[1] = {};
+			VkWriteDescriptorSet descriptorWrites[2] = {};
 
-			// transform data
+			// instance data
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_transformDataBufferInfo;
+			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
+
+			// transform data
+			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
@@ -178,22 +196,9 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 			vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 			vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | (data.m_alphaMasked ? VK_SHADER_STAGE_FRAGMENT_BIT : 0), 0, sizeof(glm::mat4), &job.m_shadowViewProjectionMatrix);
+			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &job.m_shadowViewProjectionMatrix);
 
-			for (uint32_t i = 0; i < data.m_subMeshInstanceCount; ++i)
-			{
-				const SubMeshInstanceData &instance = data.m_subMeshInstances[i];
-				const SubMeshData &subMesh = data.m_subMeshData[instance.m_subMeshIndex];
-
-				vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | (data.m_alphaMasked ? VK_SHADER_STAGE_FRAGMENT_BIT : 0), offsetof(PushConsts, transformIndex), sizeof(instance.m_transformIndex), &instance.m_transformIndex);
-
-				if (data.m_alphaMasked)
-				{
-					vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offsetof(PushConsts, materialIndex), sizeof(instance.m_materialIndex), &instance.m_materialIndex);
-				}
-
-				vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, subMesh.m_vertexOffset, 0);
-			}
+			vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 		}
 	});
 }

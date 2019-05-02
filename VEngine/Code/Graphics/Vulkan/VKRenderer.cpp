@@ -8,6 +8,7 @@
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 #include "FrameGraph/FrameGraph.h"
+#include "Pass/VKPrepareIndirectBuffersPass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
 #include "Pass/VKLightingPass.h"
@@ -37,7 +38,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_renderResources = std::make_unique<VKRenderResources>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
-	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_meshBuffer);
+	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_meshBuffer, m_renderResources->m_subMeshDataInfoBuffer);
 	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
@@ -158,6 +159,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
+	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueSubMeshInstanceDataCount);
+	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_maskedSubMeshInstanceDataCount);
 
 	// transform data write
 	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
@@ -207,6 +210,38 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		}
 	}
 
+	// instance data write
+	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueSubMeshInstanceDataCount + renderData.m_maskedSubMeshInstanceDataCount) * sizeof(SubMeshInstanceData), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
+		if (renderData.m_opaqueSubMeshInstanceDataCount)
+		{
+			memcpy(bufferPtr, renderData.m_opaqueSubMeshInstanceData, renderData.m_opaqueSubMeshInstanceDataCount * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_opaqueSubMeshInstanceDataCount * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_maskedSubMeshInstanceDataCount)
+		{
+			memcpy(bufferPtr, renderData.m_maskedSubMeshInstanceData, renderData.m_maskedSubMeshInstanceDataCount * sizeof(SubMeshInstanceData));
+		}
+	}
+
+	// prepare indirect buffers
+	VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
+	prepareIndirectBuffersPassData.m_pipelineCache = m_pipelineCache.get();
+	prepareIndirectBuffersPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	prepareIndirectBuffersPassData.m_maskedCount = renderData.m_maskedSubMeshInstanceDataCount;
+	prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	prepareIndirectBuffersPassData.m_opaqueIndirectBufferHandle = opaqueIndirectBufferHandle;
+	prepareIndirectBuffersPassData.m_maskedIndirectBufferHandle = maskedIndirectBufferHandle;
+
+	if (renderData.m_opaqueSubMeshInstanceDataCount || renderData.m_maskedSubMeshInstanceDataCount)
+	{
+		VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
+	}
+
 	// draw opaque geometry to gbuffer
 	VKGeometryPass::Data opaqueGeometryPassData;
 	opaqueGeometryPassData.m_renderResources = m_renderResources.get();
@@ -215,13 +250,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_commonRenderData = &commonData;
 	opaqueGeometryPassData.m_width = m_width;
 	opaqueGeometryPassData.m_height = m_height;
-	opaqueGeometryPassData.m_resourceIndex = commonData.m_currentResourceIndex;
-	opaqueGeometryPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
-	opaqueGeometryPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
-	opaqueGeometryPassData.m_subMeshData = m_meshManager->getSubMeshData();
+	opaqueGeometryPassData.m_drawCount = renderData.m_opaqueSubMeshInstanceDataCount;
 	opaqueGeometryPassData.m_alphaMasked = false;
+	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectBufferHandle;
 	opaqueGeometryPassData.m_depthImageHandle = depthImageHandle;
 	opaqueGeometryPassData.m_albedoImageHandle = albedoImageHandle;
 	opaqueGeometryPassData.m_normalImageHandle = normalImageHandle;
@@ -236,8 +270,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// draw opaque alpha masked geometry to gbuffer
 	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
-	maskedGeometryPassData.m_subMeshInstanceCount = renderData.m_maskedSubMeshInstanceDataCount;
-	maskedGeometryPassData.m_subMeshInstances = renderData.m_maskedSubMeshInstanceData;
+	maskedGeometryPassData.m_drawCount = renderData.m_maskedSubMeshInstanceDataCount;
+	maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
 	maskedGeometryPassData.m_alphaMasked = true;
 
 	if (renderData.m_maskedSubMeshInstanceDataCount)
@@ -267,15 +301,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueShadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
 	opaqueShadowPassData.m_width = g_shadowAtlasSize;
 	opaqueShadowPassData.m_height = g_shadowAtlasSize;
-	opaqueShadowPassData.m_subMeshInstanceCount = renderData.m_opaqueSubMeshInstanceDataCount;
-	opaqueShadowPassData.m_subMeshInstances = renderData.m_opaqueSubMeshInstanceData;
-	opaqueShadowPassData.m_subMeshData = m_meshManager->getSubMeshData();
+	opaqueShadowPassData.m_drawCount = renderData.m_opaqueSubMeshInstanceDataCount;
 	opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
 	opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
 	opaqueShadowPassData.m_alphaMasked = false;
 	opaqueShadowPassData.m_clear = true;
+	opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
 	opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
 	opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
+	opaqueShadowPassData.m_indirectBufferHandle = opaqueIndirectBufferHandle;
 	opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 
 	if (renderData.m_opaqueSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
@@ -286,10 +320,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// draw masked shadows
 	VKShadowPass::Data maskedShadowPassData = opaqueShadowPassData;
-	maskedShadowPassData.m_subMeshInstanceCount = renderData.m_maskedSubMeshInstanceDataCount;
-	maskedShadowPassData.m_subMeshInstances = renderData.m_maskedSubMeshInstanceData;
+	maskedShadowPassData.m_drawCount = renderData.m_maskedSubMeshInstanceDataCount;
 	maskedShadowPassData.m_alphaMasked = true;
 	maskedShadowPassData.m_clear = lightData.m_shadowJobs.empty();
+	maskedShadowPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
 
 	if (renderData.m_maskedSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
 	{

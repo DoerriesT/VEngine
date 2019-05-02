@@ -158,5 +158,33 @@ namespace VEngine
 
 			return graph.createBuffer(desc);
 		}
+
+		inline FrameGraph::BufferHandle createOpaqueIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "Opaque Indirect Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
+
+		inline FrameGraph::BufferHandle createMaskedIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "Masked Indirect Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
 	}
 }

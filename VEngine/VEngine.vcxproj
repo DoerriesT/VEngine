@@ -165,6 +165,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramReduceAveragePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="Code\Input\InputTokens.h" />
     <ClInclude Include="Code\Input\UserInput.h" />
     <ClInclude Include="Code\Scene.h" />
+    <ClInclude Include="Code\Utility\AxisAlignedBoundingBox.h" />
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
     <ClInclude Include="Code\Utility\ObjectPool.h" />
     <ClInclude Include="Code\Utility\Timer.h" />
@@ -215,6 +217,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramReduceAveragePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.cpp" />

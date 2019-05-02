@@ -76,13 +76,14 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::free(VKAllocationInfo allocationI
 	assert(m_mapCount[allocationInfo.m_blockIndex] >= allocationInfo.m_mapCount);
 	m_mapCount[allocationInfo.m_blockIndex] -= allocationInfo.m_mapCount;
 
-	if (m_allocators[allocationInfo.m_blockIndex]->getAllocationCount() == 0)
-	{
-		vkFreeMemory(m_device, m_memory[allocationInfo.m_blockIndex], nullptr);
-		m_blockSizes[allocationInfo.m_blockIndex] = 0;
-		delete m_allocators[allocationInfo.m_blockIndex];
-		m_allocators[allocationInfo.m_blockIndex] = nullptr;
-	}
+	// TODO: implement proper block freeing heuristic
+	//if (m_allocators[allocationInfo.m_blockIndex]->getAllocationCount() == 0)
+	//{
+	//	vkFreeMemory(m_device, m_memory[allocationInfo.m_blockIndex], nullptr);
+	//	m_blockSizes[allocationInfo.m_blockIndex] = 0;
+	//	delete m_allocators[allocationInfo.m_blockIndex];
+	//	m_allocators[allocationInfo.m_blockIndex] = nullptr;
+	//}
 }
 
 VkResult VEngine::VKMemoryAllocator::VKMemoryPool::mapMemory(size_t blockIndex, VkDeviceSize offset, void **data)

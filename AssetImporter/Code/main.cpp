@@ -1,7 +1,3 @@
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <exception>
 #include <iostream>
 #include <cassert>
 #include <vector>
@@ -14,9 +10,14 @@
 #include <Windows.h>
 #include <nlohmann/json.hpp>
 #include <iomanip>
+#include <unordered_map>
 
 #undef min
 #undef max
+#undef OPAQUE
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 struct Vertex
 {
@@ -25,10 +26,93 @@ struct Vertex
 	glm::vec2 texCoord;
 };
 
+inline bool operator==(const Vertex &lhs, const Vertex &rhs)
+{
+	return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+}
+
+template <class T>
+inline void hashCombine(size_t &s, const T &v)
+{
+	std::hash<T> h;
+	s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
+}
+
+struct VertexHash
+{
+	inline size_t operator()(const Vertex &value) const
+	{
+		size_t hashValue = 0;
+
+		for (size_t i = 0; i < sizeof(Vertex); ++i)
+		{
+			hashCombine(hashValue, reinterpret_cast<const char *>(&value)[i]);
+		}
+
+		return hashValue;
+	}
+};
+
+struct Material
+{
+	enum class Alpha
+	{
+		OPAQUE, MASKED, BLENDED
+	};
+
+	Alpha m_alpha;
+	glm::vec3 m_albedoFactor;
+	float m_metalnessFactor;
+	float m_roughnessFactor;
+	glm::vec3 m_emissiveFactor;
+	float m_opacity;
+	std::string m_albedoTexture;
+	std::string m_normalTexture;
+	std::string m_metalnessTexture;
+	std::string m_roughnessTexture;
+	std::string m_occlusionTexture;
+	std::string m_emissiveTexture;
+	std::string m_displacementTexture;
+};
+
 void fatalExit(const char *message, int exitCode)
 {
 	MessageBox(nullptr, message, nullptr, MB_OK | MB_ICONERROR);
 	exit(exitCode);
+}
+
+void createMaterialLibrary(const std::vector<tinyobj::material_t> &objMaterials, const std::string dstFilePath)
+{
+	nlohmann::json j;
+
+	j["count"] = objMaterials.size();
+	j["materials"] = nlohmann::json::array();
+
+	for (const auto &objMaterial : objMaterials)
+	{
+		j["materials"].push_back(
+			{
+				{ "name", objMaterial.name },
+				{ "alphaMode", 0 },
+				{ "albedo", { objMaterial.diffuse[0], objMaterial.diffuse[1], objMaterial.diffuse[2] } },
+				{ "metalness", objMaterial.metallic },
+				{ "roughness", objMaterial.roughness },
+				{ "emissive", { objMaterial.emission[0], objMaterial.emission[1], objMaterial.emission[2] } },
+				{ "opacity", 1.0f },
+				{ "albedoTexture", objMaterial.diffuse_texname },
+				{ "normalTexture", objMaterial.normal_texname.empty() ? objMaterial.bump_texname : objMaterial.normal_texname },
+				{ "metalnessTexture", objMaterial.metallic_texname },
+				{ "roughnessTexture", objMaterial.roughness_texname.empty() ? objMaterial.specular_texname : objMaterial.roughness_texname },
+				{ "occlusionTexture", "" },
+				{ "emissiveTexture", objMaterial.emissive_texname },
+				{ "displacementTexture", objMaterial.displacement_texname }
+			}
+		);
+	}
+
+	std::ofstream infoFile(dstFilePath, std::ios::out | std::ios::trunc);
+	infoFile << std::setw(4) << j << std::endl;
+	infoFile.close();
 }
 
 int main()
@@ -39,35 +123,42 @@ int main()
 		std::string dstFileName;
 		nlohmann::json j;
 
-		j["SubMeshes"] = nlohmann::json::array();
-
 		std::cout << "Source File:" << std::endl;
 		std::cin >> srcFileName;
 		std::cout << "Destination File:" << std::endl;
 		std::cin >> dstFileName;
 
 		// load scene
-		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(srcFileName, aiProcess_Triangulate
-			| aiProcess_FlipUVs
-			| aiProcess_JoinIdenticalVertices
-			| aiProcess_GenSmoothNormals
-			| aiProcess_ImproveCacheLocality
-			| aiProcess_GenUVCoords
-			| aiProcess_FindInvalidData
-			| aiProcess_ValidateDataStructure
-			| aiProcess_PreTransformVertices);
+		tinyobj::attrib_t objAttrib;
+		std::vector<tinyobj::shape_t> objShapes;
+		std::vector<tinyobj::material_t> objMaterials;
 
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-		{
-			fatalExit(importer.GetErrorString(), EXIT_FAILURE);
+		std::string warn;
+		std::string err;
+
+		bool ret = tinyobj::LoadObj(&objAttrib, &objShapes, &objMaterials, &warn, &err, srcFileName.c_str(), nullptr, true);
+
+		if (!warn.empty()) {
+			std::cout << warn << std::endl;
 		}
 
-		// assert scene has at least one mesh
-		if (!scene->mNumMeshes)
-		{
-			fatalExit("Mesh has no submeshes!", EXIT_FAILURE);
+		if (!err.empty()) {
+			std::cerr << err << std::endl;
 		}
+
+		if (!ret)
+		{
+			fatalExit("Failed to load file!", EXIT_FAILURE);
+		}
+
+		// create material library
+		createMaterialLibrary(objMaterials, dstFileName + ".matlib");
+
+		j["meshFile"] = dstFileName + ".mesh";
+		j["materialLibraryFile"] = dstFileName + ".matlib";
+		j["subMeshCount"] = objShapes.size();
+		j["subMeshes"] = nlohmann::json::array();
+		j["subMeshInstances"] = nlohmann::json::array();
 
 		std::vector<Vertex> vertices;
 		std::vector<uint32_t> indices;
@@ -75,172 +166,86 @@ int main()
 		glm::vec3 minMeshCorner = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 maxMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
 
-		j["MeshFile"] = dstFileName;
-		j["SubMeshCount"] = scene->mNumMeshes;
-
-		for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+		size_t subMeshIndex = 0;
+		for (const auto &shape : objShapes)
 		{
-			std::cout << "Processing submesh #" << i << std::endl;
-
-			aiMesh *mesh = scene->mMeshes[i];
-
-			if (!mesh->mTextureCoords[0])
-			{
-				std::cout << "Mesh has no TexCoords!" << std::endl;
-			}
+			std::cout << "Processing submesh #" << subMeshIndex++ << std::endl;
 
 			glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
 			glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
 			size_t vertexStart = vertices.size() * sizeof(Vertex);
 			size_t indexStart = indices.size() * sizeof(uint32_t);
+			uint32_t firstIndex = vertices.size();
 
-			// create vertices
-			for (std::uint32_t j = 0; j < mesh->mNumVertices; ++j)
+			std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
+
+			for (const auto &index : shape.mesh.indices)
 			{
 				Vertex vertex;
 
-				// position
+				vertex.position.x = objAttrib.vertices[index.vertex_index * 3 + 0];
+				vertex.position.y = objAttrib.vertices[index.vertex_index * 3 + 1];
+				vertex.position.z = objAttrib.vertices[index.vertex_index * 3 + 2];
+
+				vertex.normal.x = objAttrib.normals[index.normal_index * 3 + 0];
+				vertex.normal.y = objAttrib.normals[index.normal_index * 3 + 1];
+				vertex.normal.z = objAttrib.normals[index.normal_index * 3 + 2];
+
+				if (objAttrib.texcoords.size() > index.texcoord_index * 2 + 1)
 				{
-					vertex.position.x = mesh->mVertices[j].x;
-					vertex.position.y = mesh->mVertices[j].y;
-					vertex.position.z = mesh->mVertices[j].z;
-					minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
-					maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
-					minMeshCorner = glm::min(minMeshCorner, vertex.position);
-					maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
+					vertex.texCoord.x = objAttrib.texcoords[index.texcoord_index * 2 + 0];
+					vertex.texCoord.y = 1.0f - objAttrib.texcoords[index.texcoord_index * 2 + 1];
+				}
+				else
+				{
+					vertex.texCoord.x = 0.0f;
+					vertex.texCoord.y = 0.0f;
 				}
 
-				// normal
+				// find min/max corners
+				minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
+				maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
+				minMeshCorner = glm::min(minMeshCorner, vertex.position);
+				maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
+
+				if (vertexToIndex.count(vertex) == 0)
 				{
-					vertex.normal.x = mesh->mNormals[j].x;
-					vertex.normal.y = mesh->mNormals[j].y;
-					vertex.normal.z = mesh->mNormals[j].z;
-					vertex.normal = glm::normalize(vertex.normal);
+					vertexToIndex[vertex] = static_cast<uint32_t>(vertices.size()) - firstIndex;
+					vertices.push_back(vertex);
 				}
+				indices.push_back(vertexToIndex[vertex]);
+			}
 
-				// texCoord
+			j["subMeshes"].push_back(
 				{
-					if (mesh->mTextureCoords[0])
-					{
-						vertex.texCoord.x = mesh->mTextureCoords[0][j].x;
-						vertex.texCoord.y = mesh->mTextureCoords[0][j].y;
-					}
-					else
-					{
-						vertex.texCoord = glm::vec2(0.0f, 0.0f);
-					}
-				}
+					{ "name", shape.name },
+					{ "vertexOffset", vertexStart },
+					{ "vertexSize", vertices.size() * sizeof(Vertex) - vertexStart },
+					{ "indexOffset", indexStart },
+					{ "indexSize", indices.size() * sizeof(uint32_t) - indexStart },
+					{ "minCorner", { minSubMeshCorner.x, minSubMeshCorner.y, minSubMeshCorner.z } },
+					{ "maxCorner", { maxSubMeshCorner.x, maxSubMeshCorner.y, maxSubMeshCorner.z } }
+				});
 
-				vertices.push_back(vertex);
-			}
-
-			for (unsigned int j = 0; j < mesh->mNumFaces; ++j)
-			{
-				aiFace &face = mesh->mFaces[j];
-
-				for (unsigned int k = 0; k < face.mNumIndices; ++k)
+			j["subMeshInstances"].push_back(
 				{
-					indices.push_back(face.mIndices[k]);
-				}
-			}
-
-			aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-
-			std::string albedoPath = "";
-			std::string normalPath = "";
-			std::string roughnessPath = "";
-			std::string emissivePath = "";
-
-			auto findAndReplace = [](std::string &data, std::string toSearch, std::string replaceStr)
-			{
-				// Get the first occurrence
-				size_t pos = data.find(toSearch);
-
-				// Repeat till end is reached
-				while (pos != std::string::npos)
-				{
-					// Replace this occurrence of Sub String
-					data.replace(pos, toSearch.size(), replaceStr);
-					// Get the next occurrence from the current position
-					pos = data.find(toSearch, pos + toSearch.size());
-				}
-			};
-
-			if (material->GetTextureCount(aiTextureType_DIFFUSE))
-			{
-				aiString path;
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
-				albedoPath = path.C_Str();
-				findAndReplace(albedoPath, "\\", "/");
-				albedoPath = "Resources/Textures/" + albedoPath;
-			}
-
-			if (material->GetTextureCount(aiTextureType_NORMALS))
-			{
-				aiString path;
-				material->GetTexture(aiTextureType_NORMALS, 0, &path);
-				normalPath = path.C_Str();
-				findAndReplace(normalPath, "\\", "/");
-				normalPath = "Resources/Textures/" + normalPath;
-			}
-
-			if (material->GetTextureCount(aiTextureType_SPECULAR))
-			{
-				aiString path;
-				material->GetTexture(aiTextureType_SPECULAR, 0, &path);
-				roughnessPath = path.C_Str();
-				findAndReplace(roughnessPath, "\\", "/");
-				roughnessPath = "Resources/Textures/" + roughnessPath;
-			}
-
-			if (material->GetTextureCount(aiTextureType_EMISSIVE))
-			{
-				aiString path;
-				material->GetTexture(aiTextureType_EMISSIVE, 0, &path);
-				emissivePath = path.C_Str();
-				findAndReplace(emissivePath, "\\", "/");
-				emissivePath = "Resources/Textures/" + emissivePath;
-			}
-
-			j["SubMeshes"].push_back(
-				{
-					{ "Name", mesh->mName.C_Str() },
-					{ "VertexOffset", vertexStart },
-					{ "VertexSize", vertices.size() * sizeof(Vertex) - vertexStart },
-					{ "IndexOffset", indexStart },
-					{ "IndexSize", indices.size() * sizeof(uint32_t) - indexStart },
-					{ "Min", { minSubMeshCorner.x, minSubMeshCorner.y, minSubMeshCorner.z } },
-					{ "Max", { maxSubMeshCorner.x, maxSubMeshCorner.y, maxSubMeshCorner.z } },
-					{ "Material",
-						{
-							{ "Alpha", 0},
-							{ "AlbedoFactor", { 1.0f, 1.0f, 1.0f } },
-							{ "MetallicFactor", 0.0f },
-							{ "RoughnessFactor", 0.f },
-							{ "EmissiveFactor", { 0.0f, 0.0f, 0.0f } },
-							{ "AlbedoTexture", albedoPath },
-							{ "NormalTexture", normalPath},
-							{ "MetallicTexture", "" },
-							{ "RoughnessTexture", roughnessPath },
-							{ "OcclusionTexture", "" },
-							{ "EmissiveTexture", emissivePath },
-							{ "DisplacementTexture", "" }
-						}
-					}
+					{ "name", shape.name },
+					{ "subMesh", j["subMeshes"].size() - 1 },
+					{ "material", shape.mesh.material_ids.front()}
 				});
 		}
 
-		j["Min"] = { minMeshCorner.x, minMeshCorner.y, minMeshCorner.z };
-		j["Max"] = { maxMeshCorner.x, maxMeshCorner.y, maxMeshCorner.z };
-		j["VertexSize"] = vertices.size() * sizeof(Vertex);
-		j["IndexSize"] = indices.size() * sizeof(uint32_t);
+		j["minCorner"] = { minMeshCorner.x, minMeshCorner.y, minMeshCorner.z };
+		j["maxCorner"] = { maxMeshCorner.x, maxMeshCorner.y, maxMeshCorner.z };
+		j["vertexSize"] = vertices.size() * sizeof(Vertex);
+		j["indexSize"] = indices.size() * sizeof(uint32_t);
 
-		std::ofstream dstFile(dstFileName, std::ios::out | std::ios::binary | std::ios::trunc);
+		std::ofstream dstFile(dstFileName + ".mesh", std::ios::out | std::ios::binary | std::ios::trunc);
 		dstFile.write((const char *)vertices.data(), vertices.size() * sizeof(Vertex));
 		dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint32_t));
 		dstFile.close();
 
-		std::ofstream infoFile(dstFileName.substr(0, dstFileName.find_last_of('.')) + ".mat", std::ios::out | std::ios::trunc);
+		std::ofstream infoFile(dstFileName + ".info", std::ios::out | std::ios::trunc);
 		infoFile << std::setw(4) << j << std::endl;
 		infoFile.close();
 	}

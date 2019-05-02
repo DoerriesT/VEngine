@@ -29,6 +29,7 @@ namespace VEngine
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
 		VKBuffer m_meshBuffer;
+		VKBuffer m_subMeshDataInfoBuffer;
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 

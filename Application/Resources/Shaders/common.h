@@ -1,5 +1,5 @@
 #ifndef TEXTURE_ARRAY_SIZE
-#define TEXTURE_ARRAY_SIZE (512)
+#define TEXTURE_ARRAY_SIZE (1024)
 #endif // TEXTURE_ARRAY_SIZE
 
 #ifndef PI
@@ -62,4 +62,11 @@ struct MaterialData
 	uint metalnessRoughnessTexture;
 	uint occlusionEmissiveTexture;
 	uint displacementTexture;
+};
+
+struct SubMeshInstanceData
+{
+	uint subMeshIndex;
+	uint transformIndex;
+	uint materialIndex;
 };

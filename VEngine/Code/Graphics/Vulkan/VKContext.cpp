@@ -265,7 +265,8 @@ namespace VEngine
 					&& supportedFeatures.textureCompressionBC
 					&& supportedFeatures.independentBlend
 					&& supportedFeatures.fragmentStoresAndAtomics
-					&& supportedFeatures.shaderStorageImageExtendedFormats)
+					&& supportedFeatures.shaderStorageImageExtendedFormats
+					&& supportedFeatures.multiDrawIndirect)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices = 
@@ -311,6 +312,7 @@ namespace VEngine
 			deviceFeatures.independentBlend = VK_TRUE;
 			deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 			deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
+			deviceFeatures.multiDrawIndirect = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
 

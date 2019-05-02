@@ -20,6 +20,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 	graph.addGraphicsPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", data.m_width, data.m_height,
 		[&](FrameGraph::PassBuilder builder)
 	{
+		builder.readIndirectBuffer(data.m_indirectBufferHandle);
 		builder.writeDepthStencil(data.m_depthImageHandle);
 		builder.writeColorAttachment(data.m_albedoImageHandle, OUT_ALBEDO);
 		builder.writeColorAttachment(data.m_normalImageHandle, OUT_NORMAL);
@@ -92,25 +93,34 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
+			VkWriteDescriptorSet descriptorWrites[3] = {};
 
-			// transform data
+			// instance data
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_transformDataBufferInfo;
+			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
 
-			// material data
+			// transform data
 			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_materialDataBufferInfo;
+			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
+
+			// material data
+			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[2].dstSet = descriptorSet;
+			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
@@ -149,22 +159,8 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
 		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
 
-		const uint32_t perPassPushConstsSize = offsetof(PushConsts, transformIndex);
-		const uint32_t perInstancePushConstsSize = sizeof(pushConsts) - perPassPushConstsSize;
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, perPassPushConstsSize, &pushConsts);
-
-		for (uint32_t i = 0; i < data.m_subMeshInstanceCount; ++i)
-		{
-			const SubMeshInstanceData &instance = data.m_subMeshInstances[i];
-			const SubMeshData &subMesh = data.m_subMeshData[instance.m_subMeshIndex];
-
-			pushConsts.transformIndex = instance.m_transformIndex;
-			pushConsts.materialIndex = instance.m_materialIndex;
-
-			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, perPassPushConstsSize, perInstancePushConstsSize, ((uint8_t *)&pushConsts) + perPassPushConstsSize);
-
-			vkCmdDrawIndexed(cmdBuf, subMesh.m_indexCount, 1, subMesh.m_baseIndex, subMesh.m_vertexOffset, 0);
-		}
+		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 	});
 }
