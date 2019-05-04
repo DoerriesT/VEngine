@@ -51,10 +51,10 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			glm::mat4 viewMatrix = cameraComponent.m_viewMatrix;
 			glm::mat4 projectionMatrix = cameraComponent.m_projectionMatrix;
-			glm::mat4 jitterMatrix = g_TAAEnabled ? 
-				glm::translate(glm::vec3(m_haltonX[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth, 
+			glm::mat4 jitterMatrix = g_TAAEnabled ?
+				glm::translate(glm::vec3(m_haltonX[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth,
 					m_haltonY[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowHeight,
-					0.0f)) 
+					0.0f))
 				: glm::mat4();
 
 			m_commonRenderData.m_time = 0.0f;
@@ -138,7 +138,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						glm::vec3 center = (aabb.m_max + aabb.m_min) * 0.5f;
 						glm::vec3 half = (aabb.m_max - aabb.m_min) * 0.5f;
 
-						auto cullAgainstPlanes = [](const glm::vec3 center, const glm::vec3 half,size_t count, const glm::vec4 *planes)
+						auto cullAgainstPlanes = [](const glm::vec3 center, const glm::vec3 half, size_t count, const glm::vec4 *planes)
 						{
 							for (size_t i = 0; i < count; ++i)
 							{
@@ -306,12 +306,12 @@ void VEngine::RenderSystem::destroyMaterials(uint32_t count, MaterialHandle *han
 	m_renderer->destroyMaterials(count, handles);
 }
 
-void VEngine::RenderSystem::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, AxisAlignedBoundingBox *aabbs, SubMeshHandle *handles)
+void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles)
 {
-	m_renderer->createSubMeshes(count, vertexSizes, vertexData, indexCounts, indexData, handles);
+	m_renderer->createSubMeshes(count, subMeshes, handles);
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		m_aabbs[handles[i]] = aabbs[i];
+		m_aabbs[handles[i]] = { subMeshes[i].m_minCorner, subMeshes[i].m_maxCorner };
 	}
 }
 

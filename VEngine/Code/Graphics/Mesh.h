@@ -5,11 +5,15 @@
 
 namespace VEngine
 {
+	typedef glm::vec3 VertexPosition;
+	typedef glm::vec3 VertexNormal;
+	typedef glm::vec2 VertexTexCoord;
+
 	struct Vertex
 	{
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec2 texCoord;
+		VertexPosition position;
+		VertexNormal normal;
+		VertexTexCoord texCoord;
 	};
 
 	struct Material
@@ -35,14 +39,13 @@ namespace VEngine
 
 	struct SubMesh
 	{
-		std::string m_name;
-		Material m_material;
-		uint32_t m_vertexOffset;
-		uint32_t m_vertexSize;
-		uint32_t m_indexOffset;
-		uint32_t m_indexSize;
+		glm::vec3 m_minCorner;
+		glm::vec3 m_maxCorner;
+		uint32_t m_vertexCount;
 		uint32_t m_indexCount;
-		glm::vec3 m_min;
-		glm::vec3 m_max;
+		uint8_t *m_positions;
+		uint8_t *m_normals;
+		uint8_t *m_texCoords;
+		uint32_t *m_indices;
 	};
 }

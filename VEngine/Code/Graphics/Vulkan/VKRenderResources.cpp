@@ -6,6 +6,7 @@
 #include "VKSyncPrimitiveAllocator.h"
 #include "VKPipelineCache.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Mesh.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -203,11 +204,11 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		m_materialBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
-	// mesh buffer
+	// vertex buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = RendererConsts::VERTEX_BUFFER_SIZE + RendererConsts::INDEX_BUFFER_SIZE;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferCreateInfo.size = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal) + sizeof(VertexTexCoord));
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 		bufferCreateInfo.queueFamilyIndexCount = 3;
 		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -215,13 +216,28 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_meshBuffer.create(bufferCreateInfo, allocCreateInfo);
+		m_vertexBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	// index buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = RendererConsts::MAX_INDICES * sizeof(uint32_t);
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_indexBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
 	// submeshdata info buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = RendererConsts::MAX_SUB_MESHES;
+		bufferCreateInfo.size = RendererConsts::MAX_SUB_MESHES * sizeof(SubMeshData);
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 		bufferCreateInfo.queueFamilyIndexCount = 3;

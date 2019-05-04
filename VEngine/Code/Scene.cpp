@@ -5,6 +5,7 @@
 #include <memory>
 #include "Utility/Utility.h"
 #include <random>
+#include <set>
 
 void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 {
@@ -80,50 +81,40 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 
 	// load mesh
 	{
-		const uint32_t vertexAreaSize = info["vertexSize"];
-		const uint32_t indexAreaSize = info["indexSize"];
-
 		const std::vector<char> meshData = Utility::readBinaryFile(info["meshFile"].get<std::string>().c_str());
 
 		const uint32_t subMeshCount = static_cast<uint32_t>(info["subMeshes"].size());
-		std::vector<uint32_t> vertexSizes;
-		std::vector<uint8_t*> vertexData;
-		std::vector<uint32_t> indexCounts;
-		std::vector<uint32_t*> indexData;
-		std::vector<AxisAlignedBoundingBox> aabbs;
+		std::vector<SubMesh> subMeshes;
 		auto &subMeshHandles = m_meshes[filepath];
 
-		vertexSizes.reserve(subMeshCount);
-		vertexData.reserve(subMeshCount);
-		indexCounts.reserve(subMeshCount);
-		indexData.reserve(subMeshCount);
-		aabbs.reserve(subMeshCount);
+		subMeshes.reserve(subMeshCount);
 		subMeshHandles.resize(subMeshCount);
 
 		for (auto &subMeshInfo : info["subMeshes"])
 		{
-			uint32_t vOffset = subMeshInfo["vertexOffset"].get<uint32_t>();
-			uint32_t vSize = subMeshInfo["vertexSize"].get<uint32_t>();
-			uint8_t *vData = (uint8_t *)meshData.data() + vOffset;
+			size_t dataOffset = subMeshInfo["dataOffset"].get<size_t>();
 
-			uint32_t iOffset = subMeshInfo["indexOffset"].get<uint32_t>() + vertexAreaSize;
-			uint32_t iCount = subMeshInfo["indexSize"].get<uint32_t>() / 4;
-			uint32_t *iData = (uint32_t*)(meshData.data() + iOffset);
+			SubMesh subMesh;
+			subMesh.m_minCorner = { subMeshInfo["minCorner"][0], subMeshInfo["minCorner"][1], subMeshInfo["minCorner"][2] };
+			subMesh.m_maxCorner = { subMeshInfo["maxCorner"][0], subMeshInfo["maxCorner"][1], subMeshInfo["maxCorner"][2] };
+			subMesh.m_vertexCount = subMeshInfo["vertexCount"].get<uint32_t>();
+			subMesh.m_indexCount = subMeshInfo["indexCount"].get<uint32_t>();
 
-			AxisAlignedBoundingBox aabb =
-			{
-				glm::vec3(subMeshInfo["minCorner"][0], subMeshInfo["minCorner"][1], subMeshInfo["minCorner"][2]),
-				glm::vec3(subMeshInfo["maxCorner"][0], subMeshInfo["maxCorner"][1], subMeshInfo["maxCorner"][2])
-			};
+			subMesh.m_positions = (uint8_t *)meshData.data() + dataOffset;
+			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec3);
 
-			vertexSizes.push_back(vSize);
-			vertexData.push_back(vData);
-			indexCounts.push_back(iCount);
-			indexData.push_back(iData);
-			aabbs.push_back(aabb);
+			subMesh.m_normals = (uint8_t *)meshData.data() + dataOffset;
+			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec3);
+
+			subMesh.m_texCoords = (uint8_t *)meshData.data() + dataOffset;
+			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec2);
+
+			subMesh.m_indices = (uint32_t*)(meshData.data() + dataOffset);
+
+			subMeshes.push_back(subMesh);
 		}
 
-		renderSystem.createSubMeshes(subMeshCount, vertexSizes.data(), vertexData.data(), indexCounts.data(), indexData.data(), aabbs.data(), subMeshHandles.data());
+		renderSystem.createSubMeshes(subMeshCount, subMeshes.data(), subMeshHandles.data());
 	}
 
 	// create submesh instances

@@ -21,7 +21,7 @@ VkResult VEngine::VKMemoryAllocator::VKMemoryPool::alloc(VkDeviceSize size, VkDe
 	// search existing blocks and try to allocate
 	for (size_t blockIndex = 0; blockIndex < MAX_BLOCKS; ++blockIndex)
 	{
-		if (allocFromBlock(blockIndex, size, alignment, allocationInfo))
+		if (m_blockSizes[blockIndex] >= size && allocFromBlock(blockIndex, size, alignment, allocationInfo))
 		{
 			return VK_SUCCESS;
 		}
@@ -47,7 +47,7 @@ VkResult VEngine::VKMemoryAllocator::VKMemoryPool::alloc(VkDeviceSize size, VkDe
 		}
 
 		VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		memoryAllocateInfo.allocationSize = m_preferredBlockSize;
+		memoryAllocateInfo.allocationSize = size + alignment > m_preferredBlockSize ? Utility::alignUp(size + alignment, VkDeviceSize(1024 * 1024)) : m_preferredBlockSize;
 		memoryAllocateInfo.memoryTypeIndex = m_memoryType;
 
 		if (vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_memory[blockIndex]) != VK_SUCCESS)
@@ -177,8 +177,21 @@ void VEngine::VKMemoryAllocator::VKMemoryPool::destroy()
 
 bool VEngine::VKMemoryAllocator::VKMemoryPool::allocFromBlock(size_t blockIndex, VkDeviceSize size, VkDeviceSize alignment, VKAllocationInfo &allocationInfo)
 {
+	// check if there is enough free space
+	{
+		uint32_t freeSpace;
+		uint32_t usedSpace;
+		uint32_t wastedSpace;
+		m_allocators[blockIndex]->getFreeUsedWastedSizes(freeSpace, usedSpace, wastedSpace);
+
+		if (size > freeSpace)
+		{
+			return false;
+		}
+	}
+
 	uint32_t offset;
-	if (m_blockSizes[blockIndex] > size &&  m_allocators[blockIndex]->alloc(static_cast<uint32_t>(size), static_cast<uint32_t>(alignment), offset, allocationInfo.m_poolData))
+	if (m_blockSizes[blockIndex] >= size && m_allocators[blockIndex]->alloc(static_cast<uint32_t>(size), static_cast<uint32_t>(alignment), offset, allocationInfo.m_poolData))
 	{
 		allocationInfo.m_memory = m_memory[blockIndex];
 		allocationInfo.m_offset = offset;

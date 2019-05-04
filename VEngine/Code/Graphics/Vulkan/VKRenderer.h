@@ -21,6 +21,7 @@ namespace VEngine
 	struct RenderData;
 	struct LightData;
 	struct Material;
+	struct SubMesh;
 
 	class VKRenderer
 	{
@@ -33,7 +34,7 @@ namespace VEngine
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
-		void createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles);
+		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void updateTextureData();
 

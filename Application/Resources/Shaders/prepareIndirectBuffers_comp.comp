@@ -1,0 +1,58 @@
+#version 450
+
+#include "prepareIndirectBuffers_bindings.h"
+
+layout(set = INSTANCE_DATA_SET, binding = INSTANCE_DATA_BINDING) readonly buffer INSTANCE_DATA 
+{
+    SubMeshInstanceData uInstanceData[];
+};
+
+layout(set = SUB_MESH_DATA_SET, binding = SUB_MESH_DATA_BINDING) readonly buffer SUB_MESH_DATA 
+{
+    SubMeshData uSubMeshData[];
+};
+
+layout(set = OPAQUE_INDIRECT_BUFFER_SET, binding = OPAQUE_INDIRECT_BUFFER_BINDING) buffer OPAQUE_INDIRECT_BUFFER 
+{
+    DrawIndexedIndirectCommand uOpaqueIndirectCommands[];
+};
+
+layout(set = MASKED_INDIRECT_BUFFER_SET, binding = MASKED_INDIRECT_BUFFER_BINDING) buffer MASKED_INDIRECT_BUFFER 
+{
+    DrawIndexedIndirectCommand uMaskedIndirectCommands[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main() 
+{
+	uint index = gl_GlobalInvocationID.x;
+	
+	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount)
+	{
+		return;
+	}
+	
+	SubMeshData subMeshData = uSubMeshData[uInstanceData[index].subMeshIndex];
+	
+	DrawIndexedIndirectCommand cmd;
+	cmd.indexCount = subMeshData.indexCount;
+	cmd.instanceCount = 1;
+	cmd.firstIndex = subMeshData.firstIndex;
+	cmd.vertexOffset = subMeshData.vertexOffset;
+	cmd.firstInstance = index;
+	
+	if (index < uPushConsts.opaqueCount)
+	{
+		uOpaqueIndirectCommands[index] = cmd;
+	}
+	else
+	{
+		uMaskedIndirectCommands[index - uPushConsts.opaqueCount] = cmd;
+	}
+}

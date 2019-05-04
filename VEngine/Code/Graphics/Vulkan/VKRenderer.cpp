@@ -38,7 +38,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_renderResources = std::make_unique<VKRenderResources>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
-	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_meshBuffer, m_renderResources->m_subMeshDataInfoBuffer);
+	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer);
 	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
@@ -645,9 +645,9 @@ void VEngine::VKRenderer::destroyMaterials(uint32_t count, MaterialHandle *handl
 	m_materialManager->destroyMaterials(count, handles);
 }
 
-void VEngine::VKRenderer::createSubMeshes(uint32_t count, uint32_t *vertexSizes, const uint8_t *const*vertexData, uint32_t *indexCounts, const uint32_t *const*indexData, SubMeshHandle *handles)
+void VEngine::VKRenderer::createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles)
 {
-	m_meshManager->createSubMeshes(count, vertexSizes, vertexData, indexCounts, indexData, handles);
+	m_meshManager->createSubMeshes(count, subMeshes, handles);
 }
 
 void VEngine::VKRenderer::destroySubMeshes(uint32_t count, SubMeshHandle *handles)

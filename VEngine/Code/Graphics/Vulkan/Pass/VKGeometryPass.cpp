@@ -34,13 +34,15 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/geometry_vert.spv");
 			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
 
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 3;
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[1] = { 1, sizeof(VertexNormal), VK_VERTEX_INPUT_RATE_VERTEX };
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[2] = { 2, sizeof(VertexTexCoord), VK_VERTEX_INPUT_RATE_VERTEX };
 
 			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 3;
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) };
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal), };
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord), };
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 1, VK_FORMAT_R32G32B32_SFLOAT, 0 };
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 };
 
 			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
@@ -145,11 +147,13 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_meshBuffer.getBuffer(), RendererConsts::VERTEX_BUFFER_SIZE, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		VkBuffer vertexBuffer = data.m_renderResources->m_meshBuffer.getBuffer();
-		VkDeviceSize vertexOffset = 0;
-		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &vertexOffset);
+		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
+		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer, vertexBuffer };
+		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal))};
+
+		vkCmdBindVertexBuffers(cmdBuf, 0, 3, vertexBuffers, vertexBufferOffsets);
 
 		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_commonRenderData->m_viewMatrix);
 

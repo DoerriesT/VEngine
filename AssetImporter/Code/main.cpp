@@ -156,93 +156,119 @@ int main()
 
 		j["meshFile"] = dstFileName + ".mesh";
 		j["materialLibraryFile"] = dstFileName + ".matlib";
-		j["subMeshCount"] = objShapes.size();
 		j["subMeshes"] = nlohmann::json::array();
 		j["subMeshInstances"] = nlohmann::json::array();
-
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
 
 		glm::vec3 minMeshCorner = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 maxMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
 
+		std::ofstream dstFile(dstFileName + ".mesh", std::ios::out | std::ios::binary | std::ios::trunc);
+
+		size_t fileOffset = 0;
 		size_t subMeshIndex = 0;
 		for (const auto &shape : objShapes)
 		{
-			std::cout << "Processing submesh #" << subMeshIndex++ << std::endl;
+			// sort faces by materials to split up submeshes if multiple materials are used on a single submesh
+			std::map<size_t, std::vector<tinyobj::index_t>> materialToIndex;
 
-			glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
-			glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
-			size_t vertexStart = vertices.size() * sizeof(Vertex);
-			size_t indexStart = indices.size() * sizeof(uint32_t);
-			uint32_t firstIndex = vertices.size();
-
-			std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
-
-			for (const auto &index : shape.mesh.indices)
+			for (size_t i = 0; i < shape.mesh.indices.size(); i += 3)
 			{
-				Vertex vertex;
-
-				vertex.position.x = objAttrib.vertices[index.vertex_index * 3 + 0];
-				vertex.position.y = objAttrib.vertices[index.vertex_index * 3 + 1];
-				vertex.position.z = objAttrib.vertices[index.vertex_index * 3 + 2];
-
-				vertex.normal.x = objAttrib.normals[index.normal_index * 3 + 0];
-				vertex.normal.y = objAttrib.normals[index.normal_index * 3 + 1];
-				vertex.normal.z = objAttrib.normals[index.normal_index * 3 + 2];
-
-				if (objAttrib.texcoords.size() > index.texcoord_index * 2 + 1)
-				{
-					vertex.texCoord.x = objAttrib.texcoords[index.texcoord_index * 2 + 0];
-					vertex.texCoord.y = 1.0f - objAttrib.texcoords[index.texcoord_index * 2 + 1];
-				}
-				else
-				{
-					vertex.texCoord.x = 0.0f;
-					vertex.texCoord.y = 0.0f;
-				}
-
-				// find min/max corners
-				minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
-				maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
-				minMeshCorner = glm::min(minMeshCorner, vertex.position);
-				maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
-
-				if (vertexToIndex.count(vertex) == 0)
-				{
-					vertexToIndex[vertex] = static_cast<uint32_t>(vertices.size()) - firstIndex;
-					vertices.push_back(vertex);
-				}
-				indices.push_back(vertexToIndex[vertex]);
+				auto &vec = materialToIndex[shape.mesh.material_ids[i / 3]];
+				vec.push_back(shape.mesh.indices[i]);
+				vec.push_back(shape.mesh.indices[i + 1]);
+				vec.push_back(shape.mesh.indices[i + 2]);
 			}
 
-			j["subMeshes"].push_back(
-				{
-					{ "name", shape.name },
-					{ "vertexOffset", vertexStart },
-					{ "vertexSize", vertices.size() * sizeof(Vertex) - vertexStart },
-					{ "indexOffset", indexStart },
-					{ "indexSize", indices.size() * sizeof(uint32_t) - indexStart },
-					{ "minCorner", { minSubMeshCorner.x, minSubMeshCorner.y, minSubMeshCorner.z } },
-					{ "maxCorner", { maxSubMeshCorner.x, maxSubMeshCorner.y, maxSubMeshCorner.z } }
-				});
+			// iterate over all index lists of this  submesh.
+			// in most cases this will only be one list except if per-face materials are present in the mesh
+			for (const auto &materialIndicesPair : materialToIndex)
+			{
+				std::cout << "Processing submesh #" << subMeshIndex++ << std::endl;
 
-			j["subMeshInstances"].push_back(
+				glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
+				glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
+
+				std::vector<glm::vec3> positions;
+				std::vector<glm::vec3> normals;
+				std::vector<glm::vec2> texCoords;
+				std::vector<uint32_t> indices;
+
+				std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
+
+				// iterate over index list and build index/vertex data for this submesh
+				for (const auto &index : materialIndicesPair.second)
 				{
-					{ "name", shape.name },
-					{ "subMesh", j["subMeshes"].size() - 1 },
-					{ "material", shape.mesh.material_ids.front()}
-				});
+					Vertex vertex;
+
+					vertex.position.x = objAttrib.vertices[index.vertex_index * 3 + 0];
+					vertex.position.y = objAttrib.vertices[index.vertex_index * 3 + 1];
+					vertex.position.z = objAttrib.vertices[index.vertex_index * 3 + 2];
+
+					vertex.normal.x = objAttrib.normals[index.normal_index * 3 + 0];
+					vertex.normal.y = objAttrib.normals[index.normal_index * 3 + 1];
+					vertex.normal.z = objAttrib.normals[index.normal_index * 3 + 2];
+
+					if (objAttrib.texcoords.size() > index.texcoord_index * 2 + 1)
+					{
+						vertex.texCoord.x = objAttrib.texcoords[index.texcoord_index * 2 + 0];
+						vertex.texCoord.y = 1.0f - objAttrib.texcoords[index.texcoord_index * 2 + 1];
+					}
+					else
+					{
+						vertex.texCoord.x = 0.0f;
+						vertex.texCoord.y = 0.0f;
+					}
+
+					// find min/max corners
+					minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
+					maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
+					minMeshCorner = glm::min(minMeshCorner, vertex.position);
+					maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
+
+					// if we havent encountered this vertex before, add it to the map
+					if (vertexToIndex.count(vertex) == 0)
+					{
+						vertexToIndex[vertex] = static_cast<uint32_t>(positions.size());
+
+						positions.push_back(vertex.position);
+						normals.push_back(vertex.normal);
+						texCoords.push_back(vertex.texCoord);
+					}
+					indices.push_back(vertexToIndex[vertex]);
+				}
+				
+				dstFile.write((const char *)positions.data(), positions.size() * sizeof(glm::vec3));
+				dstFile.write((const char *)normals.data(), normals.size() * sizeof(glm::vec3));
+				dstFile.write((const char *)texCoords.data(), texCoords.size() * sizeof(glm::vec2));
+				dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint32_t));
+
+				j["subMeshes"].push_back(
+					{
+						{ "name", shape.name },
+						{ "dataOffset", fileOffset },
+						{ "vertexCount", positions.size() },
+						{ "indexCount", indices.size() },
+						{ "minCorner", { minSubMeshCorner.x, minSubMeshCorner.y, minSubMeshCorner.z } },
+						{ "maxCorner", { maxSubMeshCorner.x, maxSubMeshCorner.y, maxSubMeshCorner.z } }
+					});
+
+				j["subMeshInstances"].push_back(
+					{
+						{ "name", shape.name },
+						{ "subMesh", j["subMeshes"].size() - 1 },
+						{ "material", materialIndicesPair.first }
+					});
+
+				fileOffset += positions.size() * sizeof(glm::vec3);
+				fileOffset += normals.size() * sizeof(glm::vec3);
+				fileOffset += texCoords.size() * sizeof(glm::vec2);
+				fileOffset += indices.size() * sizeof(uint32_t);
+			}
 		}
 
 		j["minCorner"] = { minMeshCorner.x, minMeshCorner.y, minMeshCorner.z };
 		j["maxCorner"] = { maxMeshCorner.x, maxMeshCorner.y, maxMeshCorner.z };
-		j["vertexSize"] = vertices.size() * sizeof(Vertex);
-		j["indexSize"] = indices.size() * sizeof(uint32_t);
-
-		std::ofstream dstFile(dstFileName + ".mesh", std::ios::out | std::ios::binary | std::ios::trunc);
-		dstFile.write((const char *)vertices.data(), vertices.size() * sizeof(Vertex));
-		dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint32_t));
+		
 		dstFile.close();
 
 		std::ofstream infoFile(dstFileName + ".info", std::ios::out | std::ios::trunc);
