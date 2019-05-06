@@ -18,6 +18,11 @@ namespace VEngine
 
 	void VKContext::init(GLFWwindow *windowHandle)
 	{
+		if (volkInitialize() != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to initialize volk!", EXIT_FAILURE);
+		}
+
 		// create instance
 		{
 			VkApplicationInfo appInfo{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -50,6 +55,8 @@ namespace VEngine
 				Utility::fatalExit("Failed to create instance!", -1);
 			}
 		}
+
+		volkLoadInstance(m_instance);
 
 		// create debug callback
 		if (g_vulkanDebugCallBackEnabled)
@@ -294,6 +301,8 @@ namespace VEngine
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_computeFamily, 0, &m_computeQueue);
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_transferFamily, 0, &m_transferQueue);
 		}
+
+		volkLoadDevice(m_device);
 
 		// create command pools
 		{
