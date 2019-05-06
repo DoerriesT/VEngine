@@ -14,4 +14,5 @@ namespace VEngine
 	GlobalConst<unsigned int> g_shadowAtlasMinTileSize = 256;
 	GlobalConst<unsigned int> g_shadowCascadeSize = 2048;
 	GlobalConst<unsigned int> g_shadowCascadeCount = 4;
+	GlobalConst<bool> g_vulkanDebugCallBackEnabled = true;
 }

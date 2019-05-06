@@ -47,7 +47,6 @@ namespace VEngine
 
 		void init(GLFWwindow *windowHandle);
 		void shutdown();
-		void querySupportedFormats();
 	};
 
 	extern VKContext g_context;

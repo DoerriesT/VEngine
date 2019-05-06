@@ -3,17 +3,11 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
 #include <set>
-
-#ifndef ENABLE_VALIDATION_LAYERS
-#define ENABLE_VALIDATION_LAYERS 1
-#endif // ENABLE_VALIDATION_LAYERS
+#include "GlobalVar.h"
 
 namespace VEngine
 {
 	VKContext g_context = {};
-
-	static const char* const validationLayers[] = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_assistant_layer"};
-	static const char* const deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
 	{
@@ -24,39 +18,9 @@ namespace VEngine
 
 	void VKContext::init(GLFWwindow *windowHandle)
 	{
-#if ENABLE_VALIDATION_LAYERS
-		// validation layers
-		{
-			uint32_t layerCount;
-			vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-			std::vector<VkLayerProperties> availableLayers(layerCount);
-			vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-			for (const char* layerName : validationLayers)
-			{
-				bool layerFound = false;
-
-				for (const auto& layerProperties : availableLayers)
-				{
-					if (strcmp(layerName, layerProperties.layerName) == 0)
-					{
-						layerFound = true;
-						break;
-					}
-				}
-
-				if (!layerFound)
-				{
-					Utility::fatalExit("Validation layers requested, but not available!", -1);
-				}
-			}
-		}
-#endif // ENABLE_VALIDATION_LAYERS
-
 		// create instance
 		{
-			VkApplicationInfo appInfo = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+			VkApplicationInfo appInfo{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
 			appInfo.pApplicationName = "Vulkan";
 			appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 			appInfo.pEngineName = "No Engine";
@@ -69,22 +33,17 @@ namespace VEngine
 			glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 			std::vector<const char*> extensions(glfwExtensions, glfwExtensions + static_cast<size_t>(glfwExtensionCount));
 
-#if ENABLE_VALIDATION_LAYERS
-			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-#endif // ENABLE_VALIDATION_LAYERS
+			if (g_vulkanDebugCallBackEnabled)
+			{
+				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+			}
 
-
-			VkInstanceCreateInfo createInfo = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+			VkInstanceCreateInfo createInfo{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
 			createInfo.pApplicationInfo = &appInfo;
+			createInfo.enabledLayerCount = 0;
+			createInfo.ppEnabledLayerNames = nullptr;
 			createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 			createInfo.ppEnabledExtensionNames = extensions.data();
-
-#if ENABLE_VALIDATION_LAYERS
-			createInfo.enabledLayerCount = static_cast<uint32_t>(sizeof(validationLayers) / sizeof(validationLayers[0]));
-			createInfo.ppEnabledLayerNames = validationLayers;
-#else
-			createInfo.enabledLayerCount = 0;
-#endif // ENABLE_VALIDATION_LAYERS
 
 			if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
 			{
@@ -92,11 +51,11 @@ namespace VEngine
 			}
 		}
 
-#if ENABLE_VALIDATION_LAYERS
 		// create debug callback
+		if (g_vulkanDebugCallBackEnabled)
 		{
-			VkDebugReportCallbackCreateInfoEXT createInfo = { VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT };
-			createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+			VkDebugReportCallbackCreateInfoEXT createInfo{ VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT };
+			createInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
 			createInfo.pfnCallback = debugCallback;
 
 			auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkCreateDebugReportCallbackEXT");
@@ -105,7 +64,6 @@ namespace VEngine
 				Utility::fatalExit("Failed to set up debug callback!", -1);
 			}
 		}
-#endif // ENABLE_VALIDATION_LAYERS
 
 		// create window surface
 		{
@@ -114,6 +72,8 @@ namespace VEngine
 				Utility::fatalExit("Failed to create window surface!", -1);
 			}
 		}
+
+		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 		VKSwapChainSupportDetails swapChainSupportDetails;
 
@@ -269,10 +229,10 @@ namespace VEngine
 					&& supportedFeatures.multiDrawIndirect)
 				{
 					m_physicalDevice = physicalDevice;
-					m_queueFamilyIndices = 
-					{ 
-						static_cast<uint32_t>(graphicsFamilyIndex),  
-						static_cast<uint32_t>(computeFamilyIndex),  
+					m_queueFamilyIndices =
+					{
+						static_cast<uint32_t>(graphicsFamilyIndex),
+						static_cast<uint32_t>(computeFamilyIndex),
 						static_cast<uint32_t>(transferFamilyIndex),
 						static_cast<bool>(graphicsFamilyPresentable),
 						static_cast<bool>(computeFamilyPresentable)
@@ -293,12 +253,12 @@ namespace VEngine
 		// create logical device and retrieve queues
 		{
 			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-			std::set<uint32_t> uniqueQueueFamilies = { m_queueFamilyIndices.m_graphicsFamily, m_queueFamilyIndices.m_computeFamily, m_queueFamilyIndices.m_transferFamily };
+			std::set<uint32_t> uniqueQueueFamilies{ m_queueFamilyIndices.m_graphicsFamily, m_queueFamilyIndices.m_computeFamily, m_queueFamilyIndices.m_transferFamily };
 
 			float queuePriority = 1.0f;
 			for (uint32_t queueFamily : uniqueQueueFamilies)
 			{
-				VkDeviceQueueCreateInfo queueCreateInfo = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+				VkDeviceQueueCreateInfo queueCreateInfo{ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
 				queueCreateInfo.queueFamilyIndex = queueFamily;
 				queueCreateInfo.queueCount = 1;
 				queueCreateInfo.pQueuePriorities = &queuePriority;
@@ -306,7 +266,7 @@ namespace VEngine
 				queueCreateInfos.push_back(queueCreateInfo);
 			}
 
-			VkPhysicalDeviceFeatures deviceFeatures = {};
+			VkPhysicalDeviceFeatures deviceFeatures{};
 			deviceFeatures.samplerAnisotropy = VK_TRUE;
 			deviceFeatures.textureCompressionBC = VK_TRUE;
 			deviceFeatures.independentBlend = VK_TRUE;
@@ -316,19 +276,14 @@ namespace VEngine
 
 			m_enabledFeatures = deviceFeatures;
 
-			VkDeviceCreateInfo createInfo = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+			VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 			createInfo.pQueueCreateInfos = queueCreateInfos.data();
+			createInfo.enabledLayerCount = 0;
+			createInfo.ppEnabledLayerNames = nullptr;
 			createInfo.pEnabledFeatures = &deviceFeatures;
 			createInfo.enabledExtensionCount = static_cast<uint32_t>(sizeof(deviceExtensions) / sizeof(deviceExtensions[0]));
 			createInfo.ppEnabledExtensionNames = deviceExtensions;
-
-#if ENABLE_VALIDATION_LAYERS
-			createInfo.enabledLayerCount = static_cast<uint32_t>(sizeof(validationLayers) / sizeof(validationLayers[0]));
-			createInfo.ppEnabledLayerNames = validationLayers;
-#else
-			createInfo.enabledLayerCount = 0;
-#endif // ENABLE_VALIDATION_LAYERS
 
 			if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 			{
@@ -342,7 +297,7 @@ namespace VEngine
 
 		// create command pools
 		{
-			VkCommandPoolCreateInfo graphicsPoolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+			VkCommandPoolCreateInfo graphicsPoolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 			graphicsPoolInfo.queueFamilyIndex = m_queueFamilyIndices.m_graphicsFamily;
 			graphicsPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
@@ -351,7 +306,7 @@ namespace VEngine
 				Utility::fatalExit("Failed to create graphics command pool!", -1);
 			}
 
-			VkCommandPoolCreateInfo computePoolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+			VkCommandPoolCreateInfo computePoolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 			computePoolInfo.queueFamilyIndex = m_queueFamilyIndices.m_computeFamily;
 
 			if (vkCreateCommandPool(m_device, &computePoolInfo, nullptr, &m_computeCommandPool) != VK_SUCCESS)
@@ -362,7 +317,7 @@ namespace VEngine
 
 		// create semaphores
 		{
-			VkSemaphoreCreateInfo semaphoreInfo = {};
+			VkSemaphoreCreateInfo semaphoreInfo{};
 			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS
@@ -384,35 +339,22 @@ namespace VEngine
 		}
 
 		// create allocator
-		m_allocator.init(m_device, m_physicalDevice);	
+		m_allocator.init(m_device, m_physicalDevice);
 	}
 
 	void VKContext::shutdown()
 	{
 		vkDestroyDevice(m_device, nullptr);
 
-#if ENABLE_VALIDATION_LAYERS
+		if (g_vulkanDebugCallBackEnabled)
+		{
 			if (auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT"))
 			{
 				func(m_instance, m_debugCallback, nullptr);
 			}
-#endif // ENABLE_VALIDATION_LAYERS
+		}
 
 		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 		vkDestroyInstance(m_instance, nullptr);
-	}
-
-	void VKContext::querySupportedFormats()
-	{
-		for (size_t i = 1; i <= VK_FORMAT_ASTC_12x12_SRGB_BLOCK; ++i)
-		{
-			VkFormatProperties formatProps;
-			vkGetPhysicalDeviceFormatProperties(g_context.m_physicalDevice, VkFormat(i), &formatProps);
-			if (formatProps.optimalTilingFeatures == 0)
-			{
-				printf("%d\n", (uint32_t)i);
-			}
-		}
-		
 	}
 }
