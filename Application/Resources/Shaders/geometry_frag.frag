@@ -67,7 +67,7 @@ void main()
 #else
 			vec3 albedoTexSample = texture(uTextures[albedoTextureIndex - 1], vTexCoord).rgb;
 #endif // ALPHA_MASK_ENABLED
-			albedo *= albedoTexSample.rgb;
+			albedo = albedoTexSample.rgb;
 		}
 		oAlbedo.rgb = albedo;
 	}
@@ -79,7 +79,10 @@ void main()
 		if (normalTextureIndex != 0)
 		{
 			mat3 tbn = calculateTBN(normal, vWorldPos, vTexCoord);
-			normal = normalize(tbn * (texture(uTextures[normalTextureIndex - 1], vTexCoord).xyz * 2.0 - 1.0));
+			vec3 tangentSpaceNormal;
+			tangentSpaceNormal.xy = texture(uTextures[normalTextureIndex - 1], vTexCoord).xy * 2.0 - 1.0;
+			tangentSpaceNormal.z = sqrt(1 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
+			normal = normalize(tbn * tangentSpaceNormal);
 		}
 		oNormalEmissive.xyz = normal;
 	}
@@ -91,7 +94,7 @@ void main()
 		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
 		if (metalnessTextureIndex != 0)
 		{
-			metalnessRoughnessOcclusion.x *= texture(uTextures[metalnessTextureIndex - 1], vTexCoord).x;
+			metalnessRoughnessOcclusion.x = texture(uTextures[metalnessTextureIndex - 1], vTexCoord).z;
 		}
 	}
 	
@@ -100,7 +103,7 @@ void main()
 		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
 		if (roughnessTextureIndex != 0)
 		{
-			metalnessRoughnessOcclusion.y *= texture(uTextures[roughnessTextureIndex - 1], vTexCoord).x;
+			metalnessRoughnessOcclusion.y = texture(uTextures[roughnessTextureIndex - 1], vTexCoord).y;
 		}
 	}
 	
@@ -109,7 +112,7 @@ void main()
 		uint occlusionTextureIndex = (materialData.occlusionEmissiveTexture & 0xFFFF0000) >> 16;
 		if (occlusionTextureIndex != 0)
 		{
-			metalnessRoughnessOcclusion.z *= texture(uTextures[occlusionTextureIndex - 1], vTexCoord).x;
+			metalnessRoughnessOcclusion.z = texture(uTextures[occlusionTextureIndex - 1], vTexCoord).x;
 		}
 	}
 	

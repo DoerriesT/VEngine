@@ -268,12 +268,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
-	// draw opaque alpha masked geometry to gbuffer
+	// draw alpha masked geometry to gbuffer
 	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
 	maskedGeometryPassData.m_drawCount = renderData.m_maskedSubMeshInstanceDataCount;
-	maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
 	maskedGeometryPassData.m_alphaMasked = true;
-
+	maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
+	
 	if (renderData.m_maskedSubMeshInstanceDataCount)
 	{
 		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);

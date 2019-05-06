@@ -21,7 +21,6 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
 		auto getTextureHandle = [&renderSystem, this](const std::string &filepath) -> uint32_t
 		{
-			return 0;
 			if (filepath.empty())
 			{
 				return 0;
@@ -60,7 +59,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 		{
 			Material material;
 			material.m_alpha = Material::Alpha(mat["alphaMode"].get<uint32_t>());
-			material.m_albedoFactor = glm::vec3(c(e), c(e), c(e));// glm::vec3(mat["albedo"][0], mat["albedo"][1], mat["albedo"][2]);
+			material.m_albedoFactor = glm::vec3(mat["albedo"][0], mat["albedo"][1], mat["albedo"][2]);
 			material.m_metallicFactor = mat["metalness"];
 			material.m_roughnessFactor = mat["roughness"];
 			material.m_emissiveFactor = glm::vec3(mat["emissive"][0], mat["emissive"][1], mat["emissive"][2]);

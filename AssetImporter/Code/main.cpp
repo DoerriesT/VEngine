@@ -115,6 +115,8 @@ void createMaterialLibrary(const std::vector<tinyobj::material_t> &objMaterials,
 	infoFile.close();
 }
 
+static bool invertHandedness = true;
+
 int main()
 {
 	while (true)
@@ -211,7 +213,11 @@ int main()
 					if (objAttrib.texcoords.size() > index.texcoord_index * 2 + 1)
 					{
 						vertex.texCoord.x = objAttrib.texcoords[index.texcoord_index * 2 + 0];
-						vertex.texCoord.y = 1.0f - objAttrib.texcoords[index.texcoord_index * 2 + 1];
+						vertex.texCoord.y = objAttrib.texcoords[index.texcoord_index * 2 + 1];
+						if (invertHandedness)
+						{
+							vertex.texCoord.y = 1.0f - vertex.texCoord.y;
+						}
 					}
 					else
 					{

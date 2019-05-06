@@ -1,0 +1,1709 @@
+{
+    "count": 71,
+    "materials": [
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Cloth_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Cloth",
+            "normalTexture": "Resources/Textures/Bistro/Cloth_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Cloth_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/CookieJar_Cookies_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "CookieJar_Cookies",
+            "normalTexture": "Resources/Textures/Bistro/CookieJar_Cookies_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/CookieJar_Cookies_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Cutlery_chrome_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Cutlery_chrome",
+            "normalTexture": "Resources/Textures/Bistro/Cutlery_chrome_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Cutlery_chrome_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Cutlery_details_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Cutlery_details",
+            "normalTexture": "Resources/Textures/Bistro/Cutlery_details_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Cutlery_details_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Bistro_Main_Door_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Bistro_Main_Door.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Bistro_Main_Door_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Bistro_Main_Door_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Concrete_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Concrete.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Concrete_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Concrete_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Concrete1_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Concrete1.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Concrete1_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Concrete1_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Concrete_Grooved_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Concrete_Grooved.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Concrete_Grooved_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Concrete_Grooved_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Concrete_Yellow_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Concrete_Yellow.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Concrete_Yellow_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Concrete_Yellow_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Glass_Exterior_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Glass_Exterior.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Glass_Exterior_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Glass_Exterior_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Brushed_Metal_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Brushed_Metal",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Brushed_Metal_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Brushed_Metal_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Floor_Tile_Hexagonal_BLENDSHADER_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Floor_Tile_Hexagonal_BLENDSHADER",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Floor_Tile_Hexagonal_BLENDSHADER_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Floor_Tile_Hexagonal_BLENDSHADER_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Frozen_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Frozen_Glass",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Frozen_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Frozen_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Grid",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid1_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Grid1",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid1_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Grid1_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Material_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Material",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Material_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Material_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Bartrim_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Paris_Bartrim",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Bartrim_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Bartrim_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Lantern_0_BaseColor.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Paris_Lantern",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Lantern_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Paris_Lantern_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Plaster",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster2_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Plaster2",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster2_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster2_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_Red_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Plaster_Red",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_Red_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Plaster_Red_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_White_Plastic_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_White_Plastic",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_White_Plastic_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_White_Plastic_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wood_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Wood",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wood_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wood_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wooden_stuco_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Interior_01_Wooden_stuco",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wooden_stuco_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Wooden_stuco_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Wood_Painted3.001",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_1_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "MASTER_Wood_Painted3.002",
+            "normalTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_1_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/MASTER_Wood_Painted3_1_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Metal_Bronze_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Metal_Bronze_01",
+            "normalTexture": "Resources/Textures/Bistro/Metal_Bronze_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Metal_Bronze_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Metal_Chrome1_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Metal_Chrome1",
+            "normalTexture": "Resources/Textures/Bistro/Metal_Chrome1_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Metal_Chrome1_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Metal_Worn_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Metal_Worn_01",
+            "normalTexture": "Resources/Textures/Bistro/Metal_Worn_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Metal_Worn_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/NapkinHolder_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "NapkinHolder_01",
+            "normalTexture": "Resources/Textures/Bistro/NapkinHolder_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/NapkinHolder_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_BarStool_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_BarStool",
+            "normalTexture": "Resources/Textures/Bistro/Paris_BarStool_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_BarStool_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Beertap_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Beertap",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Beertap_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Beertap_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Cashregister_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Cashregister",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Cashregister_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Cashregister_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Cashregister_Buttons_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Cashregister_Buttons",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Cashregister_Buttons_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Cashregister_Buttons_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Cashregister_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Cashregister_Glass",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Cashregister_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Cashregister_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_CeilingFan_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_CeilingFan",
+            "normalTexture": "Resources/Textures/Bistro/Paris_CeilingFan_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_CeilingFan_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Ceiling_Lamp_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Ceiling_Lamp",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Ceiling_Lamp_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Ceiling_Lamp_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Coasters_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Coasters_01",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Coasters_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Coasters_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Doormat_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Doormat",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Doormat_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Doormat_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Caps_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_01_Caps.001",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Caps_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Caps_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_01_Glass",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass1_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_01_Glass1",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass1_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass1_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_Wine_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_01_Glass_Wine.001",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_Wine_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_Wine_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_02_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_02_Glass",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_02_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_02_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_03_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_LiquorBottle_03_Glass",
+            "normalTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_03_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_03_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Painting_Metal_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Painting_Metal",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Painting_Metal_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Painting_Metal_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Paintings_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Paintings",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Paintings_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Paintings_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Paintings_Glass_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Paintings_Glass",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Paintings_Glass_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Paintings_Glass_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Radiator_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Radiator",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Radiator_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Radiator_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Table_03_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Table_03",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Table_03_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Table_03_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Table_cloth_01_0_BaseColor.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Table_cloth_01",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Table_cloth_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Wall_Bulb_Light_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Wall_Bulb_Light",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Wall_Bulb_Light_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Wall_Bulb_Light_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Paris_Wall_Light_Interior_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Paris_Wall_Light_Interior",
+            "normalTexture": "Resources/Textures/Bistro/Paris_Wall_Light_Interior_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Paris_Wall_Light_Interior_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plants_Metal_Base_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plants_Metal_Base_01",
+            "normalTexture": "Resources/Textures/Bistro/Plants_Metal_Base_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plants_Metal_Base_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plants_plants_0_BaseColor.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plants_plants",
+            "normalTexture": "Resources/Textures/Bistro/Plants_plants_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plants_plants_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plastic_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plastic_01",
+            "normalTexture": "Resources/Textures/Bistro/Plastic_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plastic_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plastic_02_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plastic_02",
+            "normalTexture": "Resources/Textures/Bistro/Plastic_02_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plastic_02_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plates_Ceramic_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plates_Ceramic",
+            "normalTexture": "Resources/Textures/Bistro/Plates_Ceramic_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plates_Ceramic_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Plates_Details_0_BaseColor.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Plates_Details",
+            "normalTexture": "Resources/Textures/Bistro/Plates_Details_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Plates_Details_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Rubber_Bar_Mat_01_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Rubber_Bar_Mat_01",
+            "normalTexture": "Resources/Textures/Bistro/Rubber_Bar_Mat_01_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Rubber_Bar_Mat_01_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/ToffeeJar_Label_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "ToffeeJar_Label",
+            "normalTexture": "Resources/Textures/Bistro/ToffeeJar_Label_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/ToffeeJar_Label_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/ToffeeJar_Metal_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "ToffeeJar_Metal",
+            "normalTexture": "Resources/Textures/Bistro/ToffeeJar_Metal_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/ToffeeJar_Metal_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/ToffeeJar_Toffee_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "ToffeeJar_Toffee",
+            "normalTexture": "Resources/Textures/Bistro/ToffeeJar_Toffee_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/ToffeeJar_Toffee_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Trolley_Plastic_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Trolley_Plastic",
+            "normalTexture": "Resources/Textures/Bistro/Trolley_Plastic_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Trolley_Plastic_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Trolley_Wheels_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Trolley_Wheels",
+            "normalTexture": "Resources/Textures/Bistro/Trolley_Wheels_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Trolley_Wheels_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Trolley_Wood_Painted_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Trolley_Wood_Painted",
+            "normalTexture": "Resources/Textures/Bistro/Trolley_Wood_Painted_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Trolley_Wood_Painted_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Wall_Lamp_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Wall_Lamp",
+            "normalTexture": "Resources/Textures/Bistro/Wall_Lamp_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Wall_Lamp_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/WickerBasket_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "WickerBasket",
+            "normalTexture": "Resources/Textures/Bistro/WickerBasket_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/WickerBasket_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/Wood_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Wood",
+            "normalTexture": "Resources/Textures/Bistro/Wood_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/Wood_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/curtainA_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "curtainA",
+            "normalTexture": "Resources/Textures/Bistro/curtainA_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/curtainA_0_Specular.dds"
+        },
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "Resources/Textures/Bistro/curtainB1_0_BaseColor.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "curtainB1",
+            "normalTexture": "Resources/Textures/Bistro/curtainB1_0_Normal.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Bistro/curtainB1_0_Specular.dds"
+        }
+    ]
+}

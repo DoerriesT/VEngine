@@ -68,7 +68,7 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 			descriptorWrites[2].pBufferInfo = &opaqueIndirectBufferInfo;
 
 			// masked indirect buffer
-			VkDescriptorBufferInfo maskedIndirectBufferInfo = registry.getBufferInfo(data.m_opaqueIndirectBufferHandle);
+			VkDescriptorBufferInfo maskedIndirectBufferInfo = registry.getBufferInfo(data.m_maskedIndirectBufferHandle);
 			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[3].dstSet = descriptorSet;
 			descriptorWrites[3].dstBinding = MASKED_INDIRECT_BUFFER_BINDING;
@@ -89,6 +89,6 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		VKUtility::dispatchComputeHelper(cmdBuf, data.m_opaqueCount + data.m_opaqueCount, 1, 1, 64, 1, 1);
+		VKUtility::dispatchComputeHelper(cmdBuf, data.m_opaqueCount + data.m_maskedCount, 1, 1, 64, 1, 1);
 	});
 }
