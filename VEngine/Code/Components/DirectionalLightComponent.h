@@ -7,5 +7,6 @@ namespace VEngine
 	{
 		glm::vec3 m_color;
 		glm::vec3 m_direction;
+		bool m_shadows;
 	};
 }

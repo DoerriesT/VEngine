@@ -3,6 +3,7 @@
 #include "Components/TransformationComponent.h"
 #include "Components/RenderableComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/CameraComponent.h"
 #include "Graphics/Vulkan/VKRenderer.h"
 #include "GlobalVar.h"
@@ -90,36 +91,137 @@ void VEngine::RenderSystem::update(float timeDelta)
 			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
 		}
 
-		glm::mat4 proj = glm::transpose(m_commonRenderData.m_viewProjectionMatrix);
-		glm::vec4 frustumPlaneEquations[] =
+		// extract view frustum plane equations from matrix
+		glm::vec4 viewFrustumPlaneEquations[6];
 		{
-			glm::normalize(proj[3] + proj[0]),	// left
-			glm::normalize(proj[3] - proj[0]),	// right
-			glm::normalize(proj[3] + proj[1]),	// bottom
-			glm::normalize(proj[3] - proj[1]),	// top
-			glm::normalize(proj[2]),			// near
-			glm::normalize(proj[3] - proj[2])	// far
+			glm::mat4 proj = glm::transpose(m_commonRenderData.m_viewProjectionMatrix);
+			viewFrustumPlaneEquations[0] = glm::normalize(proj[3] + proj[0]);	// left
+			viewFrustumPlaneEquations[1] = glm::normalize(proj[3] - proj[0]);	// right
+			viewFrustumPlaneEquations[2] = glm::normalize(proj[3] + proj[1]);	// bottom
+			viewFrustumPlaneEquations[3] = glm::normalize(proj[3] - proj[1]);	// top
+			viewFrustumPlaneEquations[4] = glm::normalize(proj[2]);				// near
+			viewFrustumPlaneEquations[5] = glm::normalize(proj[3] - proj[2]);	// far
 		};
 
-		//glm::mat4 shadow = glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f))
+		// generate light data
+		{
+			// point lights
+			{
+				auto view = m_entityRegistry.view<TransformationComponent, PointLightComponent, RenderableComponent>();
+
+				view.each([this, &viewFrustumPlaneEquations](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
+				{
+					const float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
+
+					PointLightData pointLightData
+					{
+						glm::vec4(glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f)), pointLightComponent.m_radius),
+						glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius))
+					};
+
+					// frustum cull
+					for (const auto &plane : viewFrustumPlaneEquations)
+					{
+						if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), plane) <= -pointLightComponent.m_radius)
+						{
+							return;
+						}
+					}
+
+					m_lightData.m_pointLightData.push_back(pointLightData);
+				});
+
+				// sort by distance to camera
+				std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
+					[](const PointLightData &lhs, const PointLightData &rhs)
+				{
+					return (-lhs.m_positionRadius.z - lhs.m_positionRadius.w) < (-rhs.m_positionRadius.z - rhs.m_positionRadius.w);
+				});
+
+				// clear bins
+				for (size_t i = 0; i < m_lightData.m_zBins.size(); ++i)
+				{
+					const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
+					m_lightData.m_zBins[i] = emptyBin;
+				}
+
+				// assign lights to bins
+				for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
+				{
+					glm::vec4 &posRadius = m_lightData.m_pointLightData[i].m_positionRadius;
+					float nearestPoint = -posRadius.z - posRadius.w;
+					float furthestPoint = -posRadius.z + posRadius.w;
+
+					size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
+					size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
+
+					for (size_t j = minBin; j <= maxBin; ++j)
+					{
+						uint32_t &val = m_lightData.m_zBins[j];
+						uint32_t minIndex = (val & 0xFFFF0000) >> 16;
+						uint32_t maxIndex = val & 0xFFFF;
+						minIndex = std::min(minIndex, static_cast<uint32_t>(i));
+						maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
+						val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+					}
+				}
+			}
+
+			// directional lights
+			{
+				auto view = m_entityRegistry.view<DirectionalLightComponent, RenderableComponent>();
+
+				view.each([&](DirectionalLightComponent &directionalLightComponent, RenderableComponent&)
+				{
+					directionalLightComponent.m_direction = glm::normalize(directionalLightComponent.m_direction);
+					DirectionalLightData directionalLightData
+					{
+						glm::vec4(directionalLightComponent.m_color, 1.0f),
+						m_commonRenderData.m_viewMatrix * glm::vec4(directionalLightComponent.m_direction, 0.0f)
+					};
+
+					// first directional light is allowed to have shadows
+					if (m_lightData.m_directionalLightData.empty() && directionalLightComponent.m_shadows)
+					{
+						directionalLightData.m_shadowDataOffset = 0;
+						directionalLightData.m_shadowDataCount = 3;
+
+						glm::mat4 matrices[3];
+						calculateCascadeViewProjectionMatrices(m_commonRenderData, directionalLightComponent.m_direction, 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
+
+						m_lightData.m_shadowData.push_back({ matrices[0], { 0.25f, 0.25f, 0.0f, 0.0f } });
+						m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f,  0.25f, 0.0f } });
+						m_lightData.m_shadowData.push_back({ matrices[2], { 0.25f, 0.25f, 0.0f,  0.25f } });
+						//m_lightData.m_shadowData.push_back({ matrices[3], { 0.25f, 0.25f, 1.0f, 1.0f } });
+
+						m_lightData.m_shadowJobs.push_back({ matrices[0], 0, 0, 2048 });
+						m_lightData.m_shadowJobs.push_back({ matrices[1], 2048, 0, 2048 });
+						m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
+						//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
+					}
+
+					m_lightData.m_directionalLightData.push_back(directionalLightData);
+				});
+			}
+		}
 
 		// update all transformations and generate draw lists
 		{
 			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
 
-			view.each([&frustumPlaneEquations, this](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
+			view.each([&viewFrustumPlaneEquations, this](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
 			{
+				const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
 				transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
-				glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
 				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position)
 					* rotationMatrix
 					* glm::scale(glm::vec3(transformationComponent.m_scale));
 
-				uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
+				const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
 
 				m_transformData.push_back(transformationComponent.m_transformation);
 
-				glm::mat3 rotationMatrix3x3 = glm::mat3(m_commonRenderData.m_viewMatrix) * glm::mat3(rotationMatrix);
+				const glm::mat3 rotationMatrix3x3 = glm::mat3(m_commonRenderData.m_viewMatrix) * glm::mat3(rotationMatrix);
 
 				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 				{
@@ -128,7 +230,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 					instanceData.m_transformIndex = transformIndex;
 					instanceData.m_materialIndex = p.second;
 
-					auto batchAssigment = m_materialBatchAssignment[p.second];
+					const auto batchAssigment = m_materialBatchAssignment[p.second];
 
 					// frustum cull
 					bool viewFrustumCulled = false;
@@ -156,7 +258,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							return true;
 						};
 
-						viewFrustumCulled = !cullAgainstPlanes(center, half, 6, frustumPlaneEquations);
+						viewFrustumCulled = !cullAgainstPlanes(center, half, 6, viewFrustumPlaneEquations);
 					}
 
 					if (!viewFrustumCulled)
@@ -174,88 +276,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 					}
 				}
 			});
-		}
 
-		//printf("%d\n", (int)m_opaqueSubMeshInstanceData.size());
-
-		// generate light data
-		{
-			auto view = m_entityRegistry.view<TransformationComponent, PointLightComponent, RenderableComponent>();
-
-			view.each([this, &frustumPlaneEquations](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
-			{
-				PointLightData pl = {};
-				glm::vec3 pos = glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f));
-				pl.m_positionRadius = glm::vec4(pos, pointLightComponent.m_radius);
-				float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
-				pl.m_colorInvSqrAttRadius = glm::vec4(pointLightComponent.m_color * intensity, 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius));
-
-				// frustum cull
-				for (const auto &plane : frustumPlaneEquations)
-				{
-					if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), plane) <= -pointLightComponent.m_radius)
-					{
-						return;
-					}
-				}
-
-				m_lightData.m_pointLightData.push_back(pl);
-			});
-
-			std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
-				[](const PointLightData &lhs, const PointLightData &rhs)
-			{
-				return (-lhs.m_positionRadius.z - lhs.m_positionRadius.w) < (-rhs.m_positionRadius.z - rhs.m_positionRadius.w);
-			});
-
-			const unsigned int emptyBin = ((~0 & 0xFFFF) << 16);
-
-			// clear bins
-			for (size_t i = 0; i < m_lightData.m_zBins.size(); ++i)
-			{
-				m_lightData.m_zBins[i] = emptyBin;
-			}
-
-			// assign lights
-			for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
-			{
-				glm::vec4 &posRadius = m_lightData.m_pointLightData[i].m_positionRadius;
-				float nearestPoint = -posRadius.z - posRadius.w;
-				float furthestPoint = -posRadius.z + posRadius.w;
-
-				size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
-				size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
-
-				for (size_t j = minBin; j <= maxBin; ++j)
-				{
-					uint32_t &val = m_lightData.m_zBins[j];
-					uint32_t minIndex = (val & 0xFFFF0000) >> 16;
-					uint32_t maxIndex = val & 0xFFFF;
-					minIndex = std::min(minIndex, static_cast<uint32_t>(i));
-					maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
-					val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
-				}
-			}
-
-			DirectionalLightData directionalLightData{ glm::vec4(glm::vec3(100.0f), 1.0f), glm::vec4(glm::normalize(glm::vec3(0.1f, 3.0f, -1.0f)), 0.0f), 0, 3 };
-
-			glm::mat4 matrices[3];
-			calculateCascadeViewProjectionMatrices(m_commonRenderData, glm::vec3(directionalLightData.m_direction), 0.1f, 30.0f, 0.7f, 2048, 3, matrices);
-
-			// transform light dir to view space
-			directionalLightData.m_direction = m_commonRenderData.m_viewMatrix * directionalLightData.m_direction;
-
-			m_lightData.m_directionalLightData.push_back(directionalLightData);
-
-			m_lightData.m_shadowData.push_back({ matrices[0], { 0.25f, 0.25f, 0.0f, 0.0f } });
-			m_lightData.m_shadowData.push_back({ matrices[1], { 0.25f, 0.25f,  0.25f, 0.0f } });
-			m_lightData.m_shadowData.push_back({ matrices[2], { 0.25f, 0.25f, 0.0f,  0.25f } });
-			//m_lightData.m_shadowData.push_back({ matrices[3], { 0.25f, 0.25f, 1.0f, 1.0f } });
-
-			m_lightData.m_shadowJobs.push_back({ matrices[0], 0, 0, 2048 });
-			m_lightData.m_shadowJobs.push_back({ matrices[1], 2048, 0, 2048 });
-			m_lightData.m_shadowJobs.push_back({ matrices[2], 0, 2048, 2048 });
-			//m_lightData.m_shadowJobs.push_back({ matrices[3], 2048, 2048, 2048 });
+			std::sort(m_opaqueSubMeshInstanceData.begin(), m_opaqueSubMeshInstanceData.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			std::sort(m_maskedSubMeshInstanceData.begin(), m_maskedSubMeshInstanceData.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
 		}
 
 		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());

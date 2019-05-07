@@ -8,6 +8,7 @@
 #include <Components/RenderableComponent.h>
 #include <Components/CameraComponent.h>
 #include <Components/PointLightComponent.h>
+#include <Components/DirectionalLightComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
 #include <Scene.h>
@@ -46,6 +47,10 @@ public:
 		//entityRegistry.assign<VEngine::TransformationComponent>(knobEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
+
+		entt::entity sunLightEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::DirectionalLightComponent>(sunLightEntity, glm::vec3(100.0f), glm::vec3(0.1f, 3.0f, -1.0f), true);
+		entityRegistry.assign<VEngine::RenderableComponent>(sunLightEntity);
 
 		std::default_random_engine e;
 		std::uniform_real_distribution<float> px(-14.0f, 14.0f);
