@@ -22,6 +22,16 @@ layout(set = MASKED_INDIRECT_BUFFER_SET, binding = MASKED_INDIRECT_BUFFER_BINDIN
     DrawIndexedIndirectCommand uMaskedIndirectCommands[];
 };
 
+layout(set = OPAQUE_SHADOW_INDIRECT_BUFFER_SET, binding = OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING) buffer OPAQUE_SHADOW_INDIRECT_BUFFER 
+{
+    DrawIndexedIndirectCommand uOpaqueShadowIndirectCommands[];
+};
+
+layout(set = MASKED_SHADOW_INDIRECT_BUFFER_SET, binding = MASKED_SHADOW_INDIRECT_BUFFER_BINDING) buffer MASKED_SHADOW_INDIRECT_BUFFER 
+{
+    DrawIndexedIndirectCommand uMaskedShadowIndirectCommands[];
+};
+
 layout(push_constant) uniform PUSH_CONSTS 
 {
 	PushConsts uPushConsts;
@@ -33,7 +43,7 @@ void main()
 {
 	uint index = gl_GlobalInvocationID.x;
 	
-	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount)
+	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount + uPushConsts.opaqueShadowCount + uPushConsts.maskedShadowCount)
 	{
 		return;
 	}
@@ -47,12 +57,25 @@ void main()
 	cmd.vertexOffset = subMeshData.vertexOffset;
 	cmd.firstInstance = index;
 	
-	if (index < uPushConsts.opaqueCount)
+	const uint opaqueCmdBegin = 0;
+	const uint maskedCmdBegin = uPushConsts.opaqueCount;
+	const uint opaqueShadowCmdBegin = maskedCmdBegin + uPushConsts.maskedCount;
+	const uint maskedShadowCmdBegin = opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount;
+	
+	if (index < (opaqueCmdBegin + uPushConsts.opaqueCount))
 	{
-		uOpaqueIndirectCommands[index] = cmd;
+		uOpaqueIndirectCommands[index - opaqueCmdBegin] = cmd;
 	}
-	else
+	else if (index < (maskedCmdBegin + uPushConsts.maskedCount))
 	{
-		uMaskedIndirectCommands[index - uPushConsts.opaqueCount] = cmd;
+		uMaskedIndirectCommands[index - maskedCmdBegin] = cmd;
+	}
+	else if (index < (opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount))
+	{
+		uOpaqueShadowIndirectCommands[index - opaqueShadowCmdBegin] = cmd;
+	}
+	else if (index < (maskedShadowCmdBegin + uPushConsts.maskedShadowCount))
+	{
+		uMaskedShadowIndirectCommands[index - maskedShadowCmdBegin] = cmd;
 	}
 }

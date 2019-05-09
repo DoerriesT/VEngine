@@ -8,6 +8,10 @@
 #define OPAQUE_INDIRECT_BUFFER_BINDING 2
 #define MASKED_INDIRECT_BUFFER_SET 0
 #define MASKED_INDIRECT_BUFFER_BINDING 3
+#define OPAQUE_SHADOW_INDIRECT_BUFFER_SET 0
+#define OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING 4
+#define MASKED_SHADOW_INDIRECT_BUFFER_SET 0
+#define MASKED_SHADOW_INDIRECT_BUFFER_BINDING 5
 
 
 struct SubMeshData
@@ -30,4 +34,6 @@ struct PushConsts
 {
 	uint opaqueCount;
 	uint maskedCount;
+	uint opaqueShadowCount;
+	uint maskedShadowCount;
 };

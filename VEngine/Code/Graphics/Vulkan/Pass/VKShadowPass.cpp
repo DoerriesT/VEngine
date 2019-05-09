@@ -21,6 +21,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 	graph.addGraphicsPass(data.m_alphaMasked ? "Shadow Pass Alpha" : "Shadow Pass", data.m_width, data.m_height,
 		[&](FrameGraph::PassBuilder builder)
 	{
+		builder.readIndirectBuffer(data.m_indirectBufferHandle);
 		builder.writeDepthStencil(data.m_shadowAtlasImageHandle);
 	},
 		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)

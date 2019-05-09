@@ -34,8 +34,10 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 void VEngine::RenderSystem::update(float timeDelta)
 {
 	m_transformData.clear();
-	m_opaqueSubMeshInstanceData.clear();
-	m_maskedSubMeshInstanceData.clear();
+	m_opaqueBatch.clear();
+	m_alphaTestedBatch.clear();
+	m_opaqueShadowBatch.clear();
+	m_alphaTestedShadowBatch.clear();
 
 	m_lightData.m_shadowData.clear();
 	m_lightData.m_directionalLightData.clear();
@@ -205,11 +207,27 @@ void VEngine::RenderSystem::update(float timeDelta)
 			}
 		}
 
+		// extract shadow frustum plane equations from matrices
+		glm::vec4 shadowFrustumPlaneEquations[3][6];
+		if (!m_lightData.m_directionalLightData.empty() && m_lightData.m_directionalLightData.front().m_shadowDataCount)
+		{
+			for (size_t i = 0; i < 3; ++i)
+			{
+				glm::mat4 proj = glm::transpose(m_lightData.m_shadowData[i].m_shadowViewProjectionMatrix);
+				shadowFrustumPlaneEquations[i][0] = glm::normalize(proj[3] + proj[0]);	// left
+				shadowFrustumPlaneEquations[i][1] = glm::normalize(proj[3] - proj[0]);	// right
+				shadowFrustumPlaneEquations[i][2] = glm::normalize(proj[3] + proj[1]);	// bottom
+				shadowFrustumPlaneEquations[i][3] = glm::normalize(proj[3] - proj[1]);	// top
+				shadowFrustumPlaneEquations[i][4] = glm::normalize(proj[2]);				// near
+				shadowFrustumPlaneEquations[i][5] = glm::normalize(proj[3] - proj[2]);	// far
+			}
+		};
+
 		// update all transformations and generate draw lists
 		{
 			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
 
-			view.each([&viewFrustumPlaneEquations, this](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
+			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
 			{
 				const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
 				transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
@@ -259,6 +277,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 						};
 
 						viewFrustumCulled = !cullAgainstPlanes(center, half, 6, viewFrustumPlaneEquations);
+						shadowFrustumCulled = !(cullAgainstPlanes(center, half, 6, shadowFrustumPlaneEquations[0])
+							|| cullAgainstPlanes(center, half, 6, shadowFrustumPlaneEquations[1])
+							|| cullAgainstPlanes(center, half, 6, shadowFrustumPlaneEquations[2]));
 					}
 
 					if (!viewFrustumCulled)
@@ -266,19 +287,34 @@ void VEngine::RenderSystem::update(float timeDelta)
 						// opaque batch
 						if (batchAssigment & 1)
 						{
-							m_opaqueSubMeshInstanceData.push_back(instanceData);
+							m_opaqueBatch.push_back(instanceData);
 						}
 						// masked batch
 						else if (batchAssigment & (1 << 1))
 						{
-							m_maskedSubMeshInstanceData.push_back(instanceData);
+							m_alphaTestedBatch.push_back(instanceData);
+						}
+					}
+
+					if (!shadowFrustumCulled)
+					{
+						// opaque batch
+						if (batchAssigment & 1)
+						{
+							m_opaqueShadowBatch.push_back(instanceData);
+						}
+						// masked batch
+						else if (batchAssigment & (1 << 1))
+						{
+							m_alphaTestedShadowBatch.push_back(instanceData);
 						}
 					}
 				}
 			});
 
-			std::sort(m_opaqueSubMeshInstanceData.begin(), m_opaqueSubMeshInstanceData.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
-			std::sort(m_maskedSubMeshInstanceData.begin(), m_maskedSubMeshInstanceData.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			std::sort(m_opaqueBatch.begin(), m_opaqueBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			std::sort(m_alphaTestedBatch.begin(), m_alphaTestedBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			std::sort(m_alphaTestedShadowBatch.begin(), m_alphaTestedShadowBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
 		}
 
 		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
@@ -287,10 +323,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
 		renderData.m_transformData = m_transformData.data();
-		renderData.m_opaqueSubMeshInstanceDataCount = static_cast<uint32_t>(m_opaqueSubMeshInstanceData.size());
-		renderData.m_opaqueSubMeshInstanceData = m_opaqueSubMeshInstanceData.data();
-		renderData.m_maskedSubMeshInstanceDataCount = static_cast<uint32_t>(m_maskedSubMeshInstanceData.size());
-		renderData.m_maskedSubMeshInstanceData = m_maskedSubMeshInstanceData.data();
+		renderData.m_opaqueBatchSize = static_cast<uint32_t>(m_opaqueBatch.size());
+		renderData.m_opaqueBatch = m_opaqueBatch.data();
+		renderData.m_alphaTestedBatchSize = static_cast<uint32_t>(m_alphaTestedBatch.size());
+		renderData.m_alphaTestedBatch = m_alphaTestedBatch.data();
+		renderData.m_opaqueShadowBatchSize = static_cast<uint32_t>(m_opaqueShadowBatch.size());
+		renderData.m_opaqueShadowBatch = m_opaqueShadowBatch.data();
+		renderData.m_alphaTestedShadowBatchSize = static_cast<uint32_t>(m_alphaTestedShadowBatch.size());
+		renderData.m_alphaTestedShadowBatch = m_alphaTestedShadowBatch.data();
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
 		++m_commonRenderData.m_frame;
@@ -393,17 +433,17 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(
 	for (uint32_t i = 0; i < cascadeCount; i++)
 	{
 		glm::mat4 projectionMatrix = glm::perspective(renderParams.m_fovy, g_windowWidth / float(g_windowHeight), nearPlane + lastSplitDist * (farPlane - nearPlane), nearPlane + splits[i] * (farPlane - nearPlane));
-		glm::mat4 invProjection = glm::inverse(projectionMatrix);
+	glm::mat4 invProjection = glm::inverse(projectionMatrix);
 
-		glm::vec3 frustumCorners[8];
+	glm::vec3 frustumCorners[8];
 		frustumCorners[0] = glm::vec3(-1.0f, -1.0f, -1.0f); // xyz
 		frustumCorners[1] = glm::vec3(1.0f, -1.0f, -1.0f); // Xyz
 		frustumCorners[2] = glm::vec3(-1.0f, 1.0f, -1.0f); // xYz
 		frustumCorners[3] = glm::vec3(1.0f, 1.0f, -1.0f); // XYz
-		frustumCorners[4] = glm::vec3(-1.0f, -1.0f, 1.0f); // xyZ
-		frustumCorners[5] = glm::vec3(1.0f, -1.0f, 1.0f); // XyZ
-		frustumCorners[6] = glm::vec3(-1.0f, 1.0f, 1.0f); // xYZ
-		frustumCorners[7] = glm::vec3(1.0f, 1.0f, 1.0f); // XYZ
+	frustumCorners[4] = glm::vec3(-1.0f, -1.0f, 1.0f); // xyZ
+	frustumCorners[5] = glm::vec3( 1.0f, -1.0f, 1.0f); // XyZ
+	frustumCorners[6] = glm::vec3(-1.0f,  1.0f, 1.0f); // xYZ
+	frustumCorners[7] = glm::vec3( 1.0f,  1.0f, 1.0f); // XYZ
 
 		glm::vec3 minCorner = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 maxCorner = glm::vec3(std::numeric_limits<float>::lowest());

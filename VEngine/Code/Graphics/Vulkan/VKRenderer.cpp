@@ -159,8 +159,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
-	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueSubMeshInstanceDataCount);
-	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_maskedSubMeshInstanceDataCount);
+	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
+	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedBatchSize);
+	FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
+	FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
 
 	// transform data write
 	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
@@ -211,18 +213,30 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// instance data write
-	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueSubMeshInstanceDataCount + renderData.m_maskedSubMeshInstanceDataCount) * sizeof(SubMeshInstanceData), size_t(1)) };
+	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueBatchSize + renderData.m_alphaTestedBatchSize 
+		+ renderData.m_opaqueShadowBatchSize + renderData.m_alphaTestedShadowBatchSize) * sizeof(SubMeshInstanceData), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
-		if (renderData.m_opaqueSubMeshInstanceDataCount)
+		if (renderData.m_opaqueBatchSize)
 		{
-			memcpy(bufferPtr, renderData.m_opaqueSubMeshInstanceData, renderData.m_opaqueSubMeshInstanceDataCount * sizeof(SubMeshInstanceData));
-			bufferPtr += renderData.m_opaqueSubMeshInstanceDataCount * sizeof(SubMeshInstanceData);
+			memcpy(bufferPtr, renderData.m_opaqueBatch, renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData);
 		}
-		if (renderData.m_maskedSubMeshInstanceDataCount)
+		if (renderData.m_alphaTestedBatchSize)
 		{
-			memcpy(bufferPtr, renderData.m_maskedSubMeshInstanceData, renderData.m_maskedSubMeshInstanceDataCount * sizeof(SubMeshInstanceData));
+			memcpy(bufferPtr, renderData.m_alphaTestedBatch, renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_opaqueShadowBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_opaqueShadowBatch, renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_alphaTestedShadowBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_alphaTestedShadowBatch, renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData);
 		}
 	}
 
@@ -230,14 +244,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
 	prepareIndirectBuffersPassData.m_pipelineCache = m_pipelineCache.get();
 	prepareIndirectBuffersPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueSubMeshInstanceDataCount;
-	prepareIndirectBuffersPassData.m_maskedCount = renderData.m_maskedSubMeshInstanceDataCount;
+	prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueBatchSize;
+	prepareIndirectBuffersPassData.m_maskedCount = renderData.m_alphaTestedBatchSize;
+	prepareIndirectBuffersPassData.m_opaqueShadowCount = renderData.m_opaqueShadowBatchSize;
+	prepareIndirectBuffersPassData.m_maskedShadowCount = renderData.m_alphaTestedShadowBatchSize;
 	prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 	prepareIndirectBuffersPassData.m_opaqueIndirectBufferHandle = opaqueIndirectBufferHandle;
 	prepareIndirectBuffersPassData.m_maskedIndirectBufferHandle = maskedIndirectBufferHandle;
+	prepareIndirectBuffersPassData.m_opaqueShadowIndirectBufferHandle = opaqueShadowIndirectBufferHandle;
+	prepareIndirectBuffersPassData.m_maskedShadowIndirectBufferHandle = maskedShadowIndirectBufferHandle;
 
-	if (renderData.m_opaqueSubMeshInstanceDataCount || renderData.m_maskedSubMeshInstanceDataCount)
+	if (renderData.m_opaqueBatchSize || renderData.m_alphaTestedBatchSize || renderData.m_opaqueShadowBatchSize || renderData.m_alphaTestedShadowBatchSize)
 	{
 		VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
 	}
@@ -250,7 +268,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_commonRenderData = &commonData;
 	opaqueGeometryPassData.m_width = m_width;
 	opaqueGeometryPassData.m_height = m_height;
-	opaqueGeometryPassData.m_drawCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	opaqueGeometryPassData.m_drawCount = renderData.m_opaqueBatchSize;
 	opaqueGeometryPassData.m_alphaMasked = false;
 	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
@@ -262,7 +280,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
 	opaqueGeometryPassData.m_velocityImageHandle = velocityImageHandle;
 
-	if (renderData.m_opaqueSubMeshInstanceDataCount)
+	if (renderData.m_opaqueBatchSize)
 	{
 		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
 	}
@@ -270,11 +288,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// draw alpha masked geometry to gbuffer
 	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
-	maskedGeometryPassData.m_drawCount = renderData.m_maskedSubMeshInstanceDataCount;
+	maskedGeometryPassData.m_drawCount = renderData.m_alphaTestedBatchSize;
 	maskedGeometryPassData.m_alphaMasked = true;
 	maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
 	
-	if (renderData.m_maskedSubMeshInstanceDataCount)
+	if (renderData.m_alphaTestedBatchSize)
 	{
 		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
@@ -301,7 +319,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueShadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
 	opaqueShadowPassData.m_width = g_shadowAtlasSize;
 	opaqueShadowPassData.m_height = g_shadowAtlasSize;
-	opaqueShadowPassData.m_drawCount = renderData.m_opaqueSubMeshInstanceDataCount;
+	opaqueShadowPassData.m_drawCount = renderData.m_opaqueShadowBatchSize;
 	opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
 	opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
 	opaqueShadowPassData.m_alphaMasked = false;
@@ -309,10 +327,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
 	opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
 	opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
-	opaqueShadowPassData.m_indirectBufferHandle = opaqueIndirectBufferHandle;
+	opaqueShadowPassData.m_indirectBufferHandle = opaqueShadowIndirectBufferHandle;
 	opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 
-	if (renderData.m_opaqueSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
+	if (renderData.m_opaqueShadowBatchSize && !lightData.m_shadowJobs.empty())
 	{
 		VKShadowPass::addToGraph(graph, opaqueShadowPassData);
 	}
@@ -320,12 +338,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// draw masked shadows
 	VKShadowPass::Data maskedShadowPassData = opaqueShadowPassData;
-	maskedShadowPassData.m_drawCount = renderData.m_maskedSubMeshInstanceDataCount;
+	maskedShadowPassData.m_drawCount = renderData.m_alphaTestedShadowBatchSize;
 	maskedShadowPassData.m_alphaMasked = true;
 	maskedShadowPassData.m_clear = lightData.m_shadowJobs.empty();
-	maskedShadowPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
+	maskedShadowPassData.m_indirectBufferHandle = maskedShadowIndirectBufferHandle;
 
-	if (renderData.m_maskedSubMeshInstanceDataCount && !lightData.m_shadowJobs.empty())
+	if (renderData.m_alphaTestedShadowBatchSize && !lightData.m_shadowJobs.empty())
 	{
 		VKShadowPass::addToGraph(graph, maskedShadowPassData);
 	}

@@ -38,8 +38,10 @@ namespace VEngine
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;
 		CommonRenderData m_commonRenderData;
 		std::vector<glm::mat4> m_transformData;
-		std::vector<SubMeshInstanceData> m_opaqueSubMeshInstanceData;
-		std::vector<SubMeshInstanceData> m_maskedSubMeshInstanceData;
+		std::vector<SubMeshInstanceData> m_opaqueBatch;
+		std::vector<SubMeshInstanceData> m_alphaTestedBatch;
+		std::vector<SubMeshInstanceData> m_opaqueShadowBatch;
+		std::vector<SubMeshInstanceData> m_alphaTestedShadowBatch;
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
