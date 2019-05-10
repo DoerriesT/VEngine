@@ -20,5 +20,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c taaResolve_comp.comp -o taaResolve_co
 glslc --target-env=vulkan1.1 -O -Werror -c velocityInitialization_frag.frag -o velocityInitialization_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c fullscreenTriangle_vert.vert -o fullscreenTriangle_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c prepareIndirectBuffers_comp.comp -o prepareIndirectBuffers_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c fxaa_comp.comp -o fxaa_comp.spv
 
 pause

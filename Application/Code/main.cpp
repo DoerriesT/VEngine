@@ -70,7 +70,8 @@ public:
 	void update(float timeDelta) override 
 	{
 		auto &input = m_engine->getUserInput();
-		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::SPACE);
+		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::T);
+		VEngine::g_FXAAEnabled = input.isKeyPressed(InputKey::F);
 	};
 
 	void shutdown() override

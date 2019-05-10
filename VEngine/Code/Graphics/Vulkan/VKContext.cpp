@@ -233,7 +233,8 @@ namespace VEngine
 					&& supportedFeatures.independentBlend
 					&& supportedFeatures.fragmentStoresAndAtomics
 					&& supportedFeatures.shaderStorageImageExtendedFormats
-					&& supportedFeatures.multiDrawIndirect)
+					&& supportedFeatures.multiDrawIndirect
+					&& supportedFeatures.shaderStorageImageWriteWithoutFormat)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices =
@@ -280,6 +281,7 @@ namespace VEngine
 			deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 			deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
 			deviceFeatures.multiDrawIndirect = VK_TRUE;
+			deviceFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
 

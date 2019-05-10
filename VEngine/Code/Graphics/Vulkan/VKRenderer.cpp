@@ -22,6 +22,7 @@
 #include "Pass/VKTonemapPass.h"
 #include "Pass/VKTAAResolvePass.h"
 #include "Pass/VKVelocityInitializationPass.h"
+#include "Pass/VKFXAAPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -483,7 +484,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
-	FrameGraph::ImageHandle tonemapTargetTextureHandle = m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM ? finalImageHandle : swapchainTextureHandle;
+	FrameGraph::ImageHandle tonemapTargetTextureHandle = g_FXAAEnabled ? finalImageHandle : swapchainTextureHandle;
 
 	// tonemap
 	VKTonemapPass::Data tonemapPassData;
@@ -500,6 +501,22 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VKTonemapPass::addToGraph(graph, tonemapPassData);
 
 
+	// FXAA
+	VKFXAAPass::Data fxaaPassData;
+	fxaaPassData.m_renderResources = m_renderResources.get();
+	fxaaPassData.m_pipelineCache = m_pipelineCache.get();
+	fxaaPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	fxaaPassData.m_width = m_width;
+	fxaaPassData.m_height = m_height;
+	fxaaPassData.m_inputImageHandle = tonemapTargetTextureHandle;
+	fxaaPassData.m_resultImageHandle = swapchainTextureHandle;
+
+	if (g_FXAAEnabled)
+	{
+		VKFXAAPass::addToGraph(graph, fxaaPassData);
+	}
+
+
 	// luminance debug pass
 	VKLuminanceHistogramDebugPass::Data luminanceDebugPassData;
 	luminanceDebugPassData.m_renderResources = m_renderResources.get();
@@ -511,7 +528,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	luminanceDebugPassData.m_offsetY = 0.0f;
 	luminanceDebugPassData.m_scaleX = 0.5f;
 	luminanceDebugPassData.m_scaleY = 1.0f;
-	luminanceDebugPassData.m_colorImageHandle = tonemapTargetTextureHandle;
+	luminanceDebugPassData.m_colorImageHandle = swapchainTextureHandle;
 	luminanceDebugPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
 
 	//VKLuminanceHistogramDebugPass::addToGraph(graph, luminanceDebugPassData);
@@ -527,7 +544,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	memoryHeapDebugPassData.m_offsetY = 0.0f;
 	memoryHeapDebugPassData.m_scaleX = 0.25f;
 	memoryHeapDebugPassData.m_scaleY = 0.25f;
-	memoryHeapDebugPassData.m_colorImageHandle = tonemapTargetTextureHandle;
+	memoryHeapDebugPassData.m_colorImageHandle = swapchainTextureHandle;
 
 	//VKMemoryHeapDebugPass::addToGraph(graph, memoryHeapDebugPassData);
 
@@ -590,36 +607,36 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	textPassData.m_atlasTextureIndex = m_fontAtlasTextureIndex;
 	textPassData.m_stringCount = timingInfoCount;
 	textPassData.m_strings = timingInfoStrings;
-	textPassData.m_colorImageHandle = tonemapTargetTextureHandle;
+	textPassData.m_colorImageHandle = swapchainTextureHandle;
 
 	VKTextPass::addToGraph(graph, textPassData);
 
 
 	// blit to swapchain image
-	VkOffset3D blitSize;
-	blitSize.x = m_width;
-	blitSize.y = m_height;
-	blitSize.z = 1;
-
-	VkImageBlit imageBlitRegion = {};
-	imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageBlitRegion.srcSubresource.layerCount = 1;
-	imageBlitRegion.srcOffsets[1] = blitSize;
-	imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageBlitRegion.dstSubresource.layerCount = 1;
-	imageBlitRegion.dstOffsets[1] = blitSize;
-
-	VKBlitPass::Data finalBlitPassData;
-	finalBlitPassData.m_regionCount = 1;
-	finalBlitPassData.m_regions = &imageBlitRegion;
-	finalBlitPassData.m_filter = VK_FILTER_NEAREST;
-	finalBlitPassData.m_srcImage = tonemapTargetTextureHandle;
-	finalBlitPassData.m_dstImage = swapchainTextureHandle;
-
-	if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
-	{
-		VKBlitPass::addToGraph(graph, finalBlitPassData, "Final Blit Pass");
-	}
+	//VkOffset3D blitSize;
+	//blitSize.x = m_width;
+	//blitSize.y = m_height;
+	//blitSize.z = 1;
+	//
+	//VkImageBlit imageBlitRegion = {};
+	//imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//imageBlitRegion.srcSubresource.layerCount = 1;
+	//imageBlitRegion.srcOffsets[1] = blitSize;
+	//imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//imageBlitRegion.dstSubresource.layerCount = 1;
+	//imageBlitRegion.dstOffsets[1] = blitSize;
+	//
+	//VKBlitPass::Data finalBlitPassData;
+	//finalBlitPassData.m_regionCount = 1;
+	//finalBlitPassData.m_regions = &imageBlitRegion;
+	//finalBlitPassData.m_filter = VK_FILTER_NEAREST;
+	//finalBlitPassData.m_srcImage = tonemapTargetTextureHandle;
+	//finalBlitPassData.m_dstImage = swapchainTextureHandle;
+	//
+	//if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
+	//{
+	//	VKBlitPass::addToGraph(graph, finalBlitPassData, "Final Blit Pass");
+	//}
 
 
 	graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

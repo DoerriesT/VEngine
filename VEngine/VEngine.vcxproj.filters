@@ -219,6 +219,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\volk.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -349,6 +352,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\volk.c">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

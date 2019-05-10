@@ -94,6 +94,10 @@ namespace VEngine
 	extern GlobalVar<float> g_TAALowStrengthAlpha;
 	extern GlobalVar<float> g_TAAHighStrengthAlpha;
 	extern GlobalVar<float> g_TAAAntiFlickeringAlpha;
+	extern GlobalVar<bool> g_FXAAEnabled;
+	extern GlobalVar<float> g_FXAAQualitySubpix;
+	extern GlobalVar<float> g_FXAAQualityEdgeThreshold;
+	extern GlobalVar<float> g_FXAAQualityEdgeThresholdMin;
 	extern GlobalConst<unsigned int> g_shadowAtlasSize;
 	extern GlobalConst<unsigned int> g_shadowAtlasMinTileSize;
 	extern GlobalConst<unsigned int> g_shadowCascadeSize;

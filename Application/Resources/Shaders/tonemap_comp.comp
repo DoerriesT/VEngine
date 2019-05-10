@@ -2,7 +2,7 @@
 
 #include "tonemap_bindings.h"
 
-layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba8) uniform writeonly image2D uTonemapResultImage;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uTonemapResultImage;
 layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
 
 layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LUMINANCE_VALUES
@@ -260,5 +260,5 @@ void main()
     // gamma correct
     color = accurateLinearToSRGB(color);//pow(color, vec3(1.0/2.2));
 	
-	imageStore(uTonemapResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1.0));
+	imageStore(uTonemapResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, dot(color.rgb, vec3(0.299, 0.587, 0.114))));
 }
