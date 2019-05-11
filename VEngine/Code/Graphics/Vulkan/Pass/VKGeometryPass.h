@@ -8,8 +8,6 @@ namespace VEngine
 	class VKPipelineCache;
 	class VKDescriptorSetCache;
 	struct VKRenderResources;
-	struct SubMeshData;
-	struct SubMeshInstanceData;
 
 	namespace VKGeometryPass
 	{

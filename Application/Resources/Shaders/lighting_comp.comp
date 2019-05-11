@@ -85,14 +85,6 @@ vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLi
     }
 }
 
-vec3 accurateSRGBToLinear(in vec3 sRGBCol)
-{
-	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
-	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
-	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
-	return linearRGB;
-}
-
 void main() 
 {
 	const float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;

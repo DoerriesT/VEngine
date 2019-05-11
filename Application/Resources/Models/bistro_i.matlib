@@ -224,7 +224,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Glass_Exterior_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -296,7 +296,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Interior_01_Frozen_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -824,7 +824,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_Cashregister_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -968,7 +968,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -992,7 +992,7 @@
                 0.0
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass1_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1016,7 +1016,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_Wine_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1040,7 +1040,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_02_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1064,7 +1064,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_03_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1136,7 +1136,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_Paintings_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,

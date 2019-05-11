@@ -42,16 +42,16 @@ namespace VEngine
 		float m_timeDelta;
 	};
 
-	struct alignas(16) MaterialData
+	struct MaterialData
 	{
-		float m_albedoFactor[3];
-		float m_metalnessFactor;
-		float m_emissiveFactor[3];
-		float m_roughnessFactor;
+		uint32_t m_albedoOpacity;
+		uint32_t m_emissive;
+		uint32_t m_metalnessRoughness;
 		uint32_t m_albedoNormalTexture;
 		uint32_t m_metalnessRoughnessTexture;
 		uint32_t m_occlusionEmissiveTexture;
 		uint32_t m_displacementTexture;
+		uint32_t padding;
 	};
 
 	struct SubMeshData

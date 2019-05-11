@@ -171,3 +171,11 @@ uint getTileAddress(uvec2 pixelCoord, uint width, uint wordCount)
 	uint address = tile.x + tile.y * (width / TILE_SIZE + ((width % TILE_SIZE == 0) ? 0 : 1));
 	return address * wordCount;
 }
+
+vec3 accurateSRGBToLinear(in vec3 sRGBCol)
+{
+	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
+	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
+	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
+	return linearRGB;
+}

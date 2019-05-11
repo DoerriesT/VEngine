@@ -5,6 +5,7 @@
 #include "VKContext.h"
 #include "VKUtility.h"
 #include "Graphics/RenderData.h"
+#include <glm/packing.hpp>
 
 VEngine::VKMaterialManager::VKMaterialManager(VKBuffer &stagingBuffer, VKBuffer &materialBuffer)
 	:m_stagingBuffer(stagingBuffer),
@@ -49,6 +50,21 @@ void VEngine::VKMaterialManager::updateMaterials(uint32_t count, const Material 
 			return ((tex0 & 0xFFFF) << 16) | (tex1 & 0xFFFF);
 		};
 
+		auto rgbmEncode = [](glm::vec3 color) -> glm::vec4
+		{
+			glm::vec4 rgbm;
+			color *= 1.0 / 6.0;
+			float a = glm::clamp(glm::max(glm::max(color.r, color.g), glm::max(color.b, 1e-6f)), 0.0f, 1.0f);
+			a = ceil(rgbm.a * 255.0f) / 255.0f;
+			glm::vec3 rgb = color / rgbm.a;
+			return glm::vec4(rgb, a);
+		};
+
+		// decode
+		//float3 RGBMDecode(float4 rgbm) {
+		//	return 6.0 * rgbm.rgb * rgbm.a;
+		//}
+
 		MaterialData *data;
 		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), (void **)&data);
 		{
@@ -57,14 +73,9 @@ void VEngine::VKMaterialManager::updateMaterials(uint32_t count, const Material 
 				auto &dstData = data[i];
 				auto &srcData = materials[i];
 
-				dstData.m_albedoFactor[0] = srcData.m_albedoFactor[0];
-				dstData.m_albedoFactor[1] = srcData.m_albedoFactor[1];
-				dstData.m_albedoFactor[2] = srcData.m_albedoFactor[2];
-				dstData.m_metalnessFactor = srcData.m_metallicFactor;
-				dstData.m_emissiveFactor[0] = srcData.m_emissiveFactor[0];
-				dstData.m_emissiveFactor[1] = srcData.m_emissiveFactor[1];
-				dstData.m_emissiveFactor[2] = srcData.m_emissiveFactor[2];
-				dstData.m_roughnessFactor = srcData.m_roughnessFactor;
+				dstData.m_albedoOpacity = glm::packUnorm4x8(glm::vec4(srcData.m_albedoFactor, 0.5f));
+				dstData.m_emissive = glm::packUnorm4x8(rgbmEncode(srcData.m_emissiveFactor));
+				dstData.m_metalnessRoughness = glm::packUnorm4x8(glm::vec4(srcData.m_metallicFactor, srcData.m_roughnessFactor, 0.0f, 0.0f));
 				dstData.m_albedoNormalTexture = packTextures(srcData.m_albedoTexture, srcData.m_normalTexture);
 				dstData.m_metalnessRoughnessTexture = packTextures(srcData.m_metallicTexture, srcData.m_roughnessTexture);
 				dstData.m_occlusionEmissiveTexture = packTextures(srcData.m_occlusionTexture, srcData.m_emissiveTexture);

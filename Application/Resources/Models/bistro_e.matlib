@@ -1400,7 +1400,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Focus_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1472,7 +1472,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Frosted_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1496,7 +1496,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Glass_Dirty_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -1544,7 +1544,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MASTER_Glass_Exterior_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -2024,7 +2024,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/MenuSign_02_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -2144,7 +2144,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Paris_LiquorBottle_01_Glass_Wine_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -2888,7 +2888,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Spotlight_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,
@@ -3128,7 +3128,7 @@
                 0.800000011920929
             ],
             "albedoTexture": "Resources/Textures/Bistro/Vespa_Odometer_Glass_0_BaseColor.dds",
-            "alphaMode": 0,
+            "alphaMode": 2,
             "displacementTexture": "",
             "emissive": [
                 0.0,

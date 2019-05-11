@@ -56,12 +56,14 @@ struct SpotLightData
 
 struct MaterialData
 {
-	vec4 albedoMetalness;
-	vec4 emissiveRoughness;
+	uint albedoOpacity;
+	uint emissive;
+	uint metalnessRoughness;
 	uint albedoNormalTexture;
 	uint metalnessRoughnessTexture;
 	uint occlusionEmissiveTexture;
 	uint displacementTexture;
+	uint padding;
 };
 
 struct SubMeshInstanceData

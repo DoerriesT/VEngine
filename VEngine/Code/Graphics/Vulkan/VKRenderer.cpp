@@ -375,7 +375,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_commonRenderData = &commonData;
 	lightingPassData.m_width = m_width;
 	lightingPassData.m_height = m_height;
-	lightingPassData.m_resourceIndex = commonData.m_currentResourceIndex;
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	lightingPassData.m_shadowDataBufferInfo = shadowDataBufferInfo;
@@ -564,10 +563,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	for (size_t i = 0; i < timingInfoCount; ++i)
 	{
-		timingInfoStringData[i] = std::to_string(timingInfos[i].m_passTimeWithSync) + "ms Pass+Sync   "
-			+ std::to_string(timingInfos[i].m_passTime) + "ms Pass-Only   "
-			+ std::to_string(timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) + "ms Sync Only   "
-			+ std::to_string(((timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) / timingInfos[i].m_passTimeWithSync) * 100.0f) + "% Sync of total Pass Time   "
+		timingInfoStringData[i] = std::to_string(timingInfos[i].m_passTimeWithSync) + "ms "
+			//+ std::to_string(timingInfos[i].m_passTime) + "ms / "
+			//+ std::to_string(timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) + "ms / "
 			+ timingInfos[i].m_passName;
 		timingInfoStrings[i].m_chars = timingInfoStringData[i].c_str();
 		timingInfoStrings[i].m_positionX = 0;
@@ -578,26 +576,26 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		total += timingInfos[i].m_passTimeWithSync;
 	}
 
-	timingInfoStringData[timingInfoCount] = std::to_string(totalPassOnly) + "ms Total Pass-Only";
-	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	timingInfoStrings[timingInfoCount].m_positionX = 0;
-	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	++timingInfoCount;
-	timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly) + "ms Total Sync-Only";
-	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	timingInfoStrings[timingInfoCount].m_positionX = 0;
-	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	++timingInfoCount;
+	//timingInfoStringData[timingInfoCount] = std::to_string(totalPassOnly) + "ms Total Pass-Only";
+	//timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	//timingInfoStrings[timingInfoCount].m_positionX = 0;
+	//timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	//++timingInfoCount;
+	//timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly) + "ms Total Sync-Only";
+	//timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	//timingInfoStrings[timingInfoCount].m_positionX = 0;
+	//timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	//++timingInfoCount;
 	timingInfoStringData[timingInfoCount] = std::to_string(total) + "ms Total";
 	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
 	timingInfoStrings[timingInfoCount].m_positionX = 0;
 	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
 	++timingInfoCount;
-	timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly / total * 100.0f) + "% Sync of total time";
-	timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	timingInfoStrings[timingInfoCount].m_positionX = 0;
-	timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	++timingInfoCount;
+	//timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly / total * 100.0f) + "% Sync of total time";
+	//timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
+	//timingInfoStrings[timingInfoCount].m_positionX = 0;
+	//timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
+	//++timingInfoCount;
 
 	VKTextPass::Data textPassData;
 	textPassData.m_renderResources = m_renderResources.get();

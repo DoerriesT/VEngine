@@ -53,7 +53,7 @@ void main()
 	
 	// albedo
 	{
-		vec3 albedo = materialData.albedoMetalness.rgb;
+		vec3 albedo = unpackUnorm4x8(materialData.albedoOpacity).rgb;
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
@@ -87,7 +87,7 @@ void main()
 		oNormalEmissive.xyz = normal;
 	}
 	
-	vec3 metalnessRoughnessOcclusion = vec3(materialData.albedoMetalness.w, materialData.emissiveRoughness.w, 1.0);
+	vec3 metalnessRoughnessOcclusion = vec3(unpackUnorm4x8(materialData.metalnessRoughness).xy, 1.0);
 	
 	// metalness
 	{
