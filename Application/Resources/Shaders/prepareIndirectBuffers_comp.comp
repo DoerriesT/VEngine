@@ -22,6 +22,11 @@ layout(set = MASKED_INDIRECT_BUFFER_SET, binding = MASKED_INDIRECT_BUFFER_BINDIN
     DrawIndexedIndirectCommand uMaskedIndirectCommands[];
 };
 
+layout(set = TRANSPARENT_INDIRECT_BUFFER_SET, binding = TRANSPARENT_INDIRECT_BUFFER_BINDING) buffer TRANSPARENT_INDIRECT_BUFFER 
+{
+    DrawIndexedIndirectCommand uTransparentIndirectCommands[];
+};
+
 layout(set = OPAQUE_SHADOW_INDIRECT_BUFFER_SET, binding = OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING) buffer OPAQUE_SHADOW_INDIRECT_BUFFER 
 {
     DrawIndexedIndirectCommand uOpaqueShadowIndirectCommands[];
@@ -43,7 +48,7 @@ void main()
 {
 	uint index = gl_GlobalInvocationID.x;
 	
-	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount + uPushConsts.opaqueShadowCount + uPushConsts.maskedShadowCount)
+	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount + uPushConsts.transparentCount + uPushConsts.opaqueShadowCount + uPushConsts.maskedShadowCount)
 	{
 		return;
 	}
@@ -59,7 +64,8 @@ void main()
 	
 	const uint opaqueCmdBegin = 0;
 	const uint maskedCmdBegin = uPushConsts.opaqueCount;
-	const uint opaqueShadowCmdBegin = maskedCmdBegin + uPushConsts.maskedCount;
+	const uint transparentCmdBegin = maskedCmdBegin + uPushConsts.maskedCount;
+	const uint opaqueShadowCmdBegin = transparentCmdBegin + uPushConsts.transparentCount;
 	const uint maskedShadowCmdBegin = opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount;
 	
 	if (index < (opaqueCmdBegin + uPushConsts.opaqueCount))
@@ -69,6 +75,10 @@ void main()
 	else if (index < (maskedCmdBegin + uPushConsts.maskedCount))
 	{
 		uMaskedIndirectCommands[index - maskedCmdBegin] = cmd;
+	}
+	else if (index < (transparentCmdBegin + uPushConsts.transparentCount))
+	{
+		uTransparentIndirectCommands[index - transparentCmdBegin] = cmd;
 	}
 	else if (index < (opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount))
 	{

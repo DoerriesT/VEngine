@@ -127,6 +127,66 @@ namespace VEngine
 			return graph.createImage(desc);
 		}
 
+		inline FrameGraph::ImageHandle createTransparencyAccumImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		{
+			FrameGraph::ImageDescription desc = {};
+			desc.m_name = "Transparency Accum Image";
+			desc.m_concurrent = false;
+			desc.m_clear = true;
+			desc.m_clearValue.m_imageClearValue.color.float32[0] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[1] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[2] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[3] = 0;
+			desc.m_width = width;
+			desc.m_height = height;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+			return graph.createImage(desc);
+		}
+
+		inline FrameGraph::ImageHandle createTransparencyTransmittanceImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		{
+			FrameGraph::ImageDescription desc = {};
+			desc.m_name = "Transparency Transmittance Image";
+			desc.m_concurrent = false;
+			desc.m_clear = true;
+			desc.m_clearValue.m_imageClearValue.color.float32[0] = 1;
+			desc.m_clearValue.m_imageClearValue.color.float32[1] = 1;
+			desc.m_clearValue.m_imageClearValue.color.float32[2] = 1;
+			desc.m_clearValue.m_imageClearValue.color.float32[3] = 0;
+			desc.m_width = width;
+			desc.m_height = height;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+			return graph.createImage(desc);
+		}
+
+		inline FrameGraph::ImageHandle createTransparencyDeltaImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		{
+			FrameGraph::ImageDescription desc = {};
+			desc.m_name = "Transparency Delta Image";
+			desc.m_concurrent = false;
+			desc.m_clear = true;
+			desc.m_clearValue.m_imageClearValue.color.float32[0] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[1] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[2] = 0;
+			desc.m_clearValue.m_imageClearValue.color.float32[3] = 0;
+			desc.m_width = width;
+			desc.m_height = height;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R8G8_UNORM;
+
+			return graph.createImage(desc);
+		}
+
 		inline FrameGraph::BufferHandle createPointLightBitMaskBufferHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
 		{
 			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
@@ -177,6 +237,20 @@ namespace VEngine
 		{
 			FrameGraph::BufferDescription desc = {};
 			desc.m_name = "Masked Indirect Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
+
+		inline FrameGraph::BufferHandle createTransparentIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "Transparent Indirect Buffer";
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;

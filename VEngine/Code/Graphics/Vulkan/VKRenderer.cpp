@@ -23,6 +23,7 @@
 #include "Pass/VKTAAResolvePass.h"
 #include "Pass/VKVelocityInitializationPass.h"
 #include "Pass/VKFXAAPass.h"
+#include "Pass/VKTransparencyWritePass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -158,10 +159,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle materialImageHandle = VKResourceDefinitions::createMaterialImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle velocityImageHandle = VKResourceDefinitions::createVelocityImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle transparencyAccumImageHandle = VKResourceDefinitions::createTransparencyAccumImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle transparencyTransmittanceImageHandle = VKResourceDefinitions::createTransparencyTransmittanceImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle transparencyDeltaImageHandle = VKResourceDefinitions::createTransparencyDeltaImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle transparencyResultImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
 	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
 	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedBatchSize);
+	FrameGraph::BufferHandle transparentIndirectBufferHandle = VKResourceDefinitions::createTransparentIndirectBufferHandle(graph, renderData.m_transparentBatchSize);
 	FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
 	FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
 
@@ -214,8 +220,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// instance data write
-	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueBatchSize + renderData.m_alphaTestedBatchSize 
-		+ renderData.m_opaqueShadowBatchSize + renderData.m_alphaTestedShadowBatchSize) * sizeof(SubMeshInstanceData), size_t(1)) };
+	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueBatchSize 
+		+ renderData.m_alphaTestedBatchSize 
+		+ renderData.m_transparentBatchSize
+		+ renderData.m_opaqueShadowBatchSize 
+		+ renderData.m_alphaTestedShadowBatchSize) * sizeof(SubMeshInstanceData), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
@@ -228,6 +237,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		{
 			memcpy(bufferPtr, renderData.m_alphaTestedBatch, renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData));
 			bufferPtr += renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_transparentBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_transparentBatch, renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData);
 		}
 		if (renderData.m_opaqueShadowBatchSize)
 		{
@@ -247,12 +261,14 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	prepareIndirectBuffersPassData.m_descriptorSetCache = m_descriptorSetCache.get();
 	prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueBatchSize;
 	prepareIndirectBuffersPassData.m_maskedCount = renderData.m_alphaTestedBatchSize;
+	prepareIndirectBuffersPassData.m_transparentCount = renderData.m_transparentBatchSize;
 	prepareIndirectBuffersPassData.m_opaqueShadowCount = renderData.m_opaqueShadowBatchSize;
 	prepareIndirectBuffersPassData.m_maskedShadowCount = renderData.m_alphaTestedShadowBatchSize;
 	prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 	prepareIndirectBuffersPassData.m_opaqueIndirectBufferHandle = opaqueIndirectBufferHandle;
 	prepareIndirectBuffersPassData.m_maskedIndirectBufferHandle = maskedIndirectBufferHandle;
+	prepareIndirectBuffersPassData.m_transparentIndirectBufferHandle = transparentIndirectBufferHandle;
 	prepareIndirectBuffersPassData.m_opaqueShadowIndirectBufferHandle = opaqueShadowIndirectBufferHandle;
 	prepareIndirectBuffersPassData.m_maskedShadowIndirectBufferHandle = maskedShadowIndirectBufferHandle;
 
@@ -388,6 +404,33 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_resultImageHandle = lightImageHandle;
 
 	VKLightingPass::addToGraph(graph, lightingPassData);
+
+
+	VKTransparencyWritePass::Data transparencyWriteData;
+	transparencyWriteData.m_renderResources = m_renderResources.get();
+	transparencyWriteData.m_pipelineCache = m_pipelineCache.get();
+	transparencyWriteData.m_descriptorSetCache = m_descriptorSetCache.get();
+	transparencyWriteData.m_commonRenderData = &commonData;
+	transparencyWriteData.m_width = m_width;
+	transparencyWriteData.m_height = m_height;
+	transparencyWriteData.m_drawCount = renderData.m_transparentBatchSize;
+	transparencyWriteData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	transparencyWriteData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	transparencyWriteData.m_transformDataBufferInfo = transformDataBufferInfo;
+	transparencyWriteData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	transparencyWriteData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	transparencyWriteData.m_shadowDataBufferInfo = shadowDataBufferInfo;
+	transparencyWriteData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	transparencyWriteData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
+	transparencyWriteData.m_indirectBufferHandle = transparentIndirectBufferHandle;
+	transparencyWriteData.m_depthImageHandle = depthImageHandle;
+	transparencyWriteData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+	transparencyWriteData.m_lightImageHandle = lightImageHandle;
+
+	if (renderData.m_transparentBatchSize)
+	{
+		VKTransparencyWritePass::addToGraph(graph, transparencyWriteData);
+	}
 
 
 	// calculate luminance histograms

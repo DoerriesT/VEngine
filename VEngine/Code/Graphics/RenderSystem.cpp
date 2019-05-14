@@ -36,6 +36,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 	m_transformData.clear();
 	m_opaqueBatch.clear();
 	m_alphaTestedBatch.clear();
+	m_transparentBatch.clear();
 	m_opaqueShadowBatch.clear();
 	m_alphaTestedShadowBatch.clear();
 
@@ -294,6 +295,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 						{
 							m_alphaTestedBatch.push_back(instanceData);
 						}
+						// transparent batch
+						else if (batchAssigment & (1 << 2))
+						{
+							m_transparentBatch.push_back(instanceData);
+						}
 					}
 
 					if (!shadowFrustumCulled)
@@ -314,6 +320,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			std::sort(m_opaqueBatch.begin(), m_opaqueBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
 			std::sort(m_alphaTestedBatch.begin(), m_alphaTestedBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			std::sort(m_transparentBatch.begin(), m_transparentBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
 			std::sort(m_alphaTestedShadowBatch.begin(), m_alphaTestedShadowBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
 		}
 
@@ -327,6 +334,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_opaqueBatch = m_opaqueBatch.data();
 		renderData.m_alphaTestedBatchSize = static_cast<uint32_t>(m_alphaTestedBatch.size());
 		renderData.m_alphaTestedBatch = m_alphaTestedBatch.data();
+		renderData.m_transparentBatchSize = static_cast<uint32_t>(m_transparentBatch.size());
+		renderData.m_transparentBatch = m_transparentBatch.data();
 		renderData.m_opaqueShadowBatchSize = static_cast<uint32_t>(m_opaqueShadowBatch.size());
 		renderData.m_opaqueShadowBatch = m_opaqueShadowBatch.data();
 		renderData.m_alphaTestedShadowBatchSize = static_cast<uint32_t>(m_alphaTestedShadowBatch.size());
@@ -492,6 +501,9 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 			break;
 		case Material::Alpha::MASKED:
 			batchAssignment = 1 << 1;
+			break;
+		case Material::Alpha::BLENDED:
+			batchAssignment = 1 << 2;
 			break;
 		default:
 			break;

@@ -20,6 +20,7 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 	{
 		builder.writeStorageBuffer(data.m_opaqueIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.writeStorageBuffer(data.m_maskedIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.writeStorageBuffer(data.m_transparentIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.writeStorageBuffer(data.m_opaqueShadowIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.writeStorageBuffer(data.m_maskedShadowIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	},
@@ -39,7 +40,7 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[6] = {};
+			VkWriteDescriptorSet descriptorWrites[7] = {};
 
 			// instance data
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
@@ -79,25 +80,35 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[3].pBufferInfo = &maskedIndirectBufferInfo;
 
-			// opaque shadow indirect buffer
-			VkDescriptorBufferInfo opaqueShadowIndirectBufferInfo = registry.getBufferInfo(data.m_opaqueShadowIndirectBufferHandle);
+			// transparent indirect buffer
+			VkDescriptorBufferInfo transparentIndirectBufferInfo = registry.getBufferInfo(data.m_transparentIndirectBufferHandle);
 			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[4].dstSet = descriptorSet;
-			descriptorWrites[4].dstBinding = OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING;
+			descriptorWrites[4].dstBinding = TRANSPARENT_INDIRECT_BUFFER_BINDING;
 			descriptorWrites[4].dstArrayElement = 0;
 			descriptorWrites[4].descriptorCount = 1;
 			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].pBufferInfo = &opaqueShadowIndirectBufferInfo;
+			descriptorWrites[4].pBufferInfo = &transparentIndirectBufferInfo;
 
-			// masked shadow indirect buffer
-			VkDescriptorBufferInfo maskedShadowIndirectBufferInfo = registry.getBufferInfo(data.m_maskedShadowIndirectBufferHandle);
+			// opaque shadow indirect buffer
+			VkDescriptorBufferInfo opaqueShadowIndirectBufferInfo = registry.getBufferInfo(data.m_opaqueShadowIndirectBufferHandle);
 			descriptorWrites[5] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[5].dstSet = descriptorSet;
-			descriptorWrites[5].dstBinding = MASKED_SHADOW_INDIRECT_BUFFER_BINDING;
+			descriptorWrites[5].dstBinding = OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING;
 			descriptorWrites[5].dstArrayElement = 0;
 			descriptorWrites[5].descriptorCount = 1;
 			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].pBufferInfo = &maskedShadowIndirectBufferInfo;
+			descriptorWrites[5].pBufferInfo = &opaqueShadowIndirectBufferInfo;
+
+			// masked shadow indirect buffer
+			VkDescriptorBufferInfo maskedShadowIndirectBufferInfo = registry.getBufferInfo(data.m_maskedShadowIndirectBufferHandle);
+			descriptorWrites[6] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[6].dstSet = descriptorSet;
+			descriptorWrites[6].dstBinding = MASKED_SHADOW_INDIRECT_BUFFER_BINDING;
+			descriptorWrites[6].dstArrayElement = 0;
+			descriptorWrites[6].descriptorCount = 1;
+			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[6].pBufferInfo = &maskedShadowIndirectBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
@@ -108,11 +119,12 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 		PushConsts pushConsts;
 		pushConsts.opaqueCount = data.m_opaqueCount;
 		pushConsts.maskedCount = data.m_maskedCount;
+		pushConsts.transparentCount = data.m_transparentCount;
 		pushConsts.opaqueShadowCount = data.m_opaqueShadowCount;
 		pushConsts.maskedShadowCount = data.m_maskedShadowCount;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		VKUtility::dispatchComputeHelper(cmdBuf, data.m_opaqueCount + data.m_maskedCount + data.m_opaqueShadowCount + data.m_maskedShadowCount, 1, 1, 64, 1, 1);
+		VKUtility::dispatchComputeHelper(cmdBuf, data.m_opaqueCount + data.m_maskedCount + data.m_transparentCount + data.m_opaqueShadowCount + data.m_maskedShadowCount, 1, 1, 64, 1, 1);
 	});
 }

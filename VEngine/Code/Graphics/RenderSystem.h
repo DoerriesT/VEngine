@@ -40,6 +40,7 @@ namespace VEngine
 		std::vector<glm::mat4> m_transformData;
 		std::vector<SubMeshInstanceData> m_opaqueBatch;
 		std::vector<SubMeshInstanceData> m_alphaTestedBatch;
+		std::vector<SubMeshInstanceData> m_transparentBatch;
 		std::vector<SubMeshInstanceData> m_opaqueShadowBatch;
 		std::vector<SubMeshInstanceData> m_alphaTestedShadowBatch;
 		LightData m_lightData;

@@ -77,6 +77,8 @@ namespace VEngine
 		uint32_t m_alphaTestedBatchSize;
 		SubMeshInstanceData *m_alphaTestedBatch;
 		uint32_t m_opaqueShadowBatchSize;
+		SubMeshInstanceData *m_transparentBatch;
+		uint32_t m_transparentBatchSize;
 		SubMeshInstanceData *m_opaqueShadowBatch;
 		uint32_t m_alphaTestedShadowBatchSize;
 		SubMeshInstanceData *m_alphaTestedShadowBatch;
