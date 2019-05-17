@@ -14,6 +14,9 @@ namespace VEngine
 	GlobalVar<float> g_FXAAQualitySubpix = 0.75f;
 	GlobalVar<float> g_FXAAQualityEdgeThreshold = 0.166f;
 	GlobalVar<float> g_FXAAQualityEdgeThresholdMin = 0.0833f;
+	GlobalVar<float> g_gtaoRadius = 2.0f;
+	GlobalVar<unsigned int> g_gtaoSteps = 4;
+	GlobalVar<unsigned int> g_gtaoMaxRadiusPixels = 256;
 	GlobalConst<unsigned int> g_shadowAtlasSize = 8192;
 	GlobalConst<unsigned int> g_shadowAtlasMinTileSize = 256;
 	GlobalConst<unsigned int> g_shadowCascadeSize = 2048;

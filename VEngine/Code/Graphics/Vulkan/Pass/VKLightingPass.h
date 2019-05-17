@@ -28,6 +28,7 @@ namespace VEngine
 			FrameGraph::ImageHandle m_normalImageHandle;
 			FrameGraph::ImageHandle m_metalnessRougnessOcclusionImageHandle;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
+			FrameGraph::ImageHandle m_occlusionImageHandle;
 			FrameGraph::ImageHandle m_resultImageHandle;
 		};
 

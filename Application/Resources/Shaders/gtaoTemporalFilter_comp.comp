@@ -1,0 +1,110 @@
+#version 450
+
+#include "gtaoTemporalFilter_bindings.h"
+
+layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
+layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityImage;
+layout(set = PREVIOUS_IMAGE_SET, binding = PREVIOUS_IMAGE_BINDING) uniform sampler2D uPreviousImage;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+float calulateAlpha(float frameTime, float convergenceTime)
+{
+	return exp(-frameTime / convergenceTime);
+}
+
+float length2(vec3 v)
+{
+	return dot(v, v);
+}
+
+float projectDepth(float n, float f, float z)
+{
+	return (((-(f + n) / (f - n)) * z + (-2.0 * f * n) / (f - n)) / -z) * 0.5 + 0.5;
+}
+
+
+void main() 
+{
+	vec2 center = texelFetch(uInputImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
+	vec2 texelSize = 1.0 / textureSize(uInputImage, 0).xy;
+	vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * texelSize;
+	
+	float ao = center.x;
+	float depth = center.y;
+	
+	// get previous frames ao value
+	vec2 velocity = textureLod(uVelocityImage, texCoord, 0).xy;
+	vec2 reprojectedCoord = texCoord - velocity;
+	vec2 previousAo = textureLod(uPreviousImage, reprojectedCoord, 0).xy;
+    
+	// is the reprojected coordinate inside the frame?
+	float insideFrame = all(lessThan(abs(reprojectedCoord - vec2(0.5)), vec2(0.5))) ? 1.0 : 0.0;
+    
+	mat4 prevInvViewProjection = uPushConsts.prevInvViewProjectionNearFar;
+	float prevNear = 0.1;//prevInvViewProjection[0][3];
+	float prevFar = 300.0f;//prevInvViewProjection[1][3];
+	
+	vec4 previousWorldPos = prevInvViewProjection * vec4(reprojectedCoord.xy * 2.0 - 1.0, projectDepth(prevNear, prevFar, -previousAo.y), 1.0);
+	previousWorldPos.xyz /= previousWorldPos.w;
+	
+	mat4 invViewProjection = uPushConsts.invViewProjectionNearFar;
+	float near = prevNear;//invViewProjection[0][3];
+	float far = prevFar;//invViewProjection[1][3];
+    
+	vec4 currentWorldPos = invViewProjection * vec4(texCoord * 2.0 - 1.0, projectDepth(prevNear, prevFar, -depth), 1.0);
+	currentWorldPos.xyz /= currentWorldPos.w;
+    
+	float disocclusionWeight = 1.0 - clamp(length2(abs(currentWorldPos.xyz - previousWorldPos.xyz)) * (1.0 / (0.5 * 0.5)), 0.0, 1.0);
+	
+	// based on depth, how likely describes the value the same point?
+	float depthWeight = clamp(1.0 - ((depth - previousAo.y) / (depth * 0.01)), 0.0, 1.0);
+	
+	// neighborhood clamping
+	//vec2 minMax = vec2(1e6, -1e6);
+	//
+	//// determine neighborhood
+	//{
+	//	// top left
+	//	{
+	//		float S = textureLod(uInputImage, 1.5 * vec2(-texelSize.x, texelSize.y) + texCoord, 0).x;
+	//		minMax.x = min(S, minMax.x);
+	//		minMax.y = max(S, minMax.y);
+	//	}
+	//	// top right
+	//	{
+	//		float S = textureLod(uInputImage, 1.5 * vec2(texelSize.x, texelSize.y) + texCoord, 0).x;
+	//		minMax.x = min(S, minMax.x);
+	//		minMax.y = max(S, minMax.y);
+	//	}
+	//	// bottom left
+	//	{
+	//		float S = textureLod(uInputImage, 1.5 * vec2(-texelSize.x, -texelSize.y) + texCoord, 0).x;
+	//		minMax.x = min(S, minMax.x);
+	//		minMax.y = max(S, minMax.y);
+	//	}
+	//	// bottom right
+	//	{
+	//		float S = textureLod(uInputImage, 1.5 * vec2(texelSize.x, -texelSize.y) + texCoord, 0).x;
+	//		minMax.x = min(S, minMax.x);
+	//		minMax.y = max(S, minMax.y);
+	//	}
+	//	// center
+	//	minMax.x = min(ao, minMax.x);
+	//	minMax.y = max(ao, minMax.y);
+	//}
+	//
+	//previousAo.x = clamp(previousAo.x, minMax.x, minMax.y);
+	
+	//float convergenceAlpha = calulateAlpha(uFrameTime, velocityWeight * 0.5 * (1.0 / 60.0) * 24.0);
+	
+	ao = mix(ao, previousAo.x, (43.0 / 44.0) * insideFrame * disocclusionWeight);
+	
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(ao, depth, 0.0, 0.0));
+}

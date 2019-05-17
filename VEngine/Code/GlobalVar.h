@@ -98,6 +98,10 @@ namespace VEngine
 	extern GlobalVar<float> g_FXAAQualitySubpix;
 	extern GlobalVar<float> g_FXAAQualityEdgeThreshold;
 	extern GlobalVar<float> g_FXAAQualityEdgeThresholdMin;
+	extern GlobalVar<float> g_gtaoRadius;
+	extern GlobalVar<unsigned int> g_gtaoSteps;
+	extern GlobalVar<unsigned int> g_gtaoMaxRadiusPixels;
+	extern GlobalVar<unsigned int> g_windowHeight;
 	extern GlobalConst<unsigned int> g_shadowAtlasSize;
 	extern GlobalConst<unsigned int> g_shadowAtlasMinTileSize;
 	extern GlobalConst<unsigned int> g_shadowCascadeSize;

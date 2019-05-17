@@ -1,0 +1,178 @@
+#version 450
+
+#include "gtao_bindings.h"
+
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+
+const float PI = 3.14159265;
+
+vec3 getViewSpacePos(vec2 uv)
+{
+	uv *= uPushConsts.resolution.zw;
+	float depth = textureLod(uDepthImage, uv, 0).r;
+	vec4 clipSpacePosition = vec4(vec2(uv) * 2.0 - 1.0, depth, 1.0);
+	vec4 viewSpacePosition = uPushConsts.invProjection * clipSpacePosition;
+	viewSpacePosition /= viewSpacePosition.w;
+	//viewSpacePosition.z = -viewSpacePosition.z;
+	return viewSpacePosition.xyz;
+}
+
+vec3 minDiff(vec3 P, vec3 Pr, vec3 Pl)
+{
+    vec3 V1 = Pr - P;
+    vec3 V2 = P - Pl;
+    return (dot(V1, V1) < dot(V2, V2)) ? V1 : V2;
+}
+
+void computeSteps(inout float stepSizePix, inout float numSteps, float rayRadiusPix)
+{
+    // Avoid oversampling if numSteps is greater than the kernel radius in pixels
+    numSteps = min(uPushConsts.numSteps, rayRadiusPix);
+    stepSizePix = rayRadiusPix / numSteps;
+}
+
+// x = spatial direction / y = temporal direction / z = spatial offset / w = temporal offset
+vec4 getNoise()
+{
+	vec4 noise;
+	
+	const ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+	
+	noise.x = (1.0 / 16.0) * ((((coord.x + coord.y) & 0x3 ) << 2) + (coord.x & 0x3));
+	noise.z = (1.0 / 4.0) * ((coord.y - coord.x) & 0x3);
+
+	const float rotations[] = { 60.0, 300.0, 180.0, 240.0, 120.0, 0.0 };
+	noise.y = rotations[uPushConsts.frame % 6] * (1.0 / 360.0);
+	
+	const float offsets[] = { 0.0, 0.5, 0.25, 0.75 };
+	noise.w = offsets[(uPushConsts.frame / 6 ) % 4];
+	
+	return noise;
+}
+
+float square(float x)
+{
+	return x * x;
+}
+
+float falloff(float dist2)
+{
+	float start = square(uPushConsts.radius * 0.2);
+	float end = square(uPushConsts.radius);
+	return 2.0 * clamp((dist2 - start) / (end - start), 0.0, 1.0);
+}
+
+void main() 
+{
+	vec3 P = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5));
+
+	// Calculate the projected size of the hemisphere
+    float rayRadiusUV = 0.5 * uPushConsts.radius * uPushConsts.focalLength / -P.z;
+    float rayRadiusPix = rayRadiusUV * uPushConsts.resolution.x;
+	rayRadiusPix = min(rayRadiusPix, uPushConsts.maxRadiusPixels);
+
+    float ao = 1.0;
+
+    // Make sure the radius of the evaluated hemisphere is more than a pixel
+    if(rayRadiusPix > 1.0)
+    {
+		ao = 0.0;
+		
+		const vec3 V = -normalize(P);
+		
+		float numSteps;
+    	float stepSizePix;
+
+    	// Compute the number of steps
+    	computeSteps(stepSizePix, numSteps, rayRadiusPix);
+
+		vec4 noise = getNoise();
+
+		float theta = (noise.x + noise.y) * PI;
+		float jitter = noise.z + noise.w;
+		vec2 dir = vec2(cos(theta), sin(theta));
+		vec2 horizons = vec2(-1.0);
+		
+		float currstep = mod(jitter, 1.0) * (stepSizePix - 1.0) + 1.0;
+
+		for(float s = 0; s < numSteps; ++s)
+		{
+			vec2 offset = currstep * dir;
+			currstep += stepSizePix;
+			
+			// first horizon
+			{
+				vec3 S = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) + offset);
+				vec3 D = S - P;
+				float dist2 = dot(D, D);
+				D *= inversesqrt(dist2);
+				float attenuation = falloff(dist2);
+				horizons.x = max(dot(V, D) - attenuation, horizons.x);
+			}
+			
+			// second horizon
+			{
+				vec3 S = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) - offset);
+				vec3 D = S - P;
+				float dist2 = dot(D, D);
+				D *= inversesqrt(dist2);
+				float attenuation = falloff(dist2);
+				horizons.y = max(dot(V, D) - attenuation, horizons.y);
+			}
+		}
+		
+		horizons = acos(horizons);
+		horizons.x = -horizons.x;
+		
+		// Sample neighboring pixels
+		const vec3 Pr = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) + vec2(1.0, 0.0));
+		const vec3 Pl = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) + vec2(-1.0, 0.0));
+		const vec3 Pb = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) + vec2(0.0, 1.0));
+		const vec3 Pt = getViewSpacePos(vec2(gl_GlobalInvocationID.xy) + vec2(0.5) + vec2(0.0, -1.0));
+
+		// Calculate tangent basis vectors using the minimum difference
+		const vec3 dPdu = minDiff(P, Pr, Pl);
+		const vec3 dPdv = minDiff(P, Pt, Pb);
+		
+		const vec3 N = normalize(cross(dPdu, dPdv));
+		
+		// project normal onto slice plane
+		// invert dir.y because screen space y axis points down, but view space y axis points up
+		const vec3 planeN = normalize(cross(vec3(dir.x, -dir.y, 0.0), V));
+		vec3 projectedN = N - dot(N, planeN) * planeN;
+		
+		float projectedNLength = length(projectedN);
+		float invLength = 1.0 / (projectedNLength + 1e-6);
+		projectedN *= invLength;
+		
+		// calculate gamma
+		vec3 tangent = cross(V, planeN);
+		float cosGamma	= dot(projectedN, V);
+		float gamma = acos(cosGamma) * sign(-dot(projectedN, tangent));
+		float sinGamma2	= 2.0 * sin(gamma);
+		
+		
+		// clamp horizons
+		horizons.x = gamma + max(horizons.x - gamma, -PI * 0.5);
+		horizons.y = gamma + min(horizons.y - gamma, PI * 0.5);
+		
+		vec2 horizonCosTerm = (sinGamma2 * horizons - cos(2.0 * horizons - gamma)) + cosGamma;
+		
+		// premultiply
+		projectedNLength *= 0.25;
+		
+		ao += projectedNLength * horizonCosTerm.x;
+		ao += projectedNLength * horizonCosTerm.y;
+	}
+
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(ao, -P.z, 0.0, 0.0));
+}

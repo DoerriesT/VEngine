@@ -161,6 +161,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOSpatialFilterPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOTemporalFilterPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.h" />
@@ -216,6 +219,9 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOSpatialFilterPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOTemporalFilterPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.cpp" />

@@ -25,6 +25,7 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		builder.readTexture(data.m_normalImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_metalnessRougnessOcclusionImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_shadowAtlasImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readTexture(data.m_occlusionImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 		builder.writeStorageImage(data.m_resultImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	},
@@ -44,7 +45,7 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[8] = {};
+			VkWriteDescriptorSet descriptorWrites[9] = {};
 
 			// result image
 			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_resultImageHandle);
@@ -133,6 +134,17 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 			descriptorWrites[7].descriptorCount = 1;
 			descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[7].pBufferInfo = &pointLightMaskBufferInfo;
+
+			// occlusion image
+			VkDescriptorImageInfo occlusionImageInfo = registry.getImageInfo(data.m_occlusionImageHandle);
+			occlusionImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
+			descriptorWrites[8] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[8].dstSet = descriptorSet;
+			descriptorWrites[8].dstBinding = OCCLUSION_IMAGE_BINDING;
+			descriptorWrites[8].dstArrayElement = 0;
+			descriptorWrites[8].descriptorCount = 1;
+			descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[8].pImageInfo = &occlusionImageInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}

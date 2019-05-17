@@ -17,10 +17,12 @@ namespace VEngine
 		// images
 		VKImage m_shadowTexture;
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
+		VKImage m_gtaoHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// views
 		VkImageView m_shadowTextureView;
 		VkImageView m_taaHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
+		VkImageView m_gtaoHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// buffers
 		VKBuffer m_lightProxyVertexBuffer;
@@ -41,6 +43,7 @@ namespace VEngine
 		// layouts
 		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout m_taaHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		VkImageLayout m_gtaoHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		VkImageLayout m_swapChainImageLayouts[RendererConsts::FRAMES_IN_FLIGHT + 1] = {};
 
 		// samplers

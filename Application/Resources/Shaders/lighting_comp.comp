@@ -8,6 +8,7 @@
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uLightingResultImage;
 layout(set = GBUFFER_IMAGES_SET, binding = GBUFFER_IMAGES_BINDING) uniform sampler2D uGBufferTextures[4];
 layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DShadow uShadowTexture;
+layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -115,7 +116,10 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	result += 1.0 * lightingParams.albedo;
+	{
+		float visibility = texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+		result += 1.0 * lightingParams.albedo * visibility;
+	}
 	
 	const vec2 pixelCoord = vec2(gl_GlobalInvocationID.xy) + 0.5;
 	const mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0,

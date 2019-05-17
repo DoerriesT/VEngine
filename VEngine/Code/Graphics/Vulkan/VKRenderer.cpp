@@ -24,6 +24,9 @@
 #include "Pass/VKVelocityInitializationPass.h"
 #include "Pass/VKFXAAPass.h"
 #include "Pass/VKTransparencyWritePass.h"
+#include "Pass/VKGTAOPass.h"
+#include "Pass/VKGTAOSpatialFilterPass.h"
+#include "Pass/VKGTAOTemporalFilterPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -137,6 +140,44 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			VK_NULL_HANDLE);
 	}
 
+	FrameGraph::ImageHandle gtaoPreviousImageHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "GTAO Previous Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getFormat();
+
+		gtaoPreviousImageHandle = graph.importImage(desc,
+			m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getImage(),
+			m_renderResources->m_gtaoHistoryTextureViews[commonData.m_previousResourceIndex],
+			&m_renderResources->m_gtaoHistoryTextureLayouts[commonData.m_previousResourceIndex],
+			VK_NULL_HANDLE,
+			VK_NULL_HANDLE);
+	}
+
+	FrameGraph::ImageHandle gtaoImageHandle = 0;
+	{
+		FrameGraph::ImageDescription desc = {};
+		desc.m_name = "GTAO Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getFormat();
+
+		gtaoImageHandle = graph.importImage(desc,
+			m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getImage(),
+			m_renderResources->m_gtaoHistoryTextureViews[commonData.m_currentResourceIndex],
+			&m_renderResources->m_gtaoHistoryTextureLayouts[commonData.m_currentResourceIndex],
+			VK_NULL_HANDLE,
+			VK_NULL_HANDLE);
+	}
+
 	FrameGraph::BufferHandle avgLuminanceBufferHandle = 0;
 	{
 		FrameGraph::BufferDescription desc = {};
@@ -163,6 +204,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle transparencyTransmittanceImageHandle = VKResourceDefinitions::createTransparencyTransmittanceImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle transparencyDeltaImageHandle = VKResourceDefinitions::createTransparencyDeltaImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle transparencyResultImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle gtaoRawImageHandle = VKResourceDefinitions::createGTAOImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle gtaoSpatiallyFilteredImageHandle = VKResourceDefinitions::createGTAOImageHandle(graph, m_width, m_height);
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
 	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
@@ -366,6 +409,54 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
+	// gtao
+	VKGTAOPass::Data gtaoPassData;
+	gtaoPassData.m_renderResources = m_renderResources.get();
+	gtaoPassData.m_pipelineCache = m_pipelineCache.get();
+	gtaoPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	gtaoPassData.m_width = m_width;
+	gtaoPassData.m_height = m_height;
+	gtaoPassData.m_frame = commonData.m_frame;
+	gtaoPassData.m_fovy = commonData.m_fovy;
+	gtaoPassData.m_invProjection = commonData.m_invJitteredProjectionMatrix;
+	gtaoPassData.m_depthImageHandle = depthImageHandle;
+	gtaoPassData.m_resultImageHandle = gtaoRawImageHandle;
+
+	VKGTAOPass::addToGraph(graph, gtaoPassData);
+
+
+	// gtao spatial filter
+	VKGTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
+	gtaoPassSpatialFilterPassData.m_renderResources = m_renderResources.get();
+	gtaoPassSpatialFilterPassData.m_pipelineCache = m_pipelineCache.get();
+	gtaoPassSpatialFilterPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	gtaoPassSpatialFilterPassData.m_width = m_width;
+	gtaoPassSpatialFilterPassData.m_height = m_height;
+	gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageHandle;
+	gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageHandle;
+
+	VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
+
+
+	// gtao temporal filter
+	VKGTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
+	gtaoPassTemporalFilterPassData.m_renderResources = m_renderResources.get();
+	gtaoPassTemporalFilterPassData.m_pipelineCache = m_pipelineCache.get();
+	gtaoPassTemporalFilterPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	gtaoPassTemporalFilterPassData.m_width = m_width;
+	gtaoPassTemporalFilterPassData.m_height = m_height;
+	gtaoPassTemporalFilterPassData.m_nearPlane = commonData.m_nearPlane;
+	gtaoPassTemporalFilterPassData.m_farPlane = commonData.m_farPlane;
+	gtaoPassTemporalFilterPassData.m_invViewProjection = commonData.m_invJitteredViewProjectionMatrix;
+	gtaoPassTemporalFilterPassData.m_prevInvViewProjection = commonData.m_prevInvJitteredViewProjectionMatrix;
+	gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageHandle;
+	gtaoPassTemporalFilterPassData.m_velocityImageHandle = velocityImageHandle;
+	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageHandle;
+	gtaoPassTemporalFilterPassData.m_resultImageHandle = gtaoImageHandle;
+
+	VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
+
+
 	// cull lights to tiles
 	VKRasterTilingPass::Data rasterTilingPassData;
 	rasterTilingPassData.m_renderResources = m_renderResources.get();
@@ -401,6 +492,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_normalImageHandle = normalImageHandle;
 	lightingPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
 	lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
+	lightingPassData.m_occlusionImageHandle = gtaoImageHandle;
 	lightingPassData.m_resultImageHandle = lightImageHandle;
 
 	VKLightingPass::addToGraph(graph, lightingPassData);
