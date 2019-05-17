@@ -1244,8 +1244,8 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 
 			if (!scheduleSemaphore)
 			{
-				// we need to wait on an event for both execution and memory dependencies
-				if (executionDependency || memoryDependency)
+				// we need to wait on an event for both execution and memory dependencies and some layout transitions
+				if (executionDependency || memoryDependency || (imageLayoutTransition && previousPassIndex != passIndex))
 				{
 					assert(syncBits[passIndex].m_waitEventCount < MAX_WAIT_EVENTS);
 					// update count of events to wait on

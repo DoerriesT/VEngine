@@ -18,6 +18,7 @@ namespace VEngine
 			const CommonRenderData *m_commonRenderData;
 			uint32_t m_width;
 			uint32_t m_height;
+			bool m_ssao;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_shadowDataBufferInfo;

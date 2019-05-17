@@ -3,12 +3,18 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
+#ifndef SSAO_ENABLED
+#define SSAO_ENABLED 0
+#endif // SSAO_ENABLED
+
 #include "lighting_bindings.h"
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uLightingResultImage;
 layout(set = GBUFFER_IMAGES_SET, binding = GBUFFER_IMAGES_BINDING) uniform sampler2D uGBufferTextures[4];
 layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DShadow uShadowTexture;
+#if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
+#endif // SSAO_ENABLED
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -117,7 +123,10 @@ void main()
 	
 	// ambient
 	{
-		float visibility = texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+		float visibility = 1.0;
+#if SSAO_ENABLED
+		visibility = texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+#endif // SSAO_ENABLED
 		result += 1.0 * lightingParams.albedo * visibility;
 	}
 	

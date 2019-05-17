@@ -25,7 +25,10 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		builder.readTexture(data.m_normalImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_metalnessRougnessOcclusionImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_shadowAtlasImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readTexture(data.m_occlusionImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		if (data.m_ssao)
+		{
+			builder.readTexture(data.m_occlusionImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		}
 
 		builder.writeStorageImage(data.m_resultImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	},
@@ -34,7 +37,7 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/lighting_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderPath, data.m_ssao ? "Resources/Shaders/lighting_comp_SSAO_ENABLED.spv" : "Resources/Shaders/lighting_comp.spv");
 
 			pipelineDesc.finalize();
 		}
@@ -46,16 +49,18 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		// update descriptor sets
 		{
 			VkWriteDescriptorSet descriptorWrites[9] = {};
+			uint32_t writeCount = 0;
 
 			// result image
 			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_resultImageHandle);
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = RESULT_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[0].pImageInfo = &resultImageInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = RESULT_IMAGE_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descriptorWrites[writeCount].pImageInfo = &resultImageInfo;
+			++writeCount;
 
 			// gbuffer images
 			VkDescriptorImageInfo depthImageInfo = registry.getImageInfo(data.m_depthImageHandle);
@@ -70,83 +75,94 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 				info.sampler = data.m_renderResources->m_pointSamplerClamp;
 			}
 
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = GBUFFER_IMAGES_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 4;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].pImageInfo = gbufferImageInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = GBUFFER_IMAGES_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 4;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[writeCount].pImageInfo = gbufferImageInfo;
+			++writeCount;
 
 			// shadow atlas
 			VkDescriptorImageInfo shadowAtlasImageInfo = registry.getImageInfo(data.m_shadowAtlasImageHandle);
 			shadowAtlasImageInfo.sampler = data.m_renderResources->m_shadowSampler;
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = SHADOW_ATLAS_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[2].pImageInfo = &shadowAtlasImageInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = SHADOW_ATLAS_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[writeCount].pImageInfo = &shadowAtlasImageInfo;
+			++writeCount;
 
 			// directional light
-			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[3].dstSet = descriptorSet;
-			descriptorWrites[3].dstBinding = DIRECTIONAL_LIGHT_DATA_BINDING;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[3].pBufferInfo = &data.m_directionalLightDataBufferInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = DIRECTIONAL_LIGHT_DATA_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &data.m_directionalLightDataBufferInfo;
+			++writeCount;
 
 			// point light
-			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[4].dstSet = descriptorSet;
-			descriptorWrites[4].dstBinding = POINT_LIGHT_DATA_BINDING;
-			descriptorWrites[4].dstArrayElement = 0;
-			descriptorWrites[4].descriptorCount = 1;
-			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].pBufferInfo = &data.m_pointLightDataBufferInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = POINT_LIGHT_DATA_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &data.m_pointLightDataBufferInfo;
+			++writeCount;
 
 			// shadow data
-			descriptorWrites[5] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[5].dstSet = descriptorSet;
-			descriptorWrites[5].dstBinding = SHADOW_DATA_BINDING;
-			descriptorWrites[5].dstArrayElement = 0;
-			descriptorWrites[5].descriptorCount = 1;
-			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].pBufferInfo = &data.m_shadowDataBufferInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = SHADOW_DATA_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &data.m_shadowDataBufferInfo;
+			++writeCount;
 
 			// point light z bins
-			descriptorWrites[6] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[6].dstSet = descriptorSet;
-			descriptorWrites[6].dstBinding = POINT_LIGHT_Z_BINS_BINDING;
-			descriptorWrites[6].dstArrayElement = 0;
-			descriptorWrites[6].descriptorCount = 1;
-			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[6].pBufferInfo = &data.m_pointLightZBinsBufferInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = POINT_LIGHT_Z_BINS_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &data.m_pointLightZBinsBufferInfo;
+			++writeCount;
 
 			// point light mask
 			VkDescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
-			descriptorWrites[7] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[7].dstSet = descriptorSet;
-			descriptorWrites[7].dstBinding = POINT_LIGHT_MASK_BINDING;
-			descriptorWrites[7].dstArrayElement = 0;
-			descriptorWrites[7].descriptorCount = 1;
-			descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[7].pBufferInfo = &pointLightMaskBufferInfo;
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = POINT_LIGHT_MASK_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &pointLightMaskBufferInfo;
+			++writeCount;
 
 			// occlusion image
 			VkDescriptorImageInfo occlusionImageInfo = registry.getImageInfo(data.m_occlusionImageHandle);
 			occlusionImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[8] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[8].dstSet = descriptorSet;
-			descriptorWrites[8].dstBinding = OCCLUSION_IMAGE_BINDING;
-			descriptorWrites[8].dstArrayElement = 0;
-			descriptorWrites[8].descriptorCount = 1;
-			descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[8].pImageInfo = &occlusionImageInfo;
+			if (data.m_ssao)
+			{
+				descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+				descriptorWrites[writeCount].dstSet = descriptorSet;
+				descriptorWrites[writeCount].dstBinding = OCCLUSION_IMAGE_BINDING;
+				descriptorWrites[writeCount].dstArrayElement = 0;
+				descriptorWrites[writeCount].descriptorCount = 1;
+				descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[writeCount].pImageInfo = &occlusionImageInfo;
+				++writeCount;
+			}
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			vkUpdateDescriptorSets(g_context.m_device, writeCount, descriptorWrites, 0, nullptr);
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

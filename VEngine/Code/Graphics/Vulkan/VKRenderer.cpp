@@ -422,7 +422,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	gtaoPassData.m_depthImageHandle = depthImageHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageHandle;
 
-	VKGTAOPass::addToGraph(graph, gtaoPassData);
+	if (g_ssaoEnabled)
+	{
+		VKGTAOPass::addToGraph(graph, gtaoPassData);
+	}
 
 
 	// gtao spatial filter
@@ -435,7 +438,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageHandle;
 	gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageHandle;
 
-	VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
+	if (g_ssaoEnabled)
+	{
+		VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
+	}
 
 
 	// gtao temporal filter
@@ -454,7 +460,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageHandle;
 	gtaoPassTemporalFilterPassData.m_resultImageHandle = gtaoImageHandle;
 
-	VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
+	if (g_ssaoEnabled)
+	{
+		VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
+	}
 
 
 	// cull lights to tiles
@@ -482,6 +491,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_commonRenderData = &commonData;
 	lightingPassData.m_width = m_width;
 	lightingPassData.m_height = m_height;
+	lightingPassData.m_ssao = g_ssaoEnabled;
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	lightingPassData.m_shadowDataBufferInfo = shadowDataBufferInfo;

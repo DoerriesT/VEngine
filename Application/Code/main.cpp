@@ -35,7 +35,7 @@ public:
 		entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
-		
+
 		scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
 		entt::entity interiorEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
@@ -67,11 +67,12 @@ public:
 		}
 	}
 
-	void update(float timeDelta) override 
+	void update(float timeDelta) override
 	{
 		auto &input = m_engine->getUserInput();
 		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::T);
 		VEngine::g_FXAAEnabled = input.isKeyPressed(InputKey::F);
+		VEngine::g_ssaoEnabled = input.isKeyPressed(InputKey::G);
 	};
 
 	void shutdown() override

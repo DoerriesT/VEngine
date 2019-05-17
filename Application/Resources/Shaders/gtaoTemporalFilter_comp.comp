@@ -104,7 +104,7 @@ void main()
 	
 	//float convergenceAlpha = calulateAlpha(uFrameTime, velocityWeight * 0.5 * (1.0 / 60.0) * 24.0);
 	
-	ao = mix(ao, previousAo.x, (43.0 / 44.0) * insideFrame * disocclusionWeight);
+	ao = mix(ao, previousAo.x, (23.0 / 24.0) * insideFrame * disocclusionWeight);
 	
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(ao, depth, 0.0, 0.0));
 }
