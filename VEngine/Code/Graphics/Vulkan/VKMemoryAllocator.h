@@ -11,6 +11,7 @@ namespace VEngine
 	{
 		VkMemoryPropertyFlags m_requiredFlags;
 		VkMemoryPropertyFlags m_preferredFlags;
+		bool m_dedicatedAllocation;
 	};
 
 	struct VKAllocationInfo
@@ -57,7 +58,7 @@ namespace VEngine
 			MAX_BLOCK_SIZE = 256 * 1024 * 1024
 		};
 
-		class VKMemoryPool
+		class MemoryPool
 		{
 		public:
 			void init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize preferredBlockSize);
@@ -92,7 +93,7 @@ namespace VEngine
 		VkDeviceSize m_bufferImageGranularity;
 		VkDeviceSize m_nonCoherentAtomSize;
 		VkDeviceSize m_heapSizeLimits[VK_MAX_MEMORY_HEAPS];
-		VKMemoryPool m_pools[VK_MAX_MEMORY_TYPES];
+		MemoryPool m_pools[VK_MAX_MEMORY_TYPES];
 		DynamicObjectPool<VKAllocationInfo> m_allocationInfoPool;
 
 		VkResult findMemoryTypeIndex(uint32_t memoryTypeBitsRequirement, VkMemoryPropertyFlags requiredProperties, VkMemoryPropertyFlags preferredProperties, uint32_t &memoryTypeIndex);
