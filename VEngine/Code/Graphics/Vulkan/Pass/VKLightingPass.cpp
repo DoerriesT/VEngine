@@ -20,6 +20,7 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		[&](FrameGraph::PassBuilder builder)
 	{
 		builder.readStorageBuffer(data.m_pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_albedoImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 		builder.readTexture(data.m_normalImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
@@ -117,13 +118,14 @@ void VEngine::VKLightingPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 			++writeCount;
 
 			// shadow data
+			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
 			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[writeCount].dstSet = descriptorSet;
 			descriptorWrites[writeCount].dstBinding = SHADOW_DATA_BINDING;
 			descriptorWrites[writeCount].dstArrayElement = 0;
 			descriptorWrites[writeCount].descriptorCount = 1;
 			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[writeCount].pBufferInfo = &data.m_shadowDataBufferInfo;
+			descriptorWrites[writeCount].pBufferInfo = &shadowDataBufferInfo;
 			++writeCount;
 
 			// point light z bins

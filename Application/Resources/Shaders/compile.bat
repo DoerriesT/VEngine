@@ -27,5 +27,8 @@ glslc --target-env=vulkan1.1 -O -Werror -c transparencyWrite_vert.vert -o transp
 glslc --target-env=vulkan1.1 -O -Werror -c gtao_comp.comp -o gtao_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c gtaoSpatialFilter_comp.comp -o gtaoSpatialFilter_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c gtaoTemporalFilter_comp.comp -o gtaoTemporalFilter_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c sdsmReduce_comp.comp -o sdsmReduce_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c sdsmClear_comp.comp -o sdsmClear_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c sdsmShadowMatrix_comp.comp -o sdsmShadowMatrix_comp.spv
 
 pause

@@ -21,6 +21,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 	graph.addGraphicsPass(data.m_alphaMasked ? "Shadow Pass Alpha" : "Shadow Pass", data.m_width, data.m_height,
 		[&](FrameGraph::PassBuilder builder)
 	{
+		builder.readStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 		builder.readIndirectBuffer(data.m_indirectBufferHandle);
 		builder.writeDepthStencil(data.m_shadowAtlasImageHandle);
 	},
@@ -99,6 +100,49 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 		// update descriptor sets
 		if (data.m_alphaMasked)
 		{
+			VkWriteDescriptorSet descriptorWrites[4] = {};
+
+			// instance data
+			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[0].dstSet = descriptorSet;
+			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
+
+			// transform data
+			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[1].dstSet = descriptorSet;
+			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
+
+			// shadow data
+			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
+			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[2].dstSet = descriptorSet;
+			descriptorWrites[2].dstBinding = SHADOW_DATA_BINDING;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[2].pBufferInfo = &shadowDataBufferInfo;
+
+			// material data
+			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[3].dstSet = descriptorSet;
+			descriptorWrites[3].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[3].pBufferInfo = &data.m_materialDataBufferInfo;
+
+			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+		}
+		else
+		{
 			VkWriteDescriptorSet descriptorWrites[3] = {};
 
 			// instance data
@@ -119,38 +163,15 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
 
-			// material data
+			// shadow data
+			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
 			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = MATERIAL_DATA_BINDING;
+			descriptorWrites[2].dstBinding = SHADOW_DATA_BINDING;
 			descriptorWrites[2].dstArrayElement = 0;
 			descriptorWrites[2].descriptorCount = 1;
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
-
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
-		}
-		else
-		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
-
-			// instance data
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
-
-			// transform data
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
+			descriptorWrites[2].pBufferInfo = &shadowDataBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}
@@ -210,7 +231,8 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 			vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 			vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &job.m_shadowViewProjectionMatrix);
+			uint32_t shadowDataIndex = static_cast<uint32_t>(i);
+			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(shadowDataIndex), &shadowDataIndex);
 
 			vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 		}

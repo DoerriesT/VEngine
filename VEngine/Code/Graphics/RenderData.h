@@ -82,5 +82,11 @@ namespace VEngine
 		SubMeshInstanceData *m_opaqueShadowBatch;
 		uint32_t m_alphaTestedShadowBatchSize;
 		SubMeshInstanceData *m_alphaTestedShadowBatch;
+		float m_orthoNearest;
+		float m_orthoFarthest;
+		float m_projScaleXInv;
+		float m_projScaleYInv;
+		glm::mat4 m_lightView;
+		glm::mat4 m_cameraToLightView;
 	};
 }

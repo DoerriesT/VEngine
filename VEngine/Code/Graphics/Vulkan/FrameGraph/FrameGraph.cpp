@@ -290,6 +290,22 @@ void PassBuilder::writeStorageBuffer(BufferHandle bufferHandle, VkPipelineStageF
 	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
 }
 
+void VEngine::FrameGraph::PassBuilder::writeBufferTransfer(BufferHandle bufferHandle)
+{
+	assert(bufferHandle);
+	size_t resourceIndex = (size_t)bufferHandle - 1;
+
+	m_graph.m_accessedResources[resourceIndex][m_passIndex] = true;
+	m_graph.m_writeResources[resourceIndex][m_passIndex] = true;
+
+	auto &resourceUsage = m_graph.m_resourceUsages[resourceIndex][m_passIndex];
+	resourceUsage.m_stageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	resourceUsage.m_accessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	resourceUsage.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	m_graph.m_passStageMasks[m_passIndex] |= resourceUsage.m_stageMask;
+}
+
 void VEngine::FrameGraph::PassBuilder::writeImageTransfer(ImageHandle imageHandle)
 {
 	assert(imageHandle);
@@ -666,7 +682,7 @@ ImageHandle Graph::importImage(const ImageDescription &imageDescription, VkImage
 	return ImageHandle(resourceIndex + 1);
 }
 
-BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VEngine::VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
+BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkDeviceSize offset, VEngine::VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
 {
 	size_t resourceIndex = m_resourceCount++;
 
@@ -679,6 +695,7 @@ BufferHandle Graph::importBuffer(const BufferDescription &bufferDescription, VkB
 	m_resourceDescriptions[resourceIndex].m_hostVisible = bufferDescription.m_hostVisible;
 
 	m_buffers[resourceIndex] = buffer;
+	m_bufferOffsets[resourceIndex] = offset;
 
 	m_allocations[resourceIndex] = allocation;
 
@@ -967,6 +984,8 @@ void Graph::createResources()
 				{
 					Utility::fatalExit("Failed to create buffer!", -1);
 				}
+
+				m_bufferOffsets[resourceIndex] = 0;
 			}
 		}
 	}
@@ -2036,7 +2055,7 @@ VkBuffer VEngine::FrameGraph::ResourceRegistry::getBuffer(BufferHandle handle) c
 VkDescriptorBufferInfo VEngine::FrameGraph::ResourceRegistry::getBufferInfo(BufferHandle handle) const
 {
 	const size_t resourceIndex = (size_t)handle - 1;
-	return { m_graph.m_buffers[resourceIndex], 0, m_graph.m_resourceDescriptions[resourceIndex].m_size };
+	return { m_graph.m_buffers[resourceIndex], m_graph.m_bufferOffsets[resourceIndex], m_graph.m_resourceDescriptions[resourceIndex].m_size };
 }
 
 const VEngine::VKAllocationHandle &ResourceRegistry::getAllocation(ResourceHandle handle) const

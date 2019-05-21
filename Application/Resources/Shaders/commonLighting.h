@@ -133,16 +133,17 @@ float evaluateShadow(sampler2DShadow shadowTexture, vec3 shadowCoord, vec2 pixel
 	}
 	shadow *= 1.0 / 8.0;
 	
-	return shadow;
+	return texture(uShadowTexture, shadowCoord).x;
 }
 
-float evaluateDirectionalLightShadow(const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord)
+float evaluateDirectionalLightShadow(buffer shadowDataBuffer, const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
 {
 	const uint shadowDataOffset = directionalLightData.shadowDataOffset;
 	vec3 shadowCoord = vec3(2.0);
 	const vec4 offsetPos = invViewMatrix * vec4(0.1 * directionalLightData.direction.xyz + viewSpacePosition, 1.0);
     
 	uint split = 0;
+	bool foundSplit = false;
 	for (; split < directionalLightData.shadowDataCount; ++split)
 	{
 		const vec4 projCoords4 = 
@@ -152,17 +153,19 @@ float evaluateDirectionalLightShadow(const DirectionalLightData directionalLight
 		
 		// test if projected coordinate is inside texture
 		// add small guard band at edges to avoid PCF sampling outside texture
-		if(all(greaterThanEqual(shadowCoord.xy, vec2(0.003))) && all(lessThan(shadowCoord.xy, vec2(1.0 - 0.003))))
+		if(all(greaterThanEqual(shadowCoord.xy, vec2(0.0))) && all(lessThan(shadowCoord.xy, vec2(1.0))))
 		{
 			const vec4 scaleBias = uShadowData[shadowDataOffset + split].shadowCoordScaleBias;
 			shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
+			foundSplit = true;
 			break;
 		}
 	}
 	
 	const float kernelScale = split == 0 ? 5.0 : split == 1 ? 2.0 : 1.0;
+	s = foundSplit ? split : 10;
 	
-	return evaluateShadow(shadowTexture, shadowCoord, pixelCoord, kernelScale);
+	return foundSplit ? evaluateShadow(shadowTexture, shadowCoord, pixelCoord, kernelScale) : 0.0;
 }
 
 uint getTileAddress(uvec2 pixelCoord, uint width, uint wordCount)

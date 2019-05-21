@@ -47,7 +47,6 @@ namespace VEngine
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 
-		void calculateCascadeViewProjectionMatrices(const CommonRenderData &renderParams, const glm::vec3 &lightDir, float nearPlane, float farPlane, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
 	};
 }

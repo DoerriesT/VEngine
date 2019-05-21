@@ -27,12 +27,16 @@
 #include "Pass/VKGTAOPass.h"
 #include "Pass/VKGTAOSpatialFilterPass.h"
 #include "Pass/VKGTAOTemporalFilterPass.h"
+#include "Pass/VKSDSMClearPass.h"
+#include "Pass/VKSDSMReducePass.h"
+#include "Pass/VKSDSMShadowMatrixPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
 #include "VKMeshManager.h"
 #include "VKResourceDefinitions.h"
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -188,7 +192,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT + 4;
 		desc.m_hostVisible = false;
 
-		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), m_renderResources->m_avgLuminanceBuffer.getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
+		avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), 0, m_renderResources->m_avgLuminanceBuffer.getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
 	}
 
 	// create graph managed resources
@@ -213,6 +217,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::BufferHandle transparentIndirectBufferHandle = VKResourceDefinitions::createTransparentIndirectBufferHandle(graph, renderData.m_transparentBatchSize);
 	FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
 	FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
+	FrameGraph::BufferHandle sdsmDepthBoundsBufferHandle = VKResourceDefinitions::createSDSMDepthBoundsBufferHandle(graph);
 
 	// transform data write
 	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
@@ -260,6 +265,19 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		{
 			memcpy(bufferPtr, lightData.m_shadowData.data(), lightData.m_shadowData.size() * sizeof(ShadowData));
 		}
+	}
+
+	FrameGraph::BufferHandle shadowDataBufferHandle = 0;
+	{
+		FrameGraph::BufferDescription desc = {};
+		desc.m_name = "Shadow Data Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = shadowDataBufferInfo.range;
+		desc.m_hostVisible = false;
+
+		shadowDataBufferHandle = graph.importBuffer(desc, shadowDataBufferInfo.buffer, shadowDataBufferInfo.offset, m_renderResources->m_ssboBuffers[commonData.m_currentResourceIndex].getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
 	}
 
 	// instance data write
@@ -358,6 +376,49 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
+	// sdsm clear
+	VKSDSMClearPass::Data sdsmClearPassData;
+	sdsmClearPassData.m_renderResources = m_renderResources.get();
+	sdsmClearPassData.m_pipelineCache = m_pipelineCache.get();
+	sdsmClearPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	sdsmClearPassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
+
+	VKSDSMClearPass::addToGraph(graph, sdsmClearPassData);
+
+
+	// sdsm reduce
+	VKSDSMReducePass::Data sdsmReducePassData;
+	sdsmReducePassData.m_renderResources = m_renderResources.get();
+	sdsmReducePassData.m_pipelineCache = m_pipelineCache.get();
+	sdsmReducePassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	sdsmReducePassData.m_width = m_width;
+	sdsmReducePassData.m_height = m_height;
+	sdsmReducePassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
+	sdsmReducePassData.m_depthImageHandle = depthImageHandle;
+
+	VKSDSMReducePass::addToGraph(graph, sdsmReducePassData);
+
+
+	// sdsm shadow matrix
+	VKSDSMShadowMatrixPass::Data sdsmShadowMatrixPassData;
+	sdsmShadowMatrixPassData.m_renderResources = m_renderResources.get();
+	sdsmShadowMatrixPassData.m_pipelineCache = m_pipelineCache.get();
+	sdsmShadowMatrixPassData.m_descriptorSetCache = m_descriptorSetCache.get();
+	sdsmShadowMatrixPassData.m_lightView = glm::lookAt(glm::vec3(), -glm::vec3(commonData.m_invViewMatrix * lightData.m_directionalLightData.front().m_direction), glm::vec3(glm::transpose(commonData.m_viewMatrix)[0]));
+	sdsmShadowMatrixPassData.m_cameraViewToLightView = sdsmShadowMatrixPassData.m_lightView * commonData.m_invViewMatrix;
+	sdsmShadowMatrixPassData.m_nearPlane = commonData.m_nearPlane;
+	sdsmShadowMatrixPassData.m_farPlane = commonData.m_farPlane;
+	sdsmShadowMatrixPassData.m_projScaleXInv = 1.0f / commonData.m_jitteredProjectionMatrix[0][0];
+	sdsmShadowMatrixPassData.m_projScaleYInv = 1.0f / commonData.m_jitteredProjectionMatrix[1][1];
+	sdsmShadowMatrixPassData.m_lightSpaceNear = renderData.m_orthoNearest;
+	sdsmShadowMatrixPassData.m_lightSpaceFar = renderData.m_orthoFarthest;
+	sdsmShadowMatrixPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
+	sdsmShadowMatrixPassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
+
+	VKSDSMShadowMatrixPass::addToGraph(graph, sdsmShadowMatrixPassData);
+
+
+
 	// initialize velocity of static objects
 	VKVelocityInitializationPass::Data velocityInitializationPassData;
 	velocityInitializationPassData.m_renderResources = m_renderResources.get();
@@ -387,6 +448,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
 	opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
 	opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
+	opaqueShadowPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
 	opaqueShadowPassData.m_indirectBufferHandle = opaqueShadowIndirectBufferHandle;
 	opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 
@@ -494,7 +556,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_ssao = g_ssaoEnabled;
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	lightingPassData.m_shadowDataBufferInfo = shadowDataBufferInfo;
+	lightingPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
 	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
 	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
 	lightingPassData.m_depthImageHandle = depthImageHandle;

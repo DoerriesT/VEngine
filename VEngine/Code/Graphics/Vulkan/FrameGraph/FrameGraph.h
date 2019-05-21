@@ -104,6 +104,7 @@ namespace VEngine
 			void writeColorAttachment(ImageHandle handle, uint32_t index);
 			void writeStorageImage(ImageHandle handle, VkPipelineStageFlags stageFlags);
 			void writeStorageBuffer(BufferHandle handle, VkPipelineStageFlags stageFlags);
+			void writeBufferTransfer(BufferHandle handle);
 			void writeImageTransfer(ImageHandle handle);
 			void writeBufferFromHost(BufferHandle handle);
 			ImageHandle createImage(const ImageDescription &imageDesc);
@@ -157,7 +158,7 @@ namespace VEngine
 			ImageHandle createImage(const ImageDescription &imageDescription);
 			BufferHandle createBuffer(const BufferDescription &bufferDescription);
 			ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
-			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+			BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkDeviceSize offset, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
 			void getTimingInfo(size_t &count, PassTimingInfo *data);
 
 		private:
@@ -274,6 +275,7 @@ namespace VEngine
 			VkImage m_images[MAX_RESOURCES];
 			VkImageView m_imageViews[MAX_RESOURCES];
 			VkBuffer m_buffers[MAX_RESOURCES];
+			VkDeviceSize m_bufferOffsets[MAX_RESOURCES];
 			VKAllocationHandle m_allocations[MAX_RESOURCES];
 			std::pair<VkRenderPass, VkFramebuffer> m_renderpassFramebufferHandles[MAX_PASSES];
 			VkPipelineStageFlags m_passStageMasks[MAX_PASSES];

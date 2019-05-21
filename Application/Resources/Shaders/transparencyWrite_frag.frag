@@ -149,11 +149,18 @@ void main()
 	{
 		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
 		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+		uint split = 10;
 		const float shadow = directionalLightData.shadowDataCount > 0 ?
-			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, pixelCoord)
+			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, pixelCoord, split)
 			: 0.0;
 		
 		result += contribution * (1.0 - shadow);
+		
+		//result *= split == 0 ? vec3(1.0, 0.0, 0.0)
+		//		: split == 1 ? vec3(0.0, 1.0, 0.0)
+		//		: split == 2 ? vec3(0.0, 0.0, 1.0)
+		//		: split == 3 ? vec3(0.5, 0.5, 0.0)
+		//		: vec3(0.5, 0.0, 0.5);
 	}
 	
 	// point lights

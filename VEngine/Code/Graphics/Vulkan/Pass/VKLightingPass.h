@@ -21,8 +21,8 @@ namespace VEngine
 			bool m_ssao;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
-			VkDescriptorBufferInfo m_shadowDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
+			FrameGraph::BufferHandle m_shadowDataBufferHandle;
 			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
 			FrameGraph::ImageHandle m_depthImageHandle;
 			FrameGraph::ImageHandle m_albedoImageHandle;

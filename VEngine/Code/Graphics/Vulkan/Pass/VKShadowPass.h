@@ -27,6 +27,7 @@ namespace VEngine
 			VkDescriptorBufferInfo m_instanceDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
+			FrameGraph::BufferHandle m_shadowDataBufferHandle;
 			FrameGraph::BufferHandle m_indirectBufferHandle;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
 		};

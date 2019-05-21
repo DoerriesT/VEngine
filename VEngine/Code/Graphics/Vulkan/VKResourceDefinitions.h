@@ -277,5 +277,19 @@ namespace VEngine
 
 			return graph.createBuffer(desc);
 		}
+
+		inline FrameGraph::BufferHandle createSDSMDepthBoundsBufferHandle(FrameGraph::Graph &graph)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "SDSM Depth Bounds Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(uint32_t) * 2;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
 	}
 }
