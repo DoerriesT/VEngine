@@ -32,9 +32,9 @@ float projectDepth(float n, float f, float z)
 
 void main() 
 {
-	vec2 center = texelFetch(uInputImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
-	vec2 texelSize = 1.0 / textureSize(uInputImage, 0).xy;
+	vec2 texelSize = 1.0 / vec2(textureSize(uInputImage, 0).xy);
 	vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * texelSize;
+	vec2 center = textureLod(uInputImage, texCoord, 0).xy;
 	
 	float ao = center.x;
 	float depth = center.y;
