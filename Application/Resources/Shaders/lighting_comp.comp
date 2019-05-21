@@ -143,7 +143,7 @@ void main()
 		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
 		uint split = 10;
 		const float shadow = directionalLightData.shadowDataCount > 0 ?
-			evaluateDirectionalLightShadow(uShadowDatadirectionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, pixelCoord, split)
+			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, pixelCoord, split)
 			: 0.0;
 			
 		result += contribution * (1.0 - shadow);

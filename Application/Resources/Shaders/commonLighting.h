@@ -136,7 +136,7 @@ float evaluateShadow(sampler2DShadow shadowTexture, vec3 shadowCoord, vec2 pixel
 	return texture(uShadowTexture, shadowCoord).x;
 }
 
-float evaluateDirectionalLightShadow(buffer shadowDataBuffer, const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
+float evaluateDirectionalLightShadow(const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
 {
 	const uint shadowDataOffset = directionalLightData.shadowDataOffset;
 	vec3 shadowCoord = vec3(2.0);
