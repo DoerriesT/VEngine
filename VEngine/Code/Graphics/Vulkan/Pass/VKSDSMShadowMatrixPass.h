@@ -17,14 +17,10 @@ namespace VEngine
 			VKDescriptorSetCache *m_descriptorSetCache;
 			glm::mat4 m_cameraViewToLightView;
 			glm::mat4 m_lightView;
-			float m_nearPlane;
-			float m_farPlane;
-			float m_projScaleXInv;
-			float m_projScaleYInv;
 			float m_lightSpaceNear;
 			float m_lightSpaceFar;
 			FrameGraph::BufferHandle m_shadowDataBufferHandle;
-			FrameGraph::BufferHandle m_depthBoundsBufferHandle;
+			FrameGraph::BufferHandle m_partitionBoundsBufferHandle;
 		};
 
 		void addToGraph(FrameGraph::Graph &graph, const Data &data);

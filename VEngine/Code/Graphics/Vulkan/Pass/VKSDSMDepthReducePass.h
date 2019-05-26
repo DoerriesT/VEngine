@@ -7,15 +7,17 @@ namespace VEngine
 	class VKDescriptorSetCache;
 	struct VKRenderResources;
 
-	namespace VKSDSMClearPass
+	namespace VKSDSMDepthReducePass
 	{
 		struct Data
 		{
 			VKRenderResources *m_renderResources;
 			VKPipelineCache *m_pipelineCache;
 			VKDescriptorSetCache *m_descriptorSetCache;
+			uint32_t m_width;
+			uint32_t m_height;
 			FrameGraph::BufferHandle m_depthBoundsBufferHandle;
-			FrameGraph::BufferHandle m_partitionBoundsBufferHandle;
+			FrameGraph::ImageHandle m_depthImageHandle;
 		};
 
 		void addToGraph(FrameGraph::Graph &graph, const Data &data);

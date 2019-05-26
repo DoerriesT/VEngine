@@ -1,6 +1,7 @@
 #version 450
 
-#include "sdsmReduce_bindings.h"
+#include "sdsmDepthReduce_bindings.h"
+#include "commonSdsm.h"
 
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 
@@ -13,7 +14,6 @@ layout(set = DEPTH_BOUNDS_SET, binding = DEPTH_BOUNDS_BINDING) buffer DEPTH_BOUN
 #define GROUP_SIZE_X 16
 #define GROUP_SIZE_Y GROUP_SIZE_X
 #define GROUP_SIZE (GROUP_SIZE_X * GROUP_SIZE_Y)
-#define TILE_DIM 128
 
 layout (local_size_x = GROUP_SIZE_X, local_size_y = GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -23,34 +23,42 @@ shared float sMaxZ[GROUP_SIZE];
 void main() 
 {
 	const vec2 texelSize = 1.0 / vec2(textureSize(uDepthImage, 0).xy);
-	vec2 coord = vec2(gl_GlobalInvocationID.xy) * 2.0 + 0.5;
-	vec4 depths = textureGather(uDepthImage, coord * texelSize);
 	
 	float minZ = 1.0;
 	float maxZ = 0.0;
 	
-	if (depths[0] != 1.0)
-	{
-		minZ = min(minZ, depths[0]);
-		maxZ = max(maxZ, depths[0]);
-	}
 	
-	if (depths[1] != 1.0)
+	for (uint y = 0; y < 2; ++y)
 	{
-		minZ = min(minZ, depths[1]);
-		maxZ = max(maxZ, depths[1]);
-	}
-	
-	if (depths[2] != 1.0)
-	{
-		minZ = min(minZ, depths[2]);
-		maxZ = max(maxZ, depths[2]);
-	}
-	
-	if (depths[3] != 1.0)
-	{
-		minZ = min(minZ, depths[3]);
-		maxZ = max(maxZ, depths[3]);
+		for (uint x = 0; x < 2; ++x)
+		{
+			vec2 coord = (vec2(gl_GlobalInvocationID.xy) * 4.0 + vec2(x * 2 + 1, y * 2 + 1)) * texelSize;
+			vec4 depths = textureGather(uDepthImage, coord);
+			
+			if (depths[0] != 1.0)
+			{
+				minZ = min(minZ, depths[0]);
+				maxZ = max(maxZ, depths[0]);
+			}
+			
+			if (depths[1] != 1.0)
+			{
+				minZ = min(minZ, depths[1]);
+				maxZ = max(maxZ, depths[1]);
+			}
+			
+			if (depths[2] != 1.0)
+			{
+				minZ = min(minZ, depths[2]);
+				maxZ = max(maxZ, depths[2]);
+			}
+			
+			if (depths[3] != 1.0)
+			{
+				minZ = min(minZ, depths[3]);
+				maxZ = max(maxZ, depths[3]);
+			}
+		}
 	}
 	
 	const uint localIndex = gl_LocalInvocationID.y * GROUP_SIZE_X + gl_LocalInvocationID.x;

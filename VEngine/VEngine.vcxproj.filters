@@ -237,10 +237,16 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMClearPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMReducePass.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMDepthReducePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMBoundsReducePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -392,10 +398,16 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMClearPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMReducePass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMDepthReducePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMBoundsReducePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

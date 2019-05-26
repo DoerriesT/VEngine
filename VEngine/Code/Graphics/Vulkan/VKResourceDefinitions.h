@@ -291,5 +291,33 @@ namespace VEngine
 
 			return graph.createBuffer(desc);
 		}
+
+		inline FrameGraph::BufferHandle createSDSMSplitsBufferHandle(FrameGraph::Graph &graph, uint32_t partitions)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "SDSM Splits Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(float) * 2 * partitions;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
+
+		inline FrameGraph::BufferHandle createSDSMPartitionBoundsBufferHandle(FrameGraph::Graph &graph, uint32_t partitions)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "SDSM Partition Bounds Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(uint32_t) * 6 * partitions;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
 	}
 }

@@ -17,7 +17,7 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, cons
 	graph.addComputePass("SDSM Shadow Matrix Pass", FrameGraph::QueueType::GRAPHICS,
 		[&](FrameGraph::PassBuilder builder)
 	{
-		builder.readStorageBuffer(data.m_depthBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		builder.readStorageBuffer(data.m_partitionBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 		builder.writeStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	},
@@ -39,11 +39,11 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, cons
 		{
 			VkWriteDescriptorSet descriptorWrites[2] = {};
 
-			// depth bounds buffer
-			VkDescriptorBufferInfo boundsBufferInfo = registry.getBufferInfo(data.m_depthBoundsBufferHandle);
+			// partition bounds buffer
+			VkDescriptorBufferInfo boundsBufferInfo = registry.getBufferInfo(data.m_partitionBoundsBufferHandle);
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = DEPTH_BOUNDS_BINDING;
+			descriptorWrites[0].dstBinding = PARTITION_BOUNDS_BINDING;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -69,18 +69,9 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, cons
 		pushConsts.cameraViewToLightView = data.m_cameraViewToLightView;
 		pushConsts.lightView = data.m_lightView;
 
-		assert(pushConsts.lightView[0][3] == 0.0f);
-		assert(pushConsts.lightView[0][3] == 0.0f);
-		assert(pushConsts.lightView[1][3] == 0.0f);
-		assert(pushConsts.lightView[2][3] == 0.0f);
-		assert(pushConsts.lightView[3][0] == 0.0f);
 		assert(pushConsts.lightView[3][1] == 0.0f);
 		assert(pushConsts.lightView[3][2] == 0.0f);
 
-		pushConsts.lightView[0][3] = data.m_nearPlane;
-		pushConsts.lightView[1][3] = data.m_farPlane;
-		pushConsts.lightView[2][3] = data.m_projScaleXInv;
-		pushConsts.lightView[3][0] = data.m_projScaleYInv;
 		pushConsts.lightView[3][1] = data.m_lightSpaceNear;
 		pushConsts.lightView[3][2] = data.m_lightSpaceFar;
 

@@ -1,0 +1,167 @@
+#version 450
+
+#include "sdsmBoundsReduce_bindings.h"
+#include "commonSdsm.h"
+
+#define MAX_FLOAT 3.402823466e+38
+#define GROUP_SIZE_X 16
+#define GROUP_SIZE_Y GROUP_SIZE_X
+#define GROUP_SIZE (GROUP_SIZE_X * GROUP_SIZE_Y)
+
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+
+layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
+{
+	float uSplits[PARTITIONS * 2]; // even is begin, odd is end
+};
+
+layout(set = PARTITION_BOUNDS_SET, binding = PARTITION_BOUNDS_BINDING) buffer PARTITION_BOUNDS
+{
+    uint uMinX[PARTITIONS];
+	uint uMinY[PARTITIONS];
+	uint uMinZ[PARTITIONS];
+	uint uMaxX[PARTITIONS];
+	uint uMaxY[PARTITIONS];
+	uint uMaxZ[PARTITIONS];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = GROUP_SIZE_X, local_size_y = GROUP_SIZE_Y, local_size_z = 1) in;
+
+vec3 getViewSpacePosition(vec2 texCoord, float depth)
+{
+	vec4 viewSpacePos = uPushConsts.invProjection * vec4(texCoord * 2.0 - 1.0, depth, 1.0);
+    return viewSpacePos.xyz / viewSpacePos.w;
+}
+
+shared vec3 sMinCorners[GROUP_SIZE * PARTITIONS];
+shared vec3 sMaxCorners[GROUP_SIZE * PARTITIONS];
+
+void main() 
+{
+	vec3 minCorner[PARTITIONS];
+	vec3 maxCorner[PARTITIONS];
+	float splitEnds[PARTITIONS];
+	
+	for (uint i = 0; i < PARTITIONS; ++i)
+	{
+		minCorner[i] = vec3(1.0);
+		maxCorner[i] = vec3(0.0);
+		splitEnds[i] = uSplits[i * 2 + 1];
+	}
+	
+	vec2 texelSize = 1.0 / vec2(textureSize(uDepthImage, 0).xy);
+	
+	for (uint y = 0; y < 2; ++y)
+	{
+		for (uint x = 0; x < 2; ++x)
+		{
+			vec2 coord = (vec2(gl_GlobalInvocationID.xy) * 4.0 + vec2(x * 2 + 1, y * 2 + 1)) * texelSize;
+			vec4 depths = textureGather(uDepthImage, coord);
+			
+			if (depths[0] != 1.0)
+			{
+				vec2 texCoord = coord + vec2(-texelSize.x, texelSize.y);
+				vec3 position = getViewSpacePosition(texCoord, depths[0]);
+				
+				uint index = 0;
+				for (uint i = 0; i < (PARTITIONS - 1); ++i)
+				{
+					index = -position.z >= splitEnds[i] ? index + 1 : index;
+				}
+				
+				minCorner[index] = min(minCorner[index], vec3(texCoord, depths[0]));
+				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[0]));
+			}
+			
+			if (depths[1] != 1.0)
+			{
+				vec2 texCoord = coord + vec2(texelSize.x, texelSize.y);
+				vec3 position = getViewSpacePosition(texCoord, depths[1]);
+				
+				uint index = 0;
+				for (uint i = 0; i < (PARTITIONS - 1); ++i)
+				{
+					index = -position.z >= splitEnds[i] ? index + 1 : index;
+				}
+				
+				minCorner[index] = min(minCorner[index], vec3(texCoord, depths[1]));
+				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[1]));
+			}
+			
+			if (depths[2] != 1.0)
+			{
+				vec2 texCoord = coord + vec2(texelSize.x, -texelSize.y);
+				vec3 position = getViewSpacePosition(texCoord, depths[2]);
+				
+				uint index = 0;
+				for (uint i = 0; i < (PARTITIONS - 1); ++i)
+				{
+					index = -position.z >= splitEnds[i] ? index + 1 : index;
+				}
+				
+				minCorner[index] = min(minCorner[index], vec3(texCoord, depths[2]));
+				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[2]));
+			}
+			
+			if (depths[3] != 1.0)
+			{
+				vec2 texCoord = coord + vec2(-texelSize.x, -texelSize.y);
+				
+				vec3 position = getViewSpacePosition(texCoord, depths[3]);
+				
+				uint index = 0;
+				for (uint i = 0; i < (PARTITIONS - 1); ++i)
+				{
+					index = -position.z >= splitEnds[i] ? index + 1 : index;
+				}
+				
+				minCorner[index] = min(minCorner[index], vec3(texCoord, depths[3]));
+				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[3]));
+			}
+		}
+	}
+	
+	const uint localIndex = gl_LocalInvocationID.y * GROUP_SIZE_X + gl_LocalInvocationID.x;
+	
+	for (uint i = 0; i < PARTITIONS; ++i)
+	{
+		sMinCorners[localIndex * PARTITIONS + i] = minCorner[i];
+		sMaxCorners[localIndex * PARTITIONS + i] = maxCorner[i];
+	}
+	
+	memoryBarrierShared(); 
+	barrier();
+	
+	for (uint offset = (GROUP_SIZE >> 1); offset > 0; offset >>= 1) 
+	{
+        if (localIndex < offset) 
+		{
+			for (uint i = 0; i < PARTITIONS; ++i)
+			{
+				sMinCorners[localIndex * PARTITIONS + i] = min(sMinCorners[localIndex * PARTITIONS + i], sMinCorners[(offset + localIndex) * PARTITIONS + i]);
+				sMaxCorners[localIndex * PARTITIONS + i] = max(sMaxCorners[localIndex * PARTITIONS + i], sMaxCorners[(offset + localIndex) * PARTITIONS + i]);
+			}
+            
+        }
+        memoryBarrierShared(); 
+		barrier();
+    }
+	
+	for (uint i = 0; i < PARTITIONS; ++i)
+	{
+		if (localIndex == i)
+		{
+			atomicMin(uMinX[i], floatBitsToUint(sMinCorners[i].x));
+			atomicMin(uMinY[i], floatBitsToUint(sMinCorners[i].y));
+			atomicMin(uMinZ[i], floatBitsToUint(sMinCorners[i].z));
+			atomicMax(uMaxX[i], floatBitsToUint(sMaxCorners[i].x));
+			atomicMax(uMaxY[i], floatBitsToUint(sMaxCorners[i].y));
+			atomicMax(uMaxZ[i], floatBitsToUint(sMaxCorners[i].z));
+		}
+	}
+}
