@@ -216,7 +216,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 
 		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
 		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer };
-		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
+		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)) };
 
 		vkCmdBindVertexBuffers(cmdBuf, 0, data.m_alphaMasked ? 2 : 1, vertexBuffers, vertexBufferOffsets);
 

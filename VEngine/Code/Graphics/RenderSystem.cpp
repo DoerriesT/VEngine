@@ -297,6 +297,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 					bool viewFrustumCulled = false;
 					bool shadowFrustumCulled = false;
 					auto aabb = m_aabbs[instanceData.m_subMeshIndex];
+					aabb.m_min += transformationComponent.m_position;
+					aabb.m_max += transformationComponent.m_position;
 					{
 						glm::vec3 center = (aabb.m_max + aabb.m_min) * 0.5f;
 						glm::vec3 half = (aabb.m_max - aabb.m_min) * 0.5f;
