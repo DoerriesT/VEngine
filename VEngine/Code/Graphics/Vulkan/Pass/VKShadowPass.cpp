@@ -212,7 +212,7 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 			vkCmdClearAttachments(cmdBuf, 1, &clearAttachment, data.m_shadowJobCount, clearRects);
 		}
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
 		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer };

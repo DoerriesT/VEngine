@@ -221,9 +221,9 @@ int main()
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec2> texCoords;
-		std::vector<uint32_t> indices;
+		std::vector<uint16_t> indices;
 		std::set<uint32_t> shapeIndices;
-		std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
+		std::unordered_map<Vertex, uint16_t, VertexHash> vertexToIndex;
 
 		for (size_t i = 0; i < unifiedIndices.size(); ++i)
 		{
@@ -268,7 +268,7 @@ int main()
 				// if we havent encountered this vertex before, add it to the map
 				if (vertexToIndex.count(vertex) == 0)
 				{
-					vertexToIndex[vertex] = static_cast<uint32_t>(positions.size());
+					vertexToIndex[vertex] = static_cast<uint16_t>(positions.size());
 
 					positions.push_back(vertex.position);
 					normals.push_back(vertex.normal);
@@ -281,13 +281,14 @@ int main()
 
 			// write object to file and reset data
 			if (i + 1 == unifiedIndices.size()														// last index -> we're done
+				|| indices.size() >= std::numeric_limits<uint16_t>::max() - 3
 				|| unifiedIndices[i + 1].m_materialIndex != index.m_materialIndex					// next material is different -> write to file
 				|| (!mergeByMaterial && unifiedIndices[i + 1].m_shapeIndex != index.m_shapeIndex))	// dont merge by material (keep distinct objects) and next shape is different -> write to file
 			{
 				dstFile.write((const char *)positions.data(), positions.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)normals.data(), normals.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)texCoords.data(), texCoords.size() * sizeof(glm::vec2));
-				dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint32_t));
+				dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint16_t));
 
 				std::string shapeName = "";
 
@@ -316,7 +317,7 @@ int main()
 				fileOffset += positions.size() * sizeof(glm::vec3);
 				fileOffset += normals.size() * sizeof(glm::vec3);
 				fileOffset += texCoords.size() * sizeof(glm::vec2);
-				fileOffset += indices.size() * sizeof(uint32_t);
+				fileOffset += indices.size() * sizeof(uint16_t);
 
 				// reset data
 				minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());

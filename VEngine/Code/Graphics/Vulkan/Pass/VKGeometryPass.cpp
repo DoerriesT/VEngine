@@ -147,7 +147,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
 		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer, vertexBuffer };

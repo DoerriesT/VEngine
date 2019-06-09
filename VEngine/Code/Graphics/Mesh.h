@@ -42,10 +42,10 @@ namespace VEngine
 		glm::vec3 m_minCorner;
 		glm::vec3 m_maxCorner;
 		uint32_t m_vertexCount;
-		uint32_t m_indexCount;
+		uint16_t m_indexCount;
 		uint8_t *m_positions;
 		uint8_t *m_normals;
 		uint8_t *m_texCoords;
-		uint32_t *m_indices;
+		uint16_t *m_indices;
 	};
 }

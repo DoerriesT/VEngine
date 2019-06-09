@@ -265,7 +265,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 	// index buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = RendererConsts::MAX_INDICES * sizeof(uint32_t);
+		bufferCreateInfo.size = RendererConsts::MAX_INDICES * sizeof(uint16_t);
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 		bufferCreateInfo.queueFamilyIndexCount = 3;

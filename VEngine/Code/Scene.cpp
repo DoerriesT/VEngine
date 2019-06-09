@@ -108,7 +108,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 			subMesh.m_texCoords = (uint8_t *)meshData.data() + dataOffset;
 			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec2);
 
-			subMesh.m_indices = (uint32_t*)(meshData.data() + dataOffset);
+			subMesh.m_indices = (uint16_t*)(meshData.data() + dataOffset);
 
 			subMeshes.push_back(subMesh);
 		}

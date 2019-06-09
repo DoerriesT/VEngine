@@ -8,7 +8,7 @@
 
 VEngine::VKMeshManager::VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexBuffer, VKBuffer &indexBuffer, VKBuffer &subMeshInfoBuffer)
 	:m_vertexDataAllocator(RendererConsts::MAX_VERTICES, 1),
-	m_indexDataAllocator(RendererConsts::MAX_INDICES * sizeof(uint32_t), 1),
+	m_indexDataAllocator(RendererConsts::MAX_INDICES * sizeof(uint16_t), 1),
 	m_stagingBuffer(stagingBuffer),
 	m_vertexBuffer(vertexBuffer),
 	m_indexBuffer(indexBuffer),
@@ -114,22 +114,21 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 		// index data
 		{
 			const uint32_t indexCount = subMeshes[i].m_indexCount;
-			printf("%d %d\n", indexCount, indexCount > ~uint16_t() ? 1 : 0);
-			assert(indexCount <= ~uint16_t());
+			
 			uint32_t indexOffset;
-			if (!m_indexDataAllocator.alloc(indexCount * sizeof(uint32_t), 1, indexOffset, m_indexSpans[handles[i]]))
+			if (!m_indexDataAllocator.alloc(indexCount * sizeof(uint16_t), 1, indexOffset, m_indexSpans[handles[i]]))
 			{
 				Utility::fatalExit("Failed to allocate space in index buffer", EXIT_FAILURE);
 			}
 
-			assert(indexOffset % sizeof(uint32_t) == 0);
+			assert(indexOffset % sizeof(uint16_t) == 0);
 			subMeshInfo.m_indexCount = indexCount;
-			subMeshInfo.m_firstIndex = indexOffset / sizeof(uint32_t);
+			subMeshInfo.m_firstIndex = indexOffset / sizeof(uint16_t);
 
 			VkBufferCopy &indexCopy = bufferCopies[i + count * 3];
 			indexCopy.srcOffset = currentStagingBufferOffset;
 			indexCopy.dstOffset = indexOffset;
-			indexCopy.size = indexCount * sizeof(uint32_t);
+			indexCopy.size = indexCount * sizeof(uint16_t);
 
 			// copy to staging buffer
 			memcpy(stagingBufferPtr + currentStagingBufferOffset, subMeshes[i].m_indices, indexCopy.size);
