@@ -72,23 +72,24 @@ VkDescriptorSet VEngine::VKDescriptorSetCache::getDescriptorSet(VkDescriptorSetL
 		}
 
 		// set free bits
-		pooledSets.m_freeSetsMask = ~uint16_t(0);
+		pooledSets.m_freeSetsMask = 0;
+		pooledSets.m_freeSetsMask.flip();
 	}
 
 	// find free set
 	{
-		if (!pooledSets.m_freeSetsMask)
+		if (pooledSets.m_freeSetsMask.none())
 		{
 			Utility::fatalExit("No more free DescriptorSets available for requested layout!", EXIT_FAILURE);
 		}
 
-		for (size_t i = 0; i < 16; ++i)
+		for (size_t i = 0; i < SETS_PER_LAYOUT; ++i)
 		{
-			if (pooledSets.m_freeSetsMask & (1u << i))
+			if (pooledSets.m_freeSetsMask[i])
 			{
 				// set index of frame in which the set was used
 				pooledSets.m_frameIndices[i] = m_frameIndex;
-				pooledSets.m_freeSetsMask &= ~(1u << i);
+				pooledSets.m_freeSetsMask[i] = 0;
 
 				return pooledSets.m_sets[i];
 			}
@@ -109,18 +110,18 @@ void VEngine::VKDescriptorSetCache::update(size_t currentFrameIndex, size_t fram
 		auto &pooledSets = p.second;
 
 		// skip if all sets are free already
-		if (pooledSets.m_freeSetsMask == ~uint16_t(0))
+		if (pooledSets.m_freeSetsMask.all())
 		{
 			continue;
 		}
 
 		// check if sets in use can be flagged as free again
-		for (size_t i = 0; i < 16; ++i)
+		for (size_t i = 0; i < SETS_PER_LAYOUT; ++i)
 		{
-			if (pooledSets.m_frameIndices[i] == frameIndexToRelease && (pooledSets.m_freeSetsMask & (1u << i)) == 0)
+			if (pooledSets.m_frameIndices[i] == frameIndexToRelease && (pooledSets.m_freeSetsMask[i]) == 0)
 			{
 				// flag as free
-				pooledSets.m_freeSetsMask |= 1u << i;
+				pooledSets.m_freeSetsMask[i] = 1;
 			}
 		}
 	}

@@ -16,7 +16,8 @@ VEngine::VKMeshManager::VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexB
 	m_freeHandles(new SubMeshHandle[RendererConsts::MAX_SUB_MESHES]),
 	m_freeHandleCount(RendererConsts::MAX_SUB_MESHES),
 	m_vertexSpans(new void*[RendererConsts::MAX_SUB_MESHES]),
-	m_indexSpans(new void*[RendererConsts::MAX_SUB_MESHES])
+	m_indexSpans(new void*[RendererConsts::MAX_SUB_MESHES]),
+	m_subMeshInfo(new SubMeshInfo[RendererConsts::MAX_SUB_MESHES])
 {
 	for (SubMeshHandle i = 0; i < RendererConsts::MAX_SUB_MESHES; ++i)
 	{
@@ -53,7 +54,7 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 			handles[i] = m_freeHandles[m_freeHandleCount];
 		}
 
-		SubMeshData subMeshData;
+		SubMeshInfo subMeshInfo;
 
 		// vertex data
 		{
@@ -64,8 +65,8 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 				Utility::fatalExit("Failed to allocate space in vertex buffer!", EXIT_FAILURE);
 			}
 
-			subMeshData.m_vertexOffset = vertexOffset;
-			assert(subMeshData.m_vertexOffset >= 0);
+			subMeshInfo.m_vertexOffset = vertexOffset;
+			assert(subMeshInfo.m_vertexOffset >= 0);
 
 			// positions
 			{
@@ -113,6 +114,8 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 		// index data
 		{
 			const uint32_t indexCount = subMeshes[i].m_indexCount;
+			printf("%d %d\n", indexCount, indexCount > ~uint16_t() ? 1 : 0);
+			assert(indexCount <= ~uint16_t());
 			uint32_t indexOffset;
 			if (!m_indexDataAllocator.alloc(indexCount * sizeof(uint32_t), 1, indexOffset, m_indexSpans[handles[i]]))
 			{
@@ -120,8 +123,8 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 			}
 
 			assert(indexOffset % sizeof(uint32_t) == 0);
-			subMeshData.m_indexCount = indexCount;
-			subMeshData.m_firstIndex = indexOffset / sizeof(uint32_t);
+			subMeshInfo.m_indexCount = indexCount;
+			subMeshInfo.m_firstIndex = indexOffset / sizeof(uint32_t);
 
 			VkBufferCopy &indexCopy = bufferCopies[i + count * 3];
 			indexCopy.srcOffset = currentStagingBufferOffset;
@@ -135,18 +138,20 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 			assert(indexCopy.dstOffset + indexCopy.size <= m_indexBuffer.getSize());
 		}
 
-		// subMeshData
+		// subMeshInfo
 		{
 			VkBufferCopy &subMeshDataCopy = bufferCopies[i + count * 4];
 			subMeshDataCopy.srcOffset = currentStagingBufferOffset;
-			subMeshDataCopy.dstOffset = handles[i] * sizeof(SubMeshData);
-			subMeshDataCopy.size = sizeof(SubMeshData);
+			subMeshDataCopy.dstOffset = handles[i] * sizeof(SubMeshInfo);
+			subMeshDataCopy.size = sizeof(SubMeshInfo);
 
 			// copy to staging buffer
-			memcpy(stagingBufferPtr + currentStagingBufferOffset, &subMeshData, subMeshDataCopy.size);
+			memcpy(stagingBufferPtr + currentStagingBufferOffset, &subMeshInfo, subMeshDataCopy.size);
 
 			currentStagingBufferOffset += subMeshDataCopy.size;
 			assert(subMeshDataCopy.dstOffset + subMeshDataCopy.size <= m_subMeshInfoBuffer.getSize());
+
+			m_subMeshInfo[handles[i]] = subMeshInfo;
 		}
 
 		m_vertexCount += subMeshes[i].m_vertexCount;
@@ -182,4 +187,9 @@ void VEngine::VKMeshManager::destroySubMeshes(uint32_t count, SubMeshHandle *han
 		m_freeHandles[m_freeHandleCount] = handles[i];
 		++m_freeHandleCount;
 	}
+}
+
+const VEngine::SubMeshInfo *VEngine::VKMeshManager::getSubMeshInfo() const
+{
+	return m_subMeshInfo;
 }

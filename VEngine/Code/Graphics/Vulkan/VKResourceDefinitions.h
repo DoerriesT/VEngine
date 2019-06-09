@@ -236,12 +236,12 @@ namespace VEngine
 			return graph.createBuffer(desc);
 		}
 
-		inline FrameGraph::BufferHandle createOpaqueIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		inline FrameGraph::BufferHandle createIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
 		{
 			FrameGraph::BufferDescription desc = {};
-			desc.m_name = "Opaque Indirect Buffer";
+			desc.m_name = "Indirect Buffer";
 			desc.m_concurrent = false;
-			desc.m_clear = false;
+			desc.m_clear = true;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
@@ -250,28 +250,42 @@ namespace VEngine
 			return graph.createBuffer(desc);
 		}
 
-		inline FrameGraph::BufferHandle createMaskedIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		inline FrameGraph::BufferHandle createIndirectDrawCountsBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
 		{
 			FrameGraph::BufferDescription desc = {};
-			desc.m_name = "Masked Indirect Buffer";
+			desc.m_name = "Indirect Draw Counts Buffer";
 			desc.m_concurrent = false;
-			desc.m_clear = false;
+			desc.m_clear = true;
 			desc.m_clearValue.m_bufferClearValue = 0;
-			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
+			desc.m_size = sizeof(uint32_t) * drawCount;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 			desc.m_hostVisible = false;
 
 			return graph.createBuffer(desc);
 		}
 
-		inline FrameGraph::BufferHandle createTransparentIndirectBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
+		inline FrameGraph::BufferHandle createTriangleFilterIndexCountsBufferHandle(FrameGraph::Graph &graph, uint32_t drawCount)
 		{
 			FrameGraph::BufferDescription desc = {};
-			desc.m_name = "Transparent Indirect Buffer";
+			desc.m_name = "Trinagle Filter Index Counts Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = true;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(uint32_t) * drawCount;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_hostVisible = false;
+
+			return graph.createBuffer(desc);
+		}
+
+		inline FrameGraph::BufferHandle createTriangleFilterFilteredIndexBufferHandle(FrameGraph::Graph &graph, uint32_t count)
+		{
+			FrameGraph::BufferDescription desc = {};
+			desc.m_name = "Trinagle Filter Filtered Index Buffer";
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
-			desc.m_size = sizeof(VkDrawIndexedIndirectCommand) * drawCount;
+			desc.m_size = sizeof(uint32_t) * count;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 			desc.m_hostVisible = false;
 

@@ -32,5 +32,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c sdsmDepthReduce_comp.comp -o sdsmDept
 glslc --target-env=vulkan1.1 -O -Werror -c sdsmSplits_comp.comp -o sdsmSplits_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c sdsmBoundsReduce_comp.comp -o sdsmBoundsReduce_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c sdsmShadowMatrix_comp.comp -o sdsmShadowMatrix_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c triangleFilter_comp.comp -o triangleFilter_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c drawCallCompaction_comp.comp -o drawCallCompaction_comp.spv
 
 pause

@@ -5,7 +5,7 @@
 
 namespace VEngine
 {
-	struct SubMeshData;
+	struct SubMeshInfo;
 	struct SubMesh;
 
 	class VKMeshManager
@@ -15,6 +15,7 @@ namespace VEngine
 		~VKMeshManager();
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
+		const SubMeshInfo *getSubMeshInfo() const;
 
 	private:
 		TLSFAllocator m_vertexDataAllocator;
@@ -29,5 +30,6 @@ namespace VEngine
 		uint32_t m_indexCount;
 		void **m_vertexSpans;
 		void **m_indexSpans;
+		SubMeshInfo *m_subMeshInfo;
 	};
 }

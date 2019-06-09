@@ -17,6 +17,7 @@ namespace VEngine
 		constexpr size_t MAX_SUB_MESHES = 32 * 1024;
 		constexpr size_t MAPPABLE_UBO_BLOCK_SIZE = 1024 * 1024;
 		constexpr size_t MAPPABLE_SSBO_BLOCK_SIZE = 8 * 1024 * 1024;
+		constexpr uint32_t TRIANGLE_FILTERING_CLUSTER_SIZE = 256;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

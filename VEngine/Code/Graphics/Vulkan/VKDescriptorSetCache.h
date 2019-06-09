@@ -1,6 +1,7 @@
 #pragma once
 #include "Graphics/Vulkan/volk.h"
 #include <map>
+#include <bitset>
 
 namespace VEngine
 {
@@ -22,14 +23,14 @@ namespace VEngine
 	private:
 		enum 
 		{
-			SETS_PER_LAYOUT = 16
+			SETS_PER_LAYOUT = 64
 		};
 
 		struct PooledDescriptorSets
 		{
 			VkDescriptorSet m_sets[SETS_PER_LAYOUT];
 			size_t m_frameIndices[SETS_PER_LAYOUT];
-			uint16_t m_freeSetsMask;
+			std::bitset<SETS_PER_LAYOUT> m_freeSetsMask;
 			VkDescriptorPool m_pool = VK_NULL_HANDLE;
 		};
 

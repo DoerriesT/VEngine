@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <iomanip>
 #include <unordered_map>
+#include <set>
 
 #undef min
 #undef max
@@ -115,8 +116,6 @@ void createMaterialLibrary(const std::vector<tinyobj::material_t> &objMaterials,
 	infoFile.close();
 }
 
-static bool invertHandedness = true;
-
 int main()
 {
 	while (true)
@@ -129,6 +128,12 @@ int main()
 		std::cin >> srcFileName;
 		std::cout << "Destination File:" << std::endl;
 		std::cin >> dstFileName;
+		std::cout << "Merge objects by material? (yes = 1, no = 0)";
+		bool mergeByMaterial = false;
+		std::cin >> mergeByMaterial;
+		std::cout << "Invert UV y-axis? (yes = 1, no = 0)";
+		bool invertTexcoordY = false;
+		std::cin >> invertTexcoordY;
 
 		// load scene
 		tinyobj::attrib_t objAttrib;
@@ -140,11 +145,13 @@ int main()
 
 		bool ret = tinyobj::LoadObj(&objAttrib, &objShapes, &objMaterials, &warn, &err, srcFileName.c_str(), nullptr, true);
 
-		if (!warn.empty()) {
+		if (!warn.empty()) 
+		{
 			std::cout << warn << std::endl;
 		}
 
-		if (!err.empty()) {
+		if (!err.empty()) 
+		{
 			std::cerr << err << std::endl;
 		}
 
@@ -155,6 +162,46 @@ int main()
 
 		// create material library
 		createMaterialLibrary(objMaterials, dstFileName + ".matlib");
+
+		struct Index
+		{
+			uint32_t m_shapeIndex;
+			uint32_t m_materialIndex;
+			tinyobj::index_t m_vertexIndices[3];
+		};
+
+		std::vector<Index> unifiedIndices;
+
+		for (size_t shapeIndex = 0; shapeIndex < objShapes.size(); ++shapeIndex)
+		{
+			const auto &shape = objShapes[shapeIndex];
+			for (size_t meshIndex = 0; meshIndex < shape.mesh.indices.size(); meshIndex += 3)
+			{
+				Index unifiedIndex;
+				unifiedIndex.m_shapeIndex = shapeIndex;
+				unifiedIndex.m_materialIndex = shape.mesh.material_ids[meshIndex / 3];
+				unifiedIndex.m_vertexIndices[0] = shape.mesh.indices[meshIndex + 0];
+				unifiedIndex.m_vertexIndices[1] = shape.mesh.indices[meshIndex + 1];
+				unifiedIndex.m_vertexIndices[2] = shape.mesh.indices[meshIndex + 2];
+
+				unifiedIndices.push_back(unifiedIndex);
+			}
+		}
+
+		if (mergeByMaterial)
+		{
+			// sort all by material
+			std::stable_sort(unifiedIndices.begin(), unifiedIndices.end(), [](const auto &lhs, const auto &rhs) { return lhs.m_materialIndex < rhs.m_materialIndex; });
+		}
+		else
+		{
+			// sort only inside same shape by material
+			std::stable_sort(unifiedIndices.begin(), unifiedIndices.end(),
+				[](const auto &lhs, const auto &rhs) 
+			{ 
+				return lhs.m_shapeIndex < rhs.m_shapeIndex || (lhs.m_shapeIndex == rhs.m_shapeIndex && lhs.m_materialIndex < rhs.m_materialIndex);
+			});
+		}
 
 		j["meshFile"] = dstFileName + ".mesh";
 		j["materialLibraryFile"] = dstFileName + ".matlib";
@@ -168,89 +215,90 @@ int main()
 
 		size_t fileOffset = 0;
 		size_t subMeshIndex = 0;
-		for (const auto &shape : objShapes)
-		{
-			// sort faces by materials to split up submeshes if multiple materials are used on a single submesh
-			std::map<size_t, std::vector<tinyobj::index_t>> materialToIndex;
 
-			for (size_t i = 0; i < shape.mesh.indices.size(); i += 3)
+		glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
+		glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> texCoords;
+		std::vector<uint32_t> indices;
+		std::set<uint32_t> shapeIndices;
+		std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
+
+		for (size_t i = 0; i < unifiedIndices.size(); ++i)
+		{
+			const auto &index = unifiedIndices[i];
+
+			// loop over face (triangle)
+			for (size_t j = 0; j < 3; ++j)
 			{
-				auto &vec = materialToIndex[shape.mesh.material_ids[i / 3]];
-				vec.push_back(shape.mesh.indices[i]);
-				vec.push_back(shape.mesh.indices[i + 1]);
-				vec.push_back(shape.mesh.indices[i + 2]);
+				Vertex vertex;
+				const auto &vertexIndex = index.m_vertexIndices[j];
+
+				vertex.position.x = objAttrib.vertices[vertexIndex.vertex_index * 3 + 0];
+				vertex.position.y = objAttrib.vertices[vertexIndex.vertex_index * 3 + 1];
+				vertex.position.z = objAttrib.vertices[vertexIndex.vertex_index * 3 + 2];
+
+				vertex.normal.x = objAttrib.normals[vertexIndex.normal_index * 3 + 0];
+				vertex.normal.y = objAttrib.normals[vertexIndex.normal_index * 3 + 1];
+				vertex.normal.z = objAttrib.normals[vertexIndex.normal_index * 3 + 2];
+
+				if (objAttrib.texcoords.size() > vertexIndex.texcoord_index * 2 + 1)
+				{
+					vertex.texCoord.x = objAttrib.texcoords[vertexIndex.texcoord_index * 2 + 0];
+					vertex.texCoord.y = objAttrib.texcoords[vertexIndex.texcoord_index * 2 + 1];
+
+					if (invertTexcoordY)
+					{
+						vertex.texCoord.y = 1.0f - vertex.texCoord.y;
+					}
+				}
+				else
+				{
+					vertex.texCoord.x = 0.0f;
+					vertex.texCoord.y = 0.0f;
+				}
+
+				// find min/max corners
+				minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
+				maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
+				minMeshCorner = glm::min(minMeshCorner, vertex.position);
+				maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
+
+				// if we havent encountered this vertex before, add it to the map
+				if (vertexToIndex.count(vertex) == 0)
+				{
+					vertexToIndex[vertex] = static_cast<uint32_t>(positions.size());
+
+					positions.push_back(vertex.position);
+					normals.push_back(vertex.normal);
+					texCoords.push_back(vertex.texCoord);
+				}
+				indices.push_back(vertexToIndex[vertex]);
 			}
 
-			// iterate over all index lists of this  submesh.
-			// in most cases this will only be one list except if per-face materials are present in the mesh
-			for (const auto &materialIndicesPair : materialToIndex)
+			shapeIndices.insert(index.m_shapeIndex);
+
+			// write object to file and reset data
+			if (i + 1 == unifiedIndices.size()														// last index -> we're done
+				|| unifiedIndices[i + 1].m_materialIndex != index.m_materialIndex					// next material is different -> write to file
+				|| (!mergeByMaterial && unifiedIndices[i + 1].m_shapeIndex != index.m_shapeIndex))	// dont merge by material (keep distinct objects) and next shape is different -> write to file
 			{
-				std::cout << "Processing submesh #" << subMeshIndex++ << std::endl;
-
-				glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
-				glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
-
-				std::vector<glm::vec3> positions;
-				std::vector<glm::vec3> normals;
-				std::vector<glm::vec2> texCoords;
-				std::vector<uint32_t> indices;
-
-				std::unordered_map<Vertex, uint32_t, VertexHash> vertexToIndex;
-
-				// iterate over index list and build index/vertex data for this submesh
-				for (const auto &index : materialIndicesPair.second)
-				{
-					Vertex vertex;
-
-					vertex.position.x = objAttrib.vertices[index.vertex_index * 3 + 0];
-					vertex.position.y = objAttrib.vertices[index.vertex_index * 3 + 1];
-					vertex.position.z = objAttrib.vertices[index.vertex_index * 3 + 2];
-
-					vertex.normal.x = objAttrib.normals[index.normal_index * 3 + 0];
-					vertex.normal.y = objAttrib.normals[index.normal_index * 3 + 1];
-					vertex.normal.z = objAttrib.normals[index.normal_index * 3 + 2];
-
-					if (objAttrib.texcoords.size() > index.texcoord_index * 2 + 1)
-					{
-						vertex.texCoord.x = objAttrib.texcoords[index.texcoord_index * 2 + 0];
-						vertex.texCoord.y = objAttrib.texcoords[index.texcoord_index * 2 + 1];
-						if (invertHandedness)
-						{
-							vertex.texCoord.y = 1.0f - vertex.texCoord.y;
-						}
-					}
-					else
-					{
-						vertex.texCoord.x = 0.0f;
-						vertex.texCoord.y = 0.0f;
-					}
-
-					// find min/max corners
-					minSubMeshCorner = glm::min(minSubMeshCorner, vertex.position);
-					maxSubMeshCorner = glm::max(maxSubMeshCorner, vertex.position);
-					minMeshCorner = glm::min(minMeshCorner, vertex.position);
-					maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
-
-					// if we havent encountered this vertex before, add it to the map
-					if (vertexToIndex.count(vertex) == 0)
-					{
-						vertexToIndex[vertex] = static_cast<uint32_t>(positions.size());
-
-						positions.push_back(vertex.position);
-						normals.push_back(vertex.normal);
-						texCoords.push_back(vertex.texCoord);
-					}
-					indices.push_back(vertexToIndex[vertex]);
-				}
-				
 				dstFile.write((const char *)positions.data(), positions.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)normals.data(), normals.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)texCoords.data(), texCoords.size() * sizeof(glm::vec2));
 				dstFile.write((const char *)indices.data(), indices.size() * sizeof(uint32_t));
 
+				std::string shapeName = "";
+
+				for (const auto shapeIndex : shapeIndices)
+				{
+					shapeName += " " + objShapes[shapeIndex].name;
+				}
+
 				j["subMeshes"].push_back(
 					{
-						{ "name", shape.name },
+						{ "name", shapeName },
 						{ "dataOffset", fileOffset },
 						{ "vertexCount", positions.size() },
 						{ "indexCount", indices.size() },
@@ -260,15 +308,27 @@ int main()
 
 				j["subMeshInstances"].push_back(
 					{
-						{ "name", shape.name },
+						{ "name", shapeName },
 						{ "subMesh", j["subMeshes"].size() - 1 },
-						{ "material", materialIndicesPair.first }
+						{ "material", index.m_materialIndex }
 					});
 
 				fileOffset += positions.size() * sizeof(glm::vec3);
 				fileOffset += normals.size() * sizeof(glm::vec3);
 				fileOffset += texCoords.size() * sizeof(glm::vec2);
 				fileOffset += indices.size() * sizeof(uint32_t);
+
+				// reset data
+				minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
+				maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
+				positions.clear();
+				normals.clear();
+				texCoords.clear();
+				indices.clear();
+				shapeIndices.clear();
+				vertexToIndex.clear();
+
+				std::cout << "Processed SubMesh # " << subMeshIndex++ << std::endl;
 			}
 		}
 

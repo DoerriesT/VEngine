@@ -27,11 +27,8 @@
 #include "Pass/VKGTAOPass.h"
 #include "Pass/VKGTAOSpatialFilterPass.h"
 #include "Pass/VKGTAOTemporalFilterPass.h"
-#include "Pass/VKSDSMClearPass.h"
-#include "Pass/VKSDSMDepthReducePass.h"
-#include "Pass/VKSDSMSplitsPass.h"
-#include "Pass/VKSDSMBoundsReducePass.h"
 #include "Pass/VKSDSMShadowMatrixPass.h"
+#include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -214,14 +211,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle gtaoSpatiallyFilteredImageHandle = VKResourceDefinitions::createGTAOImageHandle(graph, m_width, m_height);
 	FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
-	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
-	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedBatchSize);
-	FrameGraph::BufferHandle transparentIndirectBufferHandle = VKResourceDefinitions::createTransparentIndirectBufferHandle(graph, renderData.m_transparentBatchSize);
-	FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createOpaqueIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
-	FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createMaskedIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
-	FrameGraph::BufferHandle sdsmDepthBoundsBufferHandle = VKResourceDefinitions::createSDSMDepthBoundsBufferHandle(graph);
-	FrameGraph::BufferHandle sdsmSplitsBufferHandle = VKResourceDefinitions::createSDSMSplitsBufferHandle(graph, 4);
-	FrameGraph::BufferHandle sdsmPartitionBoundsBufferHandle = VKResourceDefinitions::createSDSMPartitionBoundsBufferHandle(graph, 4);
+	FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
+	FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_alphaTestedBatchSize);
+	FrameGraph::BufferHandle transparentIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_transparentBatchSize);
+	FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
+	FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
 
 	// transform data write
 	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
@@ -379,57 +373,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
 
+	// common sdsm
+	VKSDSMModule::OutputData sdsmOutputData;
+	VKSDSMModule::InputData sdsmInputData;
+	sdsmInputData.m_renderResources = m_renderResources.get();
+	sdsmInputData.m_pipelineCache = m_pipelineCache.get();
+	sdsmInputData.m_descriptorSetCache = m_descriptorSetCache.get();
+	sdsmInputData.m_width = m_width;
+	sdsmInputData.m_height = m_height;
+	sdsmInputData.m_nearPlane = commonData.m_nearPlane;
+	sdsmInputData.m_farPlane = commonData.m_farPlane;
+	sdsmInputData.m_invProjection = commonData.m_invJitteredProjectionMatrix;
+	sdsmInputData.m_depthImageHandle = depthImageHandle;
 
-	// sdsm clear
-	VKSDSMClearPass::Data sdsmClearPassData;
-	sdsmClearPassData.m_renderResources = m_renderResources.get();
-	sdsmClearPassData.m_pipelineCache = m_pipelineCache.get();
-	sdsmClearPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	sdsmClearPassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
-	sdsmClearPassData.m_partitionBoundsBufferHandle = sdsmPartitionBoundsBufferHandle;
-
-	VKSDSMClearPass::addToGraph(graph, sdsmClearPassData);
-
-
-	// sdsm depth reduce
-	VKSDSMDepthReducePass::Data sdsmDepthReducePassData;
-	sdsmDepthReducePassData.m_renderResources = m_renderResources.get();
-	sdsmDepthReducePassData.m_pipelineCache = m_pipelineCache.get();
-	sdsmDepthReducePassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	sdsmDepthReducePassData.m_width = m_width;
-	sdsmDepthReducePassData.m_height = m_height;
-	sdsmDepthReducePassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
-	sdsmDepthReducePassData.m_depthImageHandle = depthImageHandle;
-
-	VKSDSMDepthReducePass::addToGraph(graph, sdsmDepthReducePassData);
-
-
-	// sdsm splits
-	VKSDSMSplitsPass::Data sdsmSplitsPassData;
-	sdsmSplitsPassData.m_renderResources = m_renderResources.get();
-	sdsmSplitsPassData.m_pipelineCache = m_pipelineCache.get();
-	sdsmSplitsPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	sdsmSplitsPassData.m_nearPlane = commonData.m_nearPlane;
-	sdsmSplitsPassData.m_farPlane = commonData.m_farPlane;
-	sdsmSplitsPassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
-	sdsmSplitsPassData.m_splitsBufferHandle = sdsmSplitsBufferHandle;
-
-	VKSDSMSplitsPass::addToGraph(graph, sdsmSplitsPassData);
-
-
-	// sdsm bounds reduce
-	VKSDSMBoundsReducePass::Data sdsmBoundsReducePassData;
-	sdsmBoundsReducePassData.m_renderResources = m_renderResources.get();
-	sdsmBoundsReducePassData.m_pipelineCache = m_pipelineCache.get();
-	sdsmBoundsReducePassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	sdsmBoundsReducePassData.m_width = m_width;
-	sdsmBoundsReducePassData.m_height = m_height;
-	sdsmBoundsReducePassData.m_invProjection = commonData.m_invProjectionMatrix;
-	sdsmBoundsReducePassData.m_partitionBoundsBufferHandle = sdsmPartitionBoundsBufferHandle;
-	sdsmBoundsReducePassData.m_splitsBufferHandle = sdsmSplitsBufferHandle;
-	sdsmBoundsReducePassData.m_depthImageHandle = depthImageHandle;
-
-	VKSDSMBoundsReducePass::addToGraph(graph, sdsmBoundsReducePassData);
+	VKSDSMModule::addToGraph(graph, sdsmInputData, sdsmOutputData);
 
 
 	// sdsm shadow matrix
@@ -438,14 +395,13 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	sdsmShadowMatrixPassData.m_pipelineCache = m_pipelineCache.get();
 	sdsmShadowMatrixPassData.m_descriptorSetCache = m_descriptorSetCache.get();
 	sdsmShadowMatrixPassData.m_lightView = glm::lookAt(glm::vec3(), -glm::vec3(commonData.m_invViewMatrix * lightData.m_directionalLightData.front().m_direction), glm::vec3(glm::transpose(commonData.m_viewMatrix)[0]));
-	sdsmShadowMatrixPassData.m_cameraViewToLightView = sdsmShadowMatrixPassData.m_lightView * commonData.m_invJitteredViewProjectionMatrix;
+	sdsmShadowMatrixPassData.m_cameraViewToLightView = sdsmShadowMatrixPassData.m_lightView * commonData.m_invViewProjectionMatrix;
 	sdsmShadowMatrixPassData.m_lightSpaceNear = renderData.m_orthoNearest;
 	sdsmShadowMatrixPassData.m_lightSpaceFar = renderData.m_orthoFarthest;
 	sdsmShadowMatrixPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
-	sdsmShadowMatrixPassData.m_partitionBoundsBufferHandle = sdsmPartitionBoundsBufferHandle;
+	sdsmShadowMatrixPassData.m_partitionBoundsBufferHandle = sdsmOutputData.m_partitionBoundsBufferHandle;
 
 	VKSDSMShadowMatrixPass::addToGraph(graph, sdsmShadowMatrixPassData);
-
 
 
 	// initialize velocity of static objects

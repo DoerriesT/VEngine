@@ -54,7 +54,7 @@ namespace VEngine
 		uint32_t padding;
 	};
 
-	struct SubMeshData
+	struct SubMeshInfo
 	{
 		uint32_t m_indexCount;
 		uint32_t m_firstIndex;

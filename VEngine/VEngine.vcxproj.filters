@@ -31,6 +31,9 @@
     <Filter Include="Code\Component">
       <UniqueIdentifier>{afa93efd-7cf8-40f5-84e3-eef527e09db9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\Vulkan\Module">
+      <UniqueIdentifier>{3cbaea81-8050-489d-a52d-63741b3b147b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -249,6 +252,18 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDrawCallCompactionPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -409,6 +424,18 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDrawCallCompactionPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

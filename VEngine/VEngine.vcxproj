@@ -158,7 +158,10 @@
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKBlitPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDrawCallCompactionPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.h" />
@@ -181,6 +184,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
@@ -221,7 +225,10 @@
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\RenderSystem.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKBlitPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDrawCallCompactionPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.cpp" />
@@ -244,6 +251,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />

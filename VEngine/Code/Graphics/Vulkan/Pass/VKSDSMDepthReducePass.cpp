@@ -20,7 +20,7 @@ void VEngine::VKSDSMDepthReducePass::addToGraph(FrameGraph::Graph & graph, const
 
 		builder.readWriteStorageBuffer(data.m_depthBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+		[=](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
 	{
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;

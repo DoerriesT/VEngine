@@ -1,0 +1,136 @@
+#version 450
+
+#include "triangleFilter_bindings.h"
+
+struct ClusterInfo
+{
+	uint indexCount;
+	uint indexOffset;
+	int vertexOffset;
+	uint drawCallIndex;
+	uint transformIndex;
+};
+
+layout(set = VIEW_PROJECTION_MATRIX_SET, binding = VIEW_PROJECTION_MATRIX_BINDING) readonly buffer VIEW_PROJECTION_MATRIX 
+{
+    mat4 uViewProjection[];
+};
+
+layout(set = CLUSTER_INFO_SET, binding = CLUSTER_INFO_BINDING) readonly buffer CLUSTER_INFO 
+{
+    ClusterInfo uClusterInfo[];
+};
+
+layout(set = INPUT_INDICES_SET, binding = INPUT_INDICES_BINDING) readonly buffer INPUT_INDICES 
+{
+    uint uInputIndices[];
+};
+
+layout(set = TRANSFORM_DATA_SET, binding = TRANSFORM_DATA_BINDING) readonly buffer TRANSFORM_DATA 
+{
+    mat4 uTransformData[];
+};
+
+layout(set = POSITIONS_SET, binding = POSITIONS_BINDING) readonly buffer POSITIONS 
+{
+    float uPositions[];
+};
+
+layout(set = INDEX_OFFSETS_SET, binding = INDEX_OFFSETS_BINDING) readonly buffer INDEX_OFFSETS 
+{
+    uint uDrawCallIndexOffsets[];
+};
+
+layout(set = INDEX_COUNTS_SET, binding = INDEX_COUNTS_BINDING) buffer INDEX_COUNTS 
+{
+    uint uDrawCallIndexCounts[];
+};
+
+layout(set = FILTERED_INDICES_SET, binding = FILTERED_INDICES_BINDING) buffer FILTERED_INDICES 
+{
+    uint uFilteredIndices[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+#include "commonTriangleFilter.h"
+
+shared uint workGroupOutputSlot;
+shared uint workGroupIndexCount;
+
+void main() 
+{
+	if (gl_LocalInvocationID.x == 0)
+	{
+		workGroupIndexCount = 0;
+	}
+	
+	memoryBarrierShared(); 
+	barrier();
+	
+	bool cull = true;
+	uint invocationOutputSlot = 0;
+	
+	ClusterInfo clusterInfo = uClusterInfo[uPushConsts.clusterOffset + gl_WorkGroupID.x];
+	
+	if (gl_LocalInvocationID.x * 3 < clusterInfo.indexCount)
+	{
+		uint indices[3];
+		indices[0] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 0];
+		indices[1] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 1];
+		indices[2] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 2];
+		
+		vec4 vertices[3];
+		vertices[0].x = uPositions[(indices[0] + clusterInfo.vertexOffset) * 3 + 0];
+		vertices[0].y = uPositions[(indices[0] + clusterInfo.vertexOffset) * 3 + 1];
+		vertices[0].z = uPositions[(indices[0] + clusterInfo.vertexOffset) * 3 + 2];
+		vertices[0].w = 1.0;
+		vertices[1].x = uPositions[(indices[1] + clusterInfo.vertexOffset) * 3 + 0];
+		vertices[1].y = uPositions[(indices[1] + clusterInfo.vertexOffset) * 3 + 1];
+		vertices[1].z = uPositions[(indices[1] + clusterInfo.vertexOffset) * 3 + 2];
+		vertices[1].w = 1.0;
+		vertices[2].x = uPositions[(indices[2] + clusterInfo.vertexOffset) * 3 + 0];
+		vertices[2].y = uPositions[(indices[2] + clusterInfo.vertexOffset) * 3 + 1];
+		vertices[2].z = uPositions[(indices[2] + clusterInfo.vertexOffset) * 3 + 2];
+		vertices[2].w = 1.0;
+		
+		const mat4 transform = uViewProjection[uPushConsts.viewProjectionMatrixOffset] * uTransformData[clusterInfo.transformIndex];	
+		
+		vertices[0] = transform * vertices[0];
+		vertices[1] = transform * vertices[1];
+		vertices[2] = transform * vertices[2];
+		
+		
+		cull = cullTriangle(indices, vertices, uPushConsts.resolution, bool(uPushConsts.cullBackface));
+		
+		if (!cull)
+		{
+			invocationOutputSlot = atomicAdd(workGroupIndexCount, 3);
+		}
+	}
+	
+	memoryBarrierShared(); 
+	barrier();
+	
+	if (gl_LocalInvocationID.x == 0)
+	{
+		workGroupOutputSlot = atomicAdd(uDrawCallIndexCounts[clusterInfo.drawCallIndex], workGroupIndexCount);
+	}
+	
+	memoryBarrierShared(); 
+	barrier();
+	
+	uint outputIndexOffset = workGroupOutputSlot + invocationOutputSlot + uDrawCallIndexOffsets[clusterInfo.drawCallIndex];
+	
+	if (!cull)
+	{
+		uFilteredIndices[outputIndexOffset + 0] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 0];
+		uFilteredIndices[outputIndexOffset + 1] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 1];
+		uFilteredIndices[outputIndexOffset + 2] = uInputIndices[clusterInfo.indexOffset + gl_LocalInvocationID.x * 3 + 2];
+	}
+}
