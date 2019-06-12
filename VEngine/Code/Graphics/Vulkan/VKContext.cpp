@@ -9,9 +9,16 @@ namespace VEngine
 {
 	VKContext g_context = {};
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
 	{
-		std::cerr << "validation layer: " << msg << std::endl;
+		std::cerr << "validation layer:\n"
+			<< pCallbackData->pMessageIdName << "\n"
+			<< pCallbackData->messageIdNumber << "\n"
+			<< pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
 	}
@@ -40,7 +47,33 @@ namespace VEngine
 
 			if (g_vulkanDebugCallBackEnabled)
 			{
-				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			}
+
+			// make sure all requested extensions are available
+			{
+				uint32_t instanceExtensionCount = 0;
+				vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+				std::vector<VkExtensionProperties> extensionProperties(instanceExtensionCount);
+				vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, extensionProperties.data());
+
+				for (auto &requestedExtension : extensions)
+				{
+					bool found = false;
+					for (auto &presentExtension : extensionProperties)
+					{
+						if (strcmp(requestedExtension, presentExtension.extensionName) == 0)
+						{
+							found = true;
+							break;
+						}
+					}
+
+					if (!found)
+					{
+						Utility::fatalExit(("Requested extension not present! " + std::string(requestedExtension)).c_str(), -1);
+					}
+				}
 			}
 
 			VkInstanceCreateInfo createInfo{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
@@ -61,12 +94,15 @@ namespace VEngine
 		// create debug callback
 		if (g_vulkanDebugCallBackEnabled)
 		{
-			VkDebugReportCallbackCreateInfoEXT createInfo{ VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT };
-			createInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
-			createInfo.pfnCallback = debugCallback;
+			VkDebugUtilsMessengerCreateInfoEXT createInfo{ VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+			createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+			createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+			createInfo.pfnUserCallback = debugCallback;
 
-			auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkCreateDebugReportCallbackEXT");
-			if (!func || func(m_instance, &createInfo, nullptr, &m_debugCallback) != VK_SUCCESS)
+			if (vkCreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugUtilsMessenger) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to set up debug callback!", -1);
 			}

@@ -44,6 +44,7 @@ namespace VEngine
 		VKSwapChainSupportDetails m_swapChainSupportDetails;
 		VKQueueFamilyIndices m_queueFamilyIndices;
 		VKMemoryAllocator m_allocator;
+		VkDebugUtilsMessengerEXT m_debugUtilsMessenger;
 
 		void init(GLFWwindow *windowHandle);
 		void shutdown();
