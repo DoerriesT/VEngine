@@ -96,7 +96,7 @@ void main()
 {
 	const float depth = texelFetch(uGBufferTextures[DEPTH_TEXTURE_INDEX], ivec2(gl_GlobalInvocationID.xy), 0).x;
 	
-	if (depth == 1.0)
+	if (depth == 0.0)
 	{
 		imageStore(uLightingResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.529, 0.808, 0.922), 1.0));
 		return;

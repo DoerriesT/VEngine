@@ -207,7 +207,7 @@ void main()
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	
 	// find closest depth and sample velocity from there -> better preserves edges during movement
-	float closestDepth = 1.0;
+	float closestDepth = 0.0;
 	ivec2 velocityOffset = ivec2(0, 0);
 	for (int y = -1; y < 2; ++y)
 	{
@@ -216,7 +216,7 @@ void main()
 			ivec2 offset = ivec2(x, y);
 			float depth = ldsDepth[gl_LocalInvocationID.x + 1 + x][gl_LocalInvocationID.y + 1 + y];
 			
-			if (depth < closestDepth)
+			if (depth > closestDepth)
 			{
 				closestDepth = depth;
 				velocityOffset = offset;

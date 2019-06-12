@@ -66,7 +66,7 @@ void VEngine::VKTransparencyWritePass::addToGraph(FrameGraph::Graph &graph, cons
 
 			pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
 			pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
-			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
 			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
 			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
 

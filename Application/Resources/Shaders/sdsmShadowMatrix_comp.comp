@@ -68,9 +68,10 @@ void main()
 	
 	vec3 corners[8];
 	{
-		vec3 minCorner = vec3(uintBitsToFloat(uMinX[index]), uintBitsToFloat(uMinY[index]), uintBitsToFloat(uMinZ[index]));
-		vec3 maxCorner = vec3(uintBitsToFloat(uMaxX[index]), uintBitsToFloat(uMaxY[index]), uintBitsToFloat(uMaxZ[index]));
-		maxCorner = max(minCorner, maxCorner);
+		vec3 minCornerTmp = vec3(uintBitsToFloat(uMinX[index]), uintBitsToFloat(uMinY[index]), uintBitsToFloat(uMinZ[index]));
+		vec3 maxCornerTmp = vec3(uintBitsToFloat(uMaxX[index]), uintBitsToFloat(uMaxY[index]), uintBitsToFloat(uMaxZ[index]));
+		vec3 minCorner = min(minCornerTmp, maxCornerTmp);
+		vec3 maxCorner = max(minCornerTmp, maxCornerTmp);
 		
 		corners[0] = vec3(minCorner.x, minCorner.y, minCorner.z);
 		corners[1] = vec3(minCorner.x, maxCorner.y, minCorner.z);

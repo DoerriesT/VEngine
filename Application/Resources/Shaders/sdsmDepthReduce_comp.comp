@@ -35,25 +35,25 @@ void main()
 			vec2 coord = (vec2(gl_GlobalInvocationID.xy) * 4.0 + vec2(x * 2 + 1, y * 2 + 1)) * texelSize;
 			vec4 depths = textureGather(uDepthImage, coord);
 			
-			if (depths[0] != 1.0)
+			if (depths[0] != 0.0)
 			{
 				minZ = min(minZ, depths[0]);
 				maxZ = max(maxZ, depths[0]);
 			}
 			
-			if (depths[1] != 1.0)
+			if (depths[1] != 0.0)
 			{
 				minZ = min(minZ, depths[1]);
 				maxZ = max(maxZ, depths[1]);
 			}
 			
-			if (depths[2] != 1.0)
+			if (depths[2] != 0.0)
 			{
 				minZ = min(minZ, depths[2]);
 				maxZ = max(maxZ, depths[2]);
 			}
 			
-			if (depths[3] != 1.0)
+			if (depths[3] != 0.0)
 			{
 				minZ = min(minZ, depths[3]);
 				maxZ = max(maxZ, depths[3]);

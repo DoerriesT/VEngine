@@ -31,6 +31,7 @@ float logPartitionFromRange(uint split, float minZ, float maxZ)
 
 float linearizeDepth(float z, float n, float f)
 {
+	z = 1.0 - z;
 	return (n * f) / (f - z * (f - n));
 }
 
@@ -40,8 +41,8 @@ void main()
 	float farPlane = uPushConsts.farPlane;
 	
 	// get depth bounds in linear space
-	float minZ = linearizeDepth(uintBitsToFloat(uMinDepth), nearPlane, farPlane);
-	float maxZ = linearizeDepth(uintBitsToFloat(uMaxDepth), nearPlane, farPlane);
+	float minZ = linearizeDepth(uintBitsToFloat(uMaxDepth), nearPlane, farPlane);
+	float maxZ = linearizeDepth(uintBitsToFloat(uMinDepth), nearPlane, farPlane);
 	
 	const uint index = gl_GlobalInvocationID.x;
 	

@@ -31,7 +31,7 @@ namespace VEngine
 			desc.m_name = "Depth Image";
 			desc.m_concurrent = false;
 			desc.m_clear = true;
-			desc.m_clearValue.m_imageClearValue.depthStencil.depth = 1.0f;
+			desc.m_clearValue.m_imageClearValue.depthStencil.depth = 0.0f;
 			desc.m_width = width;
 			desc.m_height = height;
 			desc.m_layers = 1;

@@ -63,7 +63,7 @@ void main()
 			vec2 coord = (vec2(gl_GlobalInvocationID.xy) * 4.0 + vec2(x * 2 + 1, y * 2 + 1)) * texelSize;
 			vec4 depths = textureGather(uDepthImage, coord);
 			
-			if (depths[0] != 1.0)
+			if (depths[0] != 0.0)
 			{
 				vec2 texCoord = coord + vec2(-texelSize.x, texelSize.y);
 				vec3 position = getViewSpacePosition(texCoord, depths[0]);
@@ -78,7 +78,7 @@ void main()
 				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[0]));
 			}
 			
-			if (depths[1] != 1.0)
+			if (depths[1] != 0.0)
 			{
 				vec2 texCoord = coord + vec2(texelSize.x, texelSize.y);
 				vec3 position = getViewSpacePosition(texCoord, depths[1]);
@@ -93,7 +93,7 @@ void main()
 				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[1]));
 			}
 			
-			if (depths[2] != 1.0)
+			if (depths[2] != 0.0)
 			{
 				vec2 texCoord = coord + vec2(texelSize.x, -texelSize.y);
 				vec3 position = getViewSpacePosition(texCoord, depths[2]);
@@ -108,7 +108,7 @@ void main()
 				maxCorner[index] = max(maxCorner[index], vec3(texCoord, depths[2]));
 			}
 			
-			if (depths[3] != 1.0)
+			if (depths[3] != 0.0)
 			{
 				vec2 texCoord = coord + vec2(-texelSize.x, -texelSize.y);
 				

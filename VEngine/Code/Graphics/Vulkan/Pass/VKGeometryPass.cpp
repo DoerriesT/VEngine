@@ -66,7 +66,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 
 			pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
 			pipelineDesc.m_depthStencilState.m_depthWriteEnable = true;
-			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
 			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
 			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
 
