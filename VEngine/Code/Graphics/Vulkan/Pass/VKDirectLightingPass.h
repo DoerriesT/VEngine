@@ -1,14 +1,14 @@
 #pragma once
 #include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
-#include "Graphics/RenderData.h"
 
 namespace VEngine
 {
 	class VKPipelineCache;
 	class VKDescriptorSetCache;
 	struct VKRenderResources;
+	struct CommonRenderData;
 
-	namespace VKLightingPass
+	namespace VKDirectLightingPass
 	{
 		struct Data
 		{
@@ -22,12 +22,14 @@ namespace VEngine
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
+			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			FrameGraph::BufferHandle m_shadowDataBufferHandle;
 			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
 			FrameGraph::ImageHandle m_depthImageHandle;
-			FrameGraph::ImageHandle m_albedoImageHandle;
-			FrameGraph::ImageHandle m_normalImageHandle;
-			FrameGraph::ImageHandle m_metalnessRougnessOcclusionImageHandle;
+			FrameGraph::ImageHandle m_uvImageHandle;
+			FrameGraph::ImageHandle m_ddxyLengthImageHandle;
+			FrameGraph::ImageHandle m_ddxyRotMaterialIdImageHandle;
+			FrameGraph::ImageHandle m_tangentSpaceImageHandle;
 			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
 			FrameGraph::ImageHandle m_occlusionImageHandle;
 			FrameGraph::ImageHandle m_resultImageHandle;

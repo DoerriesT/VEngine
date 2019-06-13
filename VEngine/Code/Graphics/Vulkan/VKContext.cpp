@@ -116,7 +116,7 @@ namespace VEngine
 			}
 		}
 
-		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME };
 
 		VKSwapChainSupportDetails swapChainSupportDetails;
 
@@ -254,8 +254,14 @@ namespace VEngine
 					swapChainAdequate = !swapChainSupportDetails.m_formats.empty() && !swapChainSupportDetails.m_presentModes.empty();
 				}
 
-				VkPhysicalDeviceFeatures supportedFeatures;
-				vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+				VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
+
+				VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+				supportedFeatures2.pNext = &descriptorIndexingFeatures;
+
+				vkGetPhysicalDeviceFeatures2(physicalDevice, &supportedFeatures2);
+
+				VkPhysicalDeviceFeatures supportedFeatures = supportedFeatures2.features;
 
 				if (graphicsFamilyIndex >= 0
 					&& computeFamilyIndex >= 0
@@ -270,7 +276,8 @@ namespace VEngine
 					&& supportedFeatures.fragmentStoresAndAtomics
 					&& supportedFeatures.shaderStorageImageExtendedFormats
 					&& supportedFeatures.multiDrawIndirect
-					&& supportedFeatures.shaderStorageImageWriteWithoutFormat)
+					&& supportedFeatures.shaderStorageImageWriteWithoutFormat
+					&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing)
 				{
 					m_physicalDevice = physicalDevice;
 					m_queueFamilyIndices =
@@ -321,7 +328,11 @@ namespace VEngine
 
 			m_enabledFeatures = deviceFeatures;
 
+			VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT };
+			descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+
 			VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+			createInfo.pNext = &descriptorIndexingFeatures;
 			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 			createInfo.pQueueCreateInfos = queueCreateInfos.data();
 			createInfo.enabledLayerCount = 0;

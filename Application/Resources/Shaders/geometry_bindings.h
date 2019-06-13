@@ -9,9 +9,10 @@
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
 
-#define OUT_ALBEDO 0
-#define OUT_NORMAL 1
-#define OUT_METALNESS_ROUGHNESS_OCCLUSION 2
+#define OUT_UV 0
+#define OUT_DDXY_LENGTH 1
+#define OUT_DDXY_ROTATION_MATERIAL_ID 2
+#define OUT_TANGENT_SPACE 3
 
 struct PushConsts
 {

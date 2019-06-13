@@ -11,7 +11,6 @@
 #include "Pass/VKPrepareIndirectBuffersPass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
-#include "Pass/VKLightingPass.h"
 #include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
 #include "Pass/VKTextPass.h"
@@ -28,6 +27,7 @@
 #include "Pass/VKGTAOSpatialFilterPass.h"
 #include "Pass/VKGTAOTemporalFilterPass.h"
 #include "Pass/VKSDSMShadowMatrixPass.h"
+#include "Pass/VKDirectLightingPass.h"
 #include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -198,9 +198,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	FrameGraph::ImageHandle swapchainTextureHandle = 0;
 	FrameGraph::ImageHandle finalImageHandle = VKResourceDefinitions::createFinalImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle depthImageHandle = VKResourceDefinitions::createDepthImageHandle(graph, m_width, m_height);
-	FrameGraph::ImageHandle albedoImageHandle = VKResourceDefinitions::createAlbedoImageHandle(graph, m_width, m_height);
-	FrameGraph::ImageHandle normalImageHandle = VKResourceDefinitions::createNormalImageHandle(graph, m_width, m_height);
-	FrameGraph::ImageHandle materialImageHandle = VKResourceDefinitions::createMaterialImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle uvImageHandle = VKResourceDefinitions::createUVImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle ddxyLengthImageHandle = VKResourceDefinitions::createDerivativesLengthImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle ddxyRotMaterialIdImageHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageHandle(graph, m_width, m_height);
+	FrameGraph::ImageHandle tangentSpaceImageHandle = VKResourceDefinitions::createTangentSpaceImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle velocityImageHandle = VKResourceDefinitions::createVelocityImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
 	FrameGraph::ImageHandle transparencyAccumImageHandle = VKResourceDefinitions::createTransparencyAccumImageHandle(graph, m_width, m_height);
@@ -341,20 +342,21 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_renderResources = m_renderResources.get();
 	opaqueGeometryPassData.m_pipelineCache = m_pipelineCache.get();
 	opaqueGeometryPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	opaqueGeometryPassData.m_commonRenderData = &commonData;
 	opaqueGeometryPassData.m_width = m_width;
 	opaqueGeometryPassData.m_height = m_height;
 	opaqueGeometryPassData.m_drawCount = renderData.m_opaqueBatchSize;
 	opaqueGeometryPassData.m_alphaMasked = false;
+	opaqueGeometryPassData.m_viewMatrix = commonData.m_viewMatrix;
+	opaqueGeometryPassData.m_jitteredViewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
 	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectBufferHandle;
 	opaqueGeometryPassData.m_depthImageHandle = depthImageHandle;
-	opaqueGeometryPassData.m_albedoImageHandle = albedoImageHandle;
-	opaqueGeometryPassData.m_normalImageHandle = normalImageHandle;
-	opaqueGeometryPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
-	opaqueGeometryPassData.m_velocityImageHandle = velocityImageHandle;
+	opaqueGeometryPassData.m_uvImageHandle = uvImageHandle;
+	opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageHandle;
+	opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageHandle;
+	opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageHandle;
 
 	if (renderData.m_opaqueBatchSize)
 	{
@@ -531,7 +533,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// light gbuffer
-	VKLightingPass::Data lightingPassData;
+	VKDirectLightingPass::Data lightingPassData;
 	lightingPassData.m_renderResources = m_renderResources.get();
 	lightingPassData.m_pipelineCache = m_pipelineCache.get();
 	lightingPassData.m_descriptorSetCache = m_descriptorSetCache.get();
@@ -541,18 +543,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_ssao = g_ssaoEnabled;
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	lightingPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
 	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	lightingPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
 	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
 	lightingPassData.m_depthImageHandle = depthImageHandle;
-	lightingPassData.m_albedoImageHandle = albedoImageHandle;
-	lightingPassData.m_normalImageHandle = normalImageHandle;
-	lightingPassData.m_metalnessRougnessOcclusionImageHandle = materialImageHandle;
+	lightingPassData.m_uvImageHandle = uvImageHandle;
+	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageHandle;
+	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageHandle;
+	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageHandle;
 	lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 	lightingPassData.m_occlusionImageHandle = gtaoImageHandle;
 	lightingPassData.m_resultImageHandle = lightImageHandle;
 
-	VKLightingPass::addToGraph(graph, lightingPassData);
+	VKDirectLightingPass::addToGraph(graph, lightingPassData);
 
 
 	VKTransparencyWritePass::Data transparencyWriteData;

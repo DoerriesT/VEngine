@@ -29,10 +29,9 @@ layout(location = 3) flat out uint vMaterialIndex;
 void main() 
 {
 	SubMeshInstanceData instanceData = uInstanceData[gl_InstanceIndex];
-	PushConsts pushConsts = uPushConsts;
 	const mat4 modelMatrix = uTransformData[instanceData.transformIndex];
-    gl_Position = pushConsts.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
-	const mat4 viewMatrix = transpose(mat4(pushConsts.viewMatrixRow0, pushConsts.viewMatrixRow1, pushConsts.viewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
+    gl_Position = uPushConsts.jitteredViewProjectionMatrix * modelMatrix * vec4(inPosition, 1.0);
+	const mat4 viewMatrix = transpose(mat4(uPushConsts.viewMatrixRow0, uPushConsts.viewMatrixRow1, uPushConsts.viewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
 	const mat4 modelViewMatrix = viewMatrix * modelMatrix;										
 	vTexCoord = inTexCoord;
 	vNormal = mat3(modelViewMatrix) * inNormal;

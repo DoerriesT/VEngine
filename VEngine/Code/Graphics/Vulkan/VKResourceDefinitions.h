@@ -42,10 +42,10 @@ namespace VEngine
 			return graph.createImage(desc);
 		}
 
-		inline FrameGraph::ImageHandle createAlbedoImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		inline FrameGraph::ImageHandle createUVImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
 		{
 			FrameGraph::ImageDescription desc = {};
-			desc.m_name = "Albedo Image";
+			desc.m_name = "UV Image";
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_imageClearValue = {};
@@ -54,15 +54,15 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+			desc.m_format = VK_FORMAT_R16G16_SNORM;
 
 			return graph.createImage(desc);
 		}
 
-		inline FrameGraph::ImageHandle createNormalImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		inline FrameGraph::ImageHandle createDerivativesLengthImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
 		{
 			FrameGraph::ImageDescription desc = {};
-			desc.m_name = "Normal Image";
+			desc.m_name = "DDXY Length Image";
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_imageClearValue = {};
@@ -71,15 +71,15 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+			desc.m_format = VK_FORMAT_R16G16_SFLOAT;
 
 			return graph.createImage(desc);
 		}
 
-		inline FrameGraph::ImageHandle createMaterialImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		inline FrameGraph::ImageHandle createDerivativesRotMaterialIdImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
 		{
 			FrameGraph::ImageDescription desc = {};
-			desc.m_name = "Material Image";
+			desc.m_name = "DDXY Rot & Material ID Image";
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_imageClearValue = {};
@@ -88,7 +88,24 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+			desc.m_format = VK_FORMAT_R16G16_UINT;
+
+			return graph.createImage(desc);
+		}
+
+		inline FrameGraph::ImageHandle createTangentSpaceImageHandle(FrameGraph::Graph &graph, uint32_t width, uint32_t height)
+		{
+			FrameGraph::ImageDescription desc = {};
+			desc.m_name = "Tangent Space Image";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = width;
+			desc.m_height = height;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_A2R10G10B10_UINT_PACK32;
 
 			return graph.createImage(desc);
 		}

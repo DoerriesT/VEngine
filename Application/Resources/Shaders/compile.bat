@@ -3,6 +3,9 @@ glslc --target-env=vulkan1.1 -O -Werror -c geometry_frag.frag -o geometry_frag.s
 glslc --target-env=vulkan1.1 -O -Werror -c -DALPHA_MASK_ENABLED=1 geometry_frag.frag -o geometry_alpha_mask_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c lighting_comp.comp -o lighting_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 lighting_comp.comp -o lighting_comp_SSAO_ENABLED.spv
+glslc --target-env=vulkan1.1 -O -Werror -c lighting_vert.vert -o lighting_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c lighting_frag.frag -o lighting_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 lighting_frag.frag -o lighting_SSAO_ENABLED_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c shadows_vert.vert -o shadows_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DALPHA_MASK_ENABLED=1 shadows_vert.vert -o shadows_alpha_mask_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c shadows_frag.frag -o shadows_frag.spv

@@ -22,10 +22,10 @@ layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec3 vWorldPos;
 layout(location = 3) flat in uint vMaterialIndex;
 
-layout(location = OUT_ALBEDO) out vec4 oAlbedo;
-layout(location = OUT_NORMAL) out vec4 oNormalEmissive;
-layout(location = OUT_METALNESS_ROUGHNESS_OCCLUSION) out vec4 oMetalnessRoughnessOcclusion;
-//layout(location = 3) out vec4 oVelocity;
+layout(location = OUT_UV) out vec4 oUV;
+layout(location = OUT_DDXY_LENGTH) out vec4 oDdxyLength;
+layout(location = OUT_DDXY_ROTATION_MATERIAL_ID) out uvec4 oDdxyRotationMaterialId;
+layout(location = OUT_TANGENT_SPACE) out uvec4 oTangentSpace;
 
 // based on http://www.thetenthplanet.de/archives/1180
 mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
@@ -47,75 +47,114 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
     return mat3( T * -invmax, B * -invmax, N );
 }
 
+float signNotZero(in float k) 
+{
+    return k >= 0.0 ? 1.0 : -1.0;
+}
+
+vec2 signNotZero(in vec2 v) 
+{
+    return vec2(signNotZero(v.x), signNotZero(v.y));
+}
+
+vec2 encodeNormal(in vec3 v) 
+{
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0/l1norm);
+    if (v.z < 0.0) 
+	{
+        result = (1.0 - abs(result.yx)) * signNotZero(result.xy);
+    }
+    return result;
+}
+
+void encodeDerivatives(in vec4 derivatives, out vec2 derivativesLength, out uint encodedDerivativesRot)
+{
+	derivativesLength = vec2(length(derivatives.xy), length(derivatives.zw));
+	vec2 derivativesRot = vec2(derivatives.x / derivativesLength.x, 
+						derivatives.z / derivativesLength.y) * 0.5 + 0.5;
+	uint signX = (derivatives.y < 0.0) ? 1 : 0;
+	uint signY = (derivatives.w < 0.0) ? 1 : 0;
+	encodedDerivativesRot = (signY << 15u) 
+						| (uint(derivativesRot.y * 127.0f) << 8u)
+						| (signX << 7u) 
+						| (uint(derivativesRot.x * 127.0));
+}
+
+uvec4 encodeTBN(in vec3 normal, in vec3 tangent, in uint bitangentHandedness)
+{
+	// octahedron normal vector encoding
+	uvec2 encodedNormal = uvec2((encodeNormal(normal) * 0.5 + 0.5) * 1023.0);
+	
+	// find largest component of tangent
+	vec3 tangentAbs = abs(tangent);
+	float maxComp = max(max(tangentAbs.x, tangentAbs.y), tangentAbs.z);
+	vec3 refVector;
+	uint compIndex;
+	if (maxComp == tangentAbs.x)
+	{
+		refVector = vec3(1.0, 0.0, 0.0);
+		compIndex = 0;
+	}
+	else if (maxComp == tangentAbs.y)
+	{
+		refVector = vec3(0.0, 1.0, 0.0);
+		compIndex = 1;
+	}
+	else
+	{
+		refVector = vec3(0.0, 0.0, 1.0);
+		compIndex = 2;
+	}
+	
+	// compute cosAngle and handedness of tangent
+	vec3 orthoA = normalize(cross(normal, refVector));
+	vec3 orthoB = cross(normal, orthoA);
+	uint cosAngle = uint((dot(tangent, orthoA) * 0.5 + 0.5) * 255.0);
+	uint tangentHandedness = (dot(tangent, orthoB) > 0.0001) ? 2 : 0;
+	
+	return uvec4(encodedNormal, (cosAngle << 2u) | compIndex, tangentHandedness | bitangentHandedness);
+}
+
 void main() 
 {
-	MaterialData materialData = uMaterialData[vMaterialIndex];
-	
-	// albedo
+#if ALPHA_MASK_ENABLED
 	{
-		vec3 albedo = unpackUnorm4x8(materialData.albedoOpacity).rgb;
-		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
+		uint albedoTextureIndex = (uMaterialData[vMaterialIndex].albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-#if ALPHA_MASK_ENABLED
-			vec4 albedoTexSample = texture(uTextures[albedoTextureIndex - 1], vTexCoord).rgba;
-			albedoTexSample.a *= 1.0 + textureQueryLod(uTextures[albedoTextureIndex - 1], vTexCoord).x * ALPHA_MIP_SCALE;
-			if(albedoTexSample.a < ALPHA_CUTOFF)
+			float alpha = texture(uTextures[albedoTextureIndex - 1], vTexCoord).a;
+			alpha *= 1.0 + textureQueryLod(uTextures[albedoTextureIndex - 1], vTexCoord).x * ALPHA_MIP_SCALE;
+			if(alpha < ALPHA_CUTOFF)
 			{
 				discard;
 			}
-#else
-			vec3 albedoTexSample = texture(uTextures[albedoTextureIndex - 1], vTexCoord).rgb;
-#endif // ALPHA_MASK_ENABLED
-			albedo = albedoTexSample.rgb;
 		}
-		oAlbedo.rgb = albedo;
+	}
+#endif // ALPHA_MASK_ENABLED
+
+	// fractional part of texcoord
+	{
+		vec2 integerPart;
+		oUV = vec4(modf(vTexCoord, integerPart), 0.0, 0.0);
 	}
 	
-	// normal
+	// derivatives and material id
+	{
+		vec2 derivativesLength;
+		uint encodedDerivativesRot;
+		encodeDerivatives(vec4(dFdx(vTexCoord), dFdy(vTexCoord)), derivativesLength, encodedDerivativesRot);
+		
+		oDdxyLength = vec4(derivativesLength, 0.0, 0.0);
+		oDdxyRotationMaterialId = uvec4(encodedDerivativesRot, vMaterialIndex, 0, 0);
+	}
+	
+	// tangent frame
 	{
 		vec3 normal = normalize(vNormal);
-		uint normalTextureIndex = (materialData.albedoNormalTexture & 0xFFFF);
-		if (normalTextureIndex != 0)
-		{
-			mat3 tbn = calculateTBN(normal, vWorldPos, vTexCoord);
-			vec3 tangentSpaceNormal;
-			tangentSpaceNormal.xy = texture(uTextures[normalTextureIndex - 1], vTexCoord).xy * 2.0 - 1.0;
-			tangentSpaceNormal.z = sqrt(1 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			normal = normalize(tbn * tangentSpaceNormal);
-		}
-		oNormalEmissive.xyz = normal;
+		mat3 tbn = calculateTBN(normal, vWorldPos, vTexCoord);
+		
+		oTangentSpace = encodeTBN(tbn[2], tbn[0], (dot(tbn[0], tbn[2]) > 0.0001) ? 1 : 0);
 	}
-	
-	vec3 metalnessRoughnessOcclusion = vec3(unpackUnorm4x8(materialData.metalnessRoughness).xy, 1.0);
-	
-	// metalness
-	{
-		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
-		if (metalnessTextureIndex != 0)
-		{
-			metalnessRoughnessOcclusion.x = texture(uTextures[metalnessTextureIndex - 1], vTexCoord).z;
-		}
-	}
-	
-	// roughness
-	{
-		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
-		if (roughnessTextureIndex != 0)
-		{
-			metalnessRoughnessOcclusion.y = texture(uTextures[roughnessTextureIndex - 1], vTexCoord).y;
-		}
-	}
-	
-	// occlusion
-	{
-		uint occlusionTextureIndex = (materialData.occlusionEmissiveTexture & 0xFFFF0000) >> 16;
-		if (occlusionTextureIndex != 0)
-		{
-			metalnessRoughnessOcclusion.z = texture(uTextures[occlusionTextureIndex - 1], vTexCoord).x;
-		}
-	}
-	
-	oMetalnessRoughnessOcclusion.xyz = metalnessRoughnessOcclusion;
 }
 

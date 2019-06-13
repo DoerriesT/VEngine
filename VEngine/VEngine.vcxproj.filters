@@ -108,9 +108,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLightingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
@@ -264,6 +261,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -318,9 +318,6 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLightingPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp">
@@ -436,6 +433,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

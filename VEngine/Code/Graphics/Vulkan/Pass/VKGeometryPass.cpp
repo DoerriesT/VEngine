@@ -1,7 +1,6 @@
 #include "VKGeometryPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
-#include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
@@ -9,9 +8,7 @@
 
 namespace
 {
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
+	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
 }
 
@@ -22,9 +19,10 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 	{
 		builder.readIndirectBuffer(data.m_indirectBufferHandle);
 		builder.writeDepthStencil(data.m_depthImageHandle);
-		builder.writeColorAttachment(data.m_albedoImageHandle, OUT_ALBEDO);
-		builder.writeColorAttachment(data.m_normalImageHandle, OUT_NORMAL);
-		builder.writeColorAttachment(data.m_metalnessRougnessOcclusionImageHandle, OUT_METALNESS_ROUGHNESS_OCCLUSION);
+		builder.writeColorAttachment(data.m_uvImageHandle, OUT_UV);
+		builder.writeColorAttachment(data.m_ddxyLengthImageHandle, OUT_DDXY_LENGTH);
+		builder.writeColorAttachment(data.m_ddxyRotMaterialIdImageHandle, OUT_DDXY_ROTATION_MATERIAL_ID);
+		builder.writeColorAttachment(data.m_tangentSpaceImageHandle, OUT_TANGENT_SPACE);
 	},
 		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
 	{
@@ -76,11 +74,11 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 
 			pipelineDesc.m_blendState.m_logicOpEnable = false;
 			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-			pipelineDesc.m_blendState.m_attachmentCount = 3; // 4
+			pipelineDesc.m_blendState.m_attachmentCount = 4;
 			pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
 			pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
 			pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
-			//pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
+			pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
 
 			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
 			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
@@ -124,13 +122,13 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[2].pBufferInfo = &data.m_materialDataBufferInfo;
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			vkUpdateDescriptorSets(g_context.m_device, data.m_alphaMasked ? 3 : 2, descriptorWrites, 0, nullptr);
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
 
 		VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_renderResources->m_textureDescriptorSet };
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 2, descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, data.m_alphaMasked ? 2 : 1, descriptorSets, 0, nullptr);
 
 		VkViewport viewport;
 		viewport.x = 0.0f;
@@ -155,10 +153,10 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 
 		vkCmdBindVertexBuffers(cmdBuf, 0, 3, vertexBuffers, vertexBufferOffsets);
 
-		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_commonRenderData->m_viewMatrix);
+		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_viewMatrix);
 
 		PushConsts pushConsts;
-		pushConsts.jitteredViewProjectionMatrix = data.m_commonRenderData->m_jitteredViewProjectionMatrix;
+		pushConsts.jitteredViewProjectionMatrix = data.m_jitteredViewProjectionMatrix;
 		pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
 		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
 		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
