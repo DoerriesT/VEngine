@@ -27,6 +27,7 @@ namespace VEngine
 		struct OutputData
 		{
 			FrameGraph::BufferHandle m_partitionBoundsBufferHandle;
+			FrameGraph::BufferHandle m_splitsBufferHandle;
 		};
 
 		void addToGraph(FrameGraph::Graph &graph, const InputData &inData, OutputData &outData);

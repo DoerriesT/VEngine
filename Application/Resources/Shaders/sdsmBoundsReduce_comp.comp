@@ -12,7 +12,7 @@ layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D u
 
 layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
 {
-	float uSplits[PARTITIONS * 2]; // even is begin, odd is end
+	float uSplits[PARTITIONS];
 };
 
 layout(set = PARTITION_BOUNDS_SET, binding = PARTITION_BOUNDS_BINDING) buffer PARTITION_BOUNDS
@@ -51,7 +51,7 @@ void main()
 	{
 		minCorner[i] = vec3(1.0);
 		maxCorner[i] = vec3(0.0);
-		splitEnds[i] = uSplits[i * 2 + 1];
+		splitEnds[i] = uSplits[i];
 	}
 	
 	vec2 texelSize = 1.0 / vec2(textureSize(uDepthImage, 0).xy);

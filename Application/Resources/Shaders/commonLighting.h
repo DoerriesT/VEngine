@@ -138,34 +138,25 @@ float evaluateShadow(sampler2DShadow shadowTexture, vec3 shadowCoord, vec2 pixel
 
 float evaluateDirectionalLightShadow(const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
 {
-	const uint shadowDataOffset = directionalLightData.shadowDataOffset;
-	vec3 shadowCoord = vec3(2.0);
-	const vec4 offsetPos = invViewMatrix * vec4(0.1 * directionalLightData.direction.xyz + viewSpacePosition, 1.0);
-    
-	uint split = 0;
-	bool foundSplit = false;
-	for (; split < directionalLightData.shadowDataCount; ++split)
+	// find cascade index
+	uint index = 0;
+	for (uint i = 0; i < (PARTITIONS - 1); ++i)
 	{
-		const vec4 projCoords4 = 
-		uShadowData[shadowDataOffset + split].shadowViewProjectionMatrix * offsetPos;
-		shadowCoord = (projCoords4.xyz / projCoords4.w);
-		shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5; 
-		
-		// test if projected coordinate is inside texture
-		// add small guard band at edges to avoid PCF sampling outside texture
-		if(all(greaterThanEqual(shadowCoord.xy, vec2(0.0))) && all(lessThan(shadowCoord.xy, vec2(1.0))))
-		{
-			const vec4 scaleBias = uShadowData[shadowDataOffset + split].shadowCoordScaleBias;
-			shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
-			foundSplit = true;
-			break;
-		}
+		index = -viewSpacePosition.z >= uSplits[i] ? index + 1 : index;
 	}
 	
-	const float kernelScale = split == 0 ? 5.0 : split == 1 ? 2.0 : 1.0;
-	s = foundSplit ? split : 10;
+	s = index;
 	
-	return foundSplit ? evaluateShadow(shadowTexture, shadowCoord, pixelCoord, kernelScale) : 0.0;
+	index += directionalLightData.shadowDataOffset;
+	
+	const vec4 offsetPos = invViewMatrix * vec4(0.1 * directionalLightData.direction.xyz + viewSpacePosition, 1.0);
+	const vec4 projCoords4 = uShadowData[index].shadowViewProjectionMatrix * offsetPos;
+	vec3 shadowCoord = (projCoords4.xyz / projCoords4.w);
+	shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5;
+	const vec4 scaleBias = uShadowData[index].shadowCoordScaleBias;
+	shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
+	
+	return evaluateShadow(shadowTexture, shadowCoord, pixelCoord, 5.0);
 }
 
 uint getTileAddress(uvec2 pixelCoord, uint width, uint wordCount)

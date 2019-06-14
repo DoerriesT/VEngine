@@ -8,6 +8,8 @@
 #define SSAO_ENABLED 0
 #endif // SSAO_ENABLED
 
+#define PARTITIONS 4
+
 #include "lighting_bindings.h"
 
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
@@ -48,6 +50,11 @@ layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly 
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
 {
     MaterialData uMaterialData[];
+};
+
+layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
+{
+	float uSplits[PARTITIONS];
 };
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];

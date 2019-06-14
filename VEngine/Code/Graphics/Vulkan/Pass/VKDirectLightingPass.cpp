@@ -19,6 +19,7 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 	{
 		builder.readStorageBuffer(data.m_pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		builder.readStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		builder.readStorageBuffer(data.m_shadowSplitsBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		builder.readTexture(data.m_uvImageHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 		builder.readTexture(data.m_ddxyLengthImageHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -92,7 +93,7 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[14] = {};
+			VkWriteDescriptorSet descriptorWrites[15] = {};
 			uint32_t writeCount = 0;
 
 			// depth image
@@ -227,6 +228,17 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 			descriptorWrites[writeCount].descriptorCount = 1;
 			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[writeCount].pBufferInfo = &data.m_materialDataBufferInfo;
+			++writeCount;
+
+			// shadow splits
+			VkDescriptorBufferInfo shadowSplitsBufferInfo = registry.getBufferInfo(data.m_shadowSplitsBufferHandle);
+			descriptorWrites[writeCount] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[writeCount].dstSet = descriptorSet;
+			descriptorWrites[writeCount].dstBinding = SPLITS_BINDING;
+			descriptorWrites[writeCount].dstArrayElement = 0;
+			descriptorWrites[writeCount].descriptorCount = 1;
+			descriptorWrites[writeCount].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[writeCount].pBufferInfo = &shadowSplitsBufferInfo;
 			++writeCount;
 
 			// occlusion image

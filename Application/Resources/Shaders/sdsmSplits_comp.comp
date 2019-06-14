@@ -11,7 +11,7 @@ layout(set = DEPTH_BOUNDS_SET, binding = DEPTH_BOUNDS_BINDING) buffer DEPTH_BOUN
 
 layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
 {
-	float uSplits[PARTITIONS * 2]; // even is begin, odd is end
+	float uSplits[PARTITIONS];
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -47,9 +47,5 @@ void main()
 	const uint index = gl_GlobalInvocationID.x;
 	
 	// calculate split bounds [minZ - maxZ]
-	float splitBegin = (index == 0) ? minZ : logPartitionFromRange(index - 1, minZ, maxZ);
-    float splitEnd = logPartitionFromRange(index, minZ, maxZ);
-	
-	uSplits[index * 2] = splitBegin;
-	uSplits[index * 2 + 1] = splitEnd;
+	uSplits[index] = logPartitionFromRange(index, minZ, maxZ); // end of split
 }

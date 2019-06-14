@@ -24,6 +24,7 @@ namespace VEngine
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			FrameGraph::BufferHandle m_shadowDataBufferHandle;
+			FrameGraph::BufferHandle m_shadowSplitsBufferHandle;
 			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
 			FrameGraph::ImageHandle m_depthImageHandle;
 			FrameGraph::ImageHandle m_uvImageHandle;

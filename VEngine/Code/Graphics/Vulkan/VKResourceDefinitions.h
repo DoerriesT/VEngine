@@ -330,7 +330,7 @@ namespace VEngine
 			desc.m_concurrent = false;
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
-			desc.m_size = sizeof(float) * 2 * partitions;
+			desc.m_size = sizeof(float) * partitions;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 			desc.m_hostVisible = false;
 

@@ -99,7 +99,7 @@ void VEngine::VKTransparencyWritePass::addToGraph(FrameGraph::Graph &graph, cons
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[9] = {};
+			VkWriteDescriptorSet descriptorWrites[10] = {};
 
 			// instance data
 			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
@@ -184,6 +184,16 @@ void VEngine::VKTransparencyWritePass::addToGraph(FrameGraph::Graph &graph, cons
 			descriptorWrites[8].descriptorCount = 1;
 			descriptorWrites[8].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptorWrites[8].pBufferInfo = &pointLightMaskBufferInfo;
+
+			// shadow splits
+			VkDescriptorBufferInfo shadowSplitsBufferInfo = registry.getBufferInfo(data.m_shadowSplitsBufferHandle);
+			descriptorWrites[9] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrites[9].dstSet = descriptorSet;
+			descriptorWrites[9].dstBinding = SPLITS_BINDING;
+			descriptorWrites[9].dstArrayElement = 0;
+			descriptorWrites[9].descriptorCount = 1;
+			descriptorWrites[9].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptorWrites[9].pBufferInfo = &shadowSplitsBufferInfo;
 
 			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
 		}

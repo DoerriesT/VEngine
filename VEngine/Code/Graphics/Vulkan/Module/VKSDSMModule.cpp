@@ -8,7 +8,7 @@
 void VEngine::VKSDSMModule::addToGraph(FrameGraph::Graph &graph, const InputData &inData, OutputData &outData)
 {
 	FrameGraph::BufferHandle sdsmDepthBoundsBufferHandle = VKResourceDefinitions::createSDSMDepthBoundsBufferHandle(graph);
-	FrameGraph::BufferHandle sdsmSplitsBufferHandle = VKResourceDefinitions::createSDSMSplitsBufferHandle(graph, 4);
+	outData.m_splitsBufferHandle = VKResourceDefinitions::createSDSMSplitsBufferHandle(graph, 4);
 	outData.m_partitionBoundsBufferHandle = VKResourceDefinitions::createSDSMPartitionBoundsBufferHandle(graph, 4);
 
 	// sdsm clear
@@ -43,7 +43,7 @@ void VEngine::VKSDSMModule::addToGraph(FrameGraph::Graph &graph, const InputData
 	sdsmSplitsPassData.m_nearPlane = inData.m_nearPlane;
 	sdsmSplitsPassData.m_farPlane = inData.m_farPlane;
 	sdsmSplitsPassData.m_depthBoundsBufferHandle = sdsmDepthBoundsBufferHandle;
-	sdsmSplitsPassData.m_splitsBufferHandle = sdsmSplitsBufferHandle;
+	sdsmSplitsPassData.m_splitsBufferHandle = outData.m_splitsBufferHandle;
 
 	VKSDSMSplitsPass::addToGraph(graph, sdsmSplitsPassData);
 
@@ -57,7 +57,7 @@ void VEngine::VKSDSMModule::addToGraph(FrameGraph::Graph &graph, const InputData
 	sdsmBoundsReducePassData.m_height = inData.m_height;
 	sdsmBoundsReducePassData.m_invProjection = inData.m_invProjection;
 	sdsmBoundsReducePassData.m_partitionBoundsBufferHandle = outData.m_partitionBoundsBufferHandle;
-	sdsmBoundsReducePassData.m_splitsBufferHandle = sdsmSplitsBufferHandle;
+	sdsmBoundsReducePassData.m_splitsBufferHandle = outData.m_splitsBufferHandle;
 	sdsmBoundsReducePassData.m_depthImageHandle = inData.m_depthImageHandle;
 
 	VKSDSMBoundsReducePass::addToGraph(graph, sdsmBoundsReducePassData);

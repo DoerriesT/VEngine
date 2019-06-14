@@ -555,6 +555,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 	lightingPassData.m_occlusionImageHandle = gtaoImageHandle;
 	lightingPassData.m_resultImageHandle = lightImageHandle;
+	lightingPassData.m_shadowSplitsBufferHandle = sdsmOutputData.m_splitsBufferHandle;
 
 	VKDirectLightingPass::addToGraph(graph, lightingPassData);
 
@@ -579,6 +580,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	transparencyWriteData.m_depthImageHandle = depthImageHandle;
 	transparencyWriteData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
 	transparencyWriteData.m_lightImageHandle = lightImageHandle;
+	transparencyWriteData.m_shadowSplitsBufferHandle = sdsmOutputData.m_splitsBufferHandle;
 
 	if (renderData.m_transparentBatchSize)
 	{

@@ -3,6 +3,8 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
+#define PARTITIONS 4
+
 #include "transparencyWrite_bindings.h"
 
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
@@ -37,6 +39,11 @@ layout(set = POINT_LIGHT_Z_BINS_SET, binding = POINT_LIGHT_Z_BINS_BINDING) reado
 layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly buffer POINT_LIGHT_BITMASK 
 {
 	uint uPointLightBitMask[];
+};
+
+layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
+{
+	float uSplits[PARTITIONS];
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
