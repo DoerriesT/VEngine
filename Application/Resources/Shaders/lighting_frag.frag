@@ -190,6 +190,14 @@ mat3 decodeTBN(in uvec4 encodedTBN)
 
 void main() 
 {
+	const float depth = texelFetch(uDepthImage, ivec2(gl_FragCoord.xy), 0).x;
+	
+	if (depth == 0.0)
+	{
+		oResult = vec4(vec3(0.529, 0.808, 0.922), 1.0);
+		return;
+	}
+	
 	// get uv, derivatives, material id and tangent frame
 	const vec2 ddxyLength = texelFetch(uDdxyLengthImage, ivec2(gl_FragCoord.xy), 0).xy;
 	const uvec2 ddxyRotMaterialId = texelFetch(uDdxyRotMaterialIdImage, ivec2(gl_FragCoord.xy), 0).xy;
@@ -253,7 +261,6 @@ void main()
 	}
 	
 	// view space position
-	const float depth = texelFetch(uDepthImage, ivec2(gl_FragCoord.xy), 0).x;
 	const vec4 clipSpacePosition = vec4(vec2(vTexCoord) * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;

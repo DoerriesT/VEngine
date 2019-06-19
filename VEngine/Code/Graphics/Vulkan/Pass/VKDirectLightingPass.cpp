@@ -39,7 +39,7 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
 			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/lighting_vert.spv");
-			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/lighting_frag.spv");
+			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, data.m_ssao ? "Resources/Shaders/lighting_SSAO_ENABLED_frag.spv" : "Resources/Shaders/lighting_frag.spv");
 
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 0;
 
