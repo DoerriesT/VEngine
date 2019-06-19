@@ -104,11 +104,13 @@ void main()
 	
 	lightView = translation * lightView;
 	vec3 dimensions = maxCorner - minCorner;
+	
+	const float border = 0.01;
 
-	uShadowData[index].shadowViewProjectionMatrix = ortho(-dimensions.x * 0.5, 
-												dimensions.x * 0.5, 
-												-dimensions.y * 0.5, 
-												dimensions.y * 0.5, 
+	uShadowData[index].shadowViewProjectionMatrix = ortho(-dimensions.x * 0.5 - border, 
+												dimensions.x * 0.5 + border, 
+												-dimensions.y * 0.5 - border, 
+												dimensions.y * 0.5 + border, 
 												lightSpaceNear, 
 												lightSpaceFar)
 												* lightView;
