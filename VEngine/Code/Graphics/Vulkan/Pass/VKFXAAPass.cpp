@@ -38,30 +38,15 @@ void VEngine::VKFXAAPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// input image
-			VkDescriptorImageInfo inputImageInfo = registry.getImageInfo(data.m_inputImageHandle);
-			inputImageInfo.sampler = data.m_renderResources->m_linearSamplerClamp;
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INPUT_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].pImageInfo = &inputImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageHandle, data.m_renderResources->m_linearSamplerClamp), INPUT_IMAGE_BINDING);
 
 			// result image
-			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_resultImageHandle);
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = RESULT_IMAGE_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[1].pImageInfo = &resultImageInfo;
-
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle), RESULT_IMAGE_BINDING);
+		
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

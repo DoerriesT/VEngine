@@ -121,7 +121,7 @@ namespace VEngine
 			explicit ResourceRegistry(Graph &graph, size_t passIndex);
 			VkImage getImage(ImageHandle handle) const;
 			VkImageView getImageView(ImageHandle handle) const;
-			VkDescriptorImageInfo getImageInfo(ImageHandle handle) const;
+			VkDescriptorImageInfo getImageInfo(ImageHandle handle, VkSampler sampler = VK_NULL_HANDLE) const;
 			VkBuffer getBuffer(BufferHandle handle) const;
 			VkDescriptorBufferInfo getBufferInfo(BufferHandle handle) const;
 			const VKAllocationHandle &getAllocation(ResourceHandle handle) const;

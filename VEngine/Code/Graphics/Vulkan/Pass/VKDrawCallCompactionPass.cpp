@@ -36,66 +36,27 @@ void VEngine::VKDrawCallCompactionPass::addToGraph(FrameGraph::Graph & graph, co
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[6] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// index offsets
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INDEX_OFFSETS_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_indexOffsetsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_indexOffsetsBufferInfo, INDEX_OFFSETS_BINDING);
 
 			// index counts
-			VkDescriptorBufferInfo indexCountsBufferInfo = registry.getBufferInfo(data.m_indexCountsBufferHandle);
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = INDEX_COUNTS_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &indexCountsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_indexCountsBufferHandle), INDEX_COUNTS_BINDING);
 
 			// instance data
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = INSTANCE_DATA_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &data.m_instanceDataBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 
-			// subMeshData
-			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[3].dstSet = descriptorSet;
-			descriptorWrites[3].dstBinding = SUB_MESH_DATA_BINDING;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[3].pBufferInfo = &data.m_subMeshDataBufferInfo;
+			// submesh info
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshDataBufferInfo, SUB_MESH_DATA_BINDING);
 
 			// indirect buffer
-			VkDescriptorBufferInfo indirectBufferInfo = registry.getBufferInfo(data.m_indirectBufferHandle);
-			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[4].dstSet = descriptorSet;
-			descriptorWrites[4].dstBinding = INDIRECT_BUFFER_BINDING;
-			descriptorWrites[4].dstArrayElement = 0;
-			descriptorWrites[4].descriptorCount = 1;
-			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].pBufferInfo = &indirectBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_indirectBufferHandle), INDIRECT_BUFFER_BINDING);
 
-			// draw counts buffer
-			VkDescriptorBufferInfo drawCountsBufferInfo = registry.getBufferInfo(data.m_drawCountsBufferHandle);
-			descriptorWrites[5] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[5].dstSet = descriptorSet;
-			descriptorWrites[5].dstBinding = DRAW_COUNTS_BINDING;
-			descriptorWrites[5].dstArrayElement = 0;
-			descriptorWrites[5].descriptorCount = 1;
-			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].pBufferInfo = &drawCountsBufferInfo;
+			// draw counts
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_drawCountsBufferHandle), DRAW_COUNTS_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

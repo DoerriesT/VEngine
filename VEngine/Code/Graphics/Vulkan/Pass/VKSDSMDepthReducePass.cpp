@@ -36,30 +36,15 @@ void VEngine::VKSDSMDepthReducePass::addToGraph(FrameGraph::Graph & graph, const
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// depth image
-			VkDescriptorImageInfo depthImageInfo = registry.getImageInfo(data.m_depthImageHandle);
-			depthImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = DEPTH_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].pImageInfo = &depthImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, data.m_renderResources->m_pointSamplerClamp), DEPTH_IMAGE_BINDING);
 
 			// depth bounds buffer
-			VkDescriptorBufferInfo boundsBufferInfo = registry.getBufferInfo(data.m_depthBoundsBufferHandle);
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = DEPTH_BOUNDS_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &boundsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_depthBoundsBufferHandle), DEPTH_BOUNDS_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

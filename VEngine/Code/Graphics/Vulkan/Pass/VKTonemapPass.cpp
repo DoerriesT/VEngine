@@ -41,40 +41,18 @@ void VEngine::VKTonemapPass::addToGraph(FrameGraph::Graph &graph, const Data &da
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[3] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// result image
-			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_dstImageHandle);
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = RESULT_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[0].pImageInfo = &resultImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_dstImageHandle), RESULT_IMAGE_BINDING);
 
 			// source image
-			VkDescriptorImageInfo sourceImageInfo = registry.getImageInfo(data.m_srcImageHandle);
-			sourceImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = SOURCE_IMAGE_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].pImageInfo = &sourceImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_srcImageHandle, data.m_renderResources->m_pointSamplerClamp), SOURCE_IMAGE_BINDING);
 
 			// avg luminance
-			VkDescriptorBufferInfo avgLuminanceBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = LUMINANCE_VALUES_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &avgLuminanceBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_avgLuminanceBufferHandle), LUMINANCE_VALUES_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

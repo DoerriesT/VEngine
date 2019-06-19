@@ -39,29 +39,15 @@ void VEngine::VKLuminanceHistogramAveragePass::addToGraph(FrameGraph::Graph & gr
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[2] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// histogram
-			VkDescriptorBufferInfo histogramBufferInfo = registry.getBufferInfo(data.m_luminanceHistogramBufferHandle);
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = LUMINANCE_HISTOGRAM_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &histogramBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_luminanceHistogramBufferHandle), LUMINANCE_HISTOGRAM_BINDING);
 
 			// avg luminance values
-			VkDescriptorBufferInfo avgLuminanceBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = LUMINANCE_VALUES_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &avgLuminanceBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_avgLuminanceBufferHandle), LUMINANCE_VALUES_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

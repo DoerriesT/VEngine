@@ -98,82 +98,25 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
-		if (data.m_alphaMasked)
 		{
-			VkWriteDescriptorSet descriptorWrites[4] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// instance data
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 
 			// transform data
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 
 			// shadow data
-			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = SHADOW_DATA_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &shadowDataBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_shadowDataBufferHandle), SHADOW_DATA_BINDING);
 
-			// material data
-			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[3].dstSet = descriptorSet;
-			descriptorWrites[3].dstBinding = MATERIAL_DATA_BINDING;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[3].pBufferInfo = &data.m_materialDataBufferInfo;
-
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
-		}
-		else
-		{
-			VkWriteDescriptorSet descriptorWrites[3] = {};
-
-			// instance data
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INSTANCE_DATA_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_instanceDataBufferInfo;
-
-			// transform data
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = TRANSFORM_DATA_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_transformDataBufferInfo;
-
-			// shadow data
-			VkDescriptorBufferInfo shadowDataBufferInfo = registry.getBufferInfo(data.m_shadowDataBufferHandle);
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = SHADOW_DATA_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &shadowDataBufferInfo;
-
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			if (data.m_alphaMasked)
+			{
+				// material data
+				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
+			}
+			
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);

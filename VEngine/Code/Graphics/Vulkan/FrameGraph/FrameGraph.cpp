@@ -2041,10 +2041,10 @@ VkImageView VEngine::FrameGraph::ResourceRegistry::getImageView(ImageHandle hand
 	return m_graph.m_imageViews[(size_t)handle - 1];
 }
 
-VkDescriptorImageInfo VEngine::FrameGraph::ResourceRegistry::getImageInfo(ImageHandle handle) const
+VkDescriptorImageInfo VEngine::FrameGraph::ResourceRegistry::getImageInfo(ImageHandle handle, VkSampler sampler) const
 {
 	const size_t resourceIndex = (size_t)handle - 1;
-	return { VK_NULL_HANDLE, m_graph.m_imageViews[resourceIndex], m_graph.m_resourceUsages[resourceIndex][m_passIndex].m_imageLayout };
+	return { sampler, m_graph.m_imageViews[resourceIndex], m_graph.m_resourceUsages[resourceIndex][m_passIndex].m_imageLayout };
 }
 
 VkBuffer VEngine::FrameGraph::ResourceRegistry::getBuffer(BufferHandle handle) const

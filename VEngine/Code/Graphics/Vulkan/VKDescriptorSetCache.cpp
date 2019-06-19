@@ -2,102 +2,17 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 
-VEngine::VKDescriptorSetCache::~VKDescriptorSetCache()
-{
-	// free all pools
-	for (auto &p : m_layoutToSets)
-	{
-		auto &pooledSets = p.second;
-
-		assert(pooledSets.m_pool != VK_NULL_HANDLE);
-
-		vkDestroyDescriptorPool(g_context.m_device, pooledSets.m_pool, nullptr);
-	}
-}
-
 VkDescriptorSet VEngine::VKDescriptorSetCache::getDescriptorSet(VkDescriptorSetLayout layout, uint32_t *typeCounts)
 {
-	auto &pooledSets = m_layoutToSets[layout];
+	auto &pooledSetsPtr = m_layoutToSets[layout];
 
 	// layout doesnt exist yet -> create it
-	if (pooledSets.m_pool == VK_NULL_HANDLE)
+	if (!pooledSetsPtr)
 	{
-		// create pool
-		{
-			VkDescriptorPoolSize poolSizes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
-
-			uint32_t poolSizeCount = 0;
-
-			for (size_t i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
-			{
-				if (typeCounts[i])
-				{
-					poolSizes[poolSizeCount].type = static_cast<VkDescriptorType>(i);
-					poolSizes[poolSizeCount].descriptorCount = typeCounts[i] * SETS_PER_LAYOUT;
-					++poolSizeCount;
-				}
-			}
-			
-			assert(poolSizeCount);
-
-			VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-			poolCreateInfo.maxSets = SETS_PER_LAYOUT;
-			poolCreateInfo.poolSizeCount = poolSizeCount;
-			poolCreateInfo.pPoolSizes = poolSizes;
-
-			if (vkCreateDescriptorPool(g_context.m_device, &poolCreateInfo, nullptr, &pooledSets.m_pool) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create DescriptorPool!", EXIT_FAILURE);
-			}
-		}
-		
-		// allocate sets from pool
-		{
-			VkDescriptorSetLayout layouts[SETS_PER_LAYOUT];
-
-			for (size_t i = 0; i < SETS_PER_LAYOUT; ++i)
-			{
-				layouts[i] = layout;
-			}
-
-			VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-			setAllocInfo.descriptorPool = pooledSets.m_pool;
-			setAllocInfo.descriptorSetCount = SETS_PER_LAYOUT;
-			setAllocInfo.pSetLayouts = layouts;
-
-			if (vkAllocateDescriptorSets(g_context.m_device, &setAllocInfo, pooledSets.m_sets) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to allocate DescriptorSets!", EXIT_FAILURE);
-			}
-		}
-
-		// set free bits
-		pooledSets.m_freeSetsMask = 0;
-		pooledSets.m_freeSetsMask.flip();
+		pooledSetsPtr = std::make_unique<DescriptorSetPools>(layout, typeCounts);
 	}
 
-	// find free set
-	{
-		if (pooledSets.m_freeSetsMask.none())
-		{
-			Utility::fatalExit("No more free DescriptorSets available for requested layout!", EXIT_FAILURE);
-		}
-
-		for (size_t i = 0; i < SETS_PER_LAYOUT; ++i)
-		{
-			if (pooledSets.m_freeSetsMask[i])
-			{
-				// set index of frame in which the set was used
-				pooledSets.m_frameIndices[i] = m_frameIndex;
-				pooledSets.m_freeSetsMask[i] = 0;
-
-				return pooledSets.m_sets[i];
-			}
-		}
-	}
-
-	assert(false);
-	return VK_NULL_HANDLE;
+	return pooledSetsPtr->getDescriptorSet(m_frameIndex);
 }
 
 void VEngine::VKDescriptorSetCache::update(size_t currentFrameIndex, size_t frameIndexToRelease)
@@ -108,21 +23,254 @@ void VEngine::VKDescriptorSetCache::update(size_t currentFrameIndex, size_t fram
 	for (auto &p : m_layoutToSets)
 	{
 		auto &pooledSets = p.second;
+		assert(pooledSets);
 
-		// skip if all sets are free already
-		if (pooledSets.m_freeSetsMask.all())
-		{
-			continue;
-		}
+		pooledSets->update(currentFrameIndex, frameIndexToRelease);
+	}
+}
 
-		// check if sets in use can be flagged as free again
-		for (size_t i = 0; i < SETS_PER_LAYOUT; ++i)
+VEngine::VKDescriptorSetCache::DescriptorSetPools::DescriptorSetPools(VkDescriptorSetLayout layout, uint32_t *typeCounts)
+	:m_layout(layout)
+{
+	memcpy(m_typeCounts, typeCounts, sizeof(m_typeCounts));
+}
+
+VEngine::VKDescriptorSetCache::DescriptorSetPools::~DescriptorSetPools()
+{
+	for (auto &pool : m_pools)
+	{
+		assert(pool.m_pool != VK_NULL_HANDLE);
+		vkDestroyDescriptorPool(g_context.m_device, pool.m_pool, nullptr);
+	}
+}
+
+VkDescriptorSet VEngine::VKDescriptorSetCache::DescriptorSetPools::getDescriptorSet(size_t currentFrameIndex)
+{
+	// look for existing free set
+	for (auto &pool : m_pools)
+	{
+		for (size_t i = 0; i < SETS_PER_POOL; ++i)
 		{
-			if (pooledSets.m_frameIndices[i] == frameIndexToRelease && (pooledSets.m_freeSetsMask[i]) == 0)
+			if (pool.m_freeSetsMask[i])
 			{
-				// flag as free
-				pooledSets.m_freeSetsMask[i] = 1;
+				// set index of frame in which the set was used
+				pool.m_frameIndices[i] = currentFrameIndex;
+				pool.m_freeSetsMask[i] = 0;
+
+				return pool.m_sets[i];
 			}
 		}
 	}
+
+	// we're still here, so none of the existing pools have a free set and we need to create a new pool
+	m_pools.push_back({});
+	Pool &pool = m_pools.back();
+	{
+		// create pool
+		{
+			VkDescriptorPoolSize poolSizes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+
+			uint32_t poolSizeCount = 0;
+
+			for (size_t i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
+			{
+				if (m_typeCounts[i])
+				{
+					poolSizes[poolSizeCount].type = static_cast<VkDescriptorType>(i);
+					poolSizes[poolSizeCount].descriptorCount = m_typeCounts[i] * SETS_PER_POOL;
+					++poolSizeCount;
+				}
+			}
+
+			assert(poolSizeCount);
+
+			VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+			poolCreateInfo.maxSets = SETS_PER_POOL;
+			poolCreateInfo.poolSizeCount = poolSizeCount;
+			poolCreateInfo.pPoolSizes = poolSizes;
+
+			if (vkCreateDescriptorPool(g_context.m_device, &poolCreateInfo, nullptr, &pool.m_pool) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create DescriptorPool!", EXIT_FAILURE);
+			}
+		}
+
+		// allocate sets from pool
+		{
+			VkDescriptorSetLayout layouts[SETS_PER_POOL];
+
+			for (size_t i = 0; i < SETS_PER_POOL; ++i)
+			{
+				layouts[i] = m_layout;
+			}
+
+			VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+			setAllocInfo.descriptorPool = pool.m_pool;
+			setAllocInfo.descriptorSetCount = SETS_PER_POOL;
+			setAllocInfo.pSetLayouts = layouts;
+
+			if (vkAllocateDescriptorSets(g_context.m_device, &setAllocInfo, pool.m_sets) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to allocate DescriptorSets!", EXIT_FAILURE);
+			}
+		}
+
+		// set free bits
+		pool.m_freeSetsMask = 0;
+		pool.m_freeSetsMask.flip();
+	}
+
+	// we now have a new block with free sets; use the first one
+	{
+		// set index of frame in which the set was used
+		pool.m_frameIndices[0] = currentFrameIndex;
+		pool.m_freeSetsMask[0] = 0;
+	}
+
+	return pool.m_sets[0];
+}
+
+void VEngine::VKDescriptorSetCache::DescriptorSetPools::update(size_t currentFrameIndex, size_t frameIndexToRelease)
+{
+	for (auto &pool : m_pools)
+	{
+		// check if sets in use can be flagged as free again
+		for (size_t i = 0; i < SETS_PER_POOL; ++i)
+		{
+			if (pool.m_frameIndices[i] == frameIndexToRelease && (pool.m_freeSetsMask[i]) == 0)
+			{
+				// flag as free
+				pool.m_freeSetsMask[i] = 1;
+			}
+		}
+	}
+}
+
+
+VEngine::VKDescriptorSetWriter::VKDescriptorSetWriter(VkDevice device, VkDescriptorSet set)
+	:m_device(device),
+	m_set(set)
+{
+}
+
+void VEngine::VKDescriptorSetWriter::writeImageInfo(VkDescriptorType type, const VkDescriptorImageInfo *imageInfo, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	size_t currentOffset = m_imageInfo.size();
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		m_imageInfo.push_back({ imageInfo[i] });
+	}
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = count;
+	write.descriptorType = type;
+	write.pImageInfo = reinterpret_cast<const VkDescriptorImageInfo *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::writeImageInfo(VkDescriptorType type, const VkDescriptorImageInfo &imageInfo, uint32_t binding, uint32_t arrayElement)
+{
+	size_t currentOffset = m_imageInfo.size();
+	m_imageInfo.push_back(imageInfo);
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pImageInfo = reinterpret_cast<const VkDescriptorImageInfo *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::writeBufferInfo(VkDescriptorType type, const VkDescriptorBufferInfo *bufferInfo, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	size_t currentOffset = m_bufferInfo.size();
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		m_bufferInfo.push_back({ bufferInfo[i] });
+	}
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = count;
+	write.descriptorType = type;
+	write.pBufferInfo = reinterpret_cast<const VkDescriptorBufferInfo *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::writeBufferInfo(VkDescriptorType type, const VkDescriptorBufferInfo &bufferInfo, uint32_t binding, uint32_t arrayElement)
+{
+	size_t currentOffset = m_bufferInfo.size();
+	m_bufferInfo.push_back(bufferInfo);
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pBufferInfo = reinterpret_cast<const VkDescriptorBufferInfo *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::writeBufferView(VkDescriptorType type, const VkBufferView *bufferView, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	size_t currentOffset = m_bufferViews.size();
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		m_bufferViews.push_back(bufferView[i]);
+	}
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = count;
+	write.descriptorType = type;
+	write.pTexelBufferView = reinterpret_cast<const VkBufferView *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::writeBufferView(VkDescriptorType type, const VkBufferView &bufferView, uint32_t binding, uint32_t arrayElement)
+{
+	size_t currentOffset = m_bufferViews.size();
+	m_bufferViews.push_back(bufferView);
+
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, m_set };
+	write.dstBinding = binding;
+	write.dstArrayElement = arrayElement;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pTexelBufferView = reinterpret_cast<const VkBufferView *>(currentOffset);
+
+	m_writes.push_back(write);
+}
+
+void VEngine::VKDescriptorSetWriter::commit()
+{
+	for (auto &write : m_writes)
+	{
+		write.pImageInfo = m_imageInfo.data() + (size_t)write.pImageInfo;
+		write.pBufferInfo = m_bufferInfo.data() + (size_t)write.pBufferInfo;
+		write.pTexelBufferView = m_bufferViews.data() + (size_t)write.pTexelBufferView;
+	}
+
+	vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(m_writes.size()), m_writes.data(), 0, nullptr);
+}
+
+void VEngine::VKDescriptorSetWriter::clear()
+{
+	m_writes.clear();
+	m_imageInfo.clear();
+	m_bufferInfo.clear();
+	m_bufferViews.clear();
 }

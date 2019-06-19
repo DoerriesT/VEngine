@@ -39,52 +39,23 @@ void VEngine::VKGTAOTemporalFilterPass::addToGraph(FrameGraph::Graph & graph, co
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[4] = {};
+			VkSampler pointSamplerClamp = data.m_renderResources->m_pointSamplerClamp;
+
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// input image
-			VkDescriptorImageInfo inputImageInfo = registry.getImageInfo(data.m_inputImageHandle);
-			inputImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = INPUT_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].pImageInfo = &inputImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageHandle, pointSamplerClamp), INPUT_IMAGE_BINDING);
 
 			// velocity image
-			VkDescriptorImageInfo velocityImageInfo = registry.getImageInfo(data.m_velocityImageHandle);
-			velocityImageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = VELOCITY_IMAGE_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].pImageInfo = &velocityImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
 
 			// previous image
-			VkDescriptorImageInfo previousImageInfo = registry.getImageInfo(data.m_previousImageHandle);
-			previousImageInfo.sampler = data.m_renderResources->m_linearSamplerClamp;
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = PREVIOUS_IMAGE_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[2].pImageInfo = &previousImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_previousImageHandle, data.m_renderResources->m_linearSamplerClamp), PREVIOUS_IMAGE_BINDING);
 
 			// result image
-			VkDescriptorImageInfo resultImageInfo = registry.getImageInfo(data.m_resultImageHandle);
-			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[3].dstSet = descriptorSet;
-			descriptorWrites[3].dstBinding = RESULT_IMAGE_BINDING;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[3].pImageInfo = &resultImageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle), RESULT_IMAGE_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

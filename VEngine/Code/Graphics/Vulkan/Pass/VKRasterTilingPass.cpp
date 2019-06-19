@@ -80,19 +80,12 @@ void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Dat
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[1] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// point light mask buffer
-			VkDescriptorBufferInfo bufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = POINT_LIGHT_MASK_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle), POINT_LIGHT_MASK_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);

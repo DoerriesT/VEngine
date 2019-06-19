@@ -77,20 +77,12 @@ void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph,
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[1] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// depth image
-			VkDescriptorImageInfo imageInfo = registry.getImageInfo(data.m_depthImageHandle);
-			imageInfo.sampler = data.m_renderResources->m_pointSamplerClamp;
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = DEPTH_IMAGE_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].pImageInfo = &imageInfo;
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, data.m_renderResources->m_pointSamplerClamp), DEPTH_IMAGE_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);

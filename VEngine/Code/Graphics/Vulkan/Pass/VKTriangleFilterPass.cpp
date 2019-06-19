@@ -35,84 +35,33 @@ void VEngine::VKTriangleFilterPass::addToGraph(FrameGraph::Graph &graph, const D
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[8] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// cluster info
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = CLUSTER_INFO_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &data.m_clusterInfoBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_clusterInfoBufferInfo, CLUSTER_INFO_BINDING);
 
 			// input indices
-			descriptorWrites[1] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[1].dstSet = descriptorSet;
-			descriptorWrites[1].dstBinding = INPUT_INDICES_BINDING;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[1].pBufferInfo = &data.m_inputIndicesBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_inputIndicesBufferInfo, INPUT_INDICES_BINDING);
 
 			// index offsets
-			descriptorWrites[2] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[2].dstSet = descriptorSet;
-			descriptorWrites[2].dstBinding = INDEX_OFFSETS_BINDING;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[2].pBufferInfo = &data.m_indexOffsetsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_indexOffsetsBufferInfo, INDEX_OFFSETS_BINDING);
 
 			// index counts
-			VkDescriptorBufferInfo indexCountsBufferInfo = registry.getBufferInfo(data.m_indexCountsBufferHandle);
-			descriptorWrites[3] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[3].dstSet = descriptorSet;
-			descriptorWrites[3].dstBinding = INDEX_COUNTS_BINDING;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[3].pBufferInfo = &indexCountsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_indexCountsBufferHandle), INDEX_COUNTS_BINDING);
 
 			// filtered indices
-			VkDescriptorBufferInfo filteredIndicesBufferInfo = registry.getBufferInfo(data.m_filteredIndicesBufferHandle);
-			descriptorWrites[4] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[4].dstSet = descriptorSet;
-			descriptorWrites[4].dstBinding = FILTERED_INDICES_BINDING;
-			descriptorWrites[4].dstArrayElement = 0;
-			descriptorWrites[4].descriptorCount = 1;
-			descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[4].pBufferInfo = &filteredIndicesBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_filteredIndicesBufferHandle), FILTERED_INDICES_BINDING);
 
 			// transform data
-			descriptorWrites[5] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[5].dstSet = descriptorSet;
-			descriptorWrites[5].dstBinding = TRANSFORM_DATA_BINDING;
-			descriptorWrites[5].dstArrayElement = 0;
-			descriptorWrites[5].descriptorCount = 1;
-			descriptorWrites[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[5].pBufferInfo = &data.m_transformDataBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 
 			// positions
-			descriptorWrites[6] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[6].dstSet = descriptorSet;
-			descriptorWrites[6].dstBinding = POSITIONS_BINDING;
-			descriptorWrites[6].dstArrayElement = 0;
-			descriptorWrites[6].descriptorCount = 1;
-			descriptorWrites[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[6].pBufferInfo = &data.m_positionsBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_positionsBufferInfo, POSITIONS_BINDING);
 
 			// view projection matrix
-			VkDescriptorBufferInfo viewProjectionBufferInfo = registry.getBufferInfo(data.m_viewProjectionMatrixBufferHandle);
-			descriptorWrites[7] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[7].dstSet = descriptorSet;
-			descriptorWrites[7].dstBinding = VIEW_PROJECTION_MATRIX_BINDING;
-			descriptorWrites[7].dstArrayElement = 0;
-			descriptorWrites[7].descriptorCount = 1;
-			descriptorWrites[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[7].pBufferInfo = &viewProjectionBufferInfo;
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_viewProjectionMatrixBufferHandle), VIEW_PROJECTION_MATRIX_BINDING);
 
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);

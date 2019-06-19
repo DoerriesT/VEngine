@@ -79,19 +79,12 @@ void VEngine::VKLuminanceHistogramDebugPass::addToGraph(FrameGraph::Graph &graph
 
 		// update descriptor sets
 		{
-			VkWriteDescriptorSet descriptorWrites[1] = {};
+			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// histogram
-			VkDescriptorBufferInfo bufferInfo = registry.getBufferInfo(data.m_luminanceHistogramBufferHandle);
-			descriptorWrites[0] = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-			descriptorWrites[0].dstSet = descriptorSet;
-			descriptorWrites[0].dstBinding = LUMINANCE_HISTOGRAM_BINDING;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			vkUpdateDescriptorSets(g_context.m_device, sizeof(descriptorWrites) / sizeof(descriptorWrites[0]), descriptorWrites, 0, nullptr);
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_luminanceHistogramBufferHandle), LUMINANCE_HISTOGRAM_BINDING);
+			
+			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
