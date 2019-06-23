@@ -36,6 +36,8 @@
 
 #define OUT_RESULT 0
 
+#define DIRECTIONAL_LIGHT_COUNT_CONST_ID 0
+
 struct PushConsts
 {
 	mat4 invJitteredProjectionMatrix;
@@ -43,5 +45,4 @@ struct PushConsts
 	vec4 invViewMatrixRow1;
 	vec4 invViewMatrixRow2;
 	uint pointLightCount;
-	uint directionalLightCount;
 };

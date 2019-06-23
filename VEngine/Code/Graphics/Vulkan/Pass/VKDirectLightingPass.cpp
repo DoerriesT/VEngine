@@ -39,7 +39,9 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
 			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/lighting_vert.spv");
+
 			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, data.m_ssao ? "Resources/Shaders/lighting_SSAO_ENABLED_frag.spv" : "Resources/Shaders/lighting_frag.spv");
+			pipelineDesc.m_fragmentShaderStage.m_specializationInfo.addEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_commonRenderData->m_directionalLightCount);
 
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 0;
 
@@ -173,7 +175,6 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 		pushConsts.invViewMatrixRow1 = rowMajorInvViewMatrix[1];
 		pushConsts.invViewMatrixRow2 = rowMajorInvViewMatrix[2];
 		pushConsts.pointLightCount = data.m_commonRenderData->m_pointLightCount;
-		pushConsts.directionalLightCount = data.m_commonRenderData->m_directionalLightCount;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 

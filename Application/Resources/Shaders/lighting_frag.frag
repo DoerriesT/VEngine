@@ -12,6 +12,8 @@
 
 #include "lighting_bindings.h"
 
+ layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
@@ -286,7 +288,7 @@ void main()
 												vec4(0.0, 0.0, 0.0, 1.0)));
 	
 	// directional lights
-	for (uint i = 0; i < uPushConsts.directionalLightCount; ++i)
+	for (uint i = 0; i < cDirectionalLightCount; ++i)
 	{
 		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
 		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
