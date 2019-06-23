@@ -26,7 +26,7 @@ void VEngine::VKSDSMBoundsReducePass::addToGraph(FrameGraph::Graph & graph, cons
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/sdsmBoundsReduce_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/sdsmBoundsReduce_comp.spv");
 
 			pipelineDesc.finalize();
 		}

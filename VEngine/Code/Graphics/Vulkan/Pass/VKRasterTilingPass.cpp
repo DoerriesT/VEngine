@@ -27,8 +27,8 @@ void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Dat
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/rasterTiling_vert.spv");
-			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/rasterTiling_frag.spv");
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/rasterTiling_vert.spv");
+			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/rasterTiling_frag.spv");
 
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(float) * 3, VK_VERTEX_INPUT_RATE_VERTEX };

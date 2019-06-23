@@ -27,7 +27,7 @@ void VEngine::VKGTAOPass::addToGraph(FrameGraph::Graph & graph, const Data & dat
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/gtao_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/gtao_comp.spv");
 
 			pipelineDesc.finalize();
 		}

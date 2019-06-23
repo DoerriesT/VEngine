@@ -30,7 +30,7 @@ void VEngine::VKTonemapPass::addToGraph(FrameGraph::Graph &graph, const Data &da
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/tonemap_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/tonemap_comp.spv");
 
 			pipelineDesc.finalize();
 		}

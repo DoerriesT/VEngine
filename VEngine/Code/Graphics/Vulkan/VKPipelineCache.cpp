@@ -20,33 +20,33 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 
 		// create shaders and perform reflection
 		{
-			if (pipelineDesc.m_shaderStages.m_vertexShaderPath[0])
+			if (pipelineDesc.m_vertexShaderStage.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_shaderStages.m_vertexShaderPath, VK_SHADER_STAGE_VERTEX_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_vertexShaderStage, VK_SHADER_STAGE_VERTEX_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_shaderStages.m_tesselationControlShaderPath[0])
+			if (pipelineDesc.m_tesselationControlShaderStage.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_shaderStages.m_tesselationControlShaderPath, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_tesselationControlShaderStage, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_shaderStages.m_tesselationEvaluationShaderPath[0])
+			if (pipelineDesc.m_tesselationEvaluationShaderStage.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_shaderStages.m_tesselationEvaluationShaderPath, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_tesselationEvaluationShaderStage, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_shaderStages.m_geometryShaderPath[0])
+			if (pipelineDesc.m_geometryShaderStage.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_shaderStages.m_geometryShaderPath, VK_SHADER_STAGE_GEOMETRY_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_geometryShaderStage, VK_SHADER_STAGE_GEOMETRY_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_shaderStages.m_fragmentShaderPath[0])
+			if (pipelineDesc.m_fragmentShaderStage.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_shaderStages.m_fragmentShaderPath, VK_SHADER_STAGE_FRAGMENT_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_fragmentShaderStage, VK_SHADER_STAGE_FRAGMENT_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
 				++stageCount;
 			}
 		}
@@ -160,7 +160,7 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 		ReflectionInfo reflectionInfo{};
 
 		// create shader and perform reflection
-		createShaderStage(pipelineDesc.m_computeShaderPath, VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule, compShaderStageInfo, reflectionInfo);
+		createShaderStage(pipelineDesc.m_computeShaderStage, VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule, compShaderStageInfo, reflectionInfo);
 
 		// create descriptor set layouts and pipeline layout
 		memset(&pipelinePair.m_descriptorSetLayoutData, 0, sizeof(pipelinePair.m_descriptorSetLayoutData));
@@ -181,9 +181,13 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 	return pipelinePair;
 }
 
-void VEngine::VKPipelineCache::createShaderStage(const char *filepath, VkShaderStageFlagBits stageFlag, VkShaderModule &shaderModule, VkPipelineShaderStageCreateInfo &stageInfo, ReflectionInfo &reflectionInfo)
+void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription &stageDescription, 
+	VkShaderStageFlagBits stageFlag, 
+	VkShaderModule &shaderModule, 
+	VkPipelineShaderStageCreateInfo &stageCreateInfo, 
+	ReflectionInfo &reflectionInfo)
 {
-	std::vector<char> code = Utility::readBinaryFile(filepath);
+	std::vector<char> code = Utility::readBinaryFile(stageDescription.m_path);
 	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
@@ -193,10 +197,15 @@ void VEngine::VKPipelineCache::createShaderStage(const char *filepath, VkShaderS
 		Utility::fatalExit("Failed to create shader module!", -1);
 	}
 
-	stageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-	stageInfo.stage = stageFlag;
-	stageInfo.module = shaderModule;
-	stageInfo.pName = "main";
+	stageCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+	stageCreateInfo.stage = stageFlag;
+	stageCreateInfo.module = shaderModule;
+	stageCreateInfo.pName = "main";
+
+	if (auto *info = stageDescription.m_specializationInfo.getInfo(); info->mapEntryCount)
+	{
+		stageCreateInfo.pSpecializationInfo = info;
+	}
 
 	// reflection
 	{

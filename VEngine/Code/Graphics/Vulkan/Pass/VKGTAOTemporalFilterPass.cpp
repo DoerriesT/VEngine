@@ -28,7 +28,7 @@ void VEngine::VKGTAOTemporalFilterPass::addToGraph(FrameGraph::Graph & graph, co
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/gtaoTemporalFilter_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/gtaoTemporalFilter_comp.spv");
 
 			pipelineDesc.finalize();
 		}

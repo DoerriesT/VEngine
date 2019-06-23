@@ -29,7 +29,7 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/prepareIndirectBuffers_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/prepareIndirectBuffers_comp.spv");
 
 			pipelineDesc.finalize();
 		}

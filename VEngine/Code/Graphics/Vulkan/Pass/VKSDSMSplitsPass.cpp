@@ -24,7 +24,7 @@ void VEngine::VKSDSMSplitsPass::addToGraph(FrameGraph::Graph & graph, const Data
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/sdsmSplits_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/sdsmSplits_comp.spv");
 
 			pipelineDesc.finalize();
 		}

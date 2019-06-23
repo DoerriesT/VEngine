@@ -4,6 +4,34 @@
 
 namespace VEngine
 {
+	struct VKShaderStageDescription
+	{
+		enum { MAX_PATH_LENGTH = 255 };
+
+		class SpecializationInfo
+		{
+		public:
+			enum { MAX_ENTRY_COUNT = 32 };
+			
+			explicit SpecializationInfo();
+
+			void addEntry(uint32_t constantID, int32_t value);
+			void addEntry(uint32_t constantID, uint32_t value);
+			void addEntry(uint32_t constantID, float value);
+			const VkSpecializationInfo *getInfo() const;
+
+		private:
+			VkSpecializationInfo m_info = {};
+			uint8_t m_data[MAX_ENTRY_COUNT * 4] = {};
+			VkSpecializationMapEntry m_entries[MAX_ENTRY_COUNT] = {};
+
+			void addEntry(uint32_t constantID, void *value);
+		};
+
+		char m_path[MAX_PATH_LENGTH + 1] = {};
+		SpecializationInfo m_specializationInfo;
+	};
+
 	struct VKRenderPassDescription
 	{
 		enum
@@ -20,19 +48,17 @@ namespace VEngine
 			VkSampleCountFlagBits m_samples;
 		};
 
-		uint32_t m_attachmentCount;
+		uint32_t m_attachmentCount = 0;
 		AttachmentDescription m_attachments[MAX_ATTACHMENTS] = {};
-		uint32_t m_inputAttachmentCount;
+		uint32_t m_inputAttachmentCount = 0;
 		VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
-		uint32_t m_colorAttachmentCount;
+		uint32_t m_colorAttachmentCount = 0;
 		VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
-		uint32_t m_resolveAttachmentCount;
+		uint32_t m_resolveAttachmentCount = 0;
 		VkAttachmentReference m_resolveAttachments[MAX_RESOLVE_ATTACHMENTS] = {};
-		bool m_depthStencilAttachmentPresent;
-		VkAttachmentReference m_depthStencilAttachment;
+		bool m_depthStencilAttachmentPresent = false;
+		VkAttachmentReference m_depthStencilAttachment = {};
 		size_t m_hashValue;
-
-		VKRenderPassDescription();
 
 		// cleans up array elements past array count and precomputes a hash value
 		void finalize();
@@ -42,7 +68,6 @@ namespace VEngine
 	{
 		enum
 		{
-			MAX_PATH_LENGTH = 256,
 			MAX_VERTEX_BINDING_DESCRIPTIONS = 8,
 			MAX_VERTEX_ATTRIBUTE_DESCRIPTIONS = 8,
 			MAX_VIEWPORTS = 1,
@@ -51,95 +76,90 @@ namespace VEngine
 			MAX_DYNAMIC_STATES = 9,
 		};
 
-		struct ShaderStages
-		{
-			char m_vertexShaderPath[MAX_PATH_LENGTH + 1] = {};
-			char m_tesselationControlShaderPath[MAX_PATH_LENGTH + 1] = {};
-			char m_tesselationEvaluationShaderPath[MAX_PATH_LENGTH + 1] = {};
-			char m_geometryShaderPath[MAX_PATH_LENGTH + 1] = {};
-			char m_fragmentShaderPath[MAX_PATH_LENGTH + 1] = {};
-		};
-
 		struct VertexInputState
 		{
-			uint32_t m_vertexBindingDescriptionCount;
+			uint32_t m_vertexBindingDescriptionCount = 0;
 			VkVertexInputBindingDescription m_vertexBindingDescriptions[MAX_VERTEX_BINDING_DESCRIPTIONS] = {};
-			uint32_t m_vertexAttributeDescriptionCount;
+			uint32_t m_vertexAttributeDescriptionCount = 0;
 			VkVertexInputAttributeDescription m_vertexAttributeDescriptions[MAX_VERTEX_ATTRIBUTE_DESCRIPTIONS] = {};
 		};
 
 		struct InputAssemblyState
 		{
-			VkPrimitiveTopology m_primitiveTopology;
-			bool m_primitiveRestartEnable;
+			VkPrimitiveTopology m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			bool m_primitiveRestartEnable = false;
 		};
 
 		struct TesselationState
 		{
-			uint32_t m_patchControlPoints;
+			uint32_t m_patchControlPoints = 0;
 		};
 		
 		struct ViewportState
 		{
-			uint32_t m_viewportCount;
+			uint32_t m_viewportCount = 0;
 			VkViewport m_viewports[MAX_VIEWPORTS] = {};
-			uint32_t m_scissorCount;
+			uint32_t m_scissorCount = 0;
 			VkRect2D m_scissors[MAX_SCISSORS] = {};
 		};
 		
 		struct RasterizationState
 		{
-			bool m_depthClampEnable;
-			bool m_rasterizerDiscardEnable;
-			VkPolygonMode m_polygonMode;
-			VkCullModeFlags m_cullMode;
-			VkFrontFace m_frontFace;
-			bool m_depthBiasEnable;
-			float m_depthBiasConstantFactor;
-			float m_depthBiasClamp;
-			float m_depthBiasSlopeFactor;
-			float m_lineWidth;
+			bool m_depthClampEnable = false;
+			bool m_rasterizerDiscardEnable = false;
+			VkPolygonMode m_polygonMode = VK_POLYGON_MODE_FILL;
+			VkCullModeFlags m_cullMode = VK_CULL_MODE_NONE;
+			VkFrontFace m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			bool m_depthBiasEnable = false;
+			float m_depthBiasConstantFactor = 1.0f;
+			float m_depthBiasClamp = 0.0f;
+			float m_depthBiasSlopeFactor = 1.0f;
+			float m_lineWidth = 1.0f;
 		};
 
 		struct MultisampleState
 		{
-			VkSampleCountFlagBits m_rasterizationSamples;
-			bool m_sampleShadingEnable;
-			float m_minSampleShading;
-			VkSampleMask m_sampleMask;
-			bool m_alphaToCoverageEnable;
-			bool m_alphaToOneEnable;
+			VkSampleCountFlagBits m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			bool m_sampleShadingEnable = false;
+			float m_minSampleShading = 0.0f;
+			VkSampleMask m_sampleMask = 0xFFFFFFFF;
+			bool m_alphaToCoverageEnable = false;
+			bool m_alphaToOneEnable = false;
 		};
 		
 		struct DepthStencilState
 		{
-			bool m_depthTestEnable;
-			bool m_depthWriteEnable;
-			VkCompareOp m_depthCompareOp;
-			bool m_depthBoundsTestEnable;
-			bool m_stencilTestEnable;
-			VkStencilOpState m_front;
-			VkStencilOpState m_back;
-			float m_minDepthBounds;
-			float m_maxDepthBounds;
+			bool m_depthTestEnable = false;
+			bool m_depthWriteEnable = false;
+			VkCompareOp m_depthCompareOp = VK_COMPARE_OP_ALWAYS;
+			bool m_depthBoundsTestEnable = false;
+			bool m_stencilTestEnable = false;
+			VkStencilOpState m_front = {};
+			VkStencilOpState m_back = {};
+			float m_minDepthBounds = 0.0f;
+			float m_maxDepthBounds = 1.0f;
 		};
 
 		struct BlendState
 		{
-			bool m_logicOpEnable;
-			VkLogicOp m_logicOp;
-			uint32_t m_attachmentCount;
+			bool m_logicOpEnable = false;
+			VkLogicOp m_logicOp = VK_LOGIC_OP_COPY;
+			uint32_t m_attachmentCount = 0;
 			VkPipelineColorBlendAttachmentState m_attachments[MAX_COLOR_BLEND_ATTACHMENT_STATES] = {};
-			float m_blendConstants[4];
+			float m_blendConstants[4] = {};
 		};
 
 		struct DynamicState
 		{
-			uint32_t m_dynamicStateCount;
+			uint32_t m_dynamicStateCount = 0;
 			VkDynamicState m_dynamicStates[MAX_DYNAMIC_STATES] = {};
 		};
 
-		ShaderStages m_shaderStages;
+		VKShaderStageDescription m_vertexShaderStage;
+		VKShaderStageDescription m_tesselationControlShaderStage;
+		VKShaderStageDescription m_tesselationEvaluationShaderStage;
+		VKShaderStageDescription m_geometryShaderStage;
+		VKShaderStageDescription m_fragmentShaderStage;
 		VertexInputState m_vertexInputState;
 		InputAssemblyState m_inputAssemblyState;
 		TesselationState m_tesselationState;
@@ -151,23 +171,14 @@ namespace VEngine
 		DynamicState m_dynamicState;
 		size_t m_hashValue;
 
-		VKGraphicsPipelineDescription();
-
 		// cleans up array elements past array count and precomputes a hash value
 		void finalize();
 	};
 
 	struct VKComputePipelineDescription
 	{
-		enum
-		{
-			MAX_PATH_LENGTH = 256,
-		};
-
-		char m_computeShaderPath[MAX_PATH_LENGTH + 1] = {};
+		VKShaderStageDescription m_computeShaderStage;
 		size_t m_hashValue;
-
-		VKComputePipelineDescription();
 
 		// cleans up array elements past array count and precomputes a hash value
 		void finalize();

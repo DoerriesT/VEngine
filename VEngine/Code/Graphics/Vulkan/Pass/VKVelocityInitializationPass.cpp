@@ -26,8 +26,8 @@ void VEngine::VKVelocityInitializationPass::addToGraph(FrameGraph::Graph &graph,
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/fullscreenTriangle_vert.spv");
-			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/velocityInitialization_frag.spv");
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/fullscreenTriangle_vert.spv");
+			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/velocityInitialization_frag.spv");
 
 			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;

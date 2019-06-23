@@ -27,7 +27,7 @@ void VEngine::VKFXAAPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/fxaa_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/fxaa_comp.spv");
 
 			pipelineDesc.finalize();
 		}

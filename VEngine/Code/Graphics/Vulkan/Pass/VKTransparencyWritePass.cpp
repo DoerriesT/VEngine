@@ -31,8 +31,8 @@ void VEngine::VKTransparencyWritePass::addToGraph(FrameGraph::Graph &graph, cons
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/transparencyWrite_vert.spv");
-			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath,"Resources/Shaders/transparencyWrite_frag.spv");
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/transparencyWrite_vert.spv");
+			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path,"Resources/Shaders/transparencyWrite_frag.spv");
 
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 3;
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };

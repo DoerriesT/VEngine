@@ -22,7 +22,7 @@ void VEngine::VKSDSMClearPass::addToGraph(FrameGraph::Graph &graph, const Data &
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/sdsmClear_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/sdsmClear_comp.spv");
 
 			pipelineDesc.finalize();
 		}

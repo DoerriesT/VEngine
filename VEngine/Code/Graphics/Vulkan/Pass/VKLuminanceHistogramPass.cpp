@@ -29,7 +29,7 @@ void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, con
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/luminanceHistogram_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/luminanceHistogram_comp.spv");
 
 			pipelineDesc.finalize();
 		}

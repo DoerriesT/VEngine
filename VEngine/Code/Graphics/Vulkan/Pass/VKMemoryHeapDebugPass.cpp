@@ -29,8 +29,8 @@ void VEngine::VKMemoryHeapDebugPass::addToGraph(FrameGraph::Graph & graph, const
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, "Resources/Shaders/memoryHeapDebug_vert.spv");
-			strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/memoryHeapDebug_frag.spv");
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/memoryHeapDebug_vert.spv");
+			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/memoryHeapDebug_frag.spv");
 
 			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;

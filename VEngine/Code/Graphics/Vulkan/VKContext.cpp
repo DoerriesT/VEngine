@@ -16,9 +16,9 @@ namespace VEngine
 		void* pUserData)
 	{
 		std::cerr << "validation layer:\n"
-			<< pCallbackData->pMessageIdName << "\n"
-			<< pCallbackData->messageIdNumber << "\n"
-			<< pCallbackData->pMessage << std::endl;
+			<< "Message ID Name: " << pCallbackData->pMessageIdName << "\n"
+			<< "Message ID Number: " << pCallbackData->messageIdNumber << "\n"
+			<< "Message: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
 	}

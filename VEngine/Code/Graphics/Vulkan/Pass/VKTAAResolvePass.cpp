@@ -33,7 +33,7 @@ void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data 
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/taaResolve_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/taaResolve_comp.spv");
 
 			pipelineDesc.finalize();
 		}

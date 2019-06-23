@@ -25,7 +25,7 @@ void VEngine::VKSDSMDepthReducePass::addToGraph(FrameGraph::Graph & graph, const
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/sdsmDepthReduce_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/sdsmDepthReduce_comp.spv");
 
 			pipelineDesc.finalize();
 		}

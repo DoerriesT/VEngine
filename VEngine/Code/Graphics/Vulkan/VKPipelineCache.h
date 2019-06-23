@@ -65,7 +65,7 @@ namespace VEngine
 		std::unordered_map<VKCombinedGraphicsPipelineRenderPassDescription, PipelineData, VKCombinedGraphicsPipelineRenderPassDescriptionHash> m_graphicsPipelines;
 		std::unordered_map<VKComputePipelineDescription, PipelineData, VKComputePipelineDescriptionHash> m_computePipelines;
 
-		void createShaderStage(const char *filepath, VkShaderStageFlagBits stageFlag, VkShaderModule &shaderModule, VkPipelineShaderStageCreateInfo &stageInfo, ReflectionInfo &reflectionInfo);
+		void createShaderStage(const VKShaderStageDescription &stageDescription, VkShaderStageFlagBits stageFlag, VkShaderModule &shaderModule, VkPipelineShaderStageCreateInfo &stageCreateInfo, ReflectionInfo &reflectionInfo);
 		void createPipelineLayout(const ReflectionInfo &reflectionInfo, VkPipelineLayout &pipelineLayout, DescriptorSetLayoutData &descriptorSetLayoutData);
 	};
 }

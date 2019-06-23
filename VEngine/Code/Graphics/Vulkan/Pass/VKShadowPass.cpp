@@ -30,11 +30,11 @@ void VEngine::VKShadowPass::addToGraph(FrameGraph::Graph &graph, const Data &dat
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_shaderStages.m_vertexShaderPath, data.m_alphaMasked ? "Resources/Shaders/shadows_alpha_mask_vert.spv" : "Resources/Shaders/shadows_vert.spv");
-
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path , data.m_alphaMasked ? "Resources/Shaders/shadows_alpha_mask_vert.spv" : "Resources/Shaders/shadows_vert.spv");
+			
 			if (data.m_alphaMasked)
 			{
-				strcpy_s(pipelineDesc.m_shaderStages.m_fragmentShaderPath, "Resources/Shaders/shadows_frag.spv");
+				strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/shadows_frag.spv");
 			}
 
 			if (data.m_alphaMasked)

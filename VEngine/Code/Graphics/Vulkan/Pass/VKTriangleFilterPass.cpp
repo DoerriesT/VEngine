@@ -24,7 +24,7 @@ void VEngine::VKTriangleFilterPass::addToGraph(FrameGraph::Graph &graph, const D
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/triangleFilter_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/triangleFilter_comp.spv");
 
 			pipelineDesc.finalize();
 		}

@@ -25,7 +25,7 @@ void VEngine::VKDrawCallCompactionPass::addToGraph(FrameGraph::Graph & graph, co
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/drawCallCompaction_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/drawCallCompaction_comp.spv");
 
 			pipelineDesc.finalize();
 		}

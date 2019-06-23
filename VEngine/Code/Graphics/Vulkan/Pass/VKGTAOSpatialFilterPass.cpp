@@ -25,7 +25,7 @@ void VEngine::VKGTAOSpatialFilterPass::addToGraph(FrameGraph::Graph & graph, con
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_computeShaderPath, "Resources/Shaders/gtaoSpatialFilter_comp.spv");
+			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/gtaoSpatialFilter_comp.spv");
 
 			pipelineDesc.finalize();
 		}
