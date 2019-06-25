@@ -21,7 +21,7 @@ uint subgroupCompactValue(uint checkValue)
 	{
 		uint firstValue = subgroupBroadcastFirst(checkValue);
 		// mask is only updated for active threads
-		mask = subgroupBallot(firstValue == checkValue); 
+		mask = subgroupBallot(firstValue == checkValue && !gl_HelperInvocation); 
 		// exclude all threads with firstValue from next iteration
 		if (firstValue == checkValue)
 		{
