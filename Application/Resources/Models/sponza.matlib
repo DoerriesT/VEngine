@@ -1,0 +1,605 @@
+{
+    "count": 25,
+    "materials": [
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/lion_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "lion",
+            "normalTexture": "Resources/Textures/Sponza/lion_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/background_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "background",
+            "normalTexture": "Resources/Textures/Sponza/background_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "Material__47",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/vase_plant_a.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "vase_plant",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/arch_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "arch",
+            "normalTexture": "Resources/Textures/Sponza/arch_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/arch_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/bricks_a_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "bricks",
+            "normalTexture": "Resources/Textures/Sponza/bricks_a_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/bricks_a_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/ceiling_a_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "ceiling",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/ceiling_a_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/chain_texture_a.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "chain",
+            "normalTexture": "Resources/Textures/Sponza/chain_texture_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/column_a_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "column_a",
+            "normalTexture": "Resources/Textures/Sponza/column_a_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/column_a_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/column_b_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "column_b",
+            "normalTexture": "Resources/Textures/Sponza/column_b_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/column_b_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/column_c_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "column_c",
+            "normalTexture": "Resources/Textures/Sponza/column_c_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/column_c_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/details_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "details",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/details_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/fabric_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_a",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/curtain_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_c",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/fabric_blue_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_d",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/fabric_green_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_e",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/curtain_green_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_f",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/curtain_blue_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "fabric_g",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/flagpole_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "flagpole",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/flagpole_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/floor_a_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "floor",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/floor_a_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/thorn_a.dds",
+            "alphaMode": 1,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "leaf",
+            "normalTexture": "Resources/Textures/Sponza/thorn_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/thorn_r.dds"
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/roof_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "roof",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/vase_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "vase",
+            "normalTexture": "Resources/Textures/Sponza/vase_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/vase_hanging_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "vase_hanging",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        },
+        {
+            "albedo": [
+                0.5879999995231628,
+                0.5879999995231628,
+                0.5879999995231628
+            ],
+            "albedoTexture": "Resources/Textures/Sponza/vase_round_a.dds",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "vase_round",
+            "normalTexture": "Resources/Textures/Sponza/vase_round_n.dds",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": "Resources/Textures/Sponza/vase_round_r.dds"
+        }
+    ]
+}

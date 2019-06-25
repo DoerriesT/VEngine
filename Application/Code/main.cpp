@@ -30,17 +30,23 @@ public:
 		m_engine->getRenderSystem().setCameraEntity(cameraEntity);
 
 		VEngine::Scene scene = {};
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
-		entt::entity exteriorEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
+		entt::entity sponzaEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
+		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
 
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
-		entt::entity interiorEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		entityRegistry.assign<VEngine::MeshComponent>(interiorEntity, scene.m_meshInstances["Resources/Models/bistro_i"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(interiorEntity);
+		//scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
+		//entt::entity exteriorEntity = entityRegistry.create();
+		//entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
+		//entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
+		//entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
+		//
+		//scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
+		//entt::entity interiorEntity = entityRegistry.create();
+		//entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
+		//entityRegistry.assign<VEngine::MeshComponent>(interiorEntity, scene.m_meshInstances["Resources/Models/bistro_i"]);
+		//entityRegistry.assign<VEngine::RenderableComponent>(interiorEntity);
 
 		//scene.load(m_engine->getRenderSystem(), "Resources/Models/mori_knob");
 		//entt::entity knobEntity = entityRegistry.create();

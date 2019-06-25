@@ -111,7 +111,7 @@ void main()
 												dimensions.x * 0.5 + border, 
 												-dimensions.y * 0.5 - border, 
 												dimensions.y * 0.5 + border, 
-												lightSpaceNear, 
-												lightSpaceFar)
+												-150.0, 
+												150.0)
 												* lightView;
 }

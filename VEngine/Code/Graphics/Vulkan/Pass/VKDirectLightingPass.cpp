@@ -178,6 +178,6 @@ void VEngine::VKDirectLightingPass::addToGraph(FrameGraph::Graph & graph, const 
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		vkCmdDrawIndexed(cmdBuf, 6, 1, 0, 0, 0);
+		vkCmdDraw(cmdBuf, 6, 1, 0, 0);
 	});
 }
