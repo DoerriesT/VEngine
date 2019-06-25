@@ -105,7 +105,7 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_A2R10G10B10_UINT_PACK32;
+			desc.m_format = VK_FORMAT_A2B10G10R10_UINT_PACK32;
 
 			return graph.createImage(desc);
 		}
