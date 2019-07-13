@@ -1,6 +1,7 @@
 #pragma once
 #include "Graphics/Vulkan/volk.h"
 #include <cstring>
+#include <bitset>
 
 namespace VEngine
 {
@@ -38,8 +39,7 @@ namespace VEngine
 		{
 			MAX_INPUT_ATTACHMENTS = 8,
 			MAX_COLOR_ATTACHMENTS = 8,
-			MAX_RESOLVE_ATTACHMENTS = 8,
-			MAX_ATTACHMENTS = MAX_INPUT_ATTACHMENTS + MAX_COLOR_ATTACHMENTS + MAX_RESOLVE_ATTACHMENTS + 1, // +1 is for depth attachment
+			MAX_ATTACHMENTS = MAX_INPUT_ATTACHMENTS + MAX_COLOR_ATTACHMENTS + 1, // +1 is for depth attachment
 		};
 
 		struct AttachmentDescription
@@ -54,8 +54,7 @@ namespace VEngine
 		VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
 		uint32_t m_colorAttachmentCount = 0;
 		VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
-		uint32_t m_resolveAttachmentCount = 0;
-		VkAttachmentReference m_resolveAttachments[MAX_RESOLVE_ATTACHMENTS] = {};
+		std::bitset<MAX_COLOR_ATTACHMENTS> m_resolveAttachments;
 		bool m_depthStencilAttachmentPresent = false;
 		VkAttachmentReference m_depthStencilAttachment = {};
 		size_t m_hashValue;

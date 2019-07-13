@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include "VKMemoryAllocator.h"
 #include "VKPipeline.h"
 #include "Graphics/Vulkan/volk.h"
 
@@ -16,7 +17,6 @@ namespace VEngine
 	typedef struct ResourceHandle_t* ResourceHandle;
 
 	class VKRenderGraph;
-	class VKRenderGraph::PassResourceUsage;
 
 	enum class QueueType
 	{
@@ -47,11 +47,13 @@ namespace VEngine
 	struct ImageDescription
 	{
 		const char *m_name = "";
-		uint32_t m_width = 0;
-		uint32_t m_height = 0;
+		uint32_t m_width = 1;
+		uint32_t m_height = 1;
+		uint32_t m_depth = 1;
 		uint32_t m_layers = 1;
 		uint32_t m_levels = 1;
 		uint32_t m_samples = 1;
+		VkImageType m_imageType = VK_IMAGE_TYPE_2D;
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 	};
 
@@ -75,8 +77,8 @@ namespace VEngine
 	{
 	public:
 		explicit VKRenderGraphPassBuilder(VKRenderGraph &graph, uint32_t passIndex);
-		void readDepthStencil(ImageViewHandle handle, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
-		void readInputAttachment(ImageViewHandle handle, uint32_t index, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
+		void readDepthStencil(ImageViewHandle handle);
+		void readInputAttachment(ImageViewHandle handle, uint32_t index);
 		void readTexture(ImageViewHandle handle, VkPipelineStageFlags stageFlags, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
 		void readStorageImage(ImageViewHandle handle, VkPipelineStageFlags stageFlags, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
 		void readStorageBuffer(BufferViewHandle handle, VkPipelineStageFlags stageFlags);
@@ -87,8 +89,8 @@ namespace VEngine
 		void readImageTransfer(ImageViewHandle handle, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
 		void readWriteStorageImage(ImageViewHandle handle, VkPipelineStageFlags stageFlags, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
 		void readWriteStorageBuffer(BufferViewHandle handle, VkPipelineStageFlags stageFlags);
-		void writeDepthStencil(ImageViewHandle handle, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
-		void writeColorAttachment(ImageViewHandle handle, uint32_t index, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
+		void writeDepthStencil(ImageViewHandle handle);
+		void writeColorAttachment(ImageViewHandle handle, uint32_t index);
 		void writeStorageImage(ImageViewHandle handle, VkPipelineStageFlags stageFlags, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_MAX_ENUM);
 		void writeStorageBuffer(BufferViewHandle handle, VkPipelineStageFlags stageFlags);
 		void writeBufferTransfer(BufferViewHandle handle);
@@ -133,8 +135,8 @@ namespace VEngine
 		ImageHandle createImage(const ImageDescription &imageDesc);
 		BufferViewHandle createBufferView(const BufferViewDescription &viewDesc);
 		BufferHandle createBuffer(const BufferDescription &bufferDesc);
-		ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
-		BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkDeviceSize offset, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+		//ImageHandle importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layout, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
+		//BufferHandle importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkDeviceSize offset, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore);
 
 
 	private:
@@ -178,11 +180,13 @@ namespace VEngine
 		struct ResourceDescription
 		{
 			const char *m_name = "";
-			uint32_t m_width = 0;
-			uint32_t m_height = 0;
+			uint32_t m_width = 1;
+			uint32_t m_height = 1;
+			uint32_t m_depth = 1;
 			uint32_t m_layers = 1;
 			uint32_t m_levels = 1;
 			uint32_t m_samples = 1;
+			VkImageType m_imageType = VK_IMAGE_TYPE_2D;
 			VkFormat m_format = VK_FORMAT_UNDEFINED;
 			VkDeviceSize m_size = 0;
 			bool m_image;
@@ -198,7 +202,8 @@ namespace VEngine
 			VkFormat m_format;
 			VkComponentMapping m_components;
 			VkImageSubresourceRange m_subresourceRange;
-			VkDeviceSize m_size; // for buffers
+			VkDeviceSize m_offset; // for buffers
+			VkDeviceSize m_range; // for buffers
 			bool m_image;
 		};
 
@@ -208,10 +213,35 @@ namespace VEngine
 			uint32_t m_height = 0;
 			ImageViewHandle m_inputAttachments[VKRenderPassDescription::MAX_INPUT_ATTACHMENTS] = {};
 			ImageViewHandle m_colorAttachments[VKRenderPassDescription::MAX_COLOR_ATTACHMENTS] = {};
-			ImageViewHandle m_resolveAttachments[VKRenderPassDescription::MAX_RESOLVE_ATTACHMENTS] = {};
+			ImageViewHandle m_resolveAttachments[VKRenderPassDescription::MAX_COLOR_ATTACHMENTS] = {};
 			ImageViewHandle m_depthStencilAttachment = 0;
 		};
 
+		union VKImageBuffer
+		{
+			VkImage image;
+			VkBuffer buffer;
+		};
+
+		union VKImageBufferView
+		{
+			VkImageView imageView;
+			VkBufferView bufferView;
+		};
+
+		struct Barriers
+		{
+			std::vector<VkEvent> m_waitEvents;
+			VkPipelineStageFlags m_srcStageFlags;
+			VkPipelineStageFlags m_dstStageFlags;
+			uint32_t m_imageBeginBarrierCount;
+			uint32_t m_bufferBeginBarrierCount;
+			std::vector<VkImageMemoryBarrier> m_imageBarriers;
+			std::vector<VkBufferMemoryBarrier> m_bufferBarriers;
+		};
+
+		std::vector<uint16_t> m_subresourceRefCounts;
+		std::vector<uint16_t> m_passRefCounts;
 		std::vector<bool> m_culledPasses;
 		std::vector<bool> m_culledResources;
 		std::vector<bool> m_culledViews;
@@ -221,9 +251,22 @@ namespace VEngine
 		std::vector<FramebufferInfo> m_framebufferInfo;
 		std::vector<uint32_t> m_resourceUsageOffsets;
 		std::vector<std::vector<PassResourceUsage>> m_resourceUsages;
+		std::vector<VKImageBuffer> m_imageBuffers;
+		std::vector<VKImageBufferView> m_imageBufferViews;
+		std::vector<VKAllocationHandle> m_allocations;
+		std::vector<std::pair<VkRenderPass, VkFramebuffer>> m_renderpassFramebufferHandles;
+		std::vector<Barriers> m_barriers;
 
 		void forEachSubresource(ResourceViewHandle handle, std::function<void(uint32_t)> func);
+		VkAccessFlags getAccessMask(uint32_t flags);
+		VkImageLayout getImageLayout(uint32_t flags);
+		VkImageUsageFlags getImageUsageFlags(uint32_t flags);
+		VkBufferUsageFlags getBufferUsageFlags(uint32_t flags);
+		VkImageAspectFlags getImageAspectFlags(uint32_t flags);
+		uint32_t queueIndexFromQueueType(QueueType queueType);
 		void cull(ResourceViewHandle finalResourceViewHandle);
 		void createResources();
+		void createRenderPasses();
+		void createSynchronization();
 	};
 }
