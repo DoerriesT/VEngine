@@ -5,7 +5,6 @@
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Utility/ContainerUtility.h"
-#include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
 
 using namespace VEngine::FrameGraph;
 
@@ -349,8 +348,7 @@ BufferHandle PassBuilder::createBuffer(const BufferDescription &bufferDesc)
 	return m_graph.createBuffer(bufferDesc);
 }
 
-Graph::Graph(VEngine::VKSyncPrimitiveAllocator &syncPrimitiveAllocator)
-	:m_syncPrimitiveAllocator(syncPrimitiveAllocator)
+Graph::Graph()
 {
 	VkCommandPoolCreateInfo poolCreateInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -511,12 +509,14 @@ void Graph::reset()
 		vkWaitForFences(g_context.m_device, 1, &m_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 	}
 
+	assert(g_context.m_syncPrimitivePool.checkIntegrity());
+
 	// release semaphores
 	for (size_t i = 0; i < MAX_PASSES; ++i)
 	{
 		if (m_semaphores[i] != VK_NULL_HANDLE)
 		{
-			m_syncPrimitiveAllocator.freeSemaphore(m_semaphores[i]);
+			g_context.m_syncPrimitivePool.freeSemaphore(m_semaphores[i]);
 		}
 	}
 
@@ -525,7 +525,7 @@ void Graph::reset()
 	{
 		if (m_events[i] != VK_NULL_HANDLE)
 		{
-			m_syncPrimitiveAllocator.freeEvent(m_events[i]);
+			g_context.m_syncPrimitivePool.freeEvent(m_events[i]);
 		}
 	}
 
@@ -559,7 +559,7 @@ void Graph::reset()
 	// destroy fence
 	if (m_fence)
 	{
-		m_syncPrimitiveAllocator.freeFence(m_fence);
+		g_context.m_syncPrimitivePool.freeFence(m_fence);
 	}
 
 	if (m_recordTimings && m_timestampQueryCount)
@@ -1323,7 +1323,7 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 		if (semaphoreDependencies[passIndex] != ~size_t(0))
 		{
 			assert(m_semaphores[passIndex] == VK_NULL_HANDLE);
-			m_semaphores[passIndex] = m_syncPrimitiveAllocator.acquireSemaphore();
+			m_semaphores[passIndex] = g_context.m_syncPrimitivePool.acquireSemaphore();
 
 			size_t dependentPassIndex = semaphoreDependencies[passIndex];
 
@@ -1336,7 +1336,7 @@ void Graph::createSynchronization(size_t *firstResourceUses, size_t *lastResourc
 		if (eventDependencies[passIndex])
 		{
 			assert(m_events[passIndex] == VK_NULL_HANDLE);
-			m_events[passIndex] = m_syncPrimitiveAllocator.acquireEvent();
+			m_events[passIndex] = g_context.m_syncPrimitivePool.acquireEvent();
 		}
 
 		// update wait event memory dependency access masks and source stage masks
@@ -1913,7 +1913,7 @@ void Graph::recordAndSubmit(size_t *firstResourceUses, size_t *lastResourceUses,
 			if (lastResourceUses[(size_t)finalResourceHandle - 1] == passIndex)
 			{
 				assert(m_fence == VK_NULL_HANDLE);
-				m_fence = fence = m_syncPrimitiveAllocator.acquireFence();
+				m_fence = fence = g_context.m_syncPrimitivePool.acquireFence();
 			}
 
 			if (m_queueType[passIndex] != QueueType::NONE)

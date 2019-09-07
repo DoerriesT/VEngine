@@ -8,7 +8,6 @@
 namespace VEngine
 {
 	class VKRenderer;
-	class VKSyncPrimitiveAllocator;
 	class VKPipelineCache;
 	class VKMappableBufferBlock;
 
@@ -57,8 +56,6 @@ namespace VEngine
 		VkSemaphore m_shadowTextureSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainImageAvailableSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
-
-		std::unique_ptr<VKSyncPrimitiveAllocator> m_syncPrimitiveAllocator;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSet m_textureDescriptorSet;

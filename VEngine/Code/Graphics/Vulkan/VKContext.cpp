@@ -7,7 +7,7 @@
 
 namespace VEngine
 {
-	VKContext g_context = {};
+	VKContext g_context{};
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

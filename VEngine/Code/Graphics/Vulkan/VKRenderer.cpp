@@ -58,7 +58,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>(*m_renderResources->m_syncPrimitiveAllocator);
+		m_frameGraphs[i] = std::make_unique<FrameGraph::Graph>();
 	}
 }
 

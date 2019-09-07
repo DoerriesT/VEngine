@@ -2,6 +2,7 @@
 #include "Graphics/Vulkan/volk.h"
 #include <vector>
 #include "VKMemoryAllocator.h"
+#include "SyncPrimitivePool.h"
 
 struct GLFWwindow;
 
@@ -44,6 +45,7 @@ namespace VEngine
 		VKSwapChainSupportDetails m_swapChainSupportDetails;
 		VKQueueFamilyIndices m_queueFamilyIndices;
 		VKMemoryAllocator m_allocator;
+		SyncPrimitivePool m_syncPrimitivePool;
 		VkDebugUtilsMessengerEXT m_debugUtilsMessenger;
 
 		void init(GLFWwindow *windowHandle);

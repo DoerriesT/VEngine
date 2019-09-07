@@ -3,7 +3,6 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 #include "GlobalVar.h"
-#include "VKSyncPrimitiveAllocator.h"
 #include "VKPipelineCache.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Mesh.h"
@@ -15,13 +14,11 @@ VEngine::VKRenderResources::~VKRenderResources()
 
 void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 {
-	m_syncPrimitiveAllocator = std::make_unique<VKSyncPrimitiveAllocator>();
-
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_shadowTextureSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
-		m_swapChainImageAvailableSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
-		m_swapChainRenderFinishedSemaphores[i] = m_syncPrimitiveAllocator->acquireSemaphore();
+		m_shadowTextureSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
+		m_swapChainImageAvailableSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
+		m_swapChainRenderFinishedSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
 	}
 
 	uint32_t queueFamilyIndices[] =

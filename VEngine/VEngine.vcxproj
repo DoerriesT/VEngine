@@ -186,6 +186,8 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\RenderGraph.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\RenderPassCache.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKDescriptorSetCache.h" />
@@ -201,7 +203,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKResourceDefinitions.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\SyncPrimitivePool.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
     <ClInclude Include="Code\Graphics\Vulkan\volk.h" />
@@ -254,6 +256,8 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\RenderGraph.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\RenderPassCache.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKDescriptorSetCache.cpp" />
@@ -268,7 +272,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\VKSyncPrimitiveAllocator.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\SyncPrimitivePool.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\volk.c" />

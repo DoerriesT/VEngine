@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <variant>
 #include <bitset>
-#include "Graphics/Vulkan/VKSyncPrimitiveAllocator.h"
 #include "Graphics/Vulkan/VKMemoryAllocator.h"
 #include "Graphics/Vulkan/VKPipeline.h"
 
@@ -142,7 +141,7 @@ namespace VEngine
 		public:
 			typedef std::function<void(VkCommandBuffer cmdBuf, const ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)> RecordFunc;
 
-			explicit Graph(VKSyncPrimitiveAllocator &syncPrimitiveAllocator);
+			explicit Graph();
 			Graph(const Graph &) = delete;
 			Graph(const Graph &&) = delete;
 			Graph &operator= (const Graph &) = delete;
@@ -227,7 +226,6 @@ namespace VEngine
 				uint32_t m_afterSync;
 			};
 
-			VKSyncPrimitiveAllocator &m_syncPrimitiveAllocator;
 			const char *m_resourceNames[MAX_RESOURCES];
 			const char *m_passNames[MAX_PASSES];
 			VkImageLayout *m_externalLayouts[MAX_RESOURCES];
