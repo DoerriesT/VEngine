@@ -157,6 +157,7 @@
     <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\CommandBufferPool.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
@@ -227,6 +228,7 @@
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\RenderSystem.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\CommandBufferPool.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />

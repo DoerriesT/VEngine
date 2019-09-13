@@ -273,6 +273,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\SyncPrimitivePool.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\CommandBufferPool.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -453,6 +456,9 @@
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\SyncPrimitivePool.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\CommandBufferPool.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>

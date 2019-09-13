@@ -66,7 +66,6 @@ void main()
 	sMinZ[localIndex] = minZ;
     sMaxZ[localIndex] = maxZ;
 	
-	memoryBarrierShared(); 
 	barrier();
 	
 	for (uint offset = (GROUP_SIZE >> 1); offset > 0; offset >>= 1) 
@@ -76,7 +75,6 @@ void main()
             sMinZ[localIndex] = min(sMinZ[localIndex], sMinZ[offset + localIndex]);
             sMaxZ[localIndex] = max(sMaxZ[localIndex], sMaxZ[offset + localIndex]);
         }
-        memoryBarrierShared(); 
 		barrier();
     }
 	

@@ -1,0 +1,15 @@
+#version 450
+
+#include "rendergraphtest_bindings.h"
+
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
+
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+void main() 
+{
+	float color = float(gl_LocalInvocationID.y * 16 + gl_LocalInvocationID.x) * (1.0 / (16.0 * 16.0));
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color.xxx, 1.0));
+}

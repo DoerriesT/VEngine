@@ -6,8 +6,43 @@
 #include <algorithm>
 #include "VKUtility.h"
 
-void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
+const VkQueue VEngine::RenderGraph::undefinedQueue = VkQueue(~size_t());
+
+void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, ResourceState finalResourceState, QueueType queueType)
 {
+	// add pass to transition final resource
+	{
+		if (finalResourceState != ResourceState::UNDEFINED)
+		{
+			const auto &viewDesc = m_viewDescriptions[(size_t)finalResourceHandle - 1];
+			const uint16_t resourceIndex = (uint16_t)viewDesc.m_resourceHandle - 1;
+			const auto &resDesc = m_resourceDescriptions[resourceIndex];
+			const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
+
+			m_passRecordInfo.push_back({});
+			auto &recordInfo = m_passRecordInfo.back();
+			recordInfo.m_queue = getQueue(queueType);
+			recordInfo.m_recordFunc = [](VkCommandBuffer, const Registry &) {};
+
+			m_passSubresources.push_back({ static_cast<uint32_t>(m_passSubresourceIndices.size()) });
+			auto &passSubresources = m_passSubresources.back();
+			passSubresources.m_readSubresourceCount = passSubresources.m_writeSubresourceCount = viewDesc.m_image ? viewDesc.m_subresourceRange.layerCount * viewDesc.m_subresourceRange.levelCount : 1;
+			m_passSubresourceIndices.reserve(m_passSubresourceIndices.size() + passSubresources.m_readSubresourceCount + passSubresources.m_writeSubresourceCount);
+			m_viewUsages.push_back({});
+
+			const ResourceUsage resUsage{ passIndex, finalResourceState, finalResourceState };
+			forEachSubresource(finalResourceHandle, [&](uint32_t index)
+			{
+				m_resourceUsages[index].push_back(resUsage);
+				m_passSubresourceIndices.push_back(static_cast<uint16_t>(index));
+			});
+			forEachSubresource(finalResourceHandle, [&](uint32_t index)
+			{
+				m_passSubresourceIndices.push_back(static_cast<uint16_t>(index));
+			});
+		}
+	}
+
 	const size_t passCount = m_passSubresources.size();
 	const size_t subresourceCount = m_resourceUsages.size();
 	const size_t viewCount = m_viewDescriptions.size();
@@ -39,19 +74,18 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
 		// increment subresource refcounts for each reading pass
 		// and fill stack with resources where refCount == 0
 		std::stack<uint16_t> resourceStack;
-		for (size_t resourceIdx = 0; resourceIdx < m_resourceUsages.size(); ++resourceIdx)
+		for (size_t subresourceIdx = 0; subresourceIdx < m_resourceUsages.size(); ++subresourceIdx)
 		{
-			for (size_t usageIdx = 0; usageIdx < m_resourceUsages[resourceIdx].size(); ++usageIdx)
+			for (size_t usageIdx = 0; usageIdx < m_resourceUsages[subresourceIdx].size(); ++usageIdx)
 			{
-				const auto accessType = getRWAccessType(m_resourceUsages[resourceIdx][usageIdx].m_usageType);
-				if (accessType == RWAccessType::READ || accessType == RWAccessType::READ_WRITE)
+				if (getResourceStateInfo(m_resourceUsages[subresourceIdx][usageIdx].m_initialResourceState).m_readAccess)
 				{
-					++subresourceRefCounts[resourceIdx];
+					++subresourceRefCounts[subresourceIdx];
 				}
 			}
-			if (subresourceRefCounts[resourceIdx] == 0)
+			if (subresourceRefCounts[subresourceIdx] == 0)
 			{
-				resourceStack.push(static_cast<uint16_t>(resourceIdx));
+				resourceStack.push(static_cast<uint16_t>(subresourceIdx));
 			}
 		}
 
@@ -66,8 +100,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
 			{
 				const uint32_t passHandle = usage.m_passHandle;
 				// if writing pass, decrement refCount. if it falls to zero, decrement refcount of read resources
-				const auto accessType = getRWAccessType(usage.m_usageType);
-				if ((accessType == RWAccessType::WRITE || accessType == RWAccessType::READ_WRITE) && passRefCounts[passHandle] != 0 && --passRefCounts[passHandle] == 0)
+				if (getResourceStateInfo(usage.m_initialResourceState).m_writeAccess && passRefCounts[passHandle] != 0 && --passRefCounts[passHandle] == 0)
 				{
 					--survivingPassCount;
 					const size_t start = m_passSubresources[passHandle].m_subresourcesOffset;
@@ -117,7 +150,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
 
 		// fill pass handles of surviving passes and insert clear passes
 		std::vector<uint16_t> handleToIndex(passCount);
-		m_passIndices.reserve(survivingPassCount);
+		m_passHandleOrder.reserve(survivingPassCount);
 		for (uint16_t i = 0; i < passCount; ++i)
 		{
 			if (passRefCounts[i])
@@ -133,17 +166,13 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
 					for (const auto resourceIdx : clearResources[i])
 					{
 						const uint32_t usageOffset = m_resourceUsageOffsets[resourceIdx];
-						const uint32_t subresourceCount = m_resourceDescriptions[resourceIdx].m_subresourceCount;
+						const auto &resDesc = m_resourceDescriptions[resourceIdx];
+						const uint32_t subresourceCount = resDesc.m_subresourceCount;
 						// insert clear pass resource usage and add subresources to pass subresource index list
 						for (size_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
 						{
-							m_resourceUsages[resourceIdx].insert(m_resourceUsages[resourceIdx].cbegin(),
-								{
-									clearPassHandle,
-									m_resourceDescriptions[resourceIdx].m_image ? ResourceUsageType::WRITE_IMAGE_TRANSFER : ResourceUsageType::WRITE_BUFFER_TRANSFER,
-									VK_PIPELINE_STAGE_TRANSFER_BIT,
-									VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-								});
+							const auto state = resDesc.m_image ? ResourceState::WRITE_IMAGE_TRANSFER : ResourceState::WRITE_BUFFER_TRANSFER;
+							m_resourceUsages[subresourceIdx].insert(m_resourceUsages[subresourceIdx].cbegin(), { clearPassHandle, state, state });
 							m_passSubresourceIndices.push_back(subresourceIdx);
 						}
 						passSubresource.m_writeSubresourceCount += subresourceCount;
@@ -175,15 +204,16 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle)
 							}
 						}
 					}, m_passRecordInfo[i].m_queue });
-					handleToIndex.push_back(static_cast<uint16_t>(m_passIndices.size()));
-					m_passIndices.push_back(clearPassHandle);
+					m_viewUsages.push_back({});
+					handleToIndex.push_back(static_cast<uint16_t>(m_passHandleOrder.size()));
+					m_passHandleOrder.push_back(clearPassHandle);
 				}
-				handleToIndex[i] = static_cast<uint16_t>(m_passIndices.size());
-				m_passIndices.push_back(i);
+				handleToIndex[i] = static_cast<uint16_t>(m_passHandleOrder.size());
+				m_passHandleOrder.push_back(i);
 			}
 		}
 
-		// correct resource lifetimes to use indices into m_passIndices
+		// correct resource lifetimes to use indices into m_passHandleOrder
 		for (size_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 		{
 			if (m_culledResources[resourceIdx])
@@ -239,24 +269,22 @@ void VEngine::RenderGraph::createResources()
 	// create resources
 	for (size_t resourceIndex = 0; resourceIndex < m_resourceDescriptions.size(); ++resourceIndex)
 	{
-		m_imageBuffers[resourceIndex].image = VK_NULL_HANDLE;
+		const auto &resDesc = m_resourceDescriptions[resourceIndex];
 
-		if (!m_culledResources[resourceIndex])
+		if (!m_culledResources[resourceIndex] || resDesc.m_external)
 		{
 			continue;
 		}
 
-		const auto &resDesc = m_resourceDescriptions[resourceIndex];
+		VkFlags usageFlags = resDesc.m_usageFlags;
 
 		// find usage flags and refCount
-		VkFlags usageFlags = 0;
-
 		const uint32_t subresourcesEndIndex = resDesc.m_subresourceCount + m_resourceUsageOffsets[resourceIndex];
 		for (uint32_t i = m_resourceUsageOffsets[resourceIndex]; i < subresourcesEndIndex; ++i)
 		{
 			for (const auto &usage : m_resourceUsages[i])
 			{
-				usageFlags |= getUsageFlags(usage.m_usageType);
+				usageFlags |= getResourceStateInfo(usage.m_initialResourceState).m_usageFlags;
 			}
 		}
 
@@ -308,8 +336,6 @@ void VEngine::RenderGraph::createResources()
 	// create views
 	for (uint32_t viewIndex = 0; viewIndex < m_viewDescriptions.size(); ++viewIndex)
 	{
-		m_imageBufferViews[viewIndex].imageView = VK_NULL_HANDLE;
-
 		if (!m_culledViews[viewIndex])
 		{
 			continue;
@@ -322,7 +348,7 @@ void VEngine::RenderGraph::createResources()
 			VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 			viewInfo.image = m_imageBuffers[(size_t)viewDesc.m_resourceHandle - 1].image;
 			viewInfo.viewType = viewDesc.m_viewType;
-			viewInfo.format = viewDesc.m_format;
+			viewInfo.format = viewDesc.m_format == VK_FORMAT_UNDEFINED ? m_resourceDescriptions[(size_t)viewDesc.m_resourceHandle - 1].m_format : viewDesc.m_format;
 			viewInfo.components = viewDesc.m_components;
 			viewInfo.subresourceRange = viewDesc.m_subresourceRange;
 
@@ -347,193 +373,291 @@ void VEngine::RenderGraph::createResources()
 	}
 }
 
-// TODO: get image/buffer from subresource index
-// TODO: account for external wait/signal semaphores
-void VEngine::RenderGraph::createSynchronization()
+void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourceHandle, VkSemaphore finalResourceWaitSemaphore)
 {
 	struct SemaphoreDependencyInfo
 	{
-		enum { EXTERNAL_PASS_HANDLE = 0xFFFFFFFF };
 		VkPipelineStageFlags m_waitDstStageMask;
 		uint16_t m_waitedOnPassHandle;
 		uint16_t m_semaphoreIndex;
+		bool m_external;
 	};
 
 	std::vector<std::pair<std::vector<SemaphoreDependencyInfo>, uint32_t>> semaphoreDependencies(m_passSubresources.size());
+	VkPipelineStageFlags finalResourceWaitDstStageMask = 0;
+	std::vector<bool> finalResourceSignalPasses(m_passSubresources.size());
 
-	for (const uint16_t passIndex : m_passIndices)
+	const auto &finalViewDesc = m_viewDescriptions[(size_t)finalResourceHandle - 1];
+	const uint32_t finalResIdx = (uint32_t)finalViewDesc.m_resourceHandle - 1;
+
+	for (size_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 	{
-		auto &passRecordInfo = m_passRecordInfo[passIndex];
-
-		const auto &passSubresources = m_passSubresources[passIndex];
-		const size_t start = passSubresources.m_subresourcesOffset;
-		const size_t end = passSubresources.m_subresourcesOffset + passSubresources.m_readSubresourceCount + passSubresources.m_writeSubresourceCount;
-		for (size_t subresourceIndex = start; subresourceIndex < end; ++subresourceIndex)
+		// skip culled resources
+		if (!m_culledResources[resourceIdx])
 		{
-			const size_t usageCount = m_resourceUsages[subresourceIndex].size();
+			continue;
+		}
 
-			// find index of current pass usage in usages vector
-			size_t usageIndex = 0;
-			for (; usageIndex < usageCount && m_resourceUsages[subresourceIndex][usageIndex].m_passHandle != passIndex; ++usageIndex);
+		const auto &resDesc = m_resourceDescriptions[resourceIdx];
+		const auto usageOffset = m_resourceUsageOffsets[resourceIdx];
 
-			const auto &curUsage = m_resourceUsages[subresourceIndex][usageIndex];
-			const auto &prevUsage = usageIndex == 0 ? curUsage : m_resourceUsages[subresourceIndex][usageIndex - 1];
-			const auto &nextUsage = (usageIndex == (usageCount - 1)) ? curUsage : m_resourceUsages[subresourceIndex][usageIndex + 1];
+		for (size_t subresourceIdx = usageOffset; subresourceIdx < usageOffset + resDesc.m_subresourceCount; ++subresourceIdx)
+		{
+			if (m_resourceUsages[subresourceIdx].empty())
+			{
+				continue;
+			}
 
-			const bool imageResource = isImageResource(curUsage.m_usageType);
-			const VkImageLayout previousLayout = usageIndex == 0 ? VK_IMAGE_LAYOUT_UNDEFINED : prevUsage.m_finalLayout;
-			const VkImageLayout currentLayout = getImageLayout(curUsage.m_usageType);
-			const VkImageLayout nextLayout = (usageIndex == (usageCount - 1)) ? currentLayout : getImageLayout(nextUsage.m_usageType);
-			const bool previousWriteAccess = usageIndex == 0 ? false : getRWAccessType(prevUsage.m_usageType) != RWAccessType::READ;
-			const bool currentWriteAccess = getRWAccessType(curUsage.m_usageType) != RWAccessType::READ;
-			const VkQueue currentQueue = passRecordInfo.m_queue;
-			const VkQueue previousQueue = usageIndex == 0 ? currentQueue : m_passRecordInfo[prevUsage.m_passHandle].m_queue;
-			const VkQueue nextQueue = (usageIndex == (usageCount - 1)) ? currentQueue : m_passRecordInfo[nextUsage.m_passHandle].m_queue;
-
-			const bool executionDependency = currentWriteAccess;
-			const bool memoryDependency = previousWriteAccess;
+			struct UsageInfo
+			{
+				uint16_t m_passHandle;
+				VkQueue m_queue;
+				ResourceStateInfo m_stateInfo;
+			};
 
 			VkImageMemoryBarrier imageBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-			imageBarrier.srcAccessMask = previousWriteAccess ? getAccessMask(prevUsage.m_usageType) : 0;
-			imageBarrier.dstAccessMask = getAccessMask(curUsage.m_usageType);
-			imageBarrier.oldLayout = previousLayout;
-			imageBarrier.newLayout = currentLayout;
-			imageBarrier.srcQueueFamilyIndex = getQueueIndex(previousQueue);
-			imageBarrier.dstQueueFamilyIndex = getQueueIndex(currentQueue);
-			imageBarrier.image; // TODO
-			imageBarrier.subresourceRange; // TODO;
+			imageBarrier.image = m_imageBuffers[resourceIdx].image;
 
 			VkBufferMemoryBarrier bufferBarrier{ VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
-			bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
-			bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
-			bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
-			bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
-			bufferBarrier.buffer; // TODO
-			bufferBarrier.offset; // TODO;
-			bufferBarrier.size; // TODO;
+			bufferBarrier.buffer = m_imageBuffers[resourceIdx].buffer;
+			bufferBarrier.offset = resDesc.m_offset;
+			bufferBarrier.size = resDesc.m_size;
 
-			bool addWaitBarrier = false;
+			const VkQueue firstUsageQueue = m_passRecordInfo[m_resourceUsages[subresourceIdx][0].m_passHandle].m_queue;
+			const uint32_t relativeSubresIdx = static_cast<uint32_t>(subresourceIdx - usageOffset);
+			UsageInfo prevUsageInfo{ 0, firstUsageQueue, getResourceStateInfo(ResourceState::UNDEFINED) };
 
-			// acquire resource + schedule wait on semaphore
-			if (previousQueue != currentQueue)
+			// if the resource is external, change prevUsageInfo accordingly, schedule a release barrier if required and update external info values
+			if (resDesc.m_external)
 			{
-				addWaitBarrier = true;
+				const auto &extInfo = m_externalResourceInfo[resDesc.m_externalInfoIndex];
+				const auto externalQueue = extInfo.m_queues[relativeSubresIdx];
 
-				// try to merge dependency with existing dependencies
-				bool foundExistingDependency = false;
-				for (auto &dependency : semaphoreDependencies[passIndex].first)
+				prevUsageInfo.m_queue = externalQueue != undefinedQueue ? externalQueue : prevUsageInfo.m_queue;
+				prevUsageInfo.m_stateInfo = getResourceStateInfo(extInfo.m_resourceStates[relativeSubresIdx]);
+
+				const uint16_t queueIdx = prevUsageInfo.m_queue == m_queues[0] ? 0 : prevUsageInfo.m_queue == m_queues[1] ? 1 : 2;
+
+				prevUsageInfo.m_passHandle = queueIdx;
+
+				// schedule release barrier if queues change
+				if (prevUsageInfo.m_queue != firstUsageQueue)
 				{
-					if (dependency.m_waitedOnPassHandle == prevUsage.m_passHandle)
+					const auto firstUsageStateInfo = getResourceStateInfo(m_resourceUsages[subresourceIdx][0].m_initialResourceState);
+					m_externalReleaseMasks[queueIdx] |= prevUsageInfo.m_stateInfo.m_stageMask;
+					if (resDesc.m_image)
 					{
-						dependency.m_waitDstStageMask |= getStageMask(curUsage.m_usageType, curUsage.m_stageMask);
-						foundExistingDependency = true;
-						break;
+						// set image barrier values
+						imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
+						imageBarrier.dstAccessMask = firstUsageStateInfo.m_accessMask;
+						imageBarrier.oldLayout = prevUsageInfo.m_stateInfo.m_layout;
+						imageBarrier.newLayout = firstUsageStateInfo.m_layout;
+						imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
+						imageBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(firstUsageQueue);
+						imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_layers, 1, relativeSubresIdx / resDesc.m_layers, 1 };
+
+						m_externalReleaseImageBarriers[queueIdx].push_back(imageBarrier);
+					}
+					else
+					{
+						// set buffer barrier values
+						bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
+						bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
+						bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
+						bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
+
+						m_externalReleaseBufferBarriers[queueIdx].push_back(bufferBarrier);
 					}
 				}
-				if (!foundExistingDependency)
-				{
-					const uint16_t semaphoreIndex = semaphoreDependencies[prevUsage.m_passHandle].second++;
-					semaphoreDependencies[passIndex].first.push_back({ getStageMask(curUsage.m_usageType, curUsage.m_stageMask), prevUsage.m_passHandle, semaphoreIndex });
-				}
-			}
-			else
-			{
-				if (imageResource && previousLayout != currentLayout) // image layout transition
-				{
-					addWaitBarrier = true;
-				}
-				else if (memoryDependency)
-				{
-					passRecordInfo.m_memoryBarrierSrcAccessMask |= getAccessMask(prevUsage.m_usageType);
-					passRecordInfo.m_memoryBarrierDstAccessMask |= getAccessMask(curUsage.m_usageType);
-				}
 
-				// schedule wait on event
-				if (executionDependency || memoryDependency)
-				{
-					passRecordInfo.m_eventSrcStages |= getStageMask(prevUsage.m_usageType, prevUsage.m_stageMask);
-					passRecordInfo.m_waitStages |= getStageMask(curUsage.m_usageType, curUsage.m_stageMask);
-					passRecordInfo.m_waitEvents.push_back(VkEvent(prevUsage.m_passHandle));
-
-					m_passRecordInfo[prevUsage.m_passHandle].m_endStages |= getStageMask(prevUsage.m_usageType, prevUsage.m_stageMask);
-				}
+				// update external info values
+				const auto &lastUsage = m_resourceUsages[subresourceIdx].back();
+				extInfo.m_queues[relativeSubresIdx] = m_passRecordInfo[lastUsage.m_passHandle].m_queue;
+				extInfo.m_resourceStates[relativeSubresIdx] = lastUsage.m_finalResourceState;
 			}
 
-			if (addWaitBarrier)
+			if (finalResIdx == resourceIdx)
 			{
-				if (imageResource)
+				finalResourceWaitDstStageMask |= getResourceStateInfo(m_resourceUsages[subresourceIdx][0].m_initialResourceState).m_stageMask;
+			}
+
+			const size_t usageCount = m_resourceUsages[subresourceIdx].size();
+			for (size_t usageIdx = 0; usageIdx < usageCount; ++usageIdx)
+			{
+				const auto &subresUsage = m_resourceUsages[subresourceIdx][usageIdx];
+				auto &passRecordInfo = m_passRecordInfo[subresUsage.m_passHandle];
+
+				if (finalResIdx == resourceIdx && usageIdx == (usageCount - 1))
 				{
-					passRecordInfo.m_imageBarriers.push_back(imageBarrier);
-					// make sure all wait barriers come before all release barriers
-					if (passRecordInfo.m_releaseImageBarrierCount)
+					finalResourceSignalPasses[subresUsage.m_passHandle] = true;
+				}
+
+				UsageInfo curUsageInfo{};
+				curUsageInfo.m_passHandle = subresUsage.m_passHandle;
+				curUsageInfo.m_queue = passRecordInfo.m_queue;
+				curUsageInfo.m_stateInfo = getResourceStateInfo(subresUsage.m_initialResourceState);
+
+				bool scheduleSemaphore = prevUsageInfo.m_queue != curUsageInfo.m_queue;
+				bool addReleaseBarrier = scheduleSemaphore && !resDesc.m_concurrent && !(resDesc.m_external && usageIdx == 0);
+				bool addWaitBarrier = scheduleSemaphore && !resDesc.m_concurrent || resDesc.m_image && prevUsageInfo.m_stateInfo.m_layout != curUsageInfo.m_stateInfo.m_layout; // layout transitions always need a barrier
+
+				// acquire resource + schedule wait on semaphore
+				if (scheduleSemaphore)
+				{
+					bool externalDependency = usageIdx == 0 && resDesc.m_external;
+
+					// try to merge dependency with existing dependencies
+					bool foundExistingDependency = false;
+					for (auto &dependency : semaphoreDependencies[curUsageInfo.m_passHandle].first)
 					{
-						std::swap(passRecordInfo.m_imageBarriers.back(), passRecordInfo.m_imageBarriers[passRecordInfo.m_waitImageBarrierCount]);
+						if (dependency.m_waitedOnPassHandle == prevUsageInfo.m_passHandle && dependency.m_external == externalDependency)
+						{
+							dependency.m_waitDstStageMask |= curUsageInfo.m_stateInfo.m_stageMask;
+							foundExistingDependency = true;
+							break;
+						}
 					}
-					++passRecordInfo.m_waitImageBarrierCount;
+					if (!foundExistingDependency)
+					{
+						const uint16_t semaphoreIndex = externalDependency ? m_externalSemaphoreSignalCounts[prevUsageInfo.m_passHandle]++ : semaphoreDependencies[prevUsageInfo.m_passHandle].second++;
+						semaphoreDependencies[curUsageInfo.m_passHandle].first.push_back({ curUsageInfo.m_stateInfo.m_stageMask, prevUsageInfo.m_passHandle, semaphoreIndex, externalDependency });
+					}
 				}
 				else
 				{
-					passRecordInfo.m_bufferBarriers.push_back(bufferBarrier);
-					// make sure all wait barriers come before all release barriers
-					if (passRecordInfo.m_releaseBufferBarrierCount)
+					if (prevUsageInfo.m_stateInfo.m_writeAccess)
 					{
-						std::swap(passRecordInfo.m_bufferBarriers.back(), passRecordInfo.m_bufferBarriers[passRecordInfo.m_waitBufferBarrierCount]);
+						passRecordInfo.m_memoryBarrierSrcAccessMask |= prevUsageInfo.m_stateInfo.m_accessMask;
+						passRecordInfo.m_memoryBarrierDstAccessMask |= curUsageInfo.m_stateInfo.m_accessMask;
 					}
-					++passRecordInfo.m_waitBufferBarrierCount;
+
+					// schedule wait on event
+					if (prevUsageInfo.m_stateInfo.m_writeAccess || curUsageInfo.m_stateInfo.m_writeAccess)
+					{
+						passRecordInfo.m_eventSrcStages |= prevUsageInfo.m_stateInfo.m_stageMask;
+						
+						// external dependencies use a pipeline barrier and dont wait on events
+						if (!(resDesc.m_external && usageIdx == 0))
+						{
+							passRecordInfo.m_waitEvents.push_back(VkEvent(prevUsageInfo.m_passHandle));
+							m_passRecordInfo[prevUsageInfo.m_passHandle].m_endStages |= prevUsageInfo.m_stateInfo.m_stageMask;
+						}
+					}
 				}
-			}
 
-			// release resource
-			if (currentQueue != nextQueue)
-			{
-				imageBarrier.srcAccessMask = currentWriteAccess ? getAccessMask(curUsage.m_usageType) : 0;
-				imageBarrier.dstAccessMask = getAccessMask(nextUsage.m_usageType);
-				imageBarrier.oldLayout = currentLayout;
-				imageBarrier.newLayout = nextLayout;
-				imageBarrier.srcQueueFamilyIndex = getQueueIndex(currentQueue);
-				imageBarrier.dstQueueFamilyIndex = getQueueIndex(nextQueue);
-
-				bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
-				bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
-				bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
-				bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
-
-				if (imageResource)
+				if (addWaitBarrier)
 				{
-					passRecordInfo.m_imageBarriers.push_back(imageBarrier);
-					++passRecordInfo.m_releaseImageBarrierCount;
-				}
-				else
-				{
-					passRecordInfo.m_bufferBarriers.push_back(bufferBarrier);
-					++passRecordInfo.m_releaseBufferBarrierCount;
+					passRecordInfo.m_waitStages |= curUsageInfo.m_stateInfo.m_stageMask;
+
+					// set image barrier values
+					imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess && !scheduleSemaphore ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
+					imageBarrier.dstAccessMask = curUsageInfo.m_stateInfo.m_accessMask;
+					imageBarrier.oldLayout = prevUsageInfo.m_stateInfo.m_layout;
+					imageBarrier.newLayout = curUsageInfo.m_stateInfo.m_layout;
+					imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
+					imageBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(curUsageInfo.m_queue);
+					imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_layers, 1, relativeSubresIdx / resDesc.m_layers, 1 };
+
+					// set buffer barrier values
+					bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
+					bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
+					bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
+					bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
+
+					if (resDesc.m_image)
+					{
+						passRecordInfo.m_imageBarriers.push_back(imageBarrier);
+						// make sure all wait barriers come before all release barriers
+						if (passRecordInfo.m_releaseImageBarrierCount)
+						{
+							std::swap(passRecordInfo.m_imageBarriers.back(), passRecordInfo.m_imageBarriers[passRecordInfo.m_waitImageBarrierCount]);
+						}
+						++passRecordInfo.m_waitImageBarrierCount;
+					}
+					else
+					{
+						passRecordInfo.m_bufferBarriers.push_back(bufferBarrier);
+						// make sure all wait barriers come before all release barriers
+						if (passRecordInfo.m_releaseBufferBarrierCount)
+						{
+							std::swap(passRecordInfo.m_bufferBarriers.back(), passRecordInfo.m_bufferBarriers[passRecordInfo.m_waitBufferBarrierCount]);
+						}
+						++passRecordInfo.m_waitBufferBarrierCount;
+					}
 				}
 
-				passRecordInfo.m_releaseStages |= getStageMask(curUsage.m_usageType, curUsage.m_stageMask);
-				semaphoreDependencies[passIndex].second = true;
+				// add release barrier to previous pass
+				if (addReleaseBarrier)
+				{
+					// set image barrier values
+					imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
+					imageBarrier.dstAccessMask = curUsageInfo.m_stateInfo.m_accessMask;
+					imageBarrier.oldLayout = prevUsageInfo.m_stateInfo.m_layout;
+					imageBarrier.newLayout = curUsageInfo.m_stateInfo.m_layout;
+					imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
+					imageBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(curUsageInfo.m_queue);
+
+					// set buffer barrier values
+					bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
+					bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
+					bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
+					bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
+
+					auto &prevPassRecordInfo = m_passRecordInfo[prevUsageInfo.m_passHandle];
+
+					if (resDesc.m_image)
+					{
+						prevPassRecordInfo.m_imageBarriers.push_back(imageBarrier);
+						++prevPassRecordInfo.m_releaseImageBarrierCount;
+					}
+					else
+					{
+						prevPassRecordInfo.m_bufferBarriers.push_back(bufferBarrier);
+						++prevPassRecordInfo.m_releaseBufferBarrierCount;
+					}
+
+					prevPassRecordInfo.m_releaseStages |= prevUsageInfo.m_stateInfo.m_stageMask;
+				}
+
+				// update prevUsageInfo
+				prevUsageInfo = curUsageInfo;
+				prevUsageInfo.m_stateInfo = getResourceStateInfo(subresUsage.m_finalResourceState);
 			}
 		}
 	}
 
 	// create events, semaphores and batches
+	uint16_t externalSemaphoreOffsets[3];
+	for (size_t i = 0; i < 3; ++i)
+	{
+		externalSemaphoreOffsets[i] = static_cast<uint32_t>(m_semaphores.size());
+		for (size_t j = 0; j < m_externalSemaphoreSignalCounts[i]; ++j)
+		{
+			m_semaphores.push_back(g_context.m_syncPrimitivePool.acquireSemaphore());
+		}
+	}
+
 	std::vector<uint16_t> semaphoreOffsets(m_passSubresources.size());
 	VkQueue prevQueue = 0;
 	bool startNewBatch = true;
-	for (uint16_t i = 0; i < m_passIndices.size(); ++i)
+	for (uint16_t i = 0; i < m_passHandleOrder.size(); ++i)
 	{
-		const uint16_t passIndex = m_passIndices[i];
-		const auto &semaphoreDependency = semaphoreDependencies[passIndex];
-		VkQueue curQueue = m_passRecordInfo[passIndex].m_queue;
+		const uint16_t passHandle = m_passHandleOrder[i];
+		const auto &semaphoreDependency = semaphoreDependencies[passHandle];
+		VkQueue curQueue = m_passRecordInfo[passHandle].m_queue;
+		const bool waitOnFinalResSemaphore = (m_resourceLifetimes[finalResIdx].first == i && finalResourceWaitSemaphore != VK_NULL_HANDLE);
 
-		// if this pass needs to wait, we need a need batch
 		// if the previous pass needs to signal, startNewBatch is already true
+		// if this pass needs to wait, we need a need batch
 		// if the queue type changed, we also need to start a new batch
-		startNewBatch = startNewBatch || !semaphoreDependency.first.empty() || prevQueue != curQueue;
+		// if this is the first pass to use the final resource and we need to wait on a semaphore...
+		startNewBatch = startNewBatch || !semaphoreDependency.first.empty() || prevQueue != curQueue || waitOnFinalResSemaphore;
 		if (startNewBatch)
 		{
 			startNewBatch = false;
 			m_batches.push_back({});
 			auto &batch = m_batches.back();
+			batch.m_cmdBufOffset = 3 + i;
 			batch.m_passIndexOffset = i;
 			batch.m_queue = curQueue;
 		}
@@ -541,33 +665,43 @@ void VEngine::RenderGraph::createSynchronization()
 		prevQueue = curQueue;
 
 		// some other passes needs to wait on this one -> allocate semaphores, end batch after this pass
-		if (semaphoreDependency.second)
+		if (semaphoreDependency.second || finalResourceSignalPasses[passHandle])
 		{
 			startNewBatch = true;
-			semaphoreOffsets[passIndex] = m_semaphores.size();
-			auto &signalSemaphores = m_batches.back().m_signalSemaphores;
-			signalSemaphores.reserve(semaphoreDependency.second + signalSemaphores.size());
+			semaphoreOffsets[passHandle] = m_semaphores.size();
+			m_batches.back().m_signalSemaphoreOffset = semaphoreOffsets[passHandle];
+			m_batches.back().m_signalSemaphoreCount = semaphoreDependency.second;
 			for (uint16_t semaphoreIndex = 0; semaphoreIndex < semaphoreDependency.second; ++semaphoreIndex)
 			{
-				VkSemaphore semaphore = g_context.m_syncPrimitivePool.acquireSemaphore();
-				signalSemaphores.push_back(semaphore);
-				m_semaphores.push_back(semaphore);
+				m_semaphores.push_back(g_context.m_syncPrimitivePool.acquireSemaphore());
+			}
+			if (finalResourceSignalPasses[passHandle])
+			{
+				++m_batches.back().m_signalSemaphoreCount;
+				m_semaphores.push_back(g_context.m_syncPrimitivePool.acquireSemaphore());
+				m_finalResourceSemaphores.push_back(m_semaphores.back());
 			}
 		}
 
 		// this pass needs to wait on other passes -> fill in wait semaphores and waitDstMasks
-		if (!semaphoreDependency.first.empty())
+		if (!semaphoreDependency.first.empty() || waitOnFinalResSemaphore)
 		{
 			auto &batch = m_batches.back();
 			auto &waitSemaphores = batch.m_waitSemaphores;
 			auto &waitDstMasks = batch.m_waitDstStageMasks;
 			assert(waitSemaphores.size() == waitDstMasks.size());
-			waitSemaphores.reserve(semaphoreDependency.first.size() + waitSemaphores.size());
-			waitDstMasks.reserve(semaphoreDependency.first.size() + waitDstMasks.size());
+			waitSemaphores.reserve(semaphoreDependency.first.size() + waitSemaphores.size() + (waitOnFinalResSemaphore ? 1 : 0));
+			waitDstMasks.reserve(semaphoreDependency.first.size() + waitDstMasks.size() + (waitOnFinalResSemaphore ? 1 : 0));
 			for (const auto &waitDependency : semaphoreDependency.first)
 			{
-				waitSemaphores.push_back(m_semaphores[waitDependency.m_semaphoreIndex + semaphoreOffsets[waitDependency.m_waitedOnPassHandle]]);
+				const auto offset = waitDependency.m_external ? externalSemaphoreOffsets[waitDependency.m_waitedOnPassHandle] : semaphoreOffsets[waitDependency.m_waitedOnPassHandle];
+				waitSemaphores.push_back(m_semaphores[offset + waitDependency.m_semaphoreIndex]);
 				waitDstMasks.push_back(waitDependency.m_waitDstStageMask);
+			}
+			if (waitOnFinalResSemaphore)
+			{
+				waitSemaphores.push_back(finalResourceWaitSemaphore);
+				waitDstMasks.push_back(finalResourceWaitDstStageMask);
 			}
 		}
 
@@ -575,13 +709,12 @@ void VEngine::RenderGraph::createSynchronization()
 
 		// events
 		{
-			auto &passRecordInfo = m_passRecordInfo[passIndex];
+			auto &passRecordInfo = m_passRecordInfo[passHandle];
 
 			// some other pass wants to wait on this one -> allocate event
 			if (passRecordInfo.m_endStages != 0)
 			{
-				VkEvent event = g_context.m_syncPrimitivePool.acquireEvent();
-				passRecordInfo.m_endEvent = event;
+				passRecordInfo.m_endEvent = g_context.m_syncPrimitivePool.acquireEvent();
 			}
 
 			// replace all wait events (currently holding an index) with the actual events
@@ -593,19 +726,60 @@ void VEngine::RenderGraph::createSynchronization()
 			}
 		}
 	}
+
+	// add fence for last batch on each queue
+	for (size_t i = m_batches.size(); i--; )
+	{
+		auto &batch = m_batches[i];
+		const size_t queueIdx = batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2;
+		if (m_fences[queueIdx] == VK_NULL_HANDLE)
+		{
+			m_fences[queueIdx] = g_context.m_syncPrimitivePool.acquireFence();
+			batch.m_fence = m_fences[queueIdx];
+		}
+	}
 }
 
 void VEngine::RenderGraph::record()
 {
+	m_commandBuffers.resize(m_passHandleOrder.size() + 3);
+
+	// release passes for external resources
+	for (size_t i = 0; i < 3; ++i)
+	{
+		if (m_externalSemaphoreSignalCounts[i])
+		{
+			if (!m_externalReleaseBufferBarriers[i].empty() || !m_externalReleaseImageBarriers[i].empty())
+			{
+				// get command buffer
+				VkCommandBuffer cmdBuf = m_commandBuffers[i] = m_commandBufferPool.acquire(getQueueFamilyIndex(m_queues[i]));
+
+				// start recording
+				VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+				vkBeginCommandBuffer(cmdBuf, &beginInfo);
+
+				vkCmdPipelineBarrier(cmdBuf, m_externalReleaseMasks[i], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
+					static_cast<uint32_t>(m_externalReleaseBufferBarriers[i].size()), m_externalReleaseBufferBarriers[i].data(),
+					static_cast<uint32_t>(m_externalReleaseImageBarriers[i].size()), m_externalReleaseImageBarriers[i].data());
+
+				// end recording
+				vkEndCommandBuffer(cmdBuf);
+			}
+		}
+	}
+
+	// record passes
 	for (const auto &batch : m_batches)
 	{
 		for (uint16_t i = 0; i < batch.m_passIndexCount; ++i)
 		{
-			const uint16_t passHandle = m_passIndices[i + batch.m_passIndexOffset];
+			const uint16_t passHandle = m_passHandleOrder[i + batch.m_passIndexOffset];
 			const auto &pass = m_passRecordInfo[passHandle];
 
 			// get command buffer
-			VkCommandBuffer cmdBuf = VK_NULL_HANDLE;
+			VkCommandBuffer cmdBuf = m_commandBuffers[batch.m_cmdBufOffset + i] = m_commandBufferPool.acquire(getQueueFamilyIndex(batch.m_queue));
 
 			// start recording
 			VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -635,7 +809,7 @@ void VEngine::RenderGraph::record()
 			}
 
 			// record commands
-			pass.m_recordFunc(cmdBuf, Registry());
+			pass.m_recordFunc(cmdBuf, Registry(*this, i));
 
 			// release resources
 			if (pass.m_releaseBufferBarrierCount || pass.m_releaseImageBarrierCount)
@@ -656,6 +830,27 @@ void VEngine::RenderGraph::record()
 		}
 	}
 
+	// insert external resource release batches
+	{
+		Batch releaseBatches[3]{};
+		size_t batchCount = 0;
+		uint16_t currentSignalSemaphoreOffset = 0;
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (m_externalSemaphoreSignalCounts[i])
+			{
+				releaseBatches[batchCount].m_cmdBufOffset = static_cast<uint16_t>(i);
+				releaseBatches[batchCount].m_passIndexCount = 1;
+				releaseBatches[batchCount].m_queue = m_queues[i];
+				releaseBatches[batchCount].m_signalSemaphoreOffset = currentSignalSemaphoreOffset;
+				releaseBatches[batchCount].m_signalSemaphoreCount = m_externalSemaphoreSignalCounts[i];
+				currentSignalSemaphoreOffset += m_externalSemaphoreSignalCounts[i];
+				++batchCount;
+			}
+		}
+		m_batches.insert(m_batches.begin(), releaseBatches, releaseBatches + batchCount);
+	}
+
 	// submit all batches
 	for (const auto &batch : m_batches)
 	{
@@ -663,9 +858,10 @@ void VEngine::RenderGraph::record()
 		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(batch.m_waitSemaphores.size());
 		submitInfo.pWaitSemaphores = batch.m_waitSemaphores.data();
 		submitInfo.pWaitDstStageMask = batch.m_waitDstStageMasks.data();
-		//submitInfo.commandBufferCount = static_cast<uint32_t>(batch.m_commandBuffers.size());
-		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(batch.m_signalSemaphores.size());
-		submitInfo.pSignalSemaphores = batch.m_signalSemaphores.data();
+		submitInfo.commandBufferCount = batch.m_passIndexCount;
+		submitInfo.pCommandBuffers = m_commandBuffers.data() + batch.m_cmdBufOffset;
+		submitInfo.signalSemaphoreCount = batch.m_signalSemaphoreCount;
+		submitInfo.pSignalSemaphores = m_semaphores.data() + batch.m_signalSemaphoreOffset;
 
 		if (vkQueueSubmit(batch.m_queue, 1, &submitInfo, batch.m_fence) != VK_SUCCESS)
 		{
@@ -674,7 +870,7 @@ void VEngine::RenderGraph::record()
 	}
 }
 
-uint32_t VEngine::RenderGraph::getQueueIndex(VkQueue queue)
+uint32_t VEngine::RenderGraph::getQueueFamilyIndex(VkQueue queue)
 {
 	for (size_t i = 0; i < 3; ++i)
 	{
@@ -692,221 +888,168 @@ VkQueue VEngine::RenderGraph::getQueue(QueueType queueType)
 	return m_queues[static_cast<size_t>(queueType)];
 }
 
-bool VEngine::RenderGraph::isImageResource(ResourceUsageType usageType)
+VEngine::RenderGraph::ResourceStateInfo VEngine::RenderGraph::getResourceStateInfo(ResourceState resourceState)
 {
-	switch (usageType)
+	switch (resourceState)
 	{
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-	case ResourceUsageType::READ_ATTACHMENT:
-	case ResourceUsageType::READ_TEXTURE:
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-	case ResourceUsageType::WRITE_ATTACHMENT:
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return true;
-	case ResourceUsageType::READ_STORAGE_BUFFER:
-	case ResourceUsageType::READ_UNIFORM_BUFFER:
-	case ResourceUsageType::READ_VERTEX_BUFFER:
-	case ResourceUsageType::READ_INDEX_BUFFER:
-	case ResourceUsageType::READ_INDIRECT_BUFFER:
-	case ResourceUsageType::READ_BUFFER_TRANSFER:
-	case ResourceUsageType::READ_WRITE_STORAGE_BUFFER:
-	case ResourceUsageType::WRITE_BUFFER_TRANSFER:
-		return false;
+	case VEngine::ResourceState::UNDEFINED:
+		return { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, 0, false, false };
+	case VEngine::ResourceState::READ_DEPTH_STENCIL:
+		return { VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, true, false };
+	case VEngine::ResourceState::READ_ATTACHMENT:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_TEXTURE_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_IMAGE_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_UNIFORM_BUFFER_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_UNIFORM_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_VERTEX_BUFFER:
+		return { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_INDEX_BUFFER:
+		return { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_INDEX_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_INDIRECT_BUFFER:
+		return { VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_ACCESS_INDIRECT_COMMAND_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, true, false };
+	case VEngine::ResourceState::READ_BUFFER_TRANSFER:
+		return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true, false };
+	case VEngine::ResourceState::READ_IMAGE_TRANSFER:
+		return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT, true, false };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, true };
+	case VEngine::ResourceState::READ_WRITE_ATTACHMENT:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, true, true };
+	case VEngine::ResourceState::WRITE_DEPTH_STENCIL:
+		return { VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, false, true };
+	case VEngine::ResourceState::WRITE_ATTACHMENT:
+		return { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_STORAGE_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_VERTEX_SHADER:
+		return { VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_TESSC_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_TESSE_SHADER:
+		return { VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_GEOMETRY_SHADER:
+		return { VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,  VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_FRAGMENT_SHADER:
+		return { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER:
+		return { VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, false, true };
+	case VEngine::ResourceState::WRITE_BUFFER_TRANSFER:
+		return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_BUFFER_USAGE_TRANSFER_DST_BIT, false, true };
+	case VEngine::ResourceState::WRITE_IMAGE_TRANSFER:
+		return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT, false, true };
+	case VEngine::ResourceState::PRESENT_IMAGE:
+		return { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 0, true, false };
 	default:
 		assert(false);
+		break;
 	}
-	return false;
+	return ResourceStateInfo();
 }
 
-VkPipelineStageFlags VEngine::RenderGraph::getStageMask(ResourceUsageType usageType, VkPipelineStageFlags flags)
+void VEngine::RenderGraph::forEachSubresource(ResourceViewHandle handle, std::function<void(uint32_t)> func)
 {
-	switch (usageType)
+	const size_t viewIndex = (size_t)handle - 1;
+	const auto &viewDesc = m_viewDescriptions[viewIndex];
+	const size_t resIndex = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_resourceDescriptions[resIndex];
+	const size_t resourceUsagesOffset = m_resourceUsageOffsets[resIndex];
+
+	for (size_t i = 0; i < resDesc.m_subresourceCount; ++i)
 	{
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-		return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	case ResourceUsageType::READ_ATTACHMENT:
-		return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_STORAGE_BUFFER:
-	case ResourceUsageType::READ_TEXTURE:
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-	case ResourceUsageType::READ_STORAGE_BUFFER:
-	case ResourceUsageType::READ_UNIFORM_BUFFER:
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-		return flags;
-	case ResourceUsageType::READ_VERTEX_BUFFER:
-	case ResourceUsageType::READ_INDEX_BUFFER:
-		return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-	case ResourceUsageType::READ_INDIRECT_BUFFER:
-		return VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-	case ResourceUsageType::READ_BUFFER_TRANSFER:
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-	case ResourceUsageType::WRITE_BUFFER_TRANSFER:
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return VK_PIPELINE_STAGE_TRANSFER_BIT;
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-		return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	case ResourceUsageType::WRITE_ATTACHMENT:
-		return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	default:
-		assert(false);
+		func(i + resourceUsagesOffset);
 	}
-	return VkPipelineStageFlags();
 }
 
-VkAccessFlags VEngine::RenderGraph::getAccessMask(ResourceUsageType usageType)
+VEngine::RenderGraph::RenderGraph()
 {
-	switch (usageType)
-	{
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-		return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-	case ResourceUsageType::READ_ATTACHMENT:
-		return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-	case ResourceUsageType::READ_TEXTURE:
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-	case ResourceUsageType::READ_STORAGE_BUFFER:
-		return VK_ACCESS_SHADER_READ_BIT;
-	case ResourceUsageType::READ_UNIFORM_BUFFER:
-		return VK_ACCESS_UNIFORM_READ_BIT;
-	case ResourceUsageType::READ_VERTEX_BUFFER:
-		return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-	case ResourceUsageType::READ_INDEX_BUFFER:
-		return VK_ACCESS_INDEX_READ_BIT;
-	case ResourceUsageType::READ_INDIRECT_BUFFER:
-		return VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-	case ResourceUsageType::READ_BUFFER_TRANSFER:
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-		return VK_ACCESS_TRANSFER_READ_BIT;
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_STORAGE_BUFFER:
-		return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-		return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-		return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	case ResourceUsageType::WRITE_ATTACHMENT:
-		return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-		return VK_ACCESS_SHADER_WRITE_BIT;
-	case ResourceUsageType::WRITE_BUFFER_TRANSFER:
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return VK_ACCESS_TRANSFER_WRITE_BIT;
-	default:
-		assert(false);
-	}
-	return VkAccessFlags();
+	m_queues[0] = g_context.m_graphicsQueue;
+	m_queues[1] = g_context.m_computeQueue;
+	m_queues[2] = g_context.m_transferQueue;
+	m_queueFamilyIndices[0] = g_context.m_queueFamilyIndices.m_graphicsFamily;
+	m_queueFamilyIndices[1] = g_context.m_queueFamilyIndices.m_computeFamily;
+	m_queueFamilyIndices[2] = g_context.m_queueFamilyIndices.m_transferFamily;
 }
 
-VkImageLayout VEngine::RenderGraph::getImageLayout(ResourceUsageType usageType)
+VEngine::RenderGraph::~RenderGraph()
 {
-	switch (usageType)
-	{
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-	case ResourceUsageType::READ_ATTACHMENT:
-	case ResourceUsageType::READ_TEXTURE:
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-		return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-		return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-		return VK_IMAGE_LAYOUT_GENERAL;
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	case ResourceUsageType::WRITE_ATTACHMENT:
-		return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-		return VK_IMAGE_LAYOUT_GENERAL;
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	default:
-		assert(false);
-	}
-	return VkImageLayout();
-}
-
-VEngine::RenderGraph::RWAccessType VEngine::RenderGraph::getRWAccessType(ResourceUsageType usageType)
-{
-	switch (usageType)
-	{
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-	case ResourceUsageType::READ_ATTACHMENT:
-	case ResourceUsageType::READ_TEXTURE:
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-	case ResourceUsageType::READ_STORAGE_BUFFER:
-	case ResourceUsageType::READ_UNIFORM_BUFFER:
-	case ResourceUsageType::READ_VERTEX_BUFFER:
-	case ResourceUsageType::READ_INDEX_BUFFER:
-	case ResourceUsageType::READ_INDIRECT_BUFFER:
-	case ResourceUsageType::READ_BUFFER_TRANSFER:
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-		return RWAccessType::READ;
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_STORAGE_BUFFER:
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-		return RWAccessType::READ_WRITE;
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-	case ResourceUsageType::WRITE_ATTACHMENT:
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::WRITE_BUFFER_TRANSFER:
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return RWAccessType::WRITE;
-	default:
-		assert(false);
-	}
-	return RWAccessType();
-}
-
-VkFlags VEngine::RenderGraph::getUsageFlags(ResourceUsageType usageType)
-{
-	VkBufferUsageFlags;
-	switch (usageType)
-	{
-	case ResourceUsageType::WRITE_DEPTH_STENCIL:
-	case ResourceUsageType::READ_DEPTH_STENCIL:
-		return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	case ResourceUsageType::READ_ATTACHMENT:
-		return VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-	case ResourceUsageType::READ_TEXTURE:
-		return VK_IMAGE_USAGE_SAMPLED_BIT;
-	case ResourceUsageType::READ_STORAGE_BUFFER:
-		return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	case ResourceUsageType::READ_UNIFORM_BUFFER:
-		return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	case ResourceUsageType::READ_VERTEX_BUFFER:
-		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	case ResourceUsageType::READ_INDEX_BUFFER:
-		return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	case ResourceUsageType::READ_INDIRECT_BUFFER:
-		return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-	case ResourceUsageType::READ_BUFFER_TRANSFER:
-		return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	case ResourceUsageType::READ_IMAGE_TRANSFER:
-		return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	case ResourceUsageType::READ_STORAGE_IMAGE:
-	case ResourceUsageType::WRITE_STORAGE_IMAGE:
-	case ResourceUsageType::READ_WRITE_STORAGE_IMAGE:
-		return VK_IMAGE_USAGE_STORAGE_BIT;
-	case ResourceUsageType::READ_WRITE_STORAGE_BUFFER:
-	case ResourceUsageType::READ_WRITE_ATTACHMENT:
-		return VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	case ResourceUsageType::WRITE_ATTACHMENT:
-		return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	case ResourceUsageType::WRITE_BUFFER_TRANSFER:
-		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	case ResourceUsageType::WRITE_IMAGE_TRANSFER:
-		return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	default:
-		assert(false);
-	}
-	return VkFlags();
+	reset();
 }
 
 void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc)
@@ -927,40 +1070,39 @@ void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32
 	for (uint32_t i = 0; i < passResourceUsageCount; ++i)
 	{
 		const auto &usage = passResourceUsages[i];
-		const auto &viewDesc = m_viewDescriptions[(size_t)usage.m_handle - 1];
+		const auto &viewDesc = m_viewDescriptions[(size_t)usage.m_viewHandle - 1];
 		const uint16_t resourceIndex = (uint16_t)viewDesc.m_resourceHandle - 1;
 		const auto &resDesc = m_resourceDescriptions[resourceIndex];
-		const auto &range = viewDesc.m_subresourceRange;
-		const uint16_t subresourceCount = resDesc.m_image ? range.levelCount * range.layerCount : 1;
 
-		m_viewUsages[passIndex].push_back((uint16_t)usage.m_handle - 1);
+		m_viewUsages[passIndex].push_back((uint16_t)usage.m_viewHandle - 1);
 
-		auto rwAccessType = getRWAccessType(usage.m_usageType);
-		passSubresources.m_readSubresourceCount += rwAccessType != RWAccessType::WRITE ? subresourceCount : 0;
-		passSubresources.m_writeSubresourceCount += rwAccessType != RWAccessType::READ ? subresourceCount : 0;
+		const auto stateInfo = getResourceStateInfo(usage.m_resourceState);
+		const auto viewSubresourceCount = viewDesc.m_image ? viewDesc.m_subresourceRange.layerCount * viewDesc.m_subresourceRange.levelCount : 1;
+		passSubresources.m_readSubresourceCount += stateInfo.m_readAccess ? viewSubresourceCount : 0;
+		passSubresources.m_writeSubresourceCount += stateInfo.m_writeAccess ? viewSubresourceCount : 0;
 
-		const ResourceUsage resUsage{ passIndex, usage.m_usageType, usage.m_stageMask, resDesc.m_image && usage.m_finalLayout == VK_IMAGE_LAYOUT_UNDEFINED ? getImageLayout(usage.m_usageType) : usage.m_finalLayout };
-		forEachSubresource(usage.m_handle, [&](uint32_t index) { m_resourceUsages[index].push_back(resUsage); });
+		const ResourceUsage resUsage{ passIndex,usage.m_resourceState, usage.m_customUsage ? usage.m_finalResourceState : usage.m_resourceState };
+		forEachSubresource(usage.m_viewHandle, [&](uint32_t index) {m_resourceUsages[index].push_back(resUsage); });
 	}
 
-	m_passSubresources.reserve(m_passSubresources.size() + passSubresources.m_readSubresourceCount + passSubresources.m_writeSubresourceCount);
+	m_passSubresourceIndices.reserve(m_passSubresourceIndices.size() + passSubresources.m_readSubresourceCount + passSubresources.m_writeSubresourceCount);
 
 	// add read resource indices to list and update resource usages
 	for (uint32_t i = 0; i < passResourceUsageCount; ++i)
 	{
 		const auto &usage = passResourceUsages[i];
-		if (getRWAccessType(usage.m_usageType) != RWAccessType::WRITE)
+		if (getResourceStateInfo(usage.m_resourceState).m_readAccess)
 		{
-			forEachSubresource(usage.m_handle, [&](uint32_t index) { m_passSubresourceIndices.push_back(static_cast<uint16_t>(index)); });
+			forEachSubresource(usage.m_viewHandle, [&](uint32_t index) { m_passSubresourceIndices.push_back(static_cast<uint16_t>(index)); });
 		}
 	}
 	// add write resources
 	for (uint32_t i = 0; i < passResourceUsageCount; ++i)
 	{
 		const auto &usage = passResourceUsages[i];
-		if (getRWAccessType(usage.m_usageType) != RWAccessType::READ)
+		if (getResourceStateInfo(usage.m_resourceState).m_writeAccess)
 		{
-			forEachSubresource(usage.m_handle, [&](uint32_t index) { m_passSubresourceIndices.push_back(static_cast<uint16_t>(index)); });
+			forEachSubresource(usage.m_viewHandle, [&](uint32_t index) { m_passSubresourceIndices.push_back(static_cast<uint16_t>(index)); });
 		}
 	}
 }
@@ -999,6 +1141,7 @@ VEngine::ImageHandle VEngine::RenderGraph::createImage(const ImageDescription &i
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = imageDesc.m_name;
+	resDesc.m_usageFlags = imageDesc.m_usageFlags;
 	resDesc.m_clear = imageDesc.m_clear;
 	resDesc.m_clearValue = imageDesc.m_clearValue;
 	resDesc.m_width = imageDesc.m_width;
@@ -1010,6 +1153,7 @@ VEngine::ImageHandle VEngine::RenderGraph::createImage(const ImageDescription &i
 	resDesc.m_imageType = imageDesc.m_imageType;
 	resDesc.m_format = imageDesc.m_format;
 	resDesc.m_subresourceCount = resDesc.m_layers * resDesc.m_levels;
+	resDesc.m_concurrent = imageDesc.m_concurrent;
 	resDesc.m_image = true;
 
 	m_resourceDescriptions.push_back(resDesc);
@@ -1026,10 +1170,13 @@ VEngine::BufferHandle VEngine::RenderGraph::createBuffer(const BufferDescription
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = bufferDesc.m_name;
+	resDesc.m_usageFlags = bufferDesc.m_usageFlags;
 	resDesc.m_clear = bufferDesc.m_clear;
 	resDesc.m_clearValue = bufferDesc.m_clearValue;
+	resDesc.m_offset = 0;
 	resDesc.m_size = bufferDesc.m_size;
 	resDesc.m_subresourceCount = 1;
+	resDesc.m_concurrent = bufferDesc.m_concurrent;
 
 	m_resourceDescriptions.push_back(resDesc);
 	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));
@@ -1038,16 +1185,239 @@ VEngine::BufferHandle VEngine::RenderGraph::createBuffer(const BufferDescription
 	return BufferHandle(m_resourceDescriptions.size());
 }
 
-VEngine::ImageHandle VEngine::RenderGraph::importImage(const ImageDescription &imageDescription, VkImage image, VkImageView imageView, VkImageLayout *layouts, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
+VEngine::ImageHandle VEngine::RenderGraph::importImage(const ImageDescription &imageDesc, VkImage image, VkQueue *queues, ResourceState *resourceStates)
 {
-	return ImageHandle();
+	ResourceDescription resDesc{};
+	resDesc.m_name = imageDesc.m_name;
+	resDesc.m_usageFlags = imageDesc.m_usageFlags;
+	resDesc.m_clear = imageDesc.m_clear;
+	resDesc.m_clearValue = imageDesc.m_clearValue;
+	resDesc.m_width = imageDesc.m_width;
+	resDesc.m_height = imageDesc.m_height;
+	resDesc.m_depth = imageDesc.m_depth;
+	resDesc.m_layers = imageDesc.m_layers;
+	resDesc.m_levels = imageDesc.m_levels;
+	resDesc.m_samples = imageDesc.m_samples;
+	resDesc.m_imageType = imageDesc.m_imageType;
+	resDesc.m_format = imageDesc.m_format;
+	resDesc.m_subresourceCount = resDesc.m_layers * resDesc.m_levels;
+	resDesc.m_externalInfoIndex = static_cast<uint16_t>(m_externalResourceInfo.size());
+	resDesc.m_concurrent = imageDesc.m_concurrent;
+	resDesc.m_external = true;
+	resDesc.m_image = true;
+
+	m_resourceDescriptions.push_back(resDesc);
+	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));
+	for (size_t i = 0; i < resDesc.m_subresourceCount; ++i)
+	{
+		m_resourceUsages.push_back({});
+	}
+
+	m_imageBuffers.resize(m_resourceDescriptions.size());
+	m_imageBuffers.back().image = image;
+
+	m_externalResourceInfo.push_back({ queues, resourceStates });
+
+	return ImageHandle(m_resourceDescriptions.size());
 }
 
-VEngine::BufferHandle VEngine::RenderGraph::importBuffer(const BufferDescription &bufferDescription, VkBuffer buffer, VkDeviceSize offset, VKAllocationHandle allocation, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore)
+VEngine::BufferHandle VEngine::RenderGraph::importBuffer(const BufferDescription &bufferDesc, VkBuffer buffer, VkDeviceSize offset, VkQueue *queue, ResourceState *resourceState)
 {
-	return BufferHandle();
+	ResourceDescription resDesc{};
+	resDesc.m_name = bufferDesc.m_name;
+	resDesc.m_usageFlags = bufferDesc.m_usageFlags;
+	resDesc.m_clear = bufferDesc.m_clear;
+	resDesc.m_clearValue = bufferDesc.m_clearValue;
+	resDesc.m_offset = offset;
+	resDesc.m_size = bufferDesc.m_size;
+	resDesc.m_subresourceCount = 1;
+	resDesc.m_externalInfoIndex = static_cast<uint16_t>(m_externalResourceInfo.size());
+	resDesc.m_concurrent = bufferDesc.m_concurrent;
+	resDesc.m_external = true;
+
+	m_resourceDescriptions.push_back(resDesc);
+	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));
+	m_resourceUsages.push_back({});
+
+	m_imageBuffers.resize(m_resourceDescriptions.size());
+	m_imageBuffers.back().buffer = buffer;
+
+	m_externalResourceInfo.push_back({ queue, resourceState });
+
+	return BufferHandle(m_resourceDescriptions.size());
 }
 
 void VEngine::RenderGraph::reset()
 {
+	// wait on fences
+	{
+		VkFence fences[3];
+		uint32_t fenceCount = 0;
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (m_fences[i] != VK_NULL_HANDLE)
+			{
+				fences[fenceCount++] = m_fences[i];
+			}
+		}
+		if (fenceCount)
+		{
+			if (vkWaitForFences(g_context.m_device, fenceCount, fences, VK_TRUE, std::numeric_limits<uint64_t>::max()) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to wait on fences!", EXIT_FAILURE);
+			}
+		}
+	}
+
+	assert(g_context.m_syncPrimitivePool.checkIntegrity());
+
+	// release semaphores
+	for (auto semaphore : m_semaphores)
+	{
+		if (semaphore != VK_NULL_HANDLE)
+		{
+			g_context.m_syncPrimitivePool.freeSemaphore(semaphore);
+		}
+	}
+
+	// release events
+	for (const auto &recordInfo : m_passRecordInfo)
+	{
+		if (recordInfo.m_endEvent != VK_NULL_HANDLE)
+		{
+			g_context.m_syncPrimitivePool.freeEvent(recordInfo.m_endEvent);
+		}
+	}
+
+	// release fences
+	for (size_t i = 0; i < 3; ++i)
+	{
+		if (m_fences[i] != VK_NULL_HANDLE)
+		{
+			g_context.m_syncPrimitivePool.freeFence(m_fences[i]);
+		}
+	}
+
+	// destroy internal resources
+	for (size_t i = 0; i < m_resourceDescriptions.size(); ++i)
+	{
+		const auto &resDesc = m_resourceDescriptions[i];
+		if (m_culledResources[i] && !resDesc.m_external)
+		{
+			if (resDesc.m_image)
+			{
+				g_context.m_allocator.destroyImage(m_imageBuffers[i].image, m_allocations[i]);
+			}
+			else
+			{
+				g_context.m_allocator.destroyBuffer(m_imageBuffers[i].buffer, m_allocations[i]);
+			}
+		}
+	}
+
+	// destroy views
+	for (size_t i = 0; i < m_viewDescriptions.size(); ++i)
+	{
+		if (m_culledViews[i])
+		{
+			if (m_viewDescriptions[i].m_image)
+			{
+				vkDestroyImageView(g_context.m_device, m_imageBufferViews[i].imageView, nullptr);
+			}
+			else if (m_imageBufferViews[i].bufferView != VK_NULL_HANDLE)
+			{
+				vkDestroyBufferView(g_context.m_device, m_imageBufferViews[i].bufferView, nullptr);
+			}
+		}
+	}
+
+	// clear vectors
+	{
+		m_passSubresourceIndices.clear();
+		m_passSubresources.clear();
+		m_resourceDescriptions.clear();
+		m_externalResourceInfo.clear();
+		m_resourceUsages.clear();
+		m_resourceUsageOffsets.clear();
+		m_resourceLifetimes.clear();
+		m_culledResources.clear();
+		m_viewDescriptions.clear();
+		m_viewUsages.clear();
+		m_culledViews.clear();
+		m_allocations.clear();
+		m_imageBuffers.clear();
+		m_imageBufferViews.clear();
+		m_semaphores.clear();
+		m_finalResourceSemaphores.clear();
+		m_passHandleOrder.clear();
+		m_commandBuffers.clear();
+		m_batches.clear();
+		m_passRecordInfo.clear();
+		memset(m_fences, 0, sizeof(m_fences));
+		memset(m_externalSemaphoreSignalCounts, 0, sizeof(m_externalSemaphoreSignalCounts));
+		memset(m_externalReleaseMasks, 0, sizeof(m_externalReleaseMasks));
+		for (size_t i = 0; i < 3; ++i)
+		{
+			m_externalReleaseImageBarriers[i].clear();
+			m_externalReleaseBufferBarriers[i].clear();
+		}
+	}
+
+	m_commandBufferPool.reset();
+}
+
+void VEngine::RenderGraph::execute(ResourceViewHandle finalResourceHandle, VkSemaphore waitSemaphore, uint32_t *signalSemaphoreCount, VkSemaphore **signalSemaphores, ResourceState finalResourceState, QueueType queueType)
+{
+	createPasses(finalResourceHandle, finalResourceState, queueType);
+	createResources();
+	createSynchronization(finalResourceHandle, waitSemaphore);
+	record();
+	*signalSemaphoreCount = static_cast<uint32_t>(m_finalResourceSemaphores.size());
+	*signalSemaphores = m_finalResourceSemaphores.data();
+}
+
+VEngine::Registry::Registry(const RenderGraph &graph, uint16_t passHandleIndex)
+	:m_graph(graph),
+	m_passHandleIndex(passHandleIndex)
+{
+}
+
+VkImage VEngine::Registry::getImage(ImageHandle handle) const
+{
+	return m_graph.m_imageBuffers[(size_t)handle - 1].image;
+}
+
+VkImage VEngine::Registry::getImage(ImageViewHandle handle) const
+{
+	return m_graph.m_imageBuffers[(size_t)m_graph.m_viewDescriptions[(size_t)handle - 1].m_resourceHandle - 1].image;
+}
+
+VkImageView VEngine::Registry::getImageView(ImageViewHandle handle) const
+{
+	return m_graph.m_imageBufferViews[(size_t)handle - 1].imageView;
+}
+
+VkBuffer VEngine::Registry::getBuffer(BufferHandle handle) const
+{
+	return m_graph.m_imageBuffers[(size_t)handle - 1].buffer;
+}
+
+VkBuffer VEngine::Registry::getBuffer(BufferViewHandle handle) const
+{
+	return m_graph.m_imageBuffers[(size_t)m_graph.m_viewDescriptions[(size_t)handle - 1].m_resourceHandle - 1].buffer;
+}
+
+VkBufferView VEngine::Registry::getBufferView(BufferViewHandle handle) const
+{
+	return m_graph.m_imageBufferViews[(size_t)handle - 1].bufferView;
+}
+
+bool VEngine::Registry::firstUse(ResourceHandle handle) const
+{
+	return m_passHandleIndex == m_graph.m_resourceLifetimes[(size_t)handle - 1].first;
+}
+
+bool VEngine::Registry::lastUse(ResourceHandle handle) const
+{
+	return m_passHandleIndex == m_graph.m_resourceLifetimes[(size_t)handle - 1].second;
 }

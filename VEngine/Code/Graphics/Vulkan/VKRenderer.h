@@ -6,10 +6,7 @@
 
 namespace VEngine
 {
-	namespace FrameGraph
-	{
-		class Graph;
-	}
+	class RenderGraph;
 	struct VKRenderResources;
 	class VKTextureLoader;
 	class VKSwapChain;
@@ -46,7 +43,7 @@ namespace VEngine
 		std::unique_ptr<VKMaterialManager> m_materialManager;
 		std::unique_ptr<VKMeshManager> m_meshManager;
 		std::unique_ptr<VKSwapChain> m_swapChain;
-		std::unique_ptr<FrameGraph::Graph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
+		std::unique_ptr<RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
 
 		uint32_t m_width;
 		uint32_t m_height;
