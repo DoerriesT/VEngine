@@ -200,7 +200,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKPipelineCache.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderer.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\VKRenderGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKRenderResources.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKResourceDefinitions.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h" />
@@ -271,7 +270,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKPipelineCache.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderer.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\VKRenderGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKRenderResources.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\SyncPrimitivePool.cpp" />
