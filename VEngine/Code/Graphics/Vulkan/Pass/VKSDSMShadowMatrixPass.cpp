@@ -50,7 +50,7 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(RenderGraph &graph, const Data 
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		PushConsts pushConsts;
-		pushConsts.cameraViewToLightView = data.m_lightView * data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
+		pushConsts.cameraViewToLightView = data.m_lightView * data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
 		pushConsts.lightView = data.m_lightView;
 
 		assert(pushConsts.lightView[3][1] == 0.0f);

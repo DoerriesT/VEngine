@@ -24,7 +24,7 @@ void VEngine::VKTAAResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 		{ResourceViewHandle(data.m_velocityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_taaHistoryImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_lightImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
-		{ResourceViewHandle(data.m_lightImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_taaResolveImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
 	};
 
 	graph.addPass("TAA Resolve", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)

@@ -158,5 +158,7 @@ void VEngine::VKVelocityInitializationPass::addToGraph(RenderGraph &graph, const
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(reprojectionMatrix), &reprojectionMatrix);
 
 		vkCmdDraw(cmdBuf, 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(cmdBuf);
 	});
 }

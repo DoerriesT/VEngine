@@ -1,5 +1,6 @@
 #include "DeferredObjectDeleter.h"
 #include "VKContext.h"
+#include <algorithm>
 
 VEngine::DeferredObjectDeleter::~DeferredObjectDeleter()
 {
@@ -20,6 +21,9 @@ void VEngine::DeferredObjectDeleter::update(uint64_t currentFrameIndex, uint64_t
 			vkDestroyFramebuffer(g_context.m_device, fb.first, nullptr);
 		}
 	}
+
+	// remove destroyed framebuffers from list
+	m_framebuffers.erase(std::remove_if(m_framebuffers.begin(), m_framebuffers.end(), [&](const auto fb) { return fb.second == frameIndexToRelease; }), m_framebuffers.end());
 }
 
 void VEngine::DeferredObjectDeleter::add(VkFramebuffer framebuffer)
