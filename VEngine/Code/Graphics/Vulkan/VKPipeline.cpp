@@ -2,16 +2,21 @@
 #include "Utility/Utility.h"
 #include <cassert>
 
-void VEngine::VKRenderPassDescription::finalize()
+void VEngine::RenderPassDescription::finalize()
 {
-	if (!m_depthStencilAttachmentPresent)
-	{
-		m_depthStencilAttachment = {};
-	}
-
 	m_hashValue = 0;
 
-	for (size_t i = 0; i < sizeof(VKRenderPassDescription) - sizeof(m_hashValue); ++i)
+	for (size_t i = 0; i < sizeof(RenderPassDescription); ++i)
+	{
+		Utility::hashCombine(m_hashValue, reinterpret_cast<const char *>(this)[i]);
+	}
+}
+
+void VEngine::RenderPassCompatibilityDescription::finalize()
+{
+	m_hashValue = 0;
+
+	for (size_t i = 0; i < sizeof(RenderPassCompatibilityDescription); ++i)
 	{
 		Utility::hashCombine(m_hashValue, reinterpret_cast<const char *>(this)[i]);
 	}
@@ -37,7 +42,12 @@ void VEngine::VKComputePipelineDescription::finalize()
 	}
 }
 
-size_t VEngine::VKRenderPassDescriptionHash::operator()(const VKRenderPassDescription &value) const
+size_t VEngine::RenderPassDescriptionHash::operator()(const RenderPassDescription & value) const
+{
+	return value.m_hashValue;
+}
+
+size_t VEngine::RenderPassCompatibilityDescriptionHash::operator()(const RenderPassCompatibilityDescription & value) const
 {
 	return value.m_hashValue;
 }
@@ -55,7 +65,7 @@ size_t VEngine::VKComputePipelineDescriptionHash::operator()(const VKComputePipe
 size_t VEngine::VKCombinedGraphicsPipelineRenderPassDescriptionHash::operator()(const VKCombinedGraphicsPipelineRenderPassDescription &value) const
 {
 	size_t result = value.m_graphicsPipelineDescription.m_hashValue;
-	Utility::hashCombine(result, value.m_renderPassDescription.m_hashValue);
+	Utility::hashCombine(result, value.m_renderPassCompatibilityDescription.m_hashValue);
 	return result;
 }
 

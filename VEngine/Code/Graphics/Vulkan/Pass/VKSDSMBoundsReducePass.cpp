@@ -4,6 +4,8 @@
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -11,18 +13,20 @@ namespace
 #include "../../../../../Application/Resources/Shaders/sdsmBoundsReduce_bindings.h"
 }
 
-void VEngine::VKSDSMBoundsReducePass::addToGraph(FrameGraph::Graph & graph, const Data & data)
+void VEngine::VKSDSMBoundsReducePass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("SDSM Bounds Reduce Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readStorageBuffer(data.m_splitsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_splitsBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_partitionBoundsBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+	};
 
-		builder.readWriteStorageBuffer(data.m_partitionBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[=](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("SDSM Bounds Reduce", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
@@ -31,21 +35,16 @@ void VEngine::VKSDSMBoundsReducePass::addToGraph(FrameGraph::Graph & graph, cons
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// depth image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, data.m_renderResources->m_pointSamplerClamp), DEPTH_IMAGE_BINDING);
-
-			// partition bounds buffer
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_pointSamplerClamp), DEPTH_IMAGE_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_partitionBoundsBufferHandle), PARTITION_BOUNDS_BINDING);
-
-			// splits buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_splitsBufferHandle), SPLITS_BINDING);
 
 			writer.commit();
@@ -55,10 +54,10 @@ void VEngine::VKSDSMBoundsReducePass::addToGraph(FrameGraph::Graph & graph, cons
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		PushConsts pushConsts;
-		pushConsts.invProjection = data.m_invProjection;
+		pushConsts.invProjection = data.m_passRecordContext->m_commonRenderData->m_invProjectionMatrix;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
-		
-		VKUtility::dispatchComputeHelper(cmdBuf, data.m_width / 4, data.m_height / 4, 1, 16, 16, 1);
+
+		VKUtility::dispatchComputeHelper(cmdBuf, width / 4, height / 4, 1, 16, 16, 1);
 	});
 }

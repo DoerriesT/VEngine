@@ -5,6 +5,11 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/Vulkan/RenderPassCache.h"
+#include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/DeferredObjectDeleter.h"
+#include "Utility/Utility.h"
 
 namespace
 {
@@ -12,20 +17,82 @@ namespace
 #include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
 }
 
-void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
+void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addGraphicsPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", data.m_width, data.m_height,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readIndirectBuffer(data.m_indirectBufferHandle);
-		builder.writeDepthStencil(data.m_depthImageHandle);
-		builder.writeColorAttachment(data.m_uvImageHandle, OUT_UV);
-		builder.writeColorAttachment(data.m_ddxyLengthImageHandle, OUT_DDXY_LENGTH);
-		builder.writeColorAttachment(data.m_ddxyRotMaterialIdImageHandle, OUT_DDXY_ROTATION_MATERIAL_ID);
-		builder.writeColorAttachment(data.m_tangentSpaceImageHandle, OUT_TANGENT_SPACE);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
+		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
+		{ResourceViewHandle(data.m_uvImageHandle), ResourceState::WRITE_ATTACHMENT},
+		{ResourceViewHandle(data.m_ddxyLengthImageHandle), ResourceState::WRITE_ATTACHMENT},
+		{ResourceViewHandle(data.m_ddxyRotMaterialIdImageHandle), ResourceState::WRITE_ATTACHMENT},
+		{ResourceViewHandle(data.m_tangentSpaceImageHandle), ResourceState::WRITE_ATTACHMENT},
+	};
+
+	graph.addPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
+		// begin renderpass
+		VkRenderPass renderPass;
+		RenderPassCompatibilityDescription renderPassCompatDesc;
+		{
+			RenderPassDescription renderPassDesc{};
+			renderPassDesc.m_attachmentCount = 5;
+			renderPassDesc.m_subpassCount = 1;
+			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_depthImageHandle, ResourceState::WRITE_DEPTH_STENCIL, true);
+			renderPassDesc.m_attachments[1] = registry.getAttachmentDescription(data.m_uvImageHandle, ResourceState::WRITE_ATTACHMENT);
+			renderPassDesc.m_attachments[2] = registry.getAttachmentDescription(data.m_ddxyLengthImageHandle, ResourceState::WRITE_ATTACHMENT);
+			renderPassDesc.m_attachments[3] = registry.getAttachmentDescription(data.m_ddxyRotMaterialIdImageHandle, ResourceState::WRITE_ATTACHMENT);
+			renderPassDesc.m_attachments[4] = registry.getAttachmentDescription(data.m_tangentSpaceImageHandle, ResourceState::WRITE_ATTACHMENT);
+			renderPassDesc.m_subpasses[0] = { 0, 4, true, 0 };
+			renderPassDesc.m_subpasses[0].m_colorAttachments[0] = { 1, renderPassDesc.m_attachments[1].initialLayout };
+			renderPassDesc.m_subpasses[0].m_colorAttachments[1] = { 2, renderPassDesc.m_attachments[2].initialLayout };
+			renderPassDesc.m_subpasses[0].m_colorAttachments[2] = { 3, renderPassDesc.m_attachments[3].initialLayout };
+			renderPassDesc.m_subpasses[0].m_colorAttachments[3] = { 4, renderPassDesc.m_attachments[4].initialLayout };
+			renderPassDesc.m_subpasses[0].m_depthStencilAttachment = { 0, renderPassDesc.m_attachments[0].initialLayout };
+
+			data.m_passRecordContext->m_renderPassCache->getRenderPass(renderPassDesc, renderPassCompatDesc, renderPass);
+
+			VkFramebuffer framebuffer;
+			VkImageView attachmentViews[] = 
+			{
+				registry.getImageView(data.m_depthImageHandle),
+				registry.getImageView(data.m_uvImageHandle),
+				registry.getImageView(data.m_ddxyLengthImageHandle),
+				registry.getImageView(data.m_ddxyRotMaterialIdImageHandle),
+				registry.getImageView(data.m_tangentSpaceImageHandle),
+			};
+
+			VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+			framebufferCreateInfo.renderPass = renderPass;
+			framebufferCreateInfo.attachmentCount = renderPassDesc.m_attachmentCount;
+			framebufferCreateInfo.pAttachments = attachmentViews;
+			framebufferCreateInfo.width = width;
+			framebufferCreateInfo.height = height;
+			framebufferCreateInfo.layers = 1;
+
+			if (vkCreateFramebuffer(g_context.m_device, &framebufferCreateInfo, nullptr, &framebuffer) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create framebuffer!", EXIT_FAILURE);
+			}
+
+			data.m_passRecordContext->m_deferredObjectDeleter->add(framebuffer);
+
+			VkClearValue clearValues[5];
+			clearValues[0].depthStencil = { 0.0f, 0 };
+
+			VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+			renderPassBeginInfo.renderPass = renderPass;
+			renderPassBeginInfo.framebuffer = framebuffer;
+			renderPassBeginInfo.renderArea = { {}, {width, height} };
+			renderPassBeginInfo.clearValueCount = renderPassDesc.m_attachmentCount;
+			renderPassBeginInfo.pClearValues = clearValues;
+
+			vkCmdBeginRenderPass(cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
@@ -87,61 +154,57 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc, *renderPassDescription, renderPass);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc, renderPassCompatDesc, 0, renderPass);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// instance data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
-
-			// transform data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 
 			if (data.m_alphaMasked)
 			{
-				// material data
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
 			}
-			
+
 			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
 
-		VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_renderResources->m_textureDescriptorSet };
+		VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, data.m_alphaMasked ? 2 : 1, descriptorSets, 0, nullptr);
 
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(data.m_width);
-		viewport.height = static_cast<float>(data.m_height);
+		viewport.width = static_cast<float>(width);
+		viewport.height = static_cast<float>(height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor;
 		scissor.offset = { 0, 0 };
-		scissor.extent = { data.m_width, data.m_height };
+		scissor.extent = { width, height };
 
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-		VkBuffer vertexBuffer = data.m_renderResources->m_vertexBuffer.getBuffer();
+		VkBuffer vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer.getBuffer();
 		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer, vertexBuffer };
-		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal))};
+		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)) };
 
 		vkCmdBindVertexBuffers(cmdBuf, 0, 3, vertexBuffers, vertexBufferOffsets);
 
-		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_viewMatrix);
+		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
 
 		PushConsts pushConsts;
-		pushConsts.jitteredViewProjectionMatrix = data.m_jitteredViewProjectionMatrix;
+		pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
 		pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
 		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
 		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
@@ -149,5 +212,7 @@ void VEngine::VKGeometryPass::addToGraph(FrameGraph::Graph &graph, const Data &d
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
+
+		vkCmdEndRenderPass(cmdBuf);
 	});
 }

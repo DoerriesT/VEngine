@@ -13,7 +13,7 @@ namespace VEngine
 		{
 		public:
 			enum { MAX_ENTRY_COUNT = 32 };
-			
+
 			explicit SpecializationInfo();
 
 			void addEntry(uint32_t constantID, int32_t value);
@@ -33,13 +33,55 @@ namespace VEngine
 		SpecializationInfo m_specializationInfo;
 	};
 
-	struct VKRenderPassDescription
+	struct RenderPassDescription
 	{
 		enum
 		{
 			MAX_INPUT_ATTACHMENTS = 8,
 			MAX_COLOR_ATTACHMENTS = 8,
 			MAX_ATTACHMENTS = MAX_INPUT_ATTACHMENTS + MAX_COLOR_ATTACHMENTS + 1, // +1 is for depth attachment
+			MAX_SUBPASSES = 4,
+			MAX_DEPENDENCIES = MAX_SUBPASSES * MAX_SUBPASSES, // should be enough for each subpass to have a dependency to all previous subpasses
+		};
+
+		struct SubpassDescription
+		{
+			uint8_t m_inputAttachmentCount = 0;
+			uint8_t m_colorAttachmentCount = 0;
+			bool m_depthStencilAttachmentPresent = false;
+			uint8_t m_preserveAttachmentCount = 0;
+			VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
+			VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
+			VkAttachmentReference m_resolveAttachments[MAX_COLOR_ATTACHMENTS] = {};
+			VkAttachmentReference m_depthStencilAttachment = {};
+			uint32_t m_preserveAttachments[MAX_ATTACHMENTS];
+		};
+
+		uint8_t m_attachmentCount = 0;
+		uint8_t m_subpassCount = 1;
+		uint8_t m_dependencyCount = 0;
+		VkAttachmentDescription m_attachments[MAX_ATTACHMENTS] = {};
+		SubpassDescription m_subpasses[MAX_SUBPASSES] = {};
+		VkSubpassDependency m_dependencies[MAX_DEPENDENCIES] = {};
+		size_t m_hashValue;
+
+		// cleans up array elements past array count and precomputes a hash value
+		void finalize();
+	};
+
+	struct RenderPassCompatibilityDescription
+	{
+		struct SubpassDescription
+		{
+			uint8_t m_inputAttachmentCount = 0;
+			uint8_t m_colorAttachmentCount = 0;
+			bool m_depthStencilAttachmentPresent = false;
+			uint8_t m_preserveAttachmentCount = 0;
+			uint8_t m_inputAttachments[RenderPassDescription::MAX_INPUT_ATTACHMENTS] = {};
+			uint8_t m_colorAttachments[RenderPassDescription::MAX_COLOR_ATTACHMENTS] = {};
+			uint8_t m_resolveAttachments[RenderPassDescription::MAX_COLOR_ATTACHMENTS] = {};
+			uint8_t m_depthStencilAttachment = {};
+			uint32_t m_preserveAttachments[RenderPassDescription::MAX_ATTACHMENTS];
 		};
 
 		struct AttachmentDescription
@@ -48,15 +90,12 @@ namespace VEngine
 			VkSampleCountFlagBits m_samples;
 		};
 
-		uint32_t m_attachmentCount = 0;
-		AttachmentDescription m_attachments[MAX_ATTACHMENTS] = {};
-		uint32_t m_inputAttachmentCount = 0;
-		VkAttachmentReference m_inputAttachments[MAX_INPUT_ATTACHMENTS] = {};
-		uint32_t m_colorAttachmentCount = 0;
-		VkAttachmentReference m_colorAttachments[MAX_COLOR_ATTACHMENTS] = {};
-		std::bitset<MAX_COLOR_ATTACHMENTS> m_resolveAttachments;
-		bool m_depthStencilAttachmentPresent = false;
-		VkAttachmentReference m_depthStencilAttachment = {};
+		uint8_t m_attachmentCount = 0;
+		uint8_t m_subpassCount = 0;
+		uint8_t m_dependencyCount = 0;
+		AttachmentDescription m_attachments[RenderPassDescription::MAX_ATTACHMENTS] = {};
+		SubpassDescription m_subpasses[RenderPassDescription::MAX_SUBPASSES] = {};
+		VkSubpassDependency m_dependencies[RenderPassDescription::MAX_DEPENDENCIES] = {};
 		size_t m_hashValue;
 
 		// cleans up array elements past array count and precomputes a hash value
@@ -93,7 +132,7 @@ namespace VEngine
 		{
 			uint32_t m_patchControlPoints = 0;
 		};
-		
+
 		struct ViewportState
 		{
 			uint32_t m_viewportCount = 0;
@@ -101,7 +140,7 @@ namespace VEngine
 			uint32_t m_scissorCount = 0;
 			VkRect2D m_scissors[MAX_SCISSORS] = {};
 		};
-		
+
 		struct RasterizationState
 		{
 			bool m_depthClampEnable = false;
@@ -125,7 +164,7 @@ namespace VEngine
 			bool m_alphaToCoverageEnable = false;
 			bool m_alphaToOneEnable = false;
 		};
-		
+
 		struct DepthStencilState
 		{
 			bool m_depthTestEnable = false;
@@ -186,10 +225,16 @@ namespace VEngine
 	struct VKCombinedGraphicsPipelineRenderPassDescription
 	{
 		VKGraphicsPipelineDescription m_graphicsPipelineDescription;
-		VKRenderPassDescription m_renderPassDescription;
+		RenderPassCompatibilityDescription m_renderPassCompatibilityDescription;
+		uint32_t m_subpassIndex;
 	};
 
-	inline bool operator==(const VKRenderPassDescription &lhs, const VKRenderPassDescription &rhs)
+	inline bool operator==(const RenderPassDescription &lhs, const RenderPassDescription &rhs)
+	{
+		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+	}
+
+	inline bool operator==(const RenderPassCompatibilityDescription &lhs, const RenderPassCompatibilityDescription &rhs)
 	{
 		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
 	}
@@ -209,9 +254,14 @@ namespace VEngine
 		return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
 	}
 
-	struct VKRenderPassDescriptionHash
+	struct RenderPassDescriptionHash
 	{
-		size_t operator()(const VKRenderPassDescription &value) const;
+		size_t operator()(const RenderPassDescription &value) const;
+	};
+
+	struct RenderPassCompatibilityDescriptionHash
+	{
+		size_t operator()(const RenderPassCompatibilityDescription &value) const;
 	};
 
 	struct VKGraphicsPipelineDescriptionHash

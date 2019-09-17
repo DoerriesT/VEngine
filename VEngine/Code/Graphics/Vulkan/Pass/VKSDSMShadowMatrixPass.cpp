@@ -4,6 +4,8 @@
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -12,16 +14,15 @@ namespace
 }
 
 
-void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, const Data & data)
+void VEngine::VKSDSMShadowMatrixPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("SDSM Shadow Matrix Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readStorageBuffer(data.m_partitionBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_partitionBoundsBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_shadowDataBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+	};
 
-		builder.writeStorageBuffer(data.m_shadowDataBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[=](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("SDSM Shadow Matrices", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
@@ -31,18 +32,15 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, cons
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// partition bounds buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_partitionBoundsBufferHandle), PARTITION_BOUNDS_BINDING);
-
-			// shadow data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_shadowDataBufferHandle), SHADOW_DATA_BINDING);
 
 			writer.commit();
@@ -52,7 +50,7 @@ void VEngine::VKSDSMShadowMatrixPass::addToGraph(FrameGraph::Graph & graph, cons
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		PushConsts pushConsts;
-		pushConsts.cameraViewToLightView = data.m_cameraViewToLightView;
+		pushConsts.cameraViewToLightView = data.m_lightView * data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 		pushConsts.lightView = data.m_lightView;
 
 		assert(pushConsts.lightView[3][1] == 0.0f);

@@ -3,6 +3,8 @@
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -13,19 +15,22 @@ namespace
 #include "../../../../../Application/Resources/Shaders/prepareIndirectBuffers_bindings.h"
 }
 
-void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph, const Data & data)
+void VEngine::VKPrepareIndirectBuffersPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("Prepare Indirect Buffers Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.writeStorageBuffer(data.m_opaqueIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.writeStorageBuffer(data.m_maskedIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.writeStorageBuffer(data.m_transparentIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.writeStorageBuffer(data.m_opaqueShadowIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.writeStorageBuffer(data.m_maskedShadowIndirectBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+		{ResourceViewHandle(data.m_opaqueIndirectBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_maskedIndirectBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_transparentIndirectBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_opaqueShadowIndirectBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_maskedShadowIndirectBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+	};
+
+	graph.addPass("Prepare Indirect Buffers", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
@@ -34,33 +39,20 @@ void VEngine::VKPrepareIndirectBuffersPass::addToGraph(FrameGraph::Graph & graph
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// instance data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
-
-			// submesh info
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshDataBufferInfo, SUB_MESH_DATA_BINDING);
-
-			// opaque indirect buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_opaqueIndirectBufferHandle), OPAQUE_INDIRECT_BUFFER_BINDING);
-
-			// masked indirect buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_maskedIndirectBufferHandle), MASKED_INDIRECT_BUFFER_BINDING);
-
-			// transparent indirect buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_transparentIndirectBufferHandle), TRANSPARENT_INDIRECT_BUFFER_BINDING);
-
-			// opaque shadow indirect buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_opaqueShadowIndirectBufferHandle), OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING);
-
-			// masked shadow indirect buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_maskedShadowIndirectBufferHandle), MASKED_SHADOW_INDIRECT_BUFFER_BINDING);
 
 			writer.commit();

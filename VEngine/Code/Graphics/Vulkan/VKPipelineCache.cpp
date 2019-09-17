@@ -4,9 +4,9 @@
 #include <spirv-cross/spirv_cross.hpp>
 #include <iostream>
 
-VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const VKRenderPassDescription &renderPassDesc, VkRenderPass renderPass)
+VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const RenderPassCompatibilityDescription &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass)
 {
-	auto &pipelinePair = m_graphicsPipelines[{pipelineDesc, renderPassDesc}];
+	auto &pipelinePair = m_graphicsPipelines[{pipelineDesc, renderPassDesc, subpassIndex}];
 
 	// pipeline does not exist yet -> create it
 	if (pipelinePair.m_pipeline == VK_NULL_HANDLE)

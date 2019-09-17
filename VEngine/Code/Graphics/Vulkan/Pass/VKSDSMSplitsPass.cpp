@@ -4,22 +4,23 @@
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
 #include "../../../../../Application/Resources/Shaders/sdsmSplits_bindings.h"
 }
 
-void VEngine::VKSDSMSplitsPass::addToGraph(FrameGraph::Graph & graph, const Data & data)
+void VEngine::VKSDSMSplitsPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("SDSM Splits Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readStorageBuffer(data.m_depthBoundsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_depthBoundsBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_splitsBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+	};
 
-		builder.writeStorageBuffer(data.m_splitsBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[=](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("SDSM Splits", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
@@ -29,18 +30,15 @@ void VEngine::VKSDSMSplitsPass::addToGraph(FrameGraph::Graph & graph, const Data
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// depth bounds buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_depthBoundsBufferHandle), DEPTH_BOUNDS_BINDING);
-
-			// splits buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_splitsBufferHandle), SPLITS_BINDING);
 
 			writer.commit();
@@ -50,8 +48,8 @@ void VEngine::VKSDSMSplitsPass::addToGraph(FrameGraph::Graph & graph, const Data
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		PushConsts pushConsts;
-		pushConsts.nearPlane = data.m_nearPlane;
-		pushConsts.farPlane = data.m_farPlane;
+		pushConsts.nearPlane = data.m_passRecordContext->m_commonRenderData->m_nearPlane;
+		pushConsts.farPlane = data.m_passRecordContext->m_commonRenderData->m_farPlane;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

@@ -6,6 +6,8 @@
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "GlobalVar.h"
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -13,17 +15,19 @@ namespace
 #include "../../../../../Application/Resources/Shaders/fxaa_bindings.h"
 }
 
-void VEngine::VKFXAAPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
+void VEngine::VKFXAAPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("FXAA Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readTexture(data.m_inputImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_resultImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_inputImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+	};
 
-		builder.writeStorageImage(data.m_resultImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("FXAA", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
@@ -32,20 +36,17 @@ void VEngine::VKFXAAPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// input image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageHandle, data.m_renderResources->m_linearSamplerClamp), INPUT_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_linearSamplerClamp), INPUT_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
 
-			// result image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle), RESULT_IMAGE_BINDING);
-		
 			writer.commit();
 		}
 
@@ -53,13 +54,13 @@ void VEngine::VKFXAAPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		PushConsts pushConsts;
-		pushConsts.invScreenSizeInPixels = 1.0f / glm::vec2(data.m_width, data.m_height);
+		pushConsts.invScreenSizeInPixels = 1.0f / glm::vec2(width, height);
 		pushConsts.fxaaQualitySubpix = g_FXAAQualitySubpix;
 		pushConsts.fxaaQualityEdgeThreshold = g_FXAAQualityEdgeThreshold;
 		pushConsts.fxaaQualityEdgeThresholdMin = g_FXAAQualityEdgeThresholdMin;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		VKUtility::dispatchComputeHelper(cmdBuf, data.m_width, data.m_height, 1, 8, 8, 1);
+		VKUtility::dispatchComputeHelper(cmdBuf, width, height, 1, 8, 8, 1);
 	});
 }

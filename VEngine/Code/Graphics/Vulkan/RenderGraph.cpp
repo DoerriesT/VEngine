@@ -140,7 +140,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 					lifetime.second = std::max(lifetime.second, m_resourceUsages[resourceIdx].back().m_passHandle);
 				}
 			}
-			if (m_resourceDescriptions[resourceIdx].m_clear)
+			if (m_resourceDescriptions[resourceIdx].m_clear && referenced)
 			{
 				clearResources[lifetime.first].push_back(resourceIdx);
 			}
@@ -431,10 +431,10 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 			if (resDesc.m_external)
 			{
 				const auto &extInfo = m_externalResourceInfo[resDesc.m_externalInfoIndex];
-				const auto externalQueue = extInfo.m_queues[relativeSubresIdx];
+				const auto externalQueue = extInfo.m_queues ? extInfo.m_queues[relativeSubresIdx] : undefinedQueue;
 
 				prevUsageInfo.m_queue = externalQueue != undefinedQueue ? externalQueue : prevUsageInfo.m_queue;
-				prevUsageInfo.m_stateInfo = getResourceStateInfo(extInfo.m_resourceStates[relativeSubresIdx]);
+				prevUsageInfo.m_stateInfo = getResourceStateInfo(extInfo.m_resourceStates ? extInfo.m_resourceStates[relativeSubresIdx] : ResourceState::UNDEFINED);
 
 				const uint16_t queueIdx = prevUsageInfo.m_queue == m_queues[0] ? 0 : prevUsageInfo.m_queue == m_queues[1] ? 1 : 2;
 
@@ -472,8 +472,14 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 
 				// update external info values
 				const auto &lastUsage = m_resourceUsages[subresourceIdx].back();
-				extInfo.m_queues[relativeSubresIdx] = m_passRecordInfo[lastUsage.m_passHandle].m_queue;
-				extInfo.m_resourceStates[relativeSubresIdx] = lastUsage.m_finalResourceState;
+				if (extInfo.m_queues)
+				{
+					extInfo.m_queues[relativeSubresIdx] = m_passRecordInfo[lastUsage.m_passHandle].m_queue;
+				}
+				if (extInfo.m_resourceStates)
+				{
+					extInfo.m_resourceStates[relativeSubresIdx] = lastUsage.m_finalResourceState;
+				}
 			}
 
 			if (finalResIdx == resourceIdx)
@@ -531,18 +537,16 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 						passRecordInfo.m_memoryBarrierDstAccessMask |= curUsageInfo.m_stateInfo.m_accessMask;
 					}
 
-					// schedule wait on event
-					if (prevUsageInfo.m_stateInfo.m_writeAccess || curUsageInfo.m_stateInfo.m_writeAccess)
+					// schedule wait on event for RAW and WAR hazards, but only if this is not the first pass.
+					// external dependencies use a pipelinebarrier instead
+					if ((prevUsageInfo.m_stateInfo.m_writeAccess || curUsageInfo.m_stateInfo.m_writeAccess) && usageIdx != 0)
 					{
 						passRecordInfo.m_eventSrcStages |= prevUsageInfo.m_stateInfo.m_stageMask;
-						
-						// external dependencies use a pipeline barrier and dont wait on events
-						if (!(resDesc.m_external && usageIdx == 0))
-						{
-							passRecordInfo.m_waitEvents.push_back(VkEvent(prevUsageInfo.m_passHandle));
-							m_passRecordInfo[prevUsageInfo.m_passHandle].m_endStages |= prevUsageInfo.m_stateInfo.m_stageMask;
-						}
+						passRecordInfo.m_waitEvents.push_back(VkEvent(prevUsageInfo.m_passHandle));
+						m_passRecordInfo[prevUsageInfo.m_passHandle].m_endStages |= prevUsageInfo.m_stateInfo.m_stageMask;
 					}
+
+					passRecordInfo.m_waitStages |= curUsageInfo.m_stateInfo.m_stageMask;
 				}
 
 				if (addWaitBarrier)
@@ -721,6 +725,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 			for (auto &waitEvent : passRecordInfo.m_waitEvents)
 			{
 				VkEvent e = m_passRecordInfo[(size_t)waitEvent].m_endEvent;
+				passRecordInfo.m_eventSrcStages |= m_passRecordInfo[(size_t)waitEvent].m_endStages;
 				assert(e != VK_NULL_HANDLE);
 				waitEvent = e;
 			}
@@ -787,13 +792,13 @@ void VEngine::RenderGraph::record()
 
 			vkBeginCommandBuffer(cmdBuf, &beginInfo);
 
+			VkMemoryBarrier memoryBarrier{ VK_STRUCTURE_TYPE_MEMORY_BARRIER };
+			memoryBarrier.srcAccessMask = pass.m_memoryBarrierSrcAccessMask;
+			memoryBarrier.dstAccessMask = pass.m_memoryBarrierDstAccessMask;
+
 			// wait on events
 			if (!pass.m_waitEvents.empty())
 			{
-				VkMemoryBarrier memoryBarrier{ VK_STRUCTURE_TYPE_MEMORY_BARRIER };
-				memoryBarrier.srcAccessMask = pass.m_memoryBarrierSrcAccessMask;
-				memoryBarrier.dstAccessMask = pass.m_memoryBarrierDstAccessMask;
-
 				vkCmdWaitEvents(cmdBuf, static_cast<uint32_t>(pass.m_waitEvents.size()), pass.m_waitEvents.data(),
 					pass.m_eventSrcStages, pass.m_waitStages, 1, &memoryBarrier,
 					pass.m_waitBufferBarrierCount, pass.m_bufferBarriers.data(),
@@ -801,7 +806,7 @@ void VEngine::RenderGraph::record()
 			}
 
 			// pipeline barrier
-			if (pass.m_waitEvents.empty() && (pass.m_waitBufferBarrierCount || pass.m_waitImageBarrierCount))
+			if (pass.m_waitEvents.empty() && (pass.m_waitBufferBarrierCount || pass.m_waitImageBarrierCount || memoryBarrier.srcAccessMask))
 			{
 				vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pass.m_waitStages, 0, 0, nullptr,
 					pass.m_waitBufferBarrierCount, pass.m_bufferBarriers.data(),
@@ -870,7 +875,7 @@ void VEngine::RenderGraph::record()
 	}
 }
 
-uint32_t VEngine::RenderGraph::getQueueFamilyIndex(VkQueue queue)
+uint32_t VEngine::RenderGraph::getQueueFamilyIndex(VkQueue queue) const
 {
 	for (size_t i = 0; i < 3; ++i)
 	{
@@ -883,12 +888,12 @@ uint32_t VEngine::RenderGraph::getQueueFamilyIndex(VkQueue queue)
 	return uint32_t();
 }
 
-VkQueue VEngine::RenderGraph::getQueue(QueueType queueType)
+VkQueue VEngine::RenderGraph::getQueue(QueueType queueType) const
 {
 	return m_queues[static_cast<size_t>(queueType)];
 }
 
-VEngine::RenderGraph::ResourceStateInfo VEngine::RenderGraph::getResourceStateInfo(ResourceState resourceState)
+VEngine::RenderGraph::ResourceStateInfo VEngine::RenderGraph::getResourceStateInfo(ResourceState resourceState) const
 {
 	switch (resourceState)
 	{
@@ -1109,13 +1114,16 @@ void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32
 
 VEngine::ImageViewHandle VEngine::RenderGraph::createImageView(const ImageViewDescription &viewDesc)
 {
+	const auto &resDesc = m_resourceDescriptions[(size_t)viewDesc.m_imageHandle - 1];
 	ResourceViewDescription desc{};
 	desc.m_name = viewDesc.m_name;
 	desc.m_resourceHandle = ResourceHandle(viewDesc.m_imageHandle);
 	desc.m_viewType = viewDesc.m_viewType;
-	desc.m_format = viewDesc.m_format;
+	desc.m_format = viewDesc.m_format == VK_FORMAT_UNDEFINED ? resDesc.m_format : viewDesc.m_format;
 	desc.m_components = viewDesc.m_components;
 	desc.m_subresourceRange = viewDesc.m_subresourceRange;
+	desc.m_subresourceRange.levelCount = desc.m_subresourceRange.levelCount == VK_REMAINING_MIP_LEVELS ? resDesc.m_levels - desc.m_subresourceRange.baseMipLevel : desc.m_subresourceRange.levelCount;
+	desc.m_subresourceRange.layerCount = desc.m_subresourceRange.layerCount == VK_REMAINING_ARRAY_LAYERS ? resDesc.m_layers - desc.m_subresourceRange.baseArrayLayer : desc.m_subresourceRange.layerCount;
 	desc.m_image = true;
 
 	m_viewDescriptions.push_back(desc);
@@ -1130,7 +1138,7 @@ VEngine::BufferViewHandle VEngine::RenderGraph::createBufferView(const BufferVie
 	desc.m_resourceHandle = ResourceHandle(viewDesc.m_bufferHandle);
 	desc.m_format = viewDesc.m_format;
 	desc.m_offset = viewDesc.m_offset;
-	desc.m_range = viewDesc.m_range;
+	desc.m_range = viewDesc.m_range == VK_WHOLE_SIZE ? m_resourceDescriptions[(size_t)viewDesc.m_bufferHandle - 1].m_size : viewDesc.m_range;
 
 	m_viewDescriptions.push_back(desc);
 
@@ -1397,6 +1405,74 @@ VkImageView VEngine::Registry::getImageView(ImageViewHandle handle) const
 	return m_graph.m_imageBufferViews[(size_t)handle - 1].imageView;
 }
 
+VkDescriptorImageInfo VEngine::Registry::getImageInfo(ImageViewHandle handle, ResourceState state, VkSampler sampler) const
+{
+	return {sampler, m_graph.m_imageBufferViews[(size_t)handle - 1].imageView, m_graph.getResourceStateInfo(state).m_layout};
+}
+
+VEngine::ImageViewDescription VEngine::Registry::getImageViewDescription(ImageViewHandle handle) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	ImageViewDescription imageViewDesc{};
+	imageViewDesc.m_name = viewDesc.m_name;
+	imageViewDesc.m_imageHandle = ImageHandle(viewDesc.m_resourceHandle);
+	imageViewDesc.m_viewType = viewDesc.m_viewType;
+	imageViewDesc.m_format = viewDesc.m_format;
+	imageViewDesc.m_components = viewDesc.m_components;
+	imageViewDesc.m_subresourceRange = viewDesc.m_subresourceRange;
+
+	return imageViewDesc;
+}
+
+VEngine::ImageDescription VEngine::Registry::getImageDescription(ImageViewHandle handle) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	const auto &resDesc = m_graph.m_resourceDescriptions[(size_t)viewDesc.m_resourceHandle - 1];
+	ImageDescription imageDesc{};
+	imageDesc.m_name = resDesc.m_name;
+	imageDesc.m_concurrent = resDesc.m_concurrent;
+	imageDesc.m_clear = resDesc.m_clear;
+	imageDesc.m_clearValue = resDesc.m_clearValue;
+	imageDesc.m_width = resDesc.m_width;
+	imageDesc.m_height = resDesc.m_height;
+	imageDesc.m_depth = resDesc.m_depth;
+	imageDesc.m_layers = resDesc.m_layers;
+	imageDesc.m_levels = resDesc.m_levels;
+	imageDesc.m_samples = resDesc.m_samples;
+	imageDesc.m_imageType = resDesc.m_imageType;
+	imageDesc.m_format = resDesc.m_format;
+	imageDesc.m_usageFlags = resDesc.m_usageFlags;
+
+	return imageDesc;
+}
+
+VkAttachmentDescription VEngine::Registry::getAttachmentDescription(ImageViewHandle handle, ResourceState state, bool clear) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
+	const auto &lifetime = m_graph.m_resourceLifetimes[resIdx];
+	const bool isFirstUse = lifetime.first == m_passHandleIndex;
+	const bool isLastUse = lifetime.second == m_passHandleIndex;
+
+	VkAttachmentDescription desc{};
+	desc.format = viewDesc.m_format;
+	desc.samples = VkSampleCountFlagBits(resDesc.m_samples);
+	desc.loadOp = isFirstUse && clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : isFirstUse ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD;
+	desc.storeOp = isLastUse && !resDesc.m_external ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+	desc.stencilLoadOp = desc.loadOp;
+	desc.stencilStoreOp = desc.storeOp;
+	desc.initialLayout = m_graph.getResourceStateInfo(state).m_layout;
+	desc.finalLayout = desc.initialLayout;
+
+	return desc;
+}
+
+VkImageLayout VEngine::Registry::getLayout(ResourceState state) const
+{
+	return m_graph.getResourceStateInfo(state).m_layout;
+}
+
 VkBuffer VEngine::Registry::getBuffer(BufferHandle handle) const
 {
 	return m_graph.m_imageBuffers[(size_t)handle - 1].buffer;
@@ -1410,6 +1486,43 @@ VkBuffer VEngine::Registry::getBuffer(BufferViewHandle handle) const
 VkBufferView VEngine::Registry::getBufferView(BufferViewHandle handle) const
 {
 	return m_graph.m_imageBufferViews[(size_t)handle - 1].bufferView;
+}
+
+VkDescriptorBufferInfo VEngine::Registry::getBufferInfo(BufferViewHandle handle) const
+{
+	const size_t viewIdx = (size_t)handle - 1;
+	const auto &viewDesc = m_graph.m_viewDescriptions[viewIdx];
+	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
+	return { m_graph.m_imageBuffers[resIdx].buffer, resDesc.m_offset + viewDesc.m_offset, viewDesc.m_range };
+}
+
+VEngine::BufferViewDescription VEngine::Registry::getBufferViewDescription(BufferViewHandle handle) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	BufferViewDescription bufferViewDesc{};
+	bufferViewDesc.m_name = viewDesc.m_name;
+	bufferViewDesc.m_bufferHandle = BufferHandle(viewDesc.m_resourceHandle);
+	bufferViewDesc.m_format = viewDesc.m_format;
+	bufferViewDesc.m_offset = viewDesc.m_offset;
+	bufferViewDesc.m_range = viewDesc.m_range;
+
+	return bufferViewDesc;
+}
+
+VEngine::BufferDescription VEngine::Registry::getBufferDescription(BufferViewHandle handle) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	const auto &resDesc = m_graph.m_resourceDescriptions[(size_t)viewDesc.m_resourceHandle - 1];
+	BufferDescription bufferDesc{};
+	bufferDesc.m_name = resDesc.m_name;
+	bufferDesc.m_concurrent = resDesc.m_concurrent;
+	bufferDesc.m_clear = resDesc.m_clear;
+	bufferDesc.m_clearValue = resDesc.m_clearValue;
+	bufferDesc.m_size = resDesc.m_size;
+	bufferDesc.m_usageFlags = resDesc.m_usageFlags;
+
+	return bufferDesc;
 }
 
 bool VEngine::Registry::firstUse(ResourceHandle handle) const

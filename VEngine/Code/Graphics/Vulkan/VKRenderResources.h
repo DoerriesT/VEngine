@@ -4,6 +4,7 @@
 #include <memory>
 #include "Graphics/RendererConsts.h"
 #include "VKMappableBufferBlock.h"
+#include "RenderGraph.h"
 
 namespace VEngine
 {
@@ -39,12 +40,6 @@ namespace VEngine
 		std::unique_ptr<VKMappableBufferBlock> m_mappableUBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
 		std::unique_ptr<VKMappableBufferBlock> m_mappableSSBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
 
-		// layouts
-		VkImageLayout m_shadowTextureLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		VkImageLayout m_taaHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
-		VkImageLayout m_gtaoHistoryTextureLayouts[RendererConsts::FRAMES_IN_FLIGHT] = {};
-		VkImageLayout m_swapChainImageLayouts[RendererConsts::FRAMES_IN_FLIGHT + 1] = {};
-
 		// samplers
 		VkSampler m_shadowSampler;
 		VkSampler m_linearSamplerClamp;
@@ -53,9 +48,18 @@ namespace VEngine
 		VkSampler m_pointSamplerRepeat;
 
 		// semaphores
-		VkSemaphore m_shadowTextureSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainImageAvailableSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
+
+		// rendergraph external info
+		VkQueue m_shadowMapQueue = RenderGraph::undefinedQueue;
+		ResourceState m_shadowMapResourceState = ResourceState::UNDEFINED;
+		VkQueue m_taaHistoryTextureQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_taaHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
+		VkQueue m_gtaoHistoryTextureQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_gtaoHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
+		VkQueue m_avgLuminanceBufferQueue = RenderGraph::undefinedQueue;
+		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSet m_textureDescriptorSet;
@@ -69,8 +73,6 @@ namespace VEngine
 		~VKRenderResources();
 		void init(uint32_t width, uint32_t height);
 		void resize(uint32_t width, uint32_t height);
-		void reserveMeshBuffers(uint64_t vertexSize, uint64_t indexSize);
-		void uploadMeshData(const unsigned char *vertices, uint64_t vertexSize, const unsigned char *indices, uint64_t indexSize);
 		void updateTextureArray(const VkDescriptorImageInfo *data, size_t count);
 	};
 }

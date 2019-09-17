@@ -1,11 +1,9 @@
 #pragma once
-#include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
+#include "Graphics/Vulkan/RenderGraph.h"
 
 namespace VEngine
 {
-	class VKPipelineCache;
-	class VKDescriptorSetCache;
-	struct VKRenderResources;
+	struct PassRecordContext;
 	struct SubMeshData;
 	struct SubMeshInstanceData;
 	struct ShadowJob;
@@ -14,11 +12,7 @@ namespace VEngine
 	{
 		struct Data
 		{
-			VKRenderResources *m_renderResources;
-			VKPipelineCache *m_pipelineCache;
-			VKDescriptorSetCache *m_descriptorSetCache;
-			uint32_t m_width;
-			uint32_t m_height;
+			PassRecordContext *m_passRecordContext;
 			uint32_t m_drawCount;
 			uint32_t m_shadowJobCount;
 			const ShadowJob *m_shadowJobs;
@@ -27,11 +21,11 @@ namespace VEngine
 			VkDescriptorBufferInfo m_instanceDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
-			FrameGraph::BufferHandle m_shadowDataBufferHandle;
-			FrameGraph::BufferHandle m_indirectBufferHandle;
-			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
+			BufferViewHandle m_shadowDataBufferHandle;
+			BufferViewHandle m_indirectBufferHandle;
+			ImageViewHandle m_shadowAtlasImageHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+		void addToGraph(RenderGraph &graph, const Data &data);
 	}
 }

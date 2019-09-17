@@ -5,6 +5,11 @@
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/LightData.h"
 #include <glm/gtx/transform.hpp>
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/Vulkan/RenderPassCache.h"
+#include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/DeferredObjectDeleter.h"
+#include "Utility/Utility.h"
 
 namespace
 {
@@ -15,15 +20,18 @@ namespace
 #include "../../../../../Application/Resources/Shaders/rasterTiling_bindings.h"
 }
 
-void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
+void VEngine::VKRasterTilingPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addGraphicsPass("Tiling Pass", data.m_width / 2, data.m_height / 2,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.writeStorageBuffer(data.m_pointLightBitMaskBufferHandle, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+		{ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_FRAGMENT_SHADER},
+	};
+
+	graph.addPass("Raster Tiling", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
@@ -74,15 +82,52 @@ void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Dat
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc, *renderPassDescription, renderPass);
+		// begin renderpass
+		VkRenderPass renderPass;
+		RenderPassCompatibilityDescription renderPassCompatDesc;
+		{
+			RenderPassDescription renderPassDesc{};
+			renderPassDesc.m_attachmentCount = 0;
+			renderPassDesc.m_subpassCount = 1;
+			renderPassDesc.m_subpasses[0] = { 0, 0, false, 0 };
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+			data.m_passRecordContext->m_renderPassCache->getRenderPass(renderPassDesc, renderPassCompatDesc, renderPass);
+
+			VkFramebuffer framebuffer;
+			
+			VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+			framebufferCreateInfo.renderPass = renderPass;
+			framebufferCreateInfo.attachmentCount = renderPassDesc.m_attachmentCount;
+			framebufferCreateInfo.pAttachments = nullptr;
+			framebufferCreateInfo.width = width / 2;
+			framebufferCreateInfo.height = height / 2;
+			framebufferCreateInfo.layers = 1;
+
+			if (vkCreateFramebuffer(g_context.m_device, &framebufferCreateInfo, nullptr, &framebuffer) != VK_SUCCESS)
+			{
+				Utility::fatalExit("Failed to create framebuffer!", EXIT_FAILURE);
+			}
+
+			data.m_passRecordContext->m_deferredObjectDeleter->add(framebuffer);
+
+			VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+			renderPassBeginInfo.renderPass = renderPass;
+			renderPassBeginInfo.framebuffer = framebuffer;
+			renderPassBeginInfo.renderArea = { {}, {width / 2, height / 2} };
+			renderPassBeginInfo.clearValueCount = 0;
+			renderPassBeginInfo.pClearValues = nullptr;
+
+			vkCmdBeginRenderPass(cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
+
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc, renderPassCompatDesc, 0, renderPass);
+
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// point light mask buffer
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle), POINT_LIGHT_MASK_BINDING);
 
 			writer.commit();
@@ -95,25 +140,25 @@ void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Dat
 		VkViewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(data.m_width / 2);
-		viewport.height = static_cast<float>(data.m_height / 2);
+		viewport.width = static_cast<float>(width / 2);
+		viewport.height = static_cast<float>(height / 2);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = { data.m_width / 2, data.m_height / 2 };
+		scissor.extent = { width / 2, height / 2 };
 
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_renderResources->m_lightProxyIndexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_lightProxyIndexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-		VkBuffer vertexBuffer = data.m_renderResources->m_lightProxyVertexBuffer.getBuffer();
+		VkBuffer vertexBuffer = data.m_passRecordContext->m_renderResources->m_lightProxyVertexBuffer.getBuffer();
 		VkDeviceSize vertexOffset = 0;
 		vkCmdBindVertexBuffers(cmdBuf, 0, 1, &vertexBuffer, &vertexOffset);
 
-		uint32_t alignedDomainSizeX = (data.m_width / RendererConsts::LIGHTING_TILE_SIZE + ((data.m_width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1));
+		uint32_t alignedDomainSizeX = (width + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
 		uint32_t wordCount = static_cast<uint32_t>((data.m_lightData->m_pointLightData.size() + 31) / 32);
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offsetof(PushConsts, alignedDomainSizeX), sizeof(alignedDomainSizeX), &alignedDomainSizeX);
@@ -124,12 +169,14 @@ void VEngine::VKRasterTilingPass::addToGraph(FrameGraph::Graph &graph, const Dat
 			const auto &item = data.m_lightData->m_pointLightData[i];
 
 			PushConsts pushConsts;
-			pushConsts.transform = data.m_projection * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));
+			pushConsts.transform = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));
 			pushConsts.index = static_cast<uint32_t>(i);
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
 
 			vkCmdDrawIndexed(cmdBuf, 240, 1, 0, 0, 0);
 		}
+
+		vkCmdEndRenderPass(cmdBuf);
 	});
 }

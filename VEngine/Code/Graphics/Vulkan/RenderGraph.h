@@ -106,10 +106,10 @@ namespace VEngine
 	{
 		const char *m_name = "";
 		ImageHandle m_imageHandle;
+		VkImageSubresourceRange m_subresourceRange;
 		VkImageViewType m_viewType = VK_IMAGE_VIEW_TYPE_2D;
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 		VkComponentMapping m_components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-		VkImageSubresourceRange m_subresourceRange;
 	};
 
 	struct ImageDescription
@@ -133,9 +133,9 @@ namespace VEngine
 	{
 		const char *m_name = "";
 		BufferHandle m_bufferHandle;
-		VkFormat m_format = VK_FORMAT_UNDEFINED;
 		VkDeviceSize m_offset;
 		VkDeviceSize m_range;
+		VkFormat m_format = VK_FORMAT_UNDEFINED;
 	};
 
 	struct BufferDescription
@@ -163,9 +163,17 @@ namespace VEngine
 		VkImage getImage(ImageHandle handle) const;
 		VkImage getImage(ImageViewHandle handle) const;
 		VkImageView getImageView(ImageViewHandle handle) const;
+		VkDescriptorImageInfo getImageInfo(ImageViewHandle handle, ResourceState state, VkSampler sampler = VK_NULL_HANDLE) const;
+		ImageViewDescription getImageViewDescription(ImageViewHandle handle) const;
+		ImageDescription getImageDescription(ImageViewHandle handle) const;
+		VkAttachmentDescription getAttachmentDescription(ImageViewHandle handle, ResourceState state, bool clear = false) const;
+		VkImageLayout getLayout(ResourceState state) const;
 		VkBuffer getBuffer(BufferHandle handle) const;
 		VkBuffer getBuffer(BufferViewHandle handle) const;
 		VkBufferView getBufferView(BufferViewHandle handle) const;
+		VkDescriptorBufferInfo getBufferInfo(BufferViewHandle handle) const;
+		BufferViewDescription getBufferViewDescription(BufferViewHandle handle) const;
+		BufferDescription getBufferDescription(BufferViewHandle handle) const;
 		bool firstUse(ResourceHandle handle) const;
 		bool lastUse(ResourceHandle handle) const;
 
@@ -193,8 +201,8 @@ namespace VEngine
 		BufferViewHandle createBufferView(const BufferViewDescription &viewDesc);
 		ImageHandle createImage(const ImageDescription &imageDesc);
 		BufferHandle createBuffer(const BufferDescription &bufferDesc);
-		ImageHandle importImage(const ImageDescription &imageDesc, VkImage image, VkQueue *queues, ResourceState *resourceStates);
-		BufferHandle importBuffer(const BufferDescription &bufferDesc, VkBuffer buffer, VkDeviceSize offset, VkQueue *queue, ResourceState *resourceState);
+		ImageHandle importImage(const ImageDescription &imageDesc, VkImage image, VkQueue *queues = nullptr, ResourceState *resourceStates = nullptr);
+		BufferHandle importBuffer(const BufferDescription &bufferDesc, VkBuffer buffer, VkDeviceSize offset, VkQueue *queue = nullptr, ResourceState *resourceState = nullptr);
 		void reset();
 		void execute(ResourceViewHandle finalResourceHandle, VkSemaphore waitSemaphore, uint32_t *signalSemaphoreCount, VkSemaphore **signalSemaphores, ResourceState finalResourceState = ResourceState::UNDEFINED, QueueType queueType = QueueType::GRAPHICS);
 
@@ -351,9 +359,9 @@ namespace VEngine
 		std::vector<Batch> m_batches;
 		std::vector<PassRecordInfo> m_passRecordInfo;
 
-		uint32_t getQueueFamilyIndex(VkQueue queue);
-		VkQueue getQueue(QueueType queueType);
-		ResourceStateInfo getResourceStateInfo(ResourceState resourceState);
+		uint32_t getQueueFamilyIndex(VkQueue queue) const;
+		VkQueue getQueue(QueueType queueType) const;
+		ResourceStateInfo getResourceStateInfo(ResourceState resourceState) const;
 		void forEachSubresource(ResourceViewHandle handle, std::function<void(uint32_t)> func);
 		void createPasses(ResourceViewHandle finalResourceHandle, ResourceState finalResourceState, QueueType queueType);
 		void createResources();

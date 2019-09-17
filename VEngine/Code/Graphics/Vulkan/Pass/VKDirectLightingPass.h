@@ -1,41 +1,33 @@
 #pragma once
-#include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
+#include "Graphics/Vulkan/RenderGraph.h"
 
 namespace VEngine
 {
-	class VKPipelineCache;
-	class VKDescriptorSetCache;
-	struct VKRenderResources;
-	struct CommonRenderData;
+	struct PassRecordContext;
 
 	namespace VKDirectLightingPass
 	{
 		struct Data
 		{
-			VKRenderResources *m_renderResources;
-			VKPipelineCache *m_pipelineCache;
-			VKDescriptorSetCache *m_descriptorSetCache;
-			const CommonRenderData *m_commonRenderData;
-			uint32_t m_width;
-			uint32_t m_height;
+			PassRecordContext *m_passRecordContext;
 			bool m_ssao;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
-			FrameGraph::BufferHandle m_shadowDataBufferHandle;
-			FrameGraph::BufferHandle m_shadowSplitsBufferHandle;
-			FrameGraph::BufferHandle m_pointLightBitMaskBufferHandle;
-			FrameGraph::ImageHandle m_depthImageHandle;
-			FrameGraph::ImageHandle m_uvImageHandle;
-			FrameGraph::ImageHandle m_ddxyLengthImageHandle;
-			FrameGraph::ImageHandle m_ddxyRotMaterialIdImageHandle;
-			FrameGraph::ImageHandle m_tangentSpaceImageHandle;
-			FrameGraph::ImageHandle m_shadowAtlasImageHandle;
-			FrameGraph::ImageHandle m_occlusionImageHandle;
-			FrameGraph::ImageHandle m_resultImageHandle;
+			BufferViewHandle m_shadowDataBufferHandle;
+			BufferViewHandle m_shadowSplitsBufferHandle;
+			BufferViewHandle m_pointLightBitMaskBufferHandle;
+			ImageViewHandle m_depthImageHandle;
+			ImageViewHandle m_uvImageHandle;
+			ImageViewHandle m_ddxyLengthImageHandle;
+			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
+			ImageViewHandle m_tangentSpaceImageHandle;
+			ImageViewHandle m_shadowAtlasImageHandle;
+			ImageViewHandle m_occlusionImageHandle;
+			ImageViewHandle m_resultImageHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+		void addToGraph(RenderGraph &graph, const Data &data);
 	}
 }

@@ -14,6 +14,8 @@ namespace VEngine
 	class VKMeshManager;
 	class VKPipelineCache;
 	class VKDescriptorSetCache;
+	class DeferredObjectDeleter;
+	class RenderPassCache;
 	struct CommonRenderData;
 	struct RenderData;
 	struct LightData;
@@ -37,7 +39,9 @@ namespace VEngine
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
+		std::unique_ptr<DeferredObjectDeleter> m_deferredObjectDeleter;
 		std::unique_ptr<VKPipelineCache> m_pipelineCache;
+		std::unique_ptr<RenderPassCache> m_renderPassCache;
 		std::unique_ptr<VKDescriptorSetCache> m_descriptorSetCache;
 		std::unique_ptr<VKTextureLoader> m_textureLoader;
 		std::unique_ptr<VKMaterialManager> m_materialManager;

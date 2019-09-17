@@ -6,6 +6,7 @@
 #include "VKPipelineCache.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Mesh.h"
+#include "RenderGraph.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -16,7 +17,10 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 {
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_shadowTextureSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
+		m_taaHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
+		m_taaHistoryTextureResourceState[i] = ResourceState::UNDEFINED;
+		m_gtaoHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
+		m_gtaoHistoryTextureResourceState[i] = ResourceState::UNDEFINED;
 		m_swapChainImageAvailableSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
 		m_swapChainRenderFinishedSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
 	}

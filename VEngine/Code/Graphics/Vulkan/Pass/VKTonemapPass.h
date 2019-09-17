@@ -1,27 +1,20 @@
 #pragma once
-#include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
+#include "Graphics/Vulkan/RenderGraph.h"
 
 namespace VEngine
 {
-	class VKPipelineCache;
-	class VKDescriptorSetCache;
-	struct VKRenderResources;
+	struct PassRecordContext;
 
 	namespace VKTonemapPass
 	{
 		struct Data
 		{
-			VKRenderResources *m_renderResources;
-			VKPipelineCache *m_pipelineCache;
-			VKDescriptorSetCache *m_descriptorSetCache;
-			uint32_t m_width;
-			uint32_t m_height;
-			uint32_t m_resourceIndex;
-			FrameGraph::ImageHandle m_srcImageHandle;
-			FrameGraph::ImageHandle m_dstImageHandle;
-			FrameGraph::BufferHandle m_avgLuminanceBufferHandle;
+			PassRecordContext *m_passRecordContext;
+			ImageViewHandle m_srcImageHandle;
+			ImageViewHandle m_dstImageHandle;
+			BufferViewHandle m_avgLuminanceBufferHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+		void addToGraph(RenderGraph &graph, const Data &data);
 	}
 }

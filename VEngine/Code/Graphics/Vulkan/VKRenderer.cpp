@@ -11,7 +11,6 @@
 #include "Pass/VKPrepareIndirectBuffersPass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
-#include "Pass/VKBlitPass.h"
 #include "Pass/VKMemoryHeapDebugPass.h"
 #include "Pass/VKTextPass.h"
 #include "Pass/VKRasterTilingPass.h"
@@ -37,14 +36,19 @@
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "RenderGraph.h"
+#include "PassRecordContext.h"
+#include "RenderPassCache.h"
+#include "DeferredObjectDeleter.h"
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
 	g_context.init(static_cast<GLFWwindow *>(windowHandle));
 
 	m_pipelineCache = std::make_unique<VKPipelineCache>();
+	m_renderPassCache = std::make_unique<RenderPassCache>();
 	m_descriptorSetCache = std::make_unique<VKDescriptorSetCache>();
 	m_renderResources = std::make_unique<VKRenderResources>();
+	m_deferredObjectDeleter = std::make_unique<DeferredObjectDeleter>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
 	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer);
@@ -87,668 +91,510 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// import resources into graph
 
-	//FrameGraph::ImageHandle shadowAtlasImageHandle = 0;
-	//{
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "Shadow Atlas";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = g_shadowAtlasSize;
-	//	desc.m_height = g_shadowAtlasSize;
-	//	desc.m_format = m_renderResources->m_shadowTexture.getFormat();
-
-	//	shadowAtlasImageHandle = graph.importImage(desc,
-	//		m_renderResources->m_shadowTexture.getImage(),
-	//		m_renderResources->m_shadowTextureView,
-	//		&m_renderResources->m_shadowTextureLayout,
-	//		commonData.m_frame == 0 ? VK_NULL_HANDLE : m_renderResources->m_shadowTextureSemaphores[commonData.m_previousResourceIndex], // on first frame we dont wait
-	//		m_renderResources->m_shadowTextureSemaphores[commonData.m_currentResourceIndex]);
-	//}
-
-	//FrameGraph::ImageHandle taaHistoryImageHandle = 0;
-	//{
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "TAA History Texture";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = m_width;
-	//	desc.m_height = m_height;
-	//	desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getFormat();
-
-	//	taaHistoryImageHandle = graph.importImage(desc,
-	//		m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getImage(),
-	//		m_renderResources->m_taaHistoryTextureViews[commonData.m_previousResourceIndex],
-	//		&m_renderResources->m_taaHistoryTextureLayouts[commonData.m_previousResourceIndex],
-	//		VK_NULL_HANDLE,
-	//		VK_NULL_HANDLE);
-	//}
-
-	//FrameGraph::ImageHandle taaResolveImageHandle = 0;
-	//{
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "TAA Resolve Texture";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = m_width;
-	//	desc.m_height = m_height;
-	//	desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getFormat();
-
-	//	taaResolveImageHandle = graph.importImage(desc,
-	//		m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getImage(),
-	//		m_renderResources->m_taaHistoryTextureViews[commonData.m_currentResourceIndex],
-	//		&m_renderResources->m_taaHistoryTextureLayouts[commonData.m_currentResourceIndex],
-	//		VK_NULL_HANDLE,
-	//		VK_NULL_HANDLE);
-	//}
-
-	//FrameGraph::ImageHandle gtaoPreviousImageHandle = 0;
-	//{
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "GTAO Previous Texture";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = m_width;
-	//	desc.m_height = m_height;
-	//	desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getFormat();
-
-	//	gtaoPreviousImageHandle = graph.importImage(desc,
-	//		m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getImage(),
-	//		m_renderResources->m_gtaoHistoryTextureViews[commonData.m_previousResourceIndex],
-	//		&m_renderResources->m_gtaoHistoryTextureLayouts[commonData.m_previousResourceIndex],
-	//		VK_NULL_HANDLE,
-	//		VK_NULL_HANDLE);
-	//}
-
-	//FrameGraph::ImageHandle gtaoImageHandle = 0;
-	//{
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "GTAO Texture";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = m_width;
-	//	desc.m_height = m_height;
-	//	desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getFormat();
-
-	//	gtaoImageHandle = graph.importImage(desc,
-	//		m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getImage(),
-	//		m_renderResources->m_gtaoHistoryTextureViews[commonData.m_currentResourceIndex],
-	//		&m_renderResources->m_gtaoHistoryTextureLayouts[commonData.m_currentResourceIndex],
-	//		VK_NULL_HANDLE,
-	//		VK_NULL_HANDLE);
-	//}
-
-	//FrameGraph::BufferHandle avgLuminanceBufferHandle = 0;
-	//{
-	//	FrameGraph::BufferDescription desc = {};
-	//	desc.m_name = "Average Luminance Buffer";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_bufferClearValue = 0;
-	//	desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT + 4;
-	//	desc.m_hostVisible = false;
-
-	//	avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), 0, m_renderResources->m_avgLuminanceBuffer.getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
-	//}
-
-	//// create graph managed resources
-	//FrameGraph::ImageHandle swapchainTextureHandle = 0;
-	//FrameGraph::ImageHandle finalImageHandle = VKResourceDefinitions::createFinalImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle depthImageHandle = VKResourceDefinitions::createDepthImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle uvImageHandle = VKResourceDefinitions::createUVImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle ddxyLengthImageHandle = VKResourceDefinitions::createDerivativesLengthImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle ddxyRotMaterialIdImageHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle tangentSpaceImageHandle = VKResourceDefinitions::createTangentSpaceImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle velocityImageHandle = VKResourceDefinitions::createVelocityImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle lightImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle transparencyAccumImageHandle = VKResourceDefinitions::createTransparencyAccumImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle transparencyTransmittanceImageHandle = VKResourceDefinitions::createTransparencyTransmittanceImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle transparencyDeltaImageHandle = VKResourceDefinitions::createTransparencyDeltaImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle transparencyResultImageHandle = VKResourceDefinitions::createLightImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle gtaoRawImageHandle = VKResourceDefinitions::createGTAOImageHandle(graph, m_width, m_height);
-	//FrameGraph::ImageHandle gtaoSpatiallyFilteredImageHandle = VKResourceDefinitions::createGTAOImageHandle(graph, m_width, m_height);
-	//FrameGraph::BufferHandle pointLightBitMaskBufferHandle = VKResourceDefinitions::createPointLightBitMaskBufferHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
-	//FrameGraph::BufferHandle luminanceHistogramBufferHandle = VKResourceDefinitions::createLuminanceHistogramBufferHandle(graph);
-	//FrameGraph::BufferHandle opaqueIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_opaqueBatchSize);
-	//FrameGraph::BufferHandle maskedIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_alphaTestedBatchSize);
-	//FrameGraph::BufferHandle transparentIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_transparentBatchSize);
-	//FrameGraph::BufferHandle opaqueShadowIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_opaqueShadowBatchSize);
-	//FrameGraph::BufferHandle maskedShadowIndirectBufferHandle = VKResourceDefinitions::createIndirectBufferHandle(graph, renderData.m_alphaTestedShadowBatchSize);
-
-	//// transform data write
-	//VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
-	//{
-	//	uint8_t *bufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(transformDataBufferInfo.range, transformDataBufferInfo.offset, transformDataBufferInfo.buffer, bufferPtr);
-	//	if (renderData.m_transformDataCount)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::mat4));
-	//	}
-	//}
-
-	//// directional light data write
-	//VkDescriptorBufferInfo directionalLightDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), size_t(1)) };
-	//{
-	//	uint8_t *bufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(directionalLightDataBufferInfo.range, directionalLightDataBufferInfo.offset, directionalLightDataBufferInfo.buffer, bufferPtr);
-	//	if (!lightData.m_directionalLightData.empty())
-	//	{
-	//		memcpy(bufferPtr, lightData.m_directionalLightData.data(), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData));
-	//	}
-	//}
-
-	//// point light data write
-	//VkDescriptorBufferInfo pointLightDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_pointLightData.size() * sizeof(PointLightData), size_t(1)) };
-	//VkDescriptorBufferInfo pointLightZBinsBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_zBins.size() * sizeof(uint32_t), size_t(1)) };
-	//{
-	//	uint8_t *dataBufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightDataBufferInfo.range, pointLightDataBufferInfo.offset, pointLightDataBufferInfo.buffer, dataBufferPtr);
-	//	uint8_t *zBinsBufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightZBinsBufferInfo.range, pointLightZBinsBufferInfo.offset, pointLightZBinsBufferInfo.buffer, zBinsBufferPtr);
-	//	if (!lightData.m_pointLightData.empty())
-	//	{
-	//		memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
-	//		memcpy(zBinsBufferPtr, lightData.m_zBins.data(), lightData.m_zBins.size() * sizeof(uint32_t));
-	//	}
-	//}
-
-	//// shadow data write
-	//VkDescriptorBufferInfo shadowDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_shadowData.size() * sizeof(ShadowData), size_t(1)) };
-	//{
-	//	uint8_t *bufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(shadowDataBufferInfo.range, shadowDataBufferInfo.offset, shadowDataBufferInfo.buffer, bufferPtr);
-	//	if (!lightData.m_shadowData.empty())
-	//	{
-	//		memcpy(bufferPtr, lightData.m_shadowData.data(), lightData.m_shadowData.size() * sizeof(ShadowData));
-	//	}
-	//}
-
-	//FrameGraph::BufferHandle shadowDataBufferHandle = 0;
-	//{
-	//	FrameGraph::BufferDescription desc = {};
-	//	desc.m_name = "Shadow Data Buffer";
-	//	desc.m_concurrent = false;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_bufferClearValue = 0;
-	//	desc.m_size = shadowDataBufferInfo.range;
-	//	desc.m_hostVisible = false;
-
-	//	shadowDataBufferHandle = graph.importBuffer(desc, shadowDataBufferInfo.buffer, shadowDataBufferInfo.offset, m_renderResources->m_ssboBuffers[commonData.m_currentResourceIndex].getAllocation(), VK_NULL_HANDLE, VK_NULL_HANDLE);
-	//}
-
-	//// instance data write
-	//VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueBatchSize 
-	//	+ renderData.m_alphaTestedBatchSize 
-	//	+ renderData.m_transparentBatchSize
-	//	+ renderData.m_opaqueShadowBatchSize 
-	//	+ renderData.m_alphaTestedShadowBatchSize) * sizeof(SubMeshInstanceData), size_t(1)) };
-	//{
-	//	uint8_t *bufferPtr;
-	//	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
-	//	if (renderData.m_opaqueBatchSize)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_opaqueBatch, renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData));
-	//		bufferPtr += renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData);
-	//	}
-	//	if (renderData.m_alphaTestedBatchSize)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_alphaTestedBatch, renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData));
-	//		bufferPtr += renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData);
-	//	}
-	//	if (renderData.m_transparentBatchSize)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_transparentBatch, renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData));
-	//		bufferPtr += renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData);
-	//	}
-	//	if (renderData.m_opaqueShadowBatchSize)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_opaqueShadowBatch, renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData));
-	//		bufferPtr += renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData);
-	//	}
-	//	if (renderData.m_alphaTestedShadowBatchSize)
-	//	{
-	//		memcpy(bufferPtr, renderData.m_alphaTestedShadowBatch, renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData));
-	//		bufferPtr += renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData);
-	//	}
-	//}
-
-	//// prepare indirect buffers
-	//VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
-	//prepareIndirectBuffersPassData.m_pipelineCache = m_pipelineCache.get();
-	//prepareIndirectBuffersPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueBatchSize;
-	//prepareIndirectBuffersPassData.m_maskedCount = renderData.m_alphaTestedBatchSize;
-	//prepareIndirectBuffersPassData.m_transparentCount = renderData.m_transparentBatchSize;
-	//prepareIndirectBuffersPassData.m_opaqueShadowCount = renderData.m_opaqueShadowBatchSize;
-	//prepareIndirectBuffersPassData.m_maskedShadowCount = renderData.m_alphaTestedShadowBatchSize;
-	//prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	//prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-	//prepareIndirectBuffersPassData.m_opaqueIndirectBufferHandle = opaqueIndirectBufferHandle;
-	//prepareIndirectBuffersPassData.m_maskedIndirectBufferHandle = maskedIndirectBufferHandle;
-	//prepareIndirectBuffersPassData.m_transparentIndirectBufferHandle = transparentIndirectBufferHandle;
-	//prepareIndirectBuffersPassData.m_opaqueShadowIndirectBufferHandle = opaqueShadowIndirectBufferHandle;
-	//prepareIndirectBuffersPassData.m_maskedShadowIndirectBufferHandle = maskedShadowIndirectBufferHandle;
-
-	//if (renderData.m_opaqueBatchSize || renderData.m_alphaTestedBatchSize || renderData.m_opaqueShadowBatchSize || renderData.m_alphaTestedShadowBatchSize)
-	//{
-	//	VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
-	//}
-
-	//// draw opaque geometry to gbuffer
-	//VKGeometryPass::Data opaqueGeometryPassData;
-	//opaqueGeometryPassData.m_renderResources = m_renderResources.get();
-	//opaqueGeometryPassData.m_pipelineCache = m_pipelineCache.get();
-	//opaqueGeometryPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//opaqueGeometryPassData.m_width = m_width;
-	//opaqueGeometryPassData.m_height = m_height;
-	//opaqueGeometryPassData.m_drawCount = renderData.m_opaqueBatchSize;
-	//opaqueGeometryPassData.m_alphaMasked = false;
-	//opaqueGeometryPassData.m_viewMatrix = commonData.m_viewMatrix;
-	//opaqueGeometryPassData.m_jitteredViewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
-	//opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	//opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	//opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectBufferHandle;
-	//opaqueGeometryPassData.m_depthImageHandle = depthImageHandle;
-	//opaqueGeometryPassData.m_uvImageHandle = uvImageHandle;
-	//opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageHandle;
-	//opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageHandle;
-	//opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageHandle;
-
-	//if (renderData.m_opaqueBatchSize)
-	//{
-	//	VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
-	//}
-
-
-	//// draw alpha masked geometry to gbuffer
-	//VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
-	//maskedGeometryPassData.m_drawCount = renderData.m_alphaTestedBatchSize;
-	//maskedGeometryPassData.m_alphaMasked = true;
-	//maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferHandle;
-	//
-	//if (renderData.m_alphaTestedBatchSize)
-	//{
-	//	VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
-	//}
-
-	//// common sdsm
-	//VKSDSMModule::OutputData sdsmOutputData;
-	//VKSDSMModule::InputData sdsmInputData;
-	//sdsmInputData.m_renderResources = m_renderResources.get();
-	//sdsmInputData.m_pipelineCache = m_pipelineCache.get();
-	//sdsmInputData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//sdsmInputData.m_width = m_width;
-	//sdsmInputData.m_height = m_height;
-	//sdsmInputData.m_nearPlane = commonData.m_nearPlane;
-	//sdsmInputData.m_farPlane = commonData.m_farPlane;
-	//sdsmInputData.m_invProjection = commonData.m_invJitteredProjectionMatrix;
-	//sdsmInputData.m_depthImageHandle = depthImageHandle;
-
-	//VKSDSMModule::addToGraph(graph, sdsmInputData, sdsmOutputData);
-
-
-	//// sdsm shadow matrix
-	//VKSDSMShadowMatrixPass::Data sdsmShadowMatrixPassData;
-	//sdsmShadowMatrixPassData.m_renderResources = m_renderResources.get();
-	//sdsmShadowMatrixPassData.m_pipelineCache = m_pipelineCache.get();
-	//sdsmShadowMatrixPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//sdsmShadowMatrixPassData.m_lightView = glm::lookAt(glm::vec3(), -glm::vec3(commonData.m_invViewMatrix * lightData.m_directionalLightData.front().m_direction), glm::vec3(glm::transpose(commonData.m_viewMatrix)[0]));
-	//sdsmShadowMatrixPassData.m_cameraViewToLightView = sdsmShadowMatrixPassData.m_lightView * commonData.m_invViewProjectionMatrix;
-	//sdsmShadowMatrixPassData.m_lightSpaceNear = renderData.m_orthoNearest;
-	//sdsmShadowMatrixPassData.m_lightSpaceFar = renderData.m_orthoFarthest;
-	//sdsmShadowMatrixPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
-	//sdsmShadowMatrixPassData.m_partitionBoundsBufferHandle = sdsmOutputData.m_partitionBoundsBufferHandle;
-
-	//VKSDSMShadowMatrixPass::addToGraph(graph, sdsmShadowMatrixPassData);
-
-
-	//// initialize velocity of static objects
-	//VKVelocityInitializationPass::Data velocityInitializationPassData;
-	//velocityInitializationPassData.m_renderResources = m_renderResources.get();
-	//velocityInitializationPassData.m_pipelineCache = m_pipelineCache.get();
-	//velocityInitializationPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//velocityInitializationPassData.m_width = m_width;
-	//velocityInitializationPassData.m_height = m_height;
-	//velocityInitializationPassData.m_reprojectionMatrix = commonData.m_prevViewProjectionMatrix * commonData.m_invViewProjectionMatrix;
-	//velocityInitializationPassData.m_depthImageHandle = depthImageHandle;
-	//velocityInitializationPassData.m_velocityImageHandle = velocityImageHandle;
-
-	//VKVelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
-
-
-	//// draw shadows
-	//VKShadowPass::Data opaqueShadowPassData;
-	//opaqueShadowPassData.m_renderResources = m_renderResources.get();
-	//opaqueShadowPassData.m_pipelineCache = m_pipelineCache.get();
-	//opaqueShadowPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//opaqueShadowPassData.m_width = g_shadowAtlasSize;
-	//opaqueShadowPassData.m_height = g_shadowAtlasSize;
-	//opaqueShadowPassData.m_drawCount = renderData.m_opaqueShadowBatchSize;
-	//opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
-	//opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
-	//opaqueShadowPassData.m_alphaMasked = false;
-	//opaqueShadowPassData.m_clear = true;
-	//opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
-	//opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
-	//opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
-	//opaqueShadowPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
-	//opaqueShadowPassData.m_indirectBufferHandle = opaqueShadowIndirectBufferHandle;
-	//opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
-
-	//if (renderData.m_opaqueShadowBatchSize && !lightData.m_shadowJobs.empty())
-	//{
-	//	VKShadowPass::addToGraph(graph, opaqueShadowPassData);
-	//}
-
-
-	//// draw masked shadows
-	//VKShadowPass::Data maskedShadowPassData = opaqueShadowPassData;
-	//maskedShadowPassData.m_drawCount = renderData.m_alphaTestedShadowBatchSize;
-	//maskedShadowPassData.m_alphaMasked = true;
-	//maskedShadowPassData.m_clear = lightData.m_shadowJobs.empty();
-	//maskedShadowPassData.m_indirectBufferHandle = maskedShadowIndirectBufferHandle;
-
-	//if (renderData.m_alphaTestedShadowBatchSize && !lightData.m_shadowJobs.empty())
-	//{
-	//	VKShadowPass::addToGraph(graph, maskedShadowPassData);
-	//}
-
-
-	//// gtao
-	//VKGTAOPass::Data gtaoPassData;
-	//gtaoPassData.m_renderResources = m_renderResources.get();
-	//gtaoPassData.m_pipelineCache = m_pipelineCache.get();
-	//gtaoPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//gtaoPassData.m_width = m_width;
-	//gtaoPassData.m_height = m_height;
-	//gtaoPassData.m_frame = commonData.m_frame;
-	//gtaoPassData.m_fovy = commonData.m_fovy;
-	//gtaoPassData.m_invProjection = commonData.m_invJitteredProjectionMatrix;
-	//gtaoPassData.m_depthImageHandle = depthImageHandle;
-	//gtaoPassData.m_resultImageHandle = gtaoRawImageHandle;
-
-	//if (g_ssaoEnabled)
-	//{
-	//	VKGTAOPass::addToGraph(graph, gtaoPassData);
-	//}
-
-
-	//// gtao spatial filter
-	//VKGTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
-	//gtaoPassSpatialFilterPassData.m_renderResources = m_renderResources.get();
-	//gtaoPassSpatialFilterPassData.m_pipelineCache = m_pipelineCache.get();
-	//gtaoPassSpatialFilterPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//gtaoPassSpatialFilterPassData.m_width = m_width;
-	//gtaoPassSpatialFilterPassData.m_height = m_height;
-	//gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageHandle;
-	//gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageHandle;
-
-	//if (g_ssaoEnabled)
-	//{
-	//	VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
-	//}
-
-
-	//// gtao temporal filter
-	//VKGTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
-	//gtaoPassTemporalFilterPassData.m_renderResources = m_renderResources.get();
-	//gtaoPassTemporalFilterPassData.m_pipelineCache = m_pipelineCache.get();
-	//gtaoPassTemporalFilterPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//gtaoPassTemporalFilterPassData.m_width = m_width;
-	//gtaoPassTemporalFilterPassData.m_height = m_height;
-	//gtaoPassTemporalFilterPassData.m_nearPlane = commonData.m_nearPlane;
-	//gtaoPassTemporalFilterPassData.m_farPlane = commonData.m_farPlane;
-	//gtaoPassTemporalFilterPassData.m_invViewProjection = commonData.m_invJitteredViewProjectionMatrix;
-	//gtaoPassTemporalFilterPassData.m_prevInvViewProjection = commonData.m_prevInvJitteredViewProjectionMatrix;
-	//gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageHandle;
-	//gtaoPassTemporalFilterPassData.m_velocityImageHandle = velocityImageHandle;
-	//gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageHandle;
-	//gtaoPassTemporalFilterPassData.m_resultImageHandle = gtaoImageHandle;
-
-	//if (g_ssaoEnabled)
-	//{
-	//	VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
-	//}
-
-
-	//// cull lights to tiles
-	//VKRasterTilingPass::Data rasterTilingPassData;
-	//rasterTilingPassData.m_renderResources = m_renderResources.get();
-	//rasterTilingPassData.m_pipelineCache = m_pipelineCache.get();
-	//rasterTilingPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//rasterTilingPassData.m_width = m_width;
-	//rasterTilingPassData.m_height = m_height;
-	//rasterTilingPassData.m_lightData = &lightData;
-	//rasterTilingPassData.m_projection = commonData.m_jitteredProjectionMatrix;
-	//rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
-
-	//if (!lightData.m_pointLightData.empty())
-	//{
-	//	VKRasterTilingPass::addToGraph(graph, rasterTilingPassData);
-	//}
-
-
-	//// light gbuffer
-	//VKDirectLightingPass::Data lightingPassData;
-	//lightingPassData.m_renderResources = m_renderResources.get();
-	//lightingPassData.m_pipelineCache = m_pipelineCache.get();
-	//lightingPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//lightingPassData.m_commonRenderData = &commonData;
-	//lightingPassData.m_width = m_width;
-	//lightingPassData.m_height = m_height;
-	//lightingPassData.m_ssao = g_ssaoEnabled;
-	//lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	//lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	//lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	//lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	//lightingPassData.m_shadowDataBufferHandle = shadowDataBufferHandle;
-	//lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
-	//lightingPassData.m_depthImageHandle = depthImageHandle;
-	//lightingPassData.m_uvImageHandle = uvImageHandle;
-	//lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageHandle;
-	//lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageHandle;
-	//lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageHandle;
-	//lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
-	//lightingPassData.m_occlusionImageHandle = gtaoImageHandle;
-	//lightingPassData.m_resultImageHandle = lightImageHandle;
-	//lightingPassData.m_shadowSplitsBufferHandle = sdsmOutputData.m_splitsBufferHandle;
-
-	//VKDirectLightingPass::addToGraph(graph, lightingPassData);
-
-
-	//VKTransparencyWritePass::Data transparencyWriteData;
-	//transparencyWriteData.m_renderResources = m_renderResources.get();
-	//transparencyWriteData.m_pipelineCache = m_pipelineCache.get();
-	//transparencyWriteData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//transparencyWriteData.m_commonRenderData = &commonData;
-	//transparencyWriteData.m_width = m_width;
-	//transparencyWriteData.m_height = m_height;
-	//transparencyWriteData.m_drawCount = renderData.m_transparentBatchSize;
-	//transparencyWriteData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	//transparencyWriteData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	//transparencyWriteData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//transparencyWriteData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	//transparencyWriteData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	//transparencyWriteData.m_shadowDataBufferInfo = shadowDataBufferInfo;
-	//transparencyWriteData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	//transparencyWriteData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferHandle;
-	//transparencyWriteData.m_indirectBufferHandle = transparentIndirectBufferHandle;
-	//transparencyWriteData.m_depthImageHandle = depthImageHandle;
-	//transparencyWriteData.m_shadowAtlasImageHandle = shadowAtlasImageHandle;
-	//transparencyWriteData.m_lightImageHandle = lightImageHandle;
-	//transparencyWriteData.m_shadowSplitsBufferHandle = sdsmOutputData.m_splitsBufferHandle;
-
-	//if (renderData.m_transparentBatchSize)
-	//{
-	//	VKTransparencyWritePass::addToGraph(graph, transparencyWriteData);
-	//}
-
-
-	//// calculate luminance histograms
-	//VKLuminanceHistogramPass::Data luminanceHistogramPassData;
-	//luminanceHistogramPassData.m_renderResources = m_renderResources.get();
-	//luminanceHistogramPassData.m_pipelineCache = m_pipelineCache.get();
-	//luminanceHistogramPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//luminanceHistogramPassData.m_width = m_width;
-	//luminanceHistogramPassData.m_height = m_height;
-	//luminanceHistogramPassData.m_logMin = -10.0f;
-	//luminanceHistogramPassData.m_logMax = 17.0f;
-	//luminanceHistogramPassData.m_lightImageHandle = lightImageHandle;
-	//luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
-
-	//VKLuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
-
-
-	//// calculate avg luminance
-	//VKLuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
-	//luminanceHistogramAvgPassData.m_renderResources = m_renderResources.get();
-	//luminanceHistogramAvgPassData.m_pipelineCache = m_pipelineCache.get();
-	//luminanceHistogramAvgPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//luminanceHistogramAvgPassData.m_width = m_width;
-	//luminanceHistogramAvgPassData.m_height = m_height;
-	//luminanceHistogramAvgPassData.m_timeDelta = commonData.m_timeDelta;
-	//luminanceHistogramAvgPassData.m_logMin = -10.0f;
-	//luminanceHistogramAvgPassData.m_logMax = 17.0f;
-	//luminanceHistogramAvgPassData.m_currentResourceIndex = commonData.m_currentResourceIndex;
-	//luminanceHistogramAvgPassData.m_previousResourceIndex = commonData.m_previousResourceIndex;
-	//luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
-	//luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferHandle;
-
-	//VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
-
-
-	//VkSwapchainKHR swapChain = m_swapChain->get();
-
-	//// get swapchain image
-	//{
-	//	VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
-
-	//	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	//	{
-	//		m_swapChain->recreate(m_width, m_height);
-	//		return;
-	//	}
-	//	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	//	{
-	//		Utility::fatalExit("Failed to acquire swap chain image!", -1);
-	//	}
-
-	//	FrameGraph::ImageDescription desc = {};
-	//	desc.m_name = "Swapchain Image";
-	//	desc.m_concurrent = true;
-	//	desc.m_clear = false;
-	//	desc.m_clearValue.m_imageClearValue = {};
-	//	desc.m_width = m_swapChain->getExtent().width;
-	//	desc.m_height = m_swapChain->getExtent().height;
-	//	desc.m_layers = 1;
-	//	desc.m_levels = 1;
-	//	desc.m_samples = 1;
-	//	desc.m_format = m_swapChain->getImageFormat();
-
-	//	swapchainTextureHandle = graph.importImage(desc,
-	//		m_swapChain->getImage(m_swapChainImageIndex),
-	//		m_swapChain->getImageView(m_swapChainImageIndex),
-	//		&m_renderResources->m_swapChainImageLayouts[m_swapChainImageIndex],
-	//		m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex],
-	//		m_renderResources->m_swapChainRenderFinishedSemaphores[commonData.m_currentResourceIndex]);
-	//}
-
-
-	//// taa resolve
-	//VKTAAResolvePass::Data taaResolvePassData;
-	//taaResolvePassData.m_renderResources = m_renderResources.get();
-	//taaResolvePassData.m_pipelineCache = m_pipelineCache.get();
-	//taaResolvePassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//taaResolvePassData.m_width = m_width;
-	//taaResolvePassData.m_height = m_height;
-	//taaResolvePassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
-	//taaResolvePassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
-	//taaResolvePassData.m_depthImageHandle = depthImageHandle;
-	//taaResolvePassData.m_velocityImageHandle = velocityImageHandle;
-	//taaResolvePassData.m_taaHistoryImageHandle = taaHistoryImageHandle;
-	//taaResolvePassData.m_lightImageHandle = lightImageHandle;
-	//taaResolvePassData.m_taaResolveImageHandle = taaResolveImageHandle;
-
-	//if (g_TAAEnabled)
-	//{
-	//	VKTAAResolvePass::addToGraph(graph, taaResolvePassData);
-
-	//	lightImageHandle = taaResolveImageHandle;
-	//}
-
-
-	//FrameGraph::ImageHandle tonemapTargetTextureHandle = g_FXAAEnabled ? finalImageHandle : swapchainTextureHandle;
-
-	//// tonemap
-	//VKTonemapPass::Data tonemapPassData;
-	//tonemapPassData.m_renderResources = m_renderResources.get();
-	//tonemapPassData.m_pipelineCache = m_pipelineCache.get();
-	//tonemapPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//tonemapPassData.m_width = m_width;
-	//tonemapPassData.m_height = m_height;
-	//tonemapPassData.m_resourceIndex = commonData.m_currentResourceIndex;
-	//tonemapPassData.m_srcImageHandle = lightImageHandle;
-	//tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
-	//tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferHandle;
-
-	//VKTonemapPass::addToGraph(graph, tonemapPassData);
-
-
-	//// FXAA
-	//VKFXAAPass::Data fxaaPassData;
-	//fxaaPassData.m_renderResources = m_renderResources.get();
-	//fxaaPassData.m_pipelineCache = m_pipelineCache.get();
-	//fxaaPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//fxaaPassData.m_width = m_width;
-	//fxaaPassData.m_height = m_height;
-	//fxaaPassData.m_inputImageHandle = tonemapTargetTextureHandle;
-	//fxaaPassData.m_resultImageHandle = swapchainTextureHandle;
-
-	//if (g_FXAAEnabled)
-	//{
-	//	VKFXAAPass::addToGraph(graph, fxaaPassData);
-	//}
-
-
-	//// luminance debug pass
-	//VKLuminanceHistogramDebugPass::Data luminanceDebugPassData;
-	//luminanceDebugPassData.m_renderResources = m_renderResources.get();
-	//luminanceDebugPassData.m_pipelineCache = m_pipelineCache.get();
-	//luminanceDebugPassData.m_descriptorSetCache = m_descriptorSetCache.get();
-	//luminanceDebugPassData.m_width = m_width;
-	//luminanceDebugPassData.m_height = m_height;
-	//luminanceDebugPassData.m_offsetX = 0.5f;
-	//luminanceDebugPassData.m_offsetY = 0.0f;
-	//luminanceDebugPassData.m_scaleX = 0.5f;
-	//luminanceDebugPassData.m_scaleY = 1.0f;
-	//luminanceDebugPassData.m_colorImageHandle = swapchainTextureHandle;
-	//luminanceDebugPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferHandle;
-
-	////VKLuminanceHistogramDebugPass::addToGraph(graph, luminanceDebugPassData);
-
-
-	//// memory heap debug pass
-	//VKMemoryHeapDebugPass::Data memoryHeapDebugPassData;
-	//memoryHeapDebugPassData.m_renderResources = m_renderResources.get();
-	//memoryHeapDebugPassData.m_pipelineCache = m_pipelineCache.get();
-	//memoryHeapDebugPassData.m_width = m_width;
-	//memoryHeapDebugPassData.m_height = m_height;
-	//memoryHeapDebugPassData.m_offsetX = 0.75f;
-	//memoryHeapDebugPassData.m_offsetY = 0.0f;
-	//memoryHeapDebugPassData.m_scaleX = 0.25f;
-	//memoryHeapDebugPassData.m_scaleY = 0.25f;
-	//memoryHeapDebugPassData.m_colorImageHandle = swapchainTextureHandle;
-
-	////VKMemoryHeapDebugPass::addToGraph(graph, memoryHeapDebugPassData);
-
-
-	//// text pass
-	//FrameGraph::PassTimingInfo timingInfos[128];
+	ImageViewHandle shadowAtlasImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Shadow Atlas";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = g_shadowAtlasSize;
+		desc.m_height = g_shadowAtlasSize;
+		desc.m_format = m_renderResources->m_shadowTexture.getFormat();
+
+		ImageHandle shadowAtlasImageHandle = graph.importImage(desc, m_renderResources->m_shadowTexture.getImage(), &m_renderResources->m_shadowMapQueue, &m_renderResources->m_shadowMapResourceState);
+		shadowAtlasImageViewHandle = graph.createImageView({ desc.m_name, shadowAtlasImageHandle, { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle taaHistoryImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "TAA History Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getFormat();
+
+		ImageHandle taaHistoryImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_previousResourceIndex], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_previousResourceIndex]);
+		taaHistoryImageViewHandle = graph.createImageView({ desc.m_name, taaHistoryImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle taaResolveImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "TAA Resolve Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getFormat();
+
+		ImageHandle taaResolveImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_currentResourceIndex], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_currentResourceIndex]);
+		taaResolveImageViewHandle = graph.createImageView({ desc.m_name, taaResolveImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle gtaoPreviousImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "GTAO Previous Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getFormat();
+
+		ImageHandle gtaoPreviousImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_previousResourceIndex], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_previousResourceIndex]);
+		gtaoPreviousImageViewHandle = graph.createImageView({ desc.m_name, gtaoPreviousImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle gtaoImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "GTAO Texture";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getFormat();
+
+		ImageHandle gtaoImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_currentResourceIndex], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_currentResourceIndex]);
+		gtaoImageViewHandle = graph.createImageView({ desc.m_name, gtaoImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	BufferViewHandle avgLuminanceBufferViewHandle = 0;
+	{
+		BufferDescription desc = {};
+		desc.m_name = "Average Luminance Buffer";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT + 4;
+
+		BufferHandle avgLuminanceBufferHandle = graph.importBuffer(desc, m_renderResources->m_avgLuminanceBuffer.getBuffer(), 0, &m_renderResources->m_avgLuminanceBufferQueue, &m_renderResources->m_avgLuminanceBufferResourceState);
+		avgLuminanceBufferViewHandle = graph.createBufferView({ desc.m_name, avgLuminanceBufferHandle, 0, desc.m_size });
+	}
+
+	// create graph managed resources
+	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle depthImageViewHandle = VKResourceDefinitions::createDepthImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle ddxyLengthImageViewHandle = VKResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle ddxyRotMaterialIdImageViewHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle tangentSpaceImageViewHandle = VKResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle velocityImageViewHandle = VKResourceDefinitions::createVelocityImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle gtaoRawImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle gtaoSpatiallyFilteredImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
+	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
+	BufferViewHandle luminanceHistogramBufferViewHandle = VKResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
+	BufferViewHandle opaqueIndirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_opaqueBatchSize);
+	BufferViewHandle maskedIndirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_alphaTestedBatchSize);
+	BufferViewHandle transparentIndirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_transparentBatchSize);
+	BufferViewHandle opaqueShadowIndirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_opaqueShadowBatchSize);
+	BufferViewHandle maskedShadowIndirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_alphaTestedShadowBatchSize);
+
+	// transform data write
+	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(transformDataBufferInfo.range, transformDataBufferInfo.offset, transformDataBufferInfo.buffer, bufferPtr);
+		if (renderData.m_transformDataCount)
+		{
+			memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::mat4));
+		}
+	}
+
+	// directional light data write
+	VkDescriptorBufferInfo directionalLightDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(directionalLightDataBufferInfo.range, directionalLightDataBufferInfo.offset, directionalLightDataBufferInfo.buffer, bufferPtr);
+		if (!lightData.m_directionalLightData.empty())
+		{
+			memcpy(bufferPtr, lightData.m_directionalLightData.data(), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData));
+		}
+	}
+
+	// point light data write
+	VkDescriptorBufferInfo pointLightDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_pointLightData.size() * sizeof(PointLightData), size_t(1)) };
+	VkDescriptorBufferInfo pointLightZBinsBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_zBins.size() * sizeof(uint32_t), size_t(1)) };
+	{
+		uint8_t *dataBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightDataBufferInfo.range, pointLightDataBufferInfo.offset, pointLightDataBufferInfo.buffer, dataBufferPtr);
+		uint8_t *zBinsBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightZBinsBufferInfo.range, pointLightZBinsBufferInfo.offset, pointLightZBinsBufferInfo.buffer, zBinsBufferPtr);
+		if (!lightData.m_pointLightData.empty())
+		{
+			memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
+			memcpy(zBinsBufferPtr, lightData.m_zBins.data(), lightData.m_zBins.size() * sizeof(uint32_t));
+		}
+	}
+
+	// shadow data write
+	VkDescriptorBufferInfo shadowDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_shadowData.size() * sizeof(ShadowData), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(shadowDataBufferInfo.range, shadowDataBufferInfo.offset, shadowDataBufferInfo.buffer, bufferPtr);
+		if (!lightData.m_shadowData.empty())
+		{
+			memcpy(bufferPtr, lightData.m_shadowData.data(), lightData.m_shadowData.size() * sizeof(ShadowData));
+		}
+	}
+
+	BufferViewHandle shadowDataBufferViewHandle = 0;
+	{
+		BufferDescription desc = {};
+		desc.m_name = "Shadow Data Buffer";
+		desc.m_concurrent = true;
+		desc.m_clear = false;
+		desc.m_clearValue.m_bufferClearValue = 0;
+		desc.m_size = shadowDataBufferInfo.range;
+
+		BufferHandle shadowDataBufferHandle = graph.importBuffer(desc, shadowDataBufferInfo.buffer, shadowDataBufferInfo.offset);
+		shadowDataBufferViewHandle = graph.createBufferView({ desc.m_name, shadowDataBufferHandle, 0, desc.m_size });
+	}
+
+	// instance data write
+	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max((renderData.m_opaqueBatchSize
+		+ renderData.m_alphaTestedBatchSize
+		+ renderData.m_transparentBatchSize
+		+ renderData.m_opaqueShadowBatchSize
+		+ renderData.m_alphaTestedShadowBatchSize) * sizeof(SubMeshInstanceData), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
+		if (renderData.m_opaqueBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_opaqueBatch, renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_opaqueBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_alphaTestedBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_alphaTestedBatch, renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_alphaTestedBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_transparentBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_transparentBatch, renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_transparentBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_opaqueShadowBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_opaqueShadowBatch, renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_opaqueShadowBatchSize * sizeof(SubMeshInstanceData);
+		}
+		if (renderData.m_alphaTestedShadowBatchSize)
+		{
+			memcpy(bufferPtr, renderData.m_alphaTestedShadowBatch, renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData));
+			bufferPtr += renderData.m_alphaTestedShadowBatchSize * sizeof(SubMeshInstanceData);
+		}
+	}
+
+	PassRecordContext passRecordContext{};
+	passRecordContext.m_renderResources = m_renderResources.get();
+	passRecordContext.m_deferredObjectDeleter = m_deferredObjectDeleter.get();
+	passRecordContext.m_renderPassCache = m_renderPassCache.get();
+	passRecordContext.m_pipelineCache = m_pipelineCache.get();
+	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
+	passRecordContext.m_commonRenderData = &commonData;
+
+	// prepare indirect buffers
+	VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
+	prepareIndirectBuffersPassData.m_passRecordContext = &passRecordContext;
+	prepareIndirectBuffersPassData.m_opaqueCount = renderData.m_opaqueBatchSize;
+	prepareIndirectBuffersPassData.m_maskedCount = renderData.m_alphaTestedBatchSize;
+	prepareIndirectBuffersPassData.m_transparentCount = renderData.m_transparentBatchSize;
+	prepareIndirectBuffersPassData.m_opaqueShadowCount = renderData.m_opaqueShadowBatchSize;
+	prepareIndirectBuffersPassData.m_maskedShadowCount = renderData.m_alphaTestedShadowBatchSize;
+	prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	prepareIndirectBuffersPassData.m_opaqueIndirectBufferHandle = opaqueIndirectBufferViewHandle;
+	prepareIndirectBuffersPassData.m_maskedIndirectBufferHandle = maskedIndirectBufferViewHandle;
+	prepareIndirectBuffersPassData.m_transparentIndirectBufferHandle = transparentIndirectBufferViewHandle;
+	prepareIndirectBuffersPassData.m_opaqueShadowIndirectBufferHandle = opaqueShadowIndirectBufferViewHandle;
+	prepareIndirectBuffersPassData.m_maskedShadowIndirectBufferHandle = maskedShadowIndirectBufferViewHandle;
+
+	if (renderData.m_opaqueBatchSize || renderData.m_alphaTestedBatchSize || renderData.m_opaqueShadowBatchSize || renderData.m_alphaTestedShadowBatchSize)
+	{
+		VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
+	}
+
+	// draw opaque geometry to gbuffer
+	VKGeometryPass::Data opaqueGeometryPassData;
+	opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
+	opaqueGeometryPassData.m_drawCount = renderData.m_opaqueBatchSize;
+	opaqueGeometryPassData.m_alphaMasked = false;
+	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectBufferViewHandle;
+	opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
+	opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
+	opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+
+	if (renderData.m_opaqueBatchSize)
+	{
+		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
+	}
+
+
+	// draw alpha masked geometry to gbuffer
+	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
+	maskedGeometryPassData.m_drawCount = renderData.m_alphaTestedBatchSize;
+	maskedGeometryPassData.m_alphaMasked = true;
+	maskedGeometryPassData.m_indirectBufferHandle = maskedIndirectBufferViewHandle;
+
+	if (renderData.m_alphaTestedBatchSize)
+	{
+		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
+	}
+
+	// common sdsm
+	VKSDSMModule::OutputData sdsmOutputData;
+	VKSDSMModule::InputData sdsmInputData;
+	sdsmInputData.m_passRecordContext = &passRecordContext;
+	sdsmInputData.m_depthImageHandle = depthImageViewHandle;
+
+	VKSDSMModule::addToGraph(graph, sdsmInputData, sdsmOutputData);
+
+
+	// sdsm shadow matrix
+	VKSDSMShadowMatrixPass::Data sdsmShadowMatrixPassData;
+	sdsmShadowMatrixPassData.m_passRecordContext = &passRecordContext;
+	sdsmShadowMatrixPassData.m_lightView = glm::lookAt(glm::vec3(), -glm::vec3(commonData.m_invViewMatrix * lightData.m_directionalLightData.front().m_direction), glm::vec3(glm::transpose(commonData.m_viewMatrix)[0]));
+	sdsmShadowMatrixPassData.m_lightSpaceNear = renderData.m_orthoNearest;
+	sdsmShadowMatrixPassData.m_lightSpaceFar = renderData.m_orthoFarthest;
+	sdsmShadowMatrixPassData.m_shadowDataBufferHandle = shadowDataBufferViewHandle;
+	sdsmShadowMatrixPassData.m_partitionBoundsBufferHandle = sdsmOutputData.m_partitionBoundsBufferHandle;
+
+	VKSDSMShadowMatrixPass::addToGraph(graph, sdsmShadowMatrixPassData);
+
+
+	// initialize velocity of static objects
+	VKVelocityInitializationPass::Data velocityInitializationPassData;
+	velocityInitializationPassData.m_passRecordContext = &passRecordContext;
+	velocityInitializationPassData.m_depthImageHandle = depthImageViewHandle;
+	velocityInitializationPassData.m_velocityImageHandle = velocityImageViewHandle;
+
+	VKVelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
+
+
+	// draw shadows
+	VKShadowPass::Data opaqueShadowPassData;
+	opaqueShadowPassData.m_passRecordContext = &passRecordContext;
+	opaqueShadowPassData.m_drawCount = renderData.m_opaqueShadowBatchSize;
+	opaqueShadowPassData.m_shadowJobCount = static_cast<uint32_t>(lightData.m_shadowJobs.size());
+	opaqueShadowPassData.m_shadowJobs = lightData.m_shadowJobs.data();
+	opaqueShadowPassData.m_alphaMasked = false;
+	opaqueShadowPassData.m_clear = true;
+	opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
+	opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
+	opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
+	opaqueShadowPassData.m_shadowDataBufferHandle = shadowDataBufferViewHandle;
+	opaqueShadowPassData.m_indirectBufferHandle = opaqueShadowIndirectBufferViewHandle;
+	opaqueShadowPassData.m_shadowAtlasImageHandle = shadowAtlasImageViewHandle;
+
+	if (renderData.m_opaqueShadowBatchSize && !lightData.m_shadowJobs.empty())
+	{
+		VKShadowPass::addToGraph(graph, opaqueShadowPassData);
+	}
+
+
+	// draw masked shadows
+	VKShadowPass::Data maskedShadowPassData = opaqueShadowPassData;
+	maskedShadowPassData.m_drawCount = renderData.m_alphaTestedShadowBatchSize;
+	maskedShadowPassData.m_alphaMasked = true;
+	maskedShadowPassData.m_clear = lightData.m_shadowJobs.empty();
+	maskedShadowPassData.m_indirectBufferHandle = maskedShadowIndirectBufferViewHandle;
+
+	if (renderData.m_alphaTestedShadowBatchSize && !lightData.m_shadowJobs.empty())
+	{
+		VKShadowPass::addToGraph(graph, maskedShadowPassData);
+	}
+
+
+	// gtao
+	VKGTAOPass::Data gtaoPassData;
+	gtaoPassData.m_passRecordContext = &passRecordContext;
+	gtaoPassData.m_depthImageHandle = depthImageViewHandle;
+	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
+
+	if (g_ssaoEnabled)
+	{
+		VKGTAOPass::addToGraph(graph, gtaoPassData);
+	}
+
+
+	// gtao spatial filter
+	VKGTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
+	gtaoPassSpatialFilterPassData.m_passRecordContext = &passRecordContext;
+	gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageViewHandle;
+	gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageViewHandle;
+
+	if (g_ssaoEnabled)
+	{
+		VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
+	}
+
+
+	// gtao temporal filter
+	VKGTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
+	gtaoPassTemporalFilterPassData.m_passRecordContext = &passRecordContext;
+	gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageViewHandle;
+	gtaoPassTemporalFilterPassData.m_velocityImageHandle = velocityImageViewHandle;
+	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageViewHandle;
+	gtaoPassTemporalFilterPassData.m_resultImageHandle = gtaoImageViewHandle;
+
+	if (g_ssaoEnabled)
+	{
+		VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
+	}
+
+
+	// cull lights to tiles
+	VKRasterTilingPass::Data rasterTilingPassData;
+	rasterTilingPassData.m_passRecordContext = &passRecordContext;
+	rasterTilingPassData.m_lightData = &lightData;
+	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+
+	if (!lightData.m_pointLightData.empty())
+	{
+		VKRasterTilingPass::addToGraph(graph, rasterTilingPassData);
+	}
+
+
+	// light gbuffer
+	VKDirectLightingPass::Data lightingPassData;
+	lightingPassData.m_passRecordContext = &passRecordContext;
+	lightingPassData.m_ssao = g_ssaoEnabled;
+	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	lightingPassData.m_shadowDataBufferHandle = shadowDataBufferViewHandle;
+	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	lightingPassData.m_depthImageHandle = depthImageViewHandle;
+	lightingPassData.m_uvImageHandle = uvImageViewHandle;
+	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	lightingPassData.m_shadowAtlasImageHandle = shadowAtlasImageViewHandle;
+	lightingPassData.m_occlusionImageHandle = gtaoImageViewHandle;
+	lightingPassData.m_resultImageHandle = lightImageViewHandle;
+	lightingPassData.m_shadowSplitsBufferHandle = sdsmOutputData.m_splitsBufferHandle;
+
+	VKDirectLightingPass::addToGraph(graph, lightingPassData);
+
+
+	// calculate luminance histograms
+	VKLuminanceHistogramPass::Data luminanceHistogramPassData;
+	luminanceHistogramPassData.m_passRecordContext = &passRecordContext;
+	luminanceHistogramPassData.m_logMin = -10.0f;
+	luminanceHistogramPassData.m_logMax = 17.0f;
+	luminanceHistogramPassData.m_lightImageHandle = lightImageViewHandle;
+	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
+
+	VKLuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
+
+
+	// calculate avg luminance
+	VKLuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
+	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
+	luminanceHistogramAvgPassData.m_logMin = -10.0f;
+	luminanceHistogramAvgPassData.m_logMax = 17.0f;
+	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
+	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
+
+	VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
+
+
+	VkSwapchainKHR swapChain = m_swapChain->get();
+
+	// get swapchain image
+	ImageViewHandle swapchainImageViewHandle = 0;
+	{
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			m_swapChain->recreate(m_width, m_height);
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			Utility::fatalExit("Failed to acquire swap chain image!", -1);
+		}
+
+		ImageDescription desc{};
+		desc.m_name = "Swapchain Image";
+		desc.m_concurrent = true;
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_swapChain->getImageFormat();
+		
+
+
+		auto imageHandle = graph.importImage(desc, m_swapChain->getImage(m_swapChainImageIndex));
+		swapchainImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+
+	// taa resolve
+	VKTAAResolvePass::Data taaResolvePassData;
+	taaResolvePassData.m_passRecordContext = &passRecordContext;
+	taaResolvePassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
+	taaResolvePassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	taaResolvePassData.m_depthImageHandle = depthImageViewHandle;
+	taaResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
+	taaResolvePassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
+	taaResolvePassData.m_lightImageHandle = lightImageViewHandle;
+	taaResolvePassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
+
+	if (g_TAAEnabled)
+	{
+		VKTAAResolvePass::addToGraph(graph, taaResolvePassData);
+
+		lightImageViewHandle = taaResolveImageViewHandle;
+	}
+
+
+	ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled ? finalImageViewHandle : swapchainImageViewHandle;
+
+	// tonemap
+	VKTonemapPass::Data tonemapPassData;
+	tonemapPassData.m_passRecordContext = &passRecordContext;
+	tonemapPassData.m_srcImageHandle = lightImageViewHandle;
+	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
+	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
+
+	VKTonemapPass::addToGraph(graph, tonemapPassData);
+
+
+	// FXAA
+	VKFXAAPass::Data fxaaPassData;
+	fxaaPassData.m_passRecordContext = &passRecordContext;
+	fxaaPassData.m_inputImageHandle = tonemapTargetTextureHandle;
+	fxaaPassData.m_resultImageHandle = swapchainImageViewHandle;
+
+	if (g_FXAAEnabled)
+	{
+		VKFXAAPass::addToGraph(graph, fxaaPassData);
+	}
+
+
+	// text pass
+	//PassTimingInfo timingInfos[128];
 	//size_t timingInfoCount;
 
 	//graph.getTimingInfo(timingInfoCount, timingInfos);
@@ -808,104 +654,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	//VKTextPass::addToGraph(graph, textPassData);
 
-
-	//// blit to swapchain image
-	////VkOffset3D blitSize;
-	////blitSize.x = m_width;
-	////blitSize.y = m_height;
-	////blitSize.z = 1;
-	////
-	////VkImageBlit imageBlitRegion = {};
-	////imageBlitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	////imageBlitRegion.srcSubresource.layerCount = 1;
-	////imageBlitRegion.srcOffsets[1] = blitSize;
-	////imageBlitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	////imageBlitRegion.dstSubresource.layerCount = 1;
-	////imageBlitRegion.dstOffsets[1] = blitSize;
-	////
-	////VKBlitPass::Data finalBlitPassData;
-	////finalBlitPassData.m_regionCount = 1;
-	////finalBlitPassData.m_regions = &imageBlitRegion;
-	////finalBlitPassData.m_filter = VK_FILTER_NEAREST;
-	////finalBlitPassData.m_srcImage = tonemapTargetTextureHandle;
-	////finalBlitPassData.m_dstImage = swapchainTextureHandle;
-	////
-	////if (m_swapChain->getImageFormat() != VK_FORMAT_R8G8B8A8_UNORM)
-	////{
-	////	VKBlitPass::addToGraph(graph, finalBlitPassData, "Final Blit Pass");
-	////}
-
-
-	//graph.execute(FrameGraph::ResourceHandle(swapchainTextureHandle), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	// get swapchain image
-	VkSwapchainKHR swapChain = m_swapChain->get();
-	VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		m_swapChain->recreate(m_width, m_height);
-		return;
-	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	{
-		Utility::fatalExit("Failed to acquire swap chain image!", -1);
-	}
-
-	ImageDescription imageDesc{};
-	imageDesc.m_width = m_width;
-	imageDesc.m_height = m_height;
-	imageDesc.m_format = m_swapChain->getImageFormat();
-	imageDesc.m_concurrent = true;
-
-	VkQueue prevQueue = graph.undefinedQueue;
-	ResourceState prevState = ResourceState::UNDEFINED;
-
-	auto imageHandle = graph.importImage(imageDesc, m_swapChain->getImage(m_swapChainImageIndex), &prevQueue, &prevState);
-
-	ImageViewDescription viewDesc{};
-	viewDesc.m_imageHandle = imageHandle;
-	viewDesc.m_subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-	auto viewHandle = graph.createImageView(viewDesc);
-
-	ResourceUsageDescription usageDesc{ ResourceViewHandle(viewHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER };
-
-	auto *pipelineCache = m_pipelineCache.get();
-	auto *descriptorSetCache = m_descriptorSetCache.get();
-	graph.addPass("", QueueType::COMPUTE, 1, &usageDesc, [=](VkCommandBuffer cmdBuf, const Registry &registry)
-	{
-		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/rendergraphtest_comp.spv");
-
-			pipelineDesc.finalize();
-		}
-
-		auto pipelineData = pipelineCache->getPipeline(pipelineDesc);
-
-		VkDescriptorSet descriptorSet = descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
-
-		// update descriptor sets
-		{
-			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
-
-			// result image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, { VK_NULL_HANDLE, registry.getImageView(viewHandle), VK_IMAGE_LAYOUT_GENERAL }, 0);
-
-			writer.commit();
-		}
-
-		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
-
-		VKUtility::dispatchComputeHelper(cmdBuf, m_width, m_height, 1, 16, 16, 1);
-	});
-
 	uint32_t semaphoreCount;
 	VkSemaphore *semaphores;
-	graph.execute(ResourceViewHandle(viewHandle), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::COMPUTE);
+	graph.execute(ResourceViewHandle(swapchainImageViewHandle), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::GRAPHICS);
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = semaphoreCount;

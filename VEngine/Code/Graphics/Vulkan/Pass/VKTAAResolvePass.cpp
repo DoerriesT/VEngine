@@ -5,8 +5,8 @@
 #include "Graphics/Vulkan/VKPipelineCache.h"
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/VKContext.h"
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -16,20 +16,22 @@ namespace
 #include "../../../../../Application/Resources/Shaders/taaResolve_bindings.h"
 }
 
-void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data &data)
+void VEngine::VKTAAResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("TAA Resolve Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readTexture(data.m_depthImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readTexture(data.m_velocityImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readTexture(data.m_taaHistoryImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-		builder.readTexture(data.m_lightImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_velocityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_taaHistoryImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_lightImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_lightImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+	};
 
-		builder.writeStorageImage(data.m_taaResolveImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("TAA Resolve", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
@@ -38,31 +40,22 @@ void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data 
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
-			VkSampler pointSamplerClamp = data.m_renderResources->m_pointSamplerClamp;
-			VkSampler linearSamplerClamp = data.m_renderResources->m_linearSamplerClamp;
+			VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_pointSamplerClamp;
+			VkSampler linearSamplerClamp = data.m_passRecordContext->m_renderResources->m_linearSamplerClamp;
 
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// result image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_taaResolveImageHandle), RESULT_IMAGE_BINDING);
-
-			// depth image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, pointSamplerClamp), DEPTH_IMAGE_BINDING);
-
-			// velocity image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
-
-			// history image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_taaHistoryImageHandle, linearSamplerClamp), HISTORY_IMAGE_BINDING);
-
-			// source image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, linearSamplerClamp), SOURCE_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_taaResolveImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_taaHistoryImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), HISTORY_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), SOURCE_IMAGE_BINDING);
 
 			writer.commit();
 		}
@@ -81,6 +74,6 @@ void VEngine::VKTAAResolvePass::addToGraph(FrameGraph::Graph &graph, const Data 
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		VKUtility::dispatchComputeHelper(cmdBuf, data.m_width, data.m_height, 1, 8, 8, 1);
+		VKUtility::dispatchComputeHelper(cmdBuf, width, height, 1, 8, 8, 1);
 	});
 }

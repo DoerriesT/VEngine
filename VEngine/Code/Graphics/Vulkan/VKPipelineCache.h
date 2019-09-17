@@ -26,7 +26,7 @@ namespace VEngine
 			VkPipelineLayout m_layout;
 		};
 
-		PipelineData getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const VKRenderPassDescription &renderPassDesc, VkRenderPass renderPass);
+		PipelineData getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const RenderPassCompatibilityDescription &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass);
 		PipelineData getPipeline(const VKComputePipelineDescription &pipelineDesc);
 
 	private:

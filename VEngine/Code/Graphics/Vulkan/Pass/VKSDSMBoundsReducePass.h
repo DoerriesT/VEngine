@@ -1,28 +1,20 @@
 #pragma once
-#include "Graphics/Vulkan/FrameGraph/FrameGraph.h"
-#include <glm/mat4x4.hpp>
+#include "Graphics/Vulkan/RenderGraph.h"
 
 namespace VEngine
 {
-	class VKPipelineCache;
-	class VKDescriptorSetCache;
-	struct VKRenderResources;
+	struct PassRecordContext;
 
 	namespace VKSDSMBoundsReducePass
 	{
 		struct Data
 		{
-			VKRenderResources *m_renderResources;
-			VKPipelineCache *m_pipelineCache;
-			VKDescriptorSetCache *m_descriptorSetCache;
-			uint32_t m_width;
-			uint32_t m_height;
-			glm::mat4 m_invProjection;
-			FrameGraph::BufferHandle m_partitionBoundsBufferHandle;
-			FrameGraph::BufferHandle m_splitsBufferHandle;
-			FrameGraph::ImageHandle m_depthImageHandle;
+			PassRecordContext *m_passRecordContext;
+			BufferViewHandle m_partitionBoundsBufferHandle;
+			BufferViewHandle m_splitsBufferHandle;
+			ImageViewHandle m_depthImageHandle;
 		};
 
-		void addToGraph(FrameGraph::Graph &graph, const Data &data);
+		void addToGraph(RenderGraph &graph, const Data &data);
 	}
 }

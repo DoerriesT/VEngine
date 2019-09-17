@@ -6,6 +6,8 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
+#include "Graphics/Vulkan/PassRecordContext.h"
+#include "Graphics/RenderData.h"
 
 namespace
 {
@@ -15,17 +17,19 @@ namespace
 #include "../../../../../Application/Resources/Shaders/luminanceHistogram_bindings.h"
 }
 
-void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, const Data &data)
+void VEngine::VKLuminanceHistogramPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	graph.addComputePass("Luminance Histogram Pass", FrameGraph::QueueType::GRAPHICS,
-		[&](FrameGraph::PassBuilder builder)
+	ResourceUsageDescription passUsages[]
 	{
-		builder.readTexture(data.m_lightImageHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		{ResourceViewHandle(data.m_luminanceHistogramBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_lightImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+	};
 
-		builder.writeStorageBuffer(data.m_luminanceHistogramBufferHandle, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-	},
-		[&](VkCommandBuffer cmdBuf, const FrameGraph::ResourceRegistry &registry, const VKRenderPassDescription *renderPassDescription, VkRenderPass renderPass)
+	graph.addPass("Luminance Histogram", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
+		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
 		// create pipeline description
 		VKComputePipelineDescription pipelineDesc;
 		{
@@ -34,18 +38,15 @@ void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, con
 			pipelineDesc.finalize();
 		}
 
-		auto pipelineData = data.m_pipelineCache->getPipeline(pipelineDesc);
+		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 
-		VkDescriptorSet descriptorSet = data.m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
+		VkDescriptorSet descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelineData.m_descriptorSetLayoutData.m_layouts[0], pipelineData.m_descriptorSetLayoutData.m_counts[0]);
 
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// source image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, data.m_renderResources->m_pointSamplerClamp), SOURCE_IMAGE_BINDING);
-
-			// histogram
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_pointSamplerClamp), SOURCE_IMAGE_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_luminanceHistogramBufferHandle), LUMINANCE_HISTOGRAM_BINDING);
 
 			writer.commit();
@@ -60,6 +61,6 @@ void VEngine::VKLuminanceHistogramPass::addToGraph(FrameGraph::Graph &graph, con
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		vkCmdDispatch(cmdBuf, data.m_height, 1, 1);
+		vkCmdDispatch(cmdBuf, height, 1, 1);
 	});
 }
