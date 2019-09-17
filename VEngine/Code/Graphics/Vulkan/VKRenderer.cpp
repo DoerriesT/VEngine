@@ -88,6 +88,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	m_renderResources->m_mappableUBOBlock[commonData.m_currentResourceIndex]->reset();
 	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->reset();
 	m_descriptorSetCache->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
+	m_deferredObjectDeleter->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 
 	// import resources into graph
 
