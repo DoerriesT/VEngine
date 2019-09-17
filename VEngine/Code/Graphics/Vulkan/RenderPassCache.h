@@ -11,6 +11,6 @@ namespace VEngine
 		void getRenderPass(const RenderPassDescription &renderPassDesc, RenderPassCompatibilityDescription &compatDesc, VkRenderPass &renderPass);
 
 	private:
-		std::unordered_map<RenderPassDescription, VkRenderPass, RenderPassDescriptionHash> m_graphicsPipelines;
+		std::unordered_map<RenderPassDescription, VkRenderPass, RenderPassDescriptionHash> m_renderPasses;
 	};
 }

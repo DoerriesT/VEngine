@@ -1,16 +1,18 @@
 #include "RenderPassCache.h"
 #include "VKContext.h"
 #include "Utility/Utility.h"
+#include <iostream>
 
 void VEngine::RenderPassCache::getRenderPass(const RenderPassDescription &renderPassDesc, RenderPassCompatibilityDescription &compatDesc, VkRenderPass &renderPass)
 {
 	// get renderPass from cache or create a new one
 	{
-		renderPass = m_graphicsPipelines[renderPassDesc];
+		VkRenderPass &pass = m_renderPasses[renderPassDesc];
 
 		// renderPass does not exist yet -> create it
-		if (renderPass == VK_NULL_HANDLE)
+		if (pass == VK_NULL_HANDLE)
 		{
+			std::cout << "Creating RenderPass!" << std::endl;
 			VkSubpassDescription subpasses[RenderPassDescription::MAX_SUBPASSES];
 
 			for (size_t i = 0; i < renderPassDesc.m_subpassCount; ++i)
@@ -37,11 +39,13 @@ void VEngine::RenderPassCache::getRenderPass(const RenderPassDescription &render
 			renderPassInfo.dependencyCount = renderPassDesc.m_dependencyCount;
 			renderPassInfo.pDependencies = renderPassDesc.m_dependencies;
 
-			if (vkCreateRenderPass(g_context.m_device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+			if (vkCreateRenderPass(g_context.m_device, &renderPassInfo, nullptr, &pass) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create RenderPass!", EXIT_FAILURE);
 			}
 		}
+
+		renderPass = pass;
 	}
 
 	// create compatibility description
