@@ -368,7 +368,8 @@ void VEngine::VKMemoryAllocator::free(VKAllocationHandle allocationHandle)
 		m_pools[allocationInfo->m_poolIndex].free(*allocationInfo);
 	}
 
-	memset(&allocationInfo, 0, sizeof(allocationInfo));
+	memset(allocationInfo, 0, sizeof(*allocationInfo));
+	m_allocationInfoPool.free(allocationInfo);
 }
 
 void VEngine::VKMemoryAllocator::destroyImage(VkImage image, VKAllocationHandle allocationHandle)
