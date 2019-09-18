@@ -10,6 +10,7 @@
 #include "Utility/Timer.h"
 #include "graphics/imgui/imgui.h"
 #include "graphics/imgui/imgui_impl_glfw.h"
+#include "Graphics/imgui/ImGuizmo.h"
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -64,6 +65,7 @@ void VEngine::Engine::start()
 
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 
 		// gui window
 		ImGui::Begin("VEngine");

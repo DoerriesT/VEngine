@@ -154,6 +154,7 @@
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
     <ClInclude Include="Code\Graphics\imgui\imconfig.h" />
     <ClInclude Include="Code\Graphics\imgui\imgui.h" />
+    <ClInclude Include="Code\Graphics\imgui\ImGuizmo.h" />
     <ClInclude Include="Code\Graphics\imgui\imgui_impl_glfw.h" />
     <ClInclude Include="Code\Graphics\imgui\imgui_internal.h" />
     <ClInclude Include="Code\Graphics\imgui\imstb_rectpack.h" />
@@ -235,6 +236,7 @@
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\imgui\imgui.cpp" />
+    <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp" />
     <ClCompile Include="Code\Graphics\imgui\imgui_demo.cpp" />
     <ClCompile Include="Code\Graphics\imgui\imgui_draw.cpp" />
     <ClCompile Include="Code\Graphics\imgui\imgui_impl_glfw.cpp" />

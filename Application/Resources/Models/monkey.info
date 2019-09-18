@@ -1,0 +1,39 @@
+{
+    "materialLibraryFile": "Resources/Models/monkey.matlib",
+    "maxCorner": [
+        1.3671879768371582,
+        0.984375,
+        0.8515620231628418
+    ],
+    "meshFile": "Resources/Models/monkey.mesh",
+    "minCorner": [
+        -1.3671879768371582,
+        -0.984375,
+        -0.8515620231628418
+    ],
+    "subMeshInstances": [
+        {
+            "material": 0,
+            "name": " Suzanne",
+            "subMesh": 0
+        }
+    ],
+    "subMeshes": [
+        {
+            "dataOffset": 0,
+            "indexCount": 2901,
+            "maxCorner": [
+                1.3671879768371582,
+                0.984375,
+                0.8515620231628418
+            ],
+            "minCorner": [
+                -1.3671879768371582,
+                -0.984375,
+                -0.8515620231628418
+            ],
+            "name": " Suzanne",
+            "vertexCount": 2865
+        }
+    ]
+}

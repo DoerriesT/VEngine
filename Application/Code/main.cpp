@@ -15,6 +15,10 @@
 #include <random>
 #include <Input/UserInput.h>
 #include <GlobalVar.h>
+#include <Graphics/imgui/ImGuizmo.h>
+#include <Graphics/Camera/Camera.h>
+#include <glm/ext.hpp>
+#include <Graphics/imgui/imgui.h>
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -35,6 +39,12 @@ public:
 		entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
+
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/monkey");
+		m_monkeyEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(m_monkeyEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(), 0.5f);
+		entityRegistry.assign<VEngine::MeshComponent>(m_monkeyEntity, scene.m_meshInstances["Resources/Models/monkey"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(m_monkeyEntity);
 
 		//scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
 		//entt::entity exteriorEntity = entityRegistry.create();
@@ -79,6 +89,58 @@ public:
 		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::T);
 		VEngine::g_FXAAEnabled = input.isKeyPressed(InputKey::F);
 		VEngine::g_ssaoEnabled = input.isKeyPressed(InputKey::G);
+
+		auto &entityRegistry = m_engine->getEntityRegistry();
+
+		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
+		auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
+		VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
+
+		auto viewMatrix = camera.getViewMatrix();
+		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
+
+		auto &monkeyTransC = entityRegistry.get<VEngine::TransformationComponent>(m_monkeyEntity);
+
+		auto &io = ImGui::GetIO();
+
+		static ImGuizmo::OPERATION op = ImGuizmo::OPERATION::TRANSLATE;
+
+		if (input.isKeyPressed(InputKey::ONE))
+		{
+			op = ImGuizmo::OPERATION::TRANSLATE;
+		}
+		else if (input.isKeyPressed(InputKey::TWO))
+		{
+			op = ImGuizmo::OPERATION::ROTATE;
+		}
+		else if (input.isKeyPressed(InputKey::THREE))
+		{
+			op = ImGuizmo::OPERATION::SCALE;
+		}
+
+		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
+		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, op, ImGuizmo::MODE::WORLD, (float *)&monkeyTransC.m_transformation);
+		glm::vec3 position;
+		glm::vec3 eulerAngles;
+		glm::vec3 scale;
+		ImGuizmo::DecomposeMatrixToComponents((float*)&monkeyTransC.m_transformation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
+		
+		switch (op)
+		{
+		case ImGuizmo::TRANSLATE:
+			monkeyTransC.m_position = position;
+			break;
+		case ImGuizmo::ROTATE:
+			monkeyTransC.m_orientation = glm::quat(glm::radians(eulerAngles));
+			break;
+		case ImGuizmo::SCALE:
+			monkeyTransC.m_scale = scale.x;
+			break;
+		case ImGuizmo::BOUNDS:
+			break;
+		default:
+			break;
+		}
 	};
 
 	void shutdown() override
@@ -87,6 +149,7 @@ public:
 
 private:
 	VEngine::Engine *m_engine;
+	entt::entity m_monkeyEntity;
 };
 
 int main()

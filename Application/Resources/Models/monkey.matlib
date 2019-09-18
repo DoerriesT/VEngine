@@ -1,0 +1,29 @@
+{
+    "count": 1,
+    "materials": [
+        {
+            "albedo": [
+                0.800000011920929,
+                0.800000011920929,
+                0.800000011920929
+            ],
+            "albedoTexture": "",
+            "alphaMode": 0,
+            "displacementTexture": "",
+            "emissive": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissiveTexture": "",
+            "metalness": 0.0,
+            "metalnessTexture": "",
+            "name": "None",
+            "normalTexture": "",
+            "occlusionTexture": "",
+            "opacity": 1.0,
+            "roughness": 0.0,
+            "roughnessTexture": ""
+        }
+    ]
+}
