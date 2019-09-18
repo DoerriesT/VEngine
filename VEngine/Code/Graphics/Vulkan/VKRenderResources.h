@@ -18,11 +18,10 @@ namespace VEngine
 		VKImage m_shadowTexture;
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_gtaoHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
+		VKImage m_imGuiFontsTexture;
 
 		// views
-		VkImageView m_shadowTextureView;
-		VkImageView m_taaHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
-		VkImageView m_gtaoHistoryTextureViews[RendererConsts::FRAMES_IN_FLIGHT];
+		VkImageView m_imGuiFontsTextureView;
 
 		// buffers
 		VKBuffer m_lightProxyVertexBuffer;
@@ -63,6 +62,8 @@ namespace VEngine
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSet m_textureDescriptorSet;
+		VkDescriptorSetLayout m_imGuiDescriptorSetLayout;
+		VkDescriptorSet m_imGuiDescriptorSet;
 		VkDescriptorPool m_textureDescriptorSetPool;
 
 		explicit VKRenderResources();
@@ -74,5 +75,6 @@ namespace VEngine
 		void init(uint32_t width, uint32_t height);
 		void resize(uint32_t width, uint32_t height);
 		void updateTextureArray(const VkDescriptorImageInfo *data, size_t count);
+		void createImGuiFontsTexture();
 	};
 }

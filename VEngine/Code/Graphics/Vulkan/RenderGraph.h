@@ -146,6 +146,7 @@ namespace VEngine
 		ClearValue m_clearValue;
 		VkDeviceSize m_size = 0;
 		VkFlags m_usageFlags = 0;
+		bool m_hostVisible;
 	};
 
 	struct PassCreateInfo
@@ -176,6 +177,8 @@ namespace VEngine
 		BufferDescription getBufferDescription(BufferViewHandle handle) const;
 		bool firstUse(ResourceHandle handle) const;
 		bool lastUse(ResourceHandle handle) const;
+		void map(BufferViewHandle handle, void **data) const;
+		void unmap(BufferViewHandle handle) const;
 
 	private:
 		const RenderGraph &m_graph;
@@ -229,6 +232,7 @@ namespace VEngine
 			bool m_concurrent = false;
 			bool m_external = false;
 			bool m_image = false;
+			bool m_hostVisible;
 		};
 
 		struct ExternalResourceInfo

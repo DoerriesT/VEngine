@@ -27,6 +27,7 @@
 #include "Pass/VKGTAOTemporalFilterPass.h"
 #include "Pass/VKSDSMShadowMatrixPass.h"
 #include "Pass/VKDirectLightingPass.h"
+#include "Pass/ImGuiPass.h"
 #include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -39,6 +40,7 @@
 #include "PassRecordContext.h"
 #include "RenderPassCache.h"
 #include "DeferredObjectDeleter.h"
+#include "Graphics/imgui/imgui.h"
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -592,6 +594,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	{
 		VKFXAAPass::addToGraph(graph, fxaaPassData);
 	}
+
+
+	// ImGui
+	ImGuiPass::Data imGuiPassData;
+	imGuiPassData.m_passRecordContext = &passRecordContext;
+	imGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
+	imGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+
+	ImGuiPass::addToGraph(graph, imGuiPassData);
 
 
 	// text pass

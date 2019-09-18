@@ -8,6 +8,8 @@
 #include "Input/CameraControllerSystem.h"
 #include "GlobalVar.h"
 #include "Utility/Timer.h"
+#include "graphics/imgui/imgui.h"
+#include "graphics/imgui/imgui_impl_glfw.h"
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -26,6 +28,23 @@ void VEngine::Engine::start()
 	m_window = std::make_unique<Window>(g_windowWidth, g_windowHeight, m_windowTitle);
 	m_userInput = std::make_unique<UserInput>();
 	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->grabMouse(grab); });
+
+	// Setup Dear ImGui context
+	{
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsClassic();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
+	}
+
 	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle());
 
 	m_window->addInputListener(m_userInput.get());
@@ -42,9 +61,19 @@ void VEngine::Engine::start()
 		float timeDelta = static_cast<float>(timer.getTimeDelta());
 
 		m_window->pollEvents();
+
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		// gui window
+		ImGui::Begin("VEngine");
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+
 		m_userInput->input();
 		m_cameraControllerSystem->update(timeDelta);
 		m_gameLogic.update(timeDelta);
+		ImGui::Render();
 		m_renderSystem->update(timeDelta);
 
 		double timeDiff = (timer.getElapsedTicks() - previousTickCount) / static_cast<double>(timer.getTickFrequency());

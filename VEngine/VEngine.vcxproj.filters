@@ -34,6 +34,9 @@
     <Filter Include="Code\Graphics\Vulkan\Module">
       <UniqueIdentifier>{3cbaea81-8050-489d-a52d-63741b3b147b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\imgui">
+      <UniqueIdentifier>{a1620fde-1206-4c40-8066-221a5b760040}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -273,6 +276,30 @@
     <ClInclude Include="Code\Graphics\Vulkan\PassRecordContext.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imconfig.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imgui.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imgui_internal.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imstb_rectpack.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imstb_textedit.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imstb_truetype.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\imgui\imgui_impl_glfw.h">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -451,6 +478,24 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\DeferredObjectDeleter.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\imgui\imgui.cpp">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\imgui\imgui_demo.cpp">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\imgui\imgui_draw.cpp">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\imgui\imgui_widgets.cpp">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\imgui\imgui_impl_glfw.cpp">
+      <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

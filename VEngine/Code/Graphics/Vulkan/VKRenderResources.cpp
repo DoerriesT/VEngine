@@ -7,6 +7,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Mesh.h"
 #include "RenderGraph.h"
+#include "Graphics/imgui/imgui.h"
 
 VEngine::VKRenderResources::~VKRenderResources()
 {
@@ -52,24 +53,6 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
-
-		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.layerCount = 1;
-
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_shadowTexture.getImage();
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_shadowTexture.getFormat();
-		viewInfo.subresourceRange = subresourceRange;
-
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_shadowTextureView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
 	}
 
 	// TAA history textures
@@ -94,24 +77,6 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
 			m_taaHistoryTextures[i].create(imageCreateInfo, allocCreateInfo);
-
-			VkImageSubresourceRange subresourceRange = {};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
-			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.layerCount = 1;
-
-			VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-			viewInfo.image = m_taaHistoryTextures[i].getImage();
-			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewInfo.format = m_taaHistoryTextures[i].getFormat();
-			viewInfo.subresourceRange = subresourceRange;
-
-			if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_taaHistoryTextureViews[i]) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create image view!", -1);
-			}
 		}
 	}
 
@@ -137,24 +102,6 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
 			m_gtaoHistoryTextures[i].create(imageCreateInfo, allocCreateInfo);
-
-			VkImageSubresourceRange subresourceRange = {};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
-			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.layerCount = 1;
-
-			VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-			viewInfo.image = m_gtaoHistoryTextures[i].getImage();
-			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewInfo.format = m_gtaoHistoryTextures[i].getFormat();
-			viewInfo.subresourceRange = subresourceRange;
-
-			if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_gtaoHistoryTextureViews[i]) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create image view!", -1);
-			}
 		}
 	}
 
@@ -179,7 +126,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 				m_mappableUBOBlock[i] = std::make_unique<VKMappableBufferBlock>(m_uboBuffers[i], g_context.m_properties.limits.minUniformBufferOffsetAlignment);
 			}
 		}
-		
+
 		// ssbo
 		{
 			VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -338,7 +285,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	
+
 		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSamplerClamp) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
@@ -392,6 +339,21 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
+	// create texture descriptor pool
+	{
+		VkDescriptorPoolSize poolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , RendererConsts::TEXTURE_ARRAY_SIZE + 1 /*ImGui Fonts texture*/ };
+
+		VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+		poolCreateInfo.maxSets = 2;
+		poolCreateInfo.poolSizeCount = 1;
+		poolCreateInfo.pPoolSizes = &poolSize;
+
+		if (vkCreateDescriptorPool(g_context.m_device, &poolCreateInfo, nullptr, &m_textureDescriptorSetPool) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create texture array DescriptorPool!", -1);
+		}
+	}
+
 	// create texture descriptor set
 	{
 		VkDescriptorSetLayoutBinding binding{};
@@ -409,20 +371,6 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 			Utility::fatalExit("Failed to create texture array DescriptorSetLayout!", -1);
 		}
 
-
-		VkDescriptorPoolSize poolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , RendererConsts::TEXTURE_ARRAY_SIZE };
-
-		VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		poolCreateInfo.maxSets = 1;
-		poolCreateInfo.poolSizeCount = 1;
-		poolCreateInfo.pPoolSizes = &poolSize;
-
-		if (vkCreateDescriptorPool(g_context.m_device, &poolCreateInfo, nullptr, &m_textureDescriptorSetPool) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create texture array DescriptorPool!", -1);
-		}
-
-
 		VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		setAllocInfo.descriptorPool = m_textureDescriptorSetPool;
 		setAllocInfo.descriptorSetCount = 1;
@@ -433,6 +381,36 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 			Utility::fatalExit("Failed to create texture array DescriptorSet!", -1);
 		}
 	}
+
+	// create ImGui descriptor set
+	{
+		VkDescriptorSetLayoutBinding binding{};
+		binding.binding = 0;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		binding.descriptorCount = 1;
+		binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		layoutCreateInfo.bindingCount = 1;
+		layoutCreateInfo.pBindings = &binding;
+
+		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_imGuiDescriptorSetLayout) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create ImGui DescriptorSetLayout!", -1);
+		}
+
+		VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		setAllocInfo.descriptorPool = m_textureDescriptorSetPool;
+		setAllocInfo.descriptorSetCount = 1;
+		setAllocInfo.pSetLayouts = &m_imGuiDescriptorSetLayout;
+
+		if (vkAllocateDescriptorSets(g_context.m_device, &setAllocInfo, &m_imGuiDescriptorSet) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create ImGui DescriptorSet!", -1);
+		}
+	}
+
+	createImGuiFontsTexture();
 
 	// light proxy vertex/index buffer
 	{
@@ -619,6 +597,118 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 
 	vkDeviceWaitIdle(g_context.m_device);
 	vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
+}
+
+void VEngine::VKRenderResources::createImGuiFontsTexture()
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	unsigned char* pixels;
+	int width, height;
+	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+	size_t upload_size = width * height * 4 * sizeof(char);
+
+	assert(upload_size <= m_stagingBuffer.getSize());
+
+	// create image and view
+	{
+		// create image
+		VkImageCreateInfo imageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_imGuiFontsTexture.create(imageCreateInfo, allocCreateInfo);
+
+
+		// create view
+		VkImageViewCreateInfo viewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewCreateInfo.image = m_imGuiFontsTexture.getImage();
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.format = imageCreateInfo.format;
+		viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		if (vkCreateImageView(g_context.m_device, &viewCreateInfo, nullptr, &m_imGuiFontsTextureView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create ImGui fonts texture view!", EXIT_FAILURE);
+		}
+	}
+
+	// Update the Descriptor Set:
+	{
+		VkDescriptorImageInfo imageInfo{ m_linearSamplerRepeat, m_imGuiFontsTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+
+		VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+		write.dstSet = m_imGuiDescriptorSet;
+		write.descriptorCount = 1;
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write.pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
+	}
+
+	// Upload to Buffer:
+	{
+		uint8_t *map = nullptr;
+		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), (void **)&map);
+		{
+			memcpy(map, pixels, upload_size);
+		}
+		g_context.m_allocator.unmapMemory(m_stagingBuffer.getAllocation());
+	}
+
+	// Copy to Image:
+	{
+		VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+		{
+			VkImageMemoryBarrier imageBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+			imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier.image = m_imGuiFontsTexture.getImage();
+			imageBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+			// transition image into VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			imageBarrier.srcAccessMask = 0;
+			imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			
+			vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
+			VkBufferImageCopy region{};
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.layerCount = 1;
+			region.imageExtent.width = width;
+			region.imageExtent.height = height;
+			region.imageExtent.depth = 1;
+
+			vkCmdCopyBufferToImage(copyCmd, m_stagingBuffer.getBuffer(), m_imGuiFontsTexture.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+			// transition image into VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			imageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+		}
+		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
+	}
+
+	// Store our identifier
+	io.Fonts->TexID = (ImTextureID)(intptr_t)m_imGuiFontsTexture.getImage();
 }
 
 VEngine::VKRenderResources::VKRenderResources()

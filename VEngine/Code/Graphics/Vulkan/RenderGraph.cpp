@@ -324,7 +324,16 @@ void VEngine::RenderGraph::createResources()
 			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 			VKAllocationCreateInfo allocCreateInfo = {};
-			allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			if (resDesc.m_hostVisible)
+			{
+				allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+				allocCreateInfo.m_preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			}
+			else
+			{
+				allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			}
+			
 
 			if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_imageBuffers[resourceIndex].buffer, m_allocations[resourceIndex]) != VK_SUCCESS)
 			{
@@ -1185,6 +1194,7 @@ VEngine::BufferHandle VEngine::RenderGraph::createBuffer(const BufferDescription
 	resDesc.m_size = bufferDesc.m_size;
 	resDesc.m_subresourceCount = 1;
 	resDesc.m_concurrent = bufferDesc.m_concurrent;
+	resDesc.m_hostVisible = bufferDesc.m_hostVisible;
 
 	m_resourceDescriptions.push_back(resDesc);
 	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));
@@ -1533,4 +1543,23 @@ bool VEngine::Registry::firstUse(ResourceHandle handle) const
 bool VEngine::Registry::lastUse(ResourceHandle handle) const
 {
 	return m_passHandleIndex == m_graph.m_resourceLifetimes[(size_t)handle - 1].second;
+}
+
+void VEngine::Registry::map(BufferViewHandle handle, void **data) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
+	assert(resDesc.m_hostVisible && !resDesc.m_external);
+	g_context.m_allocator.mapMemory(m_graph.m_allocations[resIdx], data);
+	*data = ((uint8_t*)*data) + viewDesc.m_offset;
+}
+
+void VEngine::Registry::unmap(BufferViewHandle handle) const
+{
+	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];
+	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
+	assert(resDesc.m_hostVisible && !resDesc.m_external);
+	g_context.m_allocator.unmapMemory(m_graph.m_allocations[resIdx]);
 }
