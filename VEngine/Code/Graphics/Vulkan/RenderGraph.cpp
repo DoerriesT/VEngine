@@ -15,7 +15,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 		if (finalResourceState != ResourceState::UNDEFINED)
 		{
 			const auto &viewDesc = m_viewDescriptions[(size_t)finalResourceHandle - 1];
-			const uint16_t resourceIndex = (uint16_t)viewDesc.m_resourceHandle - 1;
+			const size_t resourceIndex = (size_t)viewDesc.m_resourceHandle - 1;
 			const auto &resDesc = m_resourceDescriptions[resourceIndex];
 			const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
 
@@ -73,10 +73,10 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 
 		// increment subresource refcounts for each reading pass
 		// and fill stack with resources where refCount == 0
-		std::stack<uint16_t> resourceStack;
-		for (size_t subresourceIdx = 0; subresourceIdx < m_resourceUsages.size(); ++subresourceIdx)
+		std::stack<uint32_t> resourceStack;
+		for (uint32_t subresourceIdx = 0; subresourceIdx < m_resourceUsages.size(); ++subresourceIdx)
 		{
-			for (size_t usageIdx = 0; usageIdx < m_resourceUsages[subresourceIdx].size(); ++usageIdx)
+			for (uint32_t usageIdx = 0; usageIdx < m_resourceUsages[subresourceIdx].size(); ++usageIdx)
 			{
 				if (getResourceStateInfo(m_resourceUsages[subresourceIdx][usageIdx].m_initialResourceState).m_readAccess)
 				{
@@ -85,27 +85,27 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 			}
 			if (subresourceRefCounts[subresourceIdx] == 0)
 			{
-				resourceStack.push(static_cast<uint16_t>(subresourceIdx));
+				resourceStack.push(subresourceIdx);
 			}
 		}
 
 		// cull passes/resources
 		while (!resourceStack.empty())
 		{
-			uint16_t subresourceIndex = resourceStack.top();
+			auto subresourceIndex = resourceStack.top();
 			resourceStack.pop();
 
 			// find writing passes
 			for (const auto &usage : m_resourceUsages[subresourceIndex])
 			{
-				const uint32_t passHandle = usage.m_passHandle;
+				const auto passHandle = usage.m_passHandle;
 				// if writing pass, decrement refCount. if it falls to zero, decrement refcount of read resources
 				if (getResourceStateInfo(usage.m_initialResourceState).m_writeAccess && passRefCounts[passHandle] != 0 && --passRefCounts[passHandle] == 0)
 				{
 					--survivingPassCount;
-					const size_t start = m_passSubresources[passHandle].m_subresourcesOffset;
-					const size_t end = m_passSubresources[passHandle].m_subresourcesOffset + m_passSubresources[passHandle].m_readSubresourceCount;
-					for (size_t i = start; i < end; ++i)
+					const uint32_t start = m_passSubresources[passHandle].m_subresourcesOffset;
+					const uint32_t end = m_passSubresources[passHandle].m_subresourcesOffset + m_passSubresources[passHandle].m_readSubresourceCount;
+					for (uint32_t i = start; i < end; ++i)
 					{
 						auto &refCount = subresourceRefCounts[m_passSubresourceIndices[i]];
 						if (refCount != 0 && --refCount == 0)
@@ -124,14 +124,14 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 		}
 
 		// determine resource lifetimes (up to this point pass handles are still ordered by the <-relation)
-		std::vector<std::vector<uint16_t>> clearResources(passCount);
-		for (size_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
+		std::vector<std::vector<uint32_t>> clearResources(passCount);
+		for (uint32_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 		{
 			std::pair<uint16_t, uint16_t> lifetime{ 0xFFFF, 0 };
 			bool referenced = false;
 			const uint32_t usageOffset = m_resourceUsageOffsets[resourceIdx];
 			const uint32_t subresourceCount = m_resourceDescriptions[resourceIdx].m_subresourceCount;
-			for (size_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
+			for (uint32_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
 			{
 				if (!m_resourceUsages[resourceIdx].empty())
 				{
@@ -169,7 +169,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 						const auto &resDesc = m_resourceDescriptions[resourceIdx];
 						const uint32_t subresourceCount = resDesc.m_subresourceCount;
 						// insert clear pass resource usage and add subresources to pass subresource index list
-						for (size_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
+						for (uint32_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
 						{
 							const auto state = resDesc.m_image ? ResourceState::WRITE_IMAGE_TRANSFER : ResourceState::WRITE_BUFFER_TRANSFER;
 							m_resourceUsages[subresourceIdx].insert(m_resourceUsages[subresourceIdx].cbegin(), { clearPassHandle, state, state });
@@ -187,7 +187,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 							const auto &resDesc = m_resourceDescriptions[resourceIdx];
 							if (resDesc.m_image)
 							{
-								const VkImage image = registry.getImage(ImageHandle(resourceIdx + 1));
+								const VkImage image = registry.getImage(ImageHandle((size_t)resourceIdx + 1));
 								const VkImageSubresourceRange subresourceRange{ VKUtility::imageAspectMaskFromFormat(resDesc.m_format), 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
 								if (VKUtility::isDepthFormat(resDesc.m_format))
 								{
@@ -200,7 +200,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 							}
 							else
 							{
-								vkCmdFillBuffer(cmdBuf, registry.getBuffer(BufferHandle(resourceIdx + 1)), 0, resDesc.m_size, resDesc.m_clearValue.m_bufferClearValue);
+								vkCmdFillBuffer(cmdBuf, registry.getBuffer(BufferHandle((size_t)resourceIdx + 1)), 0, resDesc.m_size, resDesc.m_clearValue.m_bufferClearValue);
 							}
 						}
 					}, m_passRecordInfo[i].m_queue });
@@ -388,9 +388,9 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 	std::vector<bool> finalResourceSignalPasses(m_passSubresources.size());
 
 	const auto &finalViewDesc = m_viewDescriptions[(size_t)finalResourceHandle - 1];
-	const uint32_t finalResIdx = (uint32_t)finalViewDesc.m_resourceHandle - 1;
+	const uint32_t finalResIdx = (uint32_t)(size_t)finalViewDesc.m_resourceHandle - 1;
 
-	for (size_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
+	for (uint32_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 	{
 		// skip culled resources
 		if (!m_culledResources[resourceIdx])
@@ -401,7 +401,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 		const auto &resDesc = m_resourceDescriptions[resourceIdx];
 		const auto usageOffset = m_resourceUsageOffsets[resourceIdx];
 
-		for (size_t subresourceIdx = usageOffset; subresourceIdx < usageOffset + resDesc.m_subresourceCount; ++subresourceIdx)
+		for (uint32_t subresourceIdx = usageOffset; subresourceIdx < usageOffset + resDesc.m_subresourceCount; ++subresourceIdx)
 		{
 			if (m_resourceUsages[subresourceIdx].empty())
 			{
@@ -424,7 +424,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 			bufferBarrier.size = resDesc.m_size;
 
 			const VkQueue firstUsageQueue = m_passRecordInfo[m_resourceUsages[subresourceIdx][0].m_passHandle].m_queue;
-			const uint32_t relativeSubresIdx = static_cast<uint32_t>(subresourceIdx - usageOffset);
+			const uint32_t relativeSubresIdx = subresourceIdx - usageOffset;
 			UsageInfo prevUsageInfo{ 0, firstUsageQueue, getResourceStateInfo(ResourceState::UNDEFINED) };
 
 			// if the resource is external, change prevUsageInfo accordingly, schedule a release barrier if required and update external info values
@@ -672,10 +672,10 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 		if (semaphoreDependency.second || finalResourceSignalPasses[passHandle])
 		{
 			startNewBatch = true;
-			semaphoreOffsets[passHandle] = m_semaphores.size();
+			semaphoreOffsets[passHandle] = static_cast<uint16_t>(m_semaphores.size());
 			m_batches.back().m_signalSemaphoreOffset = semaphoreOffsets[passHandle];
 			m_batches.back().m_signalSemaphoreCount = semaphoreDependency.second;
-			for (uint16_t semaphoreIndex = 0; semaphoreIndex < semaphoreDependency.second; ++semaphoreIndex)
+			for (uint32_t semaphoreIndex = 0; semaphoreIndex < semaphoreDependency.second; ++semaphoreIndex)
 			{
 				m_semaphores.push_back(g_context.m_syncPrimitivePool.acquireSemaphore());
 			}
@@ -1034,9 +1034,9 @@ void VEngine::RenderGraph::forEachSubresource(ResourceViewHandle handle, std::fu
 	const auto &viewDesc = m_viewDescriptions[viewIndex];
 	const size_t resIndex = (size_t)viewDesc.m_resourceHandle - 1;
 	const auto &resDesc = m_resourceDescriptions[resIndex];
-	const size_t resourceUsagesOffset = m_resourceUsageOffsets[resIndex];
+	const uint32_t resourceUsagesOffset = m_resourceUsageOffsets[resIndex];
 
-	for (size_t i = 0; i < resDesc.m_subresourceCount; ++i)
+	for (uint32_t i = 0; i < resDesc.m_subresourceCount; ++i)
 	{
 		func(i + resourceUsagesOffset);
 	}
@@ -1076,10 +1076,10 @@ void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32
 	{
 		const auto &usage = passResourceUsages[i];
 		const auto &viewDesc = m_viewDescriptions[(size_t)usage.m_viewHandle - 1];
-		const uint16_t resourceIndex = (uint16_t)viewDesc.m_resourceHandle - 1;
+		const size_t resourceIndex = (size_t)viewDesc.m_resourceHandle - 1;
 		const auto &resDesc = m_resourceDescriptions[resourceIndex];
 
-		m_viewUsages[passIndex].push_back((uint16_t)usage.m_viewHandle - 1);
+		m_viewUsages[passIndex].push_back((uint16_t)(size_t)usage.m_viewHandle - 1);
 
 		const auto stateInfo = getResourceStateInfo(usage.m_resourceState);
 		const auto viewSubresourceCount = viewDesc.m_image ? viewDesc.m_subresourceRange.layerCount * viewDesc.m_subresourceRange.levelCount : 1;
@@ -1407,7 +1407,7 @@ VkImageView VEngine::Registry::getImageView(ImageViewHandle handle) const
 
 VkDescriptorImageInfo VEngine::Registry::getImageInfo(ImageViewHandle handle, ResourceState state, VkSampler sampler) const
 {
-	return {sampler, m_graph.m_imageBufferViews[(size_t)handle - 1].imageView, m_graph.getResourceStateInfo(state).m_layout};
+	return { sampler, m_graph.m_imageBufferViews[(size_t)handle - 1].imageView, m_graph.getResourceStateInfo(state).m_layout };
 }
 
 VEngine::ImageViewDescription VEngine::Registry::getImageViewDescription(ImageViewHandle handle) const

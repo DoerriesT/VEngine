@@ -326,7 +326,7 @@ namespace VEngine
 		// everything below needs to be reset before use //
 		///////////////////////////////////////////////////
 
-		std::vector<uint16_t> m_passSubresourceIndices;
+		std::vector<uint32_t> m_passSubresourceIndices;
 		std::vector<PassSubresources> m_passSubresources;
 
 		std::vector<ResourceDescription> m_resourceDescriptions;
