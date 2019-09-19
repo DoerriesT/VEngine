@@ -36,6 +36,7 @@ namespace VEngine
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void updateTextureData();
+		const uint32_t *getLuminanceHistogram() const;
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
@@ -48,6 +49,8 @@ namespace VEngine
 		std::unique_ptr<VKMeshManager> m_meshManager;
 		std::unique_ptr<VKSwapChain> m_swapChain;
 		std::unique_ptr<RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
+
+		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 
 		uint32_t m_width;
 		uint32_t m_height;

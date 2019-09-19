@@ -199,7 +199,7 @@ namespace VEngine
 		RenderGraph &operator= (const RenderGraph &) = delete;
 		RenderGraph &operator= (const RenderGraph &&) = delete;
 		~RenderGraph();
-		void addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc);
+		void addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution = false);
 		ImageViewHandle createImageView(const ImageViewDescription &viewDesc);
 		BufferViewHandle createBufferView(const BufferViewDescription &viewDesc);
 		ImageHandle createImage(const ImageDescription &imageDesc);
@@ -288,6 +288,7 @@ namespace VEngine
 			uint32_t m_subresourcesOffset;
 			uint16_t m_readSubresourceCount;
 			uint16_t m_writeSubresourceCount;
+			bool m_forceExecution;
 		};
 
 		struct PassRecordInfo

@@ -473,6 +473,11 @@ entt::entity VEngine::RenderSystem::getCameraEntity() const
 	return m_cameraEntity;
 }
 
+const uint32_t * VEngine::RenderSystem::getLuminanceHistogram() const
+{
+	return m_renderer->getLuminanceHistogram();
+}
+
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
 {
 	for (size_t i = 0; i < count; ++i)

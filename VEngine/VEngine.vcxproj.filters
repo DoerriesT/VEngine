@@ -37,6 +37,9 @@
     <Filter Include="Code\Graphics\imgui">
       <UniqueIdentifier>{a1620fde-1206-4c40-8066-221a5b760040}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Gui">
+      <UniqueIdentifier>{a986f54a-fb21-4e47-bcd4-d4d615a52a56}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -303,6 +306,9 @@
     <ClInclude Include="Code\Graphics\imgui\ImGuizmo.h">
       <Filter>Code\Graphics\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -502,6 +508,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp">
       <Filter>Code\Graphics\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

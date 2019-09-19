@@ -67,9 +67,19 @@ void VEngine::Engine::start()
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
+		ImGui::ShowDemoWindow();
+
 		// gui window
 		ImGui::Begin("VEngine");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		const uint32_t *luminancHistogram = m_renderSystem->getLuminanceHistogram();
+		float(*histogramValuesGetter)(void* data, int idx) = [](void* data, int idx)
+		{
+			const uint32_t *luminancHistogram = *(const uint32_t **)data;
+			return static_cast<float>(luminancHistogram[idx]);
+		};
+		ImGui::PlotHistogram("Luminance Histogram", histogramValuesGetter, (void *)&luminancHistogram, RendererConsts::LUMINANCE_HISTOGRAM_SIZE, 0, nullptr, FLT_MAX, FLT_MAX, {0, 80});
 		ImGui::End();
 
 		m_userInput->input();

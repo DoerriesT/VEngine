@@ -29,6 +29,7 @@ namespace VEngine
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
+		const uint32_t *getLuminanceHistogram() const;
 
 	private:
 		entt::registry &m_entityRegistry;

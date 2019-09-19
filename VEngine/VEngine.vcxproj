@@ -172,6 +172,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
@@ -248,6 +249,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />

@@ -117,6 +117,15 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 			}
 		}
 
+		// ensure passes with forced execution are not culled
+		for (size_t i = 0; i < m_passSubresources.size(); ++i)
+		{
+			if (m_passSubresources[i].m_forceExecution)
+			{
+				++passRefCounts[i];
+			}
+		}
+
 		// remove culled passes from resource usages
 		for (auto &usages : m_resourceUsages)
 		{
@@ -333,7 +342,7 @@ void VEngine::RenderGraph::createResources()
 			{
 				allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 			}
-			
+
 
 			if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_imageBuffers[resourceIndex].buffer, m_allocations[resourceIndex]) != VK_SUCCESS)
 			{
@@ -1066,7 +1075,7 @@ VEngine::RenderGraph::~RenderGraph()
 	reset();
 }
 
-void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc)
+void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution)
 {
 	const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
 
@@ -1077,6 +1086,7 @@ void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32
 
 	m_passSubresources.push_back({ static_cast<uint32_t>(m_passSubresourceIndices.size()) });
 	auto &passSubresources = m_passSubresources.back();
+	passSubresources.m_forceExecution = forceExecution;
 
 	m_viewUsages.push_back({});
 

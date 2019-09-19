@@ -162,7 +162,25 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_avgLuminanceBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
 
+	// luminance histogram readback buffers
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = sizeof(uint32_t) * RendererConsts::LUMINANCE_HISTOGRAM_SIZE;
+		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			m_luminanceHistogramReadBackBuffers[i].create(bufferCreateInfo, allocCreateInfo);
+		}
 	}
 
 	// staging buffer

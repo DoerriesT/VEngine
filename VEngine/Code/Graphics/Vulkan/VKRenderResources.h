@@ -27,6 +27,7 @@ namespace VEngine
 		VKBuffer m_lightProxyVertexBuffer;
 		VKBuffer m_lightProxyIndexBuffer;
 		VKBuffer m_avgLuminanceBuffer;
+		VKBuffer m_luminanceHistogramReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
 		VKBuffer m_vertexBuffer;

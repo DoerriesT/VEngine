@@ -28,6 +28,7 @@
 #include "Pass/VKSDSMShadowMatrixPass.h"
 #include "Pass/VKDirectLightingPass.h"
 #include "Pass/ImGuiPass.h"
+#include "Pass/LuminanceHistogramReadBackCopyPass.h"
 #include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -91,6 +92,24 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->reset();
 	m_descriptorSetCache->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 	m_deferredObjectDeleter->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
+
+	// read back luminance histogram
+	{
+		auto &buffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_currentResourceIndex];
+		uint32_t *data;
+		g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
+
+		VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+		range.memory = buffer.getDeviceMemory();
+		range.offset = buffer.getOffset();
+		range.size = buffer.getSize();
+
+		vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
+		memcpy(m_luminanceHistogram, data, sizeof(m_luminanceHistogram));
+
+		g_context.m_allocator.unmapMemory(buffer.getAllocation());
+	}
+	
 
 	// import resources into graph
 
@@ -521,6 +540,14 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
 
+	// copy luminance histogram to readback buffer
+	LuminanceHistogramReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;
+	luminanceHistogramReadBackCopyPassData.m_passRecordContext = &passRecordContext;
+	luminanceHistogramReadBackCopyPassData.m_srcBuffer = luminanceHistogramBufferViewHandle;
+	luminanceHistogramReadBackCopyPassData.m_dstBuffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_currentResourceIndex].getBuffer();
+
+	LuminanceHistogramReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
+
 
 	VkSwapchainKHR swapChain = m_swapChain->get();
 
@@ -724,4 +751,9 @@ void VEngine::VKRenderer::updateTextureData()
 	size_t count;
 	m_textureLoader->getDescriptorImageInfos(&imageInfos, count);
 	m_renderResources->updateTextureArray(imageInfos, count);
+}
+
+const uint32_t *VEngine::VKRenderer::getLuminanceHistogram() const
+{
+	return m_luminanceHistogram;
 }
