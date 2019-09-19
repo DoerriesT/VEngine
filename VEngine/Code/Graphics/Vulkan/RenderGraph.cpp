@@ -613,7 +613,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 				{
 					// set image barrier values
 					imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
-					imageBarrier.dstAccessMask = curUsageInfo.m_stateInfo.m_accessMask;
+					imageBarrier.dstAccessMask = 0;// curUsageInfo.m_stateInfo.m_accessMask;
 					imageBarrier.oldLayout = prevUsageInfo.m_stateInfo.m_layout;
 					imageBarrier.newLayout = curUsageInfo.m_stateInfo.m_layout;
 					imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
