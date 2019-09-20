@@ -309,6 +309,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Gui\MemoryAllocatorPlot.h">
+      <Filter>Code\Gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -511,6 +514,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp">
+      <Filter>Code\Gui</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

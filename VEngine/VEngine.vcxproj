@@ -217,6 +217,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKTextureLoader.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h" />
     <ClInclude Include="Code\Graphics\Vulkan\volk.h" />
+    <ClInclude Include="Code\Gui\MemoryAllocatorPlot.h" />
     <ClInclude Include="Code\Handles.h" />
     <ClInclude Include="Code\IGameLogic.h" />
     <ClInclude Include="Code\Input\CameraControllerSystem.h" />
@@ -293,6 +294,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKUtility.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\volk.c" />
+    <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp" />
     <ClCompile Include="Code\Input\CameraControllerSystem.cpp" />
     <ClCompile Include="Code\Input\UserInput.cpp" />
     <ClCompile Include="Code\Scene.cpp" />

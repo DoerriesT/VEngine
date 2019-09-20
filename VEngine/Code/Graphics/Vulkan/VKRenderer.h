@@ -1,8 +1,10 @@
 #pragma once
 #include "VKContext.h"
 #include <memory>
+#include <vector>
 #include "Graphics/RendererConsts.h"
 #include "Handles.h"
+#include "VKMemoryAllocator.h"
 
 namespace VEngine
 {
@@ -37,6 +39,7 @@ namespace VEngine
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void updateTextureData();
 		const uint32_t *getLuminanceHistogram() const;
+		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;

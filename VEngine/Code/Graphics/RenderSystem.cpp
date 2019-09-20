@@ -478,6 +478,11 @@ const uint32_t * VEngine::RenderSystem::getLuminanceHistogram() const
 	return m_renderer->getLuminanceHistogram();
 }
 
+std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::RenderSystem::getMemoryAllocatorDebugInfo() const
+{
+	return m_renderer->getMemoryAllocatorDebugInfo();
+}
+
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
 {
 	for (size_t i = 0; i < count; ++i)

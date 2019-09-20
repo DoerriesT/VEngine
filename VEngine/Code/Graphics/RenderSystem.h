@@ -7,6 +7,7 @@
 #include "RendererConsts.h"
 #include "Handles.h"
 #include "Utility/AxisAlignedBoundingBox.h"
+#include "Vulkan/VKMemoryAllocator.h"
 
 namespace VEngine
 {
@@ -30,6 +31,7 @@ namespace VEngine
 		void setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
 		const uint32_t *getLuminanceHistogram() const;
+		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 
 	private:
 		entt::registry &m_entityRegistry;

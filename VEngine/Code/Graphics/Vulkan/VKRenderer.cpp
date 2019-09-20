@@ -757,3 +757,8 @@ const uint32_t *VEngine::VKRenderer::getLuminanceHistogram() const
 {
 	return m_luminanceHistogram;
 }
+
+std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::VKRenderer::getMemoryAllocatorDebugInfo() const
+{
+	return g_context.m_allocator.getDebugInfo();
+}
