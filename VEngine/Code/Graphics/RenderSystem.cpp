@@ -483,6 +483,11 @@ std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::RenderSystem::getMemoryAll
 	return m_renderer->getMemoryAllocatorDebugInfo();
 }
 
+void VEngine::RenderSystem::getTimingInfo(size_t *count, const PassTimingInfo **data) const
+{
+	m_renderer->getTimingInfo(count, data);
+}
+
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
 {
 	for (size_t i = 0; i < count; ++i)

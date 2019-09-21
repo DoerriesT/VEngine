@@ -5,6 +5,7 @@
 #include "Graphics/RendererConsts.h"
 #include "Handles.h"
 #include "VKMemoryAllocator.h"
+#include "Graphics/PassTimingInfo.h"
 
 namespace VEngine
 {
@@ -40,6 +41,7 @@ namespace VEngine
 		void updateTextureData();
 		const uint32_t *getLuminanceHistogram() const;
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
+		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
@@ -59,5 +61,7 @@ namespace VEngine
 		uint32_t m_height;
 		uint32_t m_swapChainImageIndex;
 		TextureHandle m_fontAtlasTextureIndex;
+		size_t m_passTimingCount;
+		const PassTimingInfo *m_passTimingData;
 	};
 }

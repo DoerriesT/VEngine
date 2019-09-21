@@ -32,10 +32,10 @@ void VEngine::plotMemoryAllocator(const char* label, float(*values_getter)(void*
 
 	const ImU32 colors[] =
 	{
+		ImGui::GetColorU32({ 0.0f, 0.0f, 0.0f, 1.0f }),
+		ImGui::GetColorU32({ 0.0f, 0.0f, 0.0f, 1.0f }),
 		ImGui::GetColorU32({ 0.0f, 1.0f, 0.0f, 1.0f }),
 		ImGui::GetColorU32({ 0.0f, 0.5f, 0.0f, 1.0f }),
-		ImGui::GetColorU32({ 0.0f, 0.0f, 1.0f, 1.0f }),
-		ImGui::GetColorU32({ 0.0f, 0.0f, 0.5f, 1.0f }),
 		ImGui::GetColorU32({ 1.0f, 0.0f, 0.0f, 1.0f }),
 		ImGui::GetColorU32({ 0.5f, 0.0f, 0.0f, 1.0f }),
 	};
@@ -57,7 +57,6 @@ void VEngine::plotMemoryAllocator(const char* label, float(*values_getter)(void*
 		{
 			window->DrawList->AddRectFilled(rect.Min, rect.Max, colors[type * 2 + (i & 1)]);
 		}
-		
 		lastPos = pos;
 	}
 

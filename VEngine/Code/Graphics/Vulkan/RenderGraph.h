@@ -5,6 +5,7 @@
 #include "VKPipeline.h"
 #include "VKContext.h"
 #include "CommandBufferPool.h"
+#include "Graphics/PassTimingInfo.h"
 
 namespace VEngine
 {
@@ -208,6 +209,7 @@ namespace VEngine
 		BufferHandle importBuffer(const BufferDescription &bufferDesc, VkBuffer buffer, VkDeviceSize offset, VkQueue *queue = nullptr, ResourceState *resourceState = nullptr);
 		void reset();
 		void execute(ResourceViewHandle finalResourceHandle, VkSemaphore waitSemaphore, uint32_t *signalSemaphoreCount, VkSemaphore **signalSemaphores, ResourceState finalResourceState = ResourceState::UNDEFINED, QueueType queueType = QueueType::GRAPHICS);
+		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 
 	private:
 		struct ResourceDescription
@@ -324,13 +326,20 @@ namespace VEngine
 			VkFence m_fence;
 		};
 
+		enum { TIMESTAMP_QUERY_COUNT = 1024 };
+
 		VkQueue m_queues[3];
 		uint32_t m_queueFamilyIndices[3];
+		uint64_t m_queueTimestampMasks[3];
+		bool m_recordTimings = true;
+		std::unique_ptr<PassTimingInfo[]> m_timingInfos;
 
 		///////////////////////////////////////////////////
 		// everything below needs to be reset before use //
 		///////////////////////////////////////////////////
 
+		uint32_t m_timingInfoCount;
+		std::vector<const char *> m_passNames;
 		std::vector<uint32_t> m_passSubresourceIndices;
 		std::vector<PassSubresources> m_passSubresources;
 
@@ -353,6 +362,7 @@ namespace VEngine
 		std::vector<VkSemaphore> m_finalResourceSemaphores; // copy of some semaphores in m_semaphores: DON'T FREE THESE (double free)
 		VkFence m_fences[3];
 		CommandBufferPool m_commandBufferPool;
+		VkQueryPool m_queryPool;
 
 		// data used for recording
 		uint32_t m_externalSemaphoreSignalCounts[3];

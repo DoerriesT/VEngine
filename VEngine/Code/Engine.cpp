@@ -12,6 +12,7 @@
 #include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Gui/MemoryAllocatorPlot.h"
+#include "Graphics/PassTimingInfo.h"
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -92,6 +93,7 @@ void VEngine::Engine::start()
 
 		auto memoryInfo = m_renderSystem->getMemoryAllocatorDebugInfo();
 
+		ImGui::NewLine();
 		ImGui::Text("VRAM Allocator");
 		ImGui::Separator();
 		uint32_t currentMemoryType = ~uint32_t();
@@ -105,9 +107,11 @@ void VEngine::Engine::start()
 			}
 			plotMemoryAllocator("", memoryPlotValuesGetter, &info, info.m_spans.size(), nullptr, {});
 			uint32_t freeUsedWasted[3]{};
+			uint32_t allocCount = 0;
 			for (auto &span : info.m_spans)
 			{
 				freeUsedWasted[(size_t)span.m_state] += span.m_size;
+				allocCount += span.m_state == TLSFSpanDebugInfo::State::USED ? 1 : 0;
 			}
 			float freeUsedWastedMB[3];
 			float total = 0.0f;
@@ -116,10 +120,27 @@ void VEngine::Engine::start()
 				freeUsedWastedMB[i] = freeUsedWasted[i] * (1.0f / (1024.0f * 1024.0f));
 				total += freeUsedWastedMB[i];
 			}
-			float toPercent = 100.0f * 1.0f / total;
-			ImGui::Text("Free: %.3f MB (%.2f %%) | Used: %.3f MB (%.2f %%) | Total: %.3f MB", freeUsedWastedMB[0], freeUsedWastedMB[0] * toPercent, freeUsedWastedMB[1], freeUsedWastedMB[1] * toPercent, total);
+			float toPercent = 100.0f * (1.0f / total);
+			ImGui::Text("Free: %7.3f MB (%6.2f %%) | Used: %7.3f MB (%6.2f %%) | Total: %7.3f MB | Allocations: %u", freeUsedWastedMB[0], freeUsedWastedMB[0] * toPercent, freeUsedWastedMB[1], freeUsedWastedMB[1] * toPercent, total, allocCount);
 		}
 		ImGui::Separator();
+
+		ImGui::NewLine();
+		ImGui::Text("Profiler");
+		ImGui::Separator();
+		{
+			size_t passTimingCount;
+			const PassTimingInfo *passTimingInfo;
+			m_renderSystem->getTimingInfo(&passTimingCount, &passTimingInfo);
+			float total = 0.0f;
+			for (size_t i = 0; i < passTimingCount; ++i)
+			{
+				ImGui::Text("%30s : %f ms", passTimingInfo[i].m_passName, passTimingInfo[i].m_passTimeWithSync);
+				total += passTimingInfo[i].m_passTimeWithSync;
+			}
+			const char *totalStr = "Total";
+			ImGui::Text("%30s : %f ms", totalStr, total);
+		}
 
 		ImGui::End();
 

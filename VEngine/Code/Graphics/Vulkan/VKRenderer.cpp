@@ -109,7 +109,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		g_context.m_allocator.unmapMemory(buffer.getAllocation());
 	}
-	
+
+	// get timing data
+	graph.getTimingInfo(&m_passTimingCount, &m_passTimingData);
 
 	// import resources into graph
 
@@ -761,4 +763,10 @@ const uint32_t *VEngine::VKRenderer::getLuminanceHistogram() const
 std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::VKRenderer::getMemoryAllocatorDebugInfo() const
 {
 	return g_context.m_allocator.getDebugInfo();
+}
+
+void VEngine::VKRenderer::getTimingInfo(size_t *count, const PassTimingInfo **data) const
+{
+	*count = m_passTimingCount;
+	*data = m_passTimingData;
 }

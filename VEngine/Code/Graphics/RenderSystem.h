@@ -14,6 +14,7 @@ namespace VEngine
 	class VKRenderer;
 	struct Material;
 	struct SubMesh;
+	struct PassTimingInfo;
 
 	class RenderSystem
 	{
@@ -32,6 +33,7 @@ namespace VEngine
 		entt::entity getCameraEntity() const;
 		const uint32_t *getLuminanceHistogram() const;
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
+		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 
 	private:
 		entt::registry &m_entityRegistry;

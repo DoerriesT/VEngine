@@ -19,6 +19,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 			const auto &resDesc = m_resourceDescriptions[resourceIndex];
 			const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
 
+			m_passNames.push_back("Final Layout Transition");
 			m_passRecordInfo.push_back({});
 			auto &recordInfo = m_passRecordInfo.back();
 			recordInfo.m_queue = getQueue(queueType);
@@ -168,6 +169,8 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 				if (!clearResources[i].empty())
 				{
 					const uint16_t clearPassHandle = static_cast<uint16_t>(m_passSubresources.size());
+
+					m_passNames.push_back("Auto Clear Resource(s)");
 
 					// add and populate PassSubresources struct
 					m_passSubresources.push_back({ static_cast<uint32_t>(m_passSubresources.size()) });
@@ -793,6 +796,9 @@ void VEngine::RenderGraph::record()
 		}
 	}
 
+	// each pass uses 4 queries, so make sure, we dont exceed the query pool size
+	assert(!m_recordTimings || m_passHandleOrder.size() <= (TIMESTAMP_QUERY_COUNT / 4));
+
 	// record passes
 	for (const auto &batch : m_batches)
 	{
@@ -814,6 +820,17 @@ void VEngine::RenderGraph::record()
 			memoryBarrier.srcAccessMask = pass.m_memoryBarrierSrcAccessMask;
 			memoryBarrier.dstAccessMask = pass.m_memoryBarrierDstAccessMask;
 
+			const uint32_t queryIndex = (i + batch.m_passIndexOffset) * 4;
+			// disable timestamps if the queue doesnt support it
+			const bool recordTimings = m_recordTimings && m_queueTimestampMasks[batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2];
+
+			// write timestamp before waits
+			if (recordTimings)
+			{
+				vkCmdResetQueryPool(cmdBuf, m_queryPool, queryIndex, 4);
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 0);
+			}
+
 			// wait on events
 			if (!pass.m_waitEvents.empty())
 			{
@@ -831,8 +848,20 @@ void VEngine::RenderGraph::record()
 					pass.m_waitImageBarrierCount, pass.m_imageBarriers.data());
 			}
 
+			// write timestamp before pass commands
+			if (recordTimings)
+			{
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 1);
+			}
+
 			// record commands
 			pass.m_recordFunc(cmdBuf, Registry(*this, i));
+
+			// write timestamp after pass commands
+			if (recordTimings)
+			{
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 2);
+			}
 
 			// release resources
 			if (pass.m_releaseBufferBarrierCount || pass.m_releaseImageBarrierCount)
@@ -846,6 +875,12 @@ void VEngine::RenderGraph::record()
 			if (pass.m_endEvent != VK_NULL_HANDLE)
 			{
 				vkCmdSetEvent(cmdBuf, pass.m_endEvent, pass.m_endStages);
+			}
+
+			// write timestamp after all commands
+			if (recordTimings)
+			{
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 3);
 			}
 
 			// end recording
@@ -1068,6 +1103,27 @@ VEngine::RenderGraph::RenderGraph()
 	m_queueFamilyIndices[0] = g_context.m_queueFamilyIndices.m_graphicsFamily;
 	m_queueFamilyIndices[1] = g_context.m_queueFamilyIndices.m_computeFamily;
 	m_queueFamilyIndices[2] = g_context.m_queueFamilyIndices.m_transferFamily;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(g_context.m_physicalDevice, &queueFamilyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(g_context.m_physicalDevice, &queueFamilyCount, queueFamilies.data());
+	for (size_t i = 0; i < 3; ++i)
+	{
+		const uint32_t validBits = queueFamilies[m_queueFamilyIndices[i]].timestampValidBits;
+		m_queueTimestampMasks[i] = validBits >= 64 ? ~uint64_t() : ((uint64_t(1) << validBits) - 1);
+	}
+
+	VkQueryPoolCreateInfo queryPoolCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
+	queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+	queryPoolCreateInfo.queryCount = TIMESTAMP_QUERY_COUNT; // TODO: make this dynamic?
+
+	if (vkCreateQueryPool(g_context.m_device, &queryPoolCreateInfo, nullptr, &m_queryPool) != VK_SUCCESS)
+	{
+		Utility::fatalExit("Failed to create query pool!", EXIT_FAILURE);
+	}
+
+	m_timingInfos = std::make_unique<PassTimingInfo[]>(TIMESTAMP_QUERY_COUNT);
 }
 
 VEngine::RenderGraph::~RenderGraph()
@@ -1078,6 +1134,8 @@ VEngine::RenderGraph::~RenderGraph()
 void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution)
 {
 	const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
+
+	m_passNames.push_back(name);
 
 	m_passRecordInfo.push_back({});
 	auto &recordInfo = m_passRecordInfo.back();
@@ -1359,8 +1417,42 @@ void VEngine::RenderGraph::reset()
 		}
 	}
 
+	if (m_recordTimings && !m_passHandleOrder.empty())
+	{
+		m_timingInfoCount = static_cast<uint32_t>(m_passHandleOrder.size());
+		for (uint32_t i = 0; i < m_passHandleOrder.size(); ++i)
+		{
+			const VkQueue queue = m_passRecordInfo[m_passHandleOrder[i]].m_queue;
+			const uint32_t queueIndex = queue == m_queues[0] ? 0 : queue == m_queues[1] ? 1 : 2;
+
+			// zero initialize data so that passes on queues without timestamp support will have timings of 0
+			uint64_t data[4]{};
+			if (m_queueTimestampMasks[queueIndex])
+			{
+				if (vkGetQueryPoolResults(g_context.m_device, m_queryPool, i * 4, 4, sizeof(data), data, sizeof(data[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT) != VK_SUCCESS)
+				{
+					assert(false);
+				}
+
+				// mask value by valid timestamp bits
+				for (size_t j = 0; j < 4; ++j)
+				{
+					data[j] = data[j] & m_queueTimestampMasks[queueIndex];
+				}
+			}
+
+			m_timingInfos[i] =
+			{
+				m_passNames[m_passHandleOrder[i]],
+				static_cast<float>((data[2] - data[1]) * (g_context.m_properties.limits.timestampPeriod * (1.0 / 1e6))),
+				static_cast<float>((data[3] - data[0]) * (g_context.m_properties.limits.timestampPeriod * (1.0 / 1e6))),
+			};
+		}
+	}
+
 	// clear vectors
 	{
+		m_passNames.clear();
 		m_passSubresourceIndices.clear();
 		m_passSubresources.clear();
 		m_resourceDescriptions.clear();
@@ -1402,6 +1494,12 @@ void VEngine::RenderGraph::execute(ResourceViewHandle finalResourceHandle, VkSem
 	record();
 	*signalSemaphoreCount = static_cast<uint32_t>(m_finalResourceSemaphores.size());
 	*signalSemaphores = m_finalResourceSemaphores.data();
+}
+
+void VEngine::RenderGraph::getTimingInfo(size_t *count, const PassTimingInfo **data) const
+{
+	*count = m_timingInfoCount;
+	*data = m_timingInfos.get();
 }
 
 VEngine::Registry::Registry(const RenderGraph &graph, uint16_t passHandleIndex)

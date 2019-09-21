@@ -162,6 +162,7 @@
     <ClInclude Include="Code\Graphics\imgui\imstb_truetype.h" />
     <ClInclude Include="Code\Graphics\LightData.h" />
     <ClInclude Include="Code\Graphics\Mesh.h" />
+    <ClInclude Include="Code\Graphics\PassTimingInfo.h" />
     <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
