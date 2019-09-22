@@ -43,19 +43,24 @@ void VEngine::plotMemoryAllocator(const char* label, float(*values_getter)(void*
 	const ImU32 hoveredColor = ImGui::GetColorU32({ 1.0f, 1.0f, 0.0f, 1.0f });
 
 	float lastPos = inner_bb.Min.x;
+	unsigned int rectCount = 0;
 	for (int i = 0; i < values_count; ++i)
 	{
 		int type = 0;
 		float pos = ImLerp(inner_bb.Min.x, inner_bb.Max.x, values_getter(data, i, &type));
 		ImRect rect({ lastPos, inner_bb.Min.y }, { pos, inner_bb.Max.y });
-		if (hovered && rect.Contains(g.IO.MousePos))
+		if (rect.Max.x - rect.Min.x >= 1.0f)
 		{
-			window->DrawList->AddRectFilled(rect.Min, rect.Max, hoveredColor);
-			ImGui::SetTooltip("TODO");
-		}
-		else
-		{
-			window->DrawList->AddRectFilled(rect.Min, rect.Max, colors[type * 2 + (i & 1)]);
+			if (hovered && rect.Contains(g.IO.MousePos))
+			{
+				window->DrawList->AddRectFilled(rect.Min, rect.Max, hoveredColor);
+				ImGui::SetTooltip("TODO");
+			}
+			else
+			{
+				window->DrawList->AddRectFilled(rect.Min, rect.Max, colors[type * 2 + (rectCount & 1)]);
+			}
+			++rectCount;
 		}
 		lastPos = pos;
 	}
