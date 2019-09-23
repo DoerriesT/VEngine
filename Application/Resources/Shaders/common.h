@@ -22,18 +22,11 @@
 #define ALPHA_MIP_SCALE (0.25)
 #endif // MIP_SCALE
 
-struct ShadowData
-{
-	mat4 shadowViewProjectionMatrix;
-	vec4 shadowCoordScaleBias;
-};
-
 struct DirectionalLightData
 {
 	vec4 color;
 	vec4 direction;
-	uint shadowDataOffset;
-	uint shadowDataCount;
+	uint shadowDataOffsetCount;
 };
 
 struct PointLightData

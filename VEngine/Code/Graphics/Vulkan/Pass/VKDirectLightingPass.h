@@ -15,15 +15,14 @@ namespace VEngine
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
-			BufferViewHandle m_shadowDataBufferHandle;
-			BufferViewHandle m_shadowSplitsBufferHandle;
+			BufferViewHandle m_shadowMatricesBufferHandle;
 			BufferViewHandle m_pointLightBitMaskBufferHandle;
 			ImageViewHandle m_depthImageHandle;
 			ImageViewHandle m_uvImageHandle;
 			ImageViewHandle m_ddxyLengthImageHandle;
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
-			ImageViewHandle m_shadowAtlasImageHandle;
+			ImageViewHandle m_shadowArrayImageViewHandle;
 			ImageViewHandle m_occlusionImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};

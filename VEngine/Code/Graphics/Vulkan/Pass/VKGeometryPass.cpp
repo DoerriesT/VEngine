@@ -211,7 +211,7 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
+		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
 		vkCmdEndRenderPass(cmdBuf);
 	});

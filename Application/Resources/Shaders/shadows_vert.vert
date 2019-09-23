@@ -16,11 +16,6 @@ layout(set = TRANSFORM_DATA_SET, binding = TRANSFORM_DATA_BINDING) readonly buff
     mat4 uTransformData[];
 };
 
-layout(set = SHADOW_DATA_SET, binding = SHADOW_DATA_BINDING) readonly buffer SHADOW_DATA
-{
-	ShadowData uShadowData[];
-};
-
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
 {
     MaterialData uMaterialData[];
@@ -43,7 +38,7 @@ layout(location = 1) flat out uint vAlbedoTextureIndex;
 void main() 
 {
 	SubMeshInstanceData instanceData = uInstanceData[gl_InstanceIndex];
-    gl_Position = uShadowData[uPushConsts.shadowDataIndex].shadowViewProjectionMatrix * uTransformData[instanceData.transformIndex] * vec4(inPosition, 1.0);
+    gl_Position = uPushConsts.shadowMatrix * uTransformData[instanceData.transformIndex] * vec4(inPosition, 1.0);
 	
 	#if ALPHA_MASK_ENABLED
 	vTexCoord = inTexCoord;

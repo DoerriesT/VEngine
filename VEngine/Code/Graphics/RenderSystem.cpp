@@ -12,16 +12,15 @@
 #include <algorithm>
 #include "Utility/Utility.h"
 #include "Mesh.h"
+#include "ViewRenderList.h"
 
 VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle)
 	:m_entityRegistry(entityRegistry),
 	m_cameraEntity(entt::null),
 	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS)),
-	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES))
+	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES)),
+	m_boundingSpheres(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES))
 {
-	memset(m_materialBatchAssignment.get(), 0, RendererConsts::MAX_MATERIALS * sizeof(m_materialBatchAssignment[0]));
-	memset(m_aabbs.get(), 0, RendererConsts::MAX_SUB_MESHES * sizeof(m_aabbs[0]));
-
 	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
 		m_haltonX[i] = Utility::halton(i + 1, 2) * 2.0f - 1.0f;
@@ -34,17 +33,62 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 void VEngine::RenderSystem::update(float timeDelta)
 {
 	m_transformData.clear();
-	m_opaqueBatch.clear();
-	m_alphaTestedBatch.clear();
-	m_transparentBatch.clear();
-	m_opaqueShadowBatch.clear();
-	m_alphaTestedShadowBatch.clear();
+	m_subMeshInstanceData.clear();
+	m_shadowMatrices.clear();
 
-	m_lightData.m_shadowData.clear();
 	m_lightData.m_directionalLightData.clear();
 	m_lightData.m_pointLightData.clear();
 	m_lightData.m_spotLightData.clear();
-	m_lightData.m_shadowJobs.clear();
+
+	std::vector<ViewRenderList> renderLists;
+
+	struct CullingData
+	{
+		enum
+		{
+			STATIC_LIGHTS_CONTENT_TYPE_BIT = 1 << 0,
+			STATIC_OPAQUE_CONTENT_TYPE_BIT = 1 << 1,
+			STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT = 1 << 2,
+			STATIC_TRANSPARENT_CONTENT_TYPE_BIT = 1 << 3,
+			DYNAMIC_LIGHTS_CONTENT_TYPE_BIT = 1 << 4,
+			DYNAMIC_OPAQUE_CONTENT_TYPE_BIT = 1 << 5,
+			DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT = 1 << 6,
+			DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT = 1 << 7,
+			ALL_CONTENT_TYPE_BIT = (DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT << 1) - 1,
+		};
+
+		glm::vec4 m_planes[6] = {};
+		uint32_t m_planeCount;
+		uint32_t m_renderListIndex;
+		uint32_t m_contentTypeFlags;
+		float m_depthRange;
+
+		CullingData() = default;
+		explicit CullingData(const glm::mat4 &matrix, uint32_t planeCount, uint32_t renderListIndex, uint32_t flags, float depthRange)
+			:m_planeCount(planeCount),
+			m_renderListIndex(renderListIndex),
+			m_contentTypeFlags(flags),
+			m_depthRange(depthRange)
+		{
+			glm::mat4 proj = glm::transpose(matrix);
+			m_planes[0] = (proj[3] + proj[0]);	// left
+			m_planes[1] = (proj[3] - proj[0]);	// right
+			m_planes[2] = (proj[3] + proj[1]);	// bottom
+			m_planes[3] = (proj[3] - proj[1]);	// top
+			m_planes[4] = (proj[3] - proj[2]);	// far
+			m_planes[5] = (proj[2]);			// near
+
+			for (size_t i = 0; i < m_planeCount; ++i)
+			{
+				float length = sqrtf(m_planes[i].x * m_planes[i].x + m_planes[i].y * m_planes[i].y + m_planes[i].z * m_planes[i].z);
+				m_planes[i] /= length;
+			}
+		}
+	};
+
+	std::vector<CullingData> frustumCullData;
+
+	std::vector<uint64_t> drawCallKeys;
 
 	if (m_cameraEntity != entt::null)
 	{
@@ -95,31 +139,72 @@ void VEngine::RenderSystem::update(float timeDelta)
 		}
 
 		// extract view frustum plane equations from matrix
-		glm::vec4 viewFrustumPlaneEquations[6];
 		{
-			glm::mat4 proj = glm::transpose(m_commonRenderData.m_viewProjectionMatrix);
-			viewFrustumPlaneEquations[0] = glm::normalize(proj[3] + proj[0]);	// left
-			viewFrustumPlaneEquations[1] = glm::normalize(proj[3] - proj[0]);	// right
-			viewFrustumPlaneEquations[2] = glm::normalize(proj[3] + proj[1]);	// bottom
-			viewFrustumPlaneEquations[3] = glm::normalize(proj[3] - proj[1]);	// top
-			viewFrustumPlaneEquations[4] = glm::normalize(proj[2]);				// near
-			viewFrustumPlaneEquations[5] = glm::normalize(proj[3] - proj[2]);	// far
-		};
-
-		glm::mat4 unifiedDirectionalLightViewProjectionMatrix;
-		float orthoNear = std::numeric_limits<float>::max();
-		float orthoFar = std::numeric_limits<float>::lowest();
-		glm::mat4 lightView;
-		float projScaleXInv;
-		float projScaleYInv;
+			CullingData cullData(m_commonRenderData.m_jitteredViewProjectionMatrix, 6, 0, CullingData::ALL_CONTENT_TYPE_BIT, m_commonRenderData.m_farPlane - m_commonRenderData.m_nearPlane);
+			frustumCullData.push_back(cullData);
+			renderLists.push_back({});
+		}
 
 		// generate light data
 		{
+			// directional lights
+			{
+				auto view = m_entityRegistry.view<TransformationComponent, DirectionalLightComponent, RenderableComponent>();
+
+				view.each([&](TransformationComponent &transformationComponent, DirectionalLightComponent &directionalLightComponent, RenderableComponent&)
+				{
+					assert(directionalLightComponent.m_cascadeCount <= DirectionalLightComponent::MAX_CASCADES);
+
+					const glm::vec3 direction = transformationComponent.m_orientation * glm::vec3(0.0f, 1.0f, 0.0f);
+
+					DirectionalLightData directionalLightData
+					{
+						glm::vec4(directionalLightComponent.m_color, 1.0f),
+						m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f),
+						(static_cast<uint32_t>(m_shadowMatrices.size()) << 16) | (directionalLightComponent.m_cascadeCount & 0xFFFF)
+					};
+
+					m_lightData.m_directionalLightData.push_back(directionalLightData);
+
+					// calculate shadow matrices
+					if (directionalLightComponent.m_shadows)
+					{
+						glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
+
+						calculateCascadeViewProjectionMatrices(direction,
+							directionalLightComponent.m_maxShadowDistance,
+							directionalLightComponent.m_splitLambda,
+							2048.0f,
+							directionalLightComponent.m_cascadeCount,
+							shadowMatrices);
+
+						m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
+
+						for (size_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
+						{
+							m_shadowMatrices.push_back(shadowMatrices[i]);
+
+							// extract view frustum plane equations from matrix
+							{
+								uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
+									| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
+									| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
+									| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+								CullingData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 300.0f);
+
+								frustumCullData.push_back(cullData);
+								renderLists.push_back({});
+							}
+						}
+					}
+				});
+			}
+
 			// point lights
 			{
 				auto view = m_entityRegistry.view<TransformationComponent, PointLightComponent, RenderableComponent>();
 
-				view.each([this, &viewFrustumPlaneEquations](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
+				view.each([&](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
 				{
 					const float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
 
@@ -130,9 +215,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 					};
 
 					// frustum cull
-					for (const auto &plane : viewFrustumPlaneEquations)
+					for (size_t i = 0; i < frustumCullData[0].m_planeCount; ++i)
 					{
-						if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), plane) <= -pointLightComponent.m_radius)
+						if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), frustumCullData[0].m_planes[i]) <= -pointLightComponent.m_radius)
 						{
 							return;
 						}
@@ -142,8 +227,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				});
 
 				// sort by distance to camera
-				std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(),
-					[](const PointLightData &lhs, const PointLightData &rhs)
+				std::sort(m_lightData.m_pointLightData.begin(), m_lightData.m_pointLightData.end(), [](const PointLightData &lhs, const PointLightData &rhs)
 				{
 					return (-lhs.m_positionRadius.z - lhs.m_positionRadius.w) < (-rhs.m_positionRadius.z - rhs.m_positionRadius.w);
 				});
@@ -162,8 +246,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 					float nearestPoint = -posRadius.z - posRadius.w;
 					float furthestPoint = -posRadius.z + posRadius.w;
 
-					size_t minBin = glm::clamp(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
-					size_t maxBin = glm::clamp(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(0), size_t(RendererConsts::Z_BINS - 1));
+					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
 
 					for (size_t j = minBin; j <= maxBin; ++j)
 					{
@@ -176,95 +260,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 					}
 				}
 			}
-
-			// directional lights
-			{
-				auto view = m_entityRegistry.view<DirectionalLightComponent, RenderableComponent>();
-
-				view.each([&](DirectionalLightComponent &directionalLightComponent, RenderableComponent&)
-				{
-					directionalLightComponent.m_direction = glm::normalize(directionalLightComponent.m_direction);
-					DirectionalLightData directionalLightData
-					{
-						glm::vec4(directionalLightComponent.m_color, 1.0f),
-						m_commonRenderData.m_viewMatrix * glm::vec4(directionalLightComponent.m_direction, 0.0f)
-					};
-
-					// first directional light is allowed to have shadows
-					if (m_lightData.m_directionalLightData.empty() && directionalLightComponent.m_shadows)
-					{
-						directionalLightData.m_shadowDataOffset = 0;
-						directionalLightData.m_shadowDataCount = 4;
-
-						m_lightData.m_shadowData.push_back({ glm::mat4(), { 0.25f, 0.25f, 0.0f, 0.0f } });
-						m_lightData.m_shadowData.push_back({ glm::mat4(), { 0.25f, 0.25f,  0.25f, 0.0f } });
-						m_lightData.m_shadowData.push_back({ glm::mat4(), { 0.25f, 0.25f, 0.0f,  0.25f } });
-						m_lightData.m_shadowData.push_back({ glm::mat4(), { 0.25f, 0.25f, 0.25f, 0.25f } });
-
-						m_lightData.m_shadowJobs.push_back({ glm::mat4(), 0, 0, 2048 });
-						m_lightData.m_shadowJobs.push_back({ glm::mat4(), 2048, 0, 2048 });
-						m_lightData.m_shadowJobs.push_back({ glm::mat4(), 0, 2048, 2048 });
-						m_lightData.m_shadowJobs.push_back({ glm::mat4(), 2048, 2048, 2048 });
-
-						lightView = glm::lookAt(glm::vec3(), -glm::vec3(directionalLightComponent.m_direction), glm::vec3(glm::transpose(m_commonRenderData.m_viewMatrix)[0]));
-						glm::mat4 cameraViewToLightView = lightView * m_commonRenderData.m_invViewMatrix;
-						projScaleXInv = 1.0f / m_commonRenderData.m_jitteredProjectionMatrix[0][0];
-						projScaleYInv = 1.0f / m_commonRenderData.m_jitteredProjectionMatrix[1][1];
-
-						// extract frustum points
-						const float nearZ = m_commonRenderData.m_nearPlane;
-						const float farZ = m_commonRenderData.m_farPlane;
-
-						glm::vec3 corners[8];
-						// near corners (in view space)
-						const float nearX = projScaleXInv * nearZ;
-						const float nearY = projScaleYInv * nearZ;
-						corners[0] = glm::vec3(-nearX, nearY, -nearZ);
-						corners[1] = glm::vec3(nearX, nearY, -nearZ);
-						corners[2] = glm::vec3(-nearX, -nearY, -nearZ);
-						corners[3] = glm::vec3(nearX, -nearY, -nearZ);
-						// far corners (in view space)
-						const float farX = projScaleXInv * farZ;
-						const float farY = projScaleYInv * farZ;
-						corners[4] = glm::vec3(-farX, farY, -farZ);
-						corners[5] = glm::vec3(farX, farY, -farZ);
-						corners[6] = glm::vec3(-farX, -farY, -farZ);
-						corners[7] = glm::vec3(farX, -farY, -farZ);
-
-						glm::vec3 minCorner = glm::vec3(std::numeric_limits<float>::max());
-						glm::vec3 maxCorner = glm::vec3(std::numeric_limits<float>::lowest());
-
-						// find min and max corners in light space
-						for (glm::uint i = 0; i < 8; ++i)
-						{
-							glm::vec3 corner = glm::vec3(cameraViewToLightView * glm::vec4(corners[i], 1.0f));
-							minCorner = glm::min(minCorner, corner);
-							maxCorner = glm::max(maxCorner, corner);
-						}
-
-						glm::vec3 center = 0.5f * (minCorner + maxCorner);
-
-						lightView = glm::translate(glm::vec3(-center.x, -center.y, 0.0f)) * lightView;
-						glm::vec3 dimensions = maxCorner - minCorner;
-
-						unifiedDirectionalLightViewProjectionMatrix = glm::ortho(-dimensions.x * 0.5f, dimensions.x * 0.5f, -dimensions.y * 0.5f, dimensions.y * 0.5f, 0.0f, 1.0f) * lightView;
-					}
-
-					m_lightData.m_directionalLightData.push_back(directionalLightData);
-				});
-			}
 		}
-
-		// extract shadow frustum plane equations from matrices
-		glm::vec4 shadowFrustumPlaneEquations[4];
-		if (!m_lightData.m_directionalLightData.empty() && m_lightData.m_directionalLightData.front().m_shadowDataCount)
-		{
-			glm::mat4 proj = glm::transpose(unifiedDirectionalLightViewProjectionMatrix);
-			shadowFrustumPlaneEquations[0] = glm::normalize(proj[3] + proj[0]);	// left
-			shadowFrustumPlaneEquations[1] = glm::normalize(proj[3] - proj[0]);	// right
-			shadowFrustumPlaneEquations[2] = glm::normalize(proj[3] + proj[1]);	// bottom
-			shadowFrustumPlaneEquations[3] = glm::normalize(proj[3] - proj[1]);	// top
-		};
 
 		// update all transformations and generate draw lists
 		{
@@ -273,16 +269,13 @@ void VEngine::RenderSystem::update(float timeDelta)
 			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
 			{
 				const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
+				const glm::mat4 scaleMatrix = glm::scale(glm::vec3(transformationComponent.m_scale));
 				transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
-				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position)
-					* rotationMatrix
-					* glm::scale(glm::vec3(transformationComponent.m_scale));
+				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
 
 				const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
 
 				m_transformData.push_back(transformationComponent.m_transformation);
-
-				const glm::mat3 rotationMatrix3x3 = glm::mat3(m_commonRenderData.m_viewMatrix) * glm::mat3(rotationMatrix);
 
 				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 				{
@@ -291,103 +284,101 @@ void VEngine::RenderSystem::update(float timeDelta)
 					instanceData.m_transformIndex = transformIndex;
 					instanceData.m_materialIndex = p.second;
 
-					const auto batchAssigment = m_materialBatchAssignment[p.second];
+					const bool staticMobility = transformationComponent.m_mobility == TransformationComponent::Mobility::STATIC;
+					uint32_t contentTypeMask = 0;
 
-					// frustum cull
-					bool viewFrustumCulled = false;
-					bool shadowFrustumCulled = false;
-					auto aabb = m_aabbs[instanceData.m_subMeshIndex];
-					aabb.m_min += transformationComponent.m_position;
-					aabb.m_max += transformationComponent.m_position;
+					switch (m_materialBatchAssignment[p.second])
 					{
-						glm::vec3 center = (aabb.m_max + aabb.m_min) * 0.5f;
-						glm::vec3 half = (aabb.m_max - aabb.m_min) * 0.5f;
+					case 0: // Opaque
+						contentTypeMask = staticMobility ? CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT : CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT;
+						break;
+					case 1: // Alpha tested
+						contentTypeMask = staticMobility ? CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT : CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+						break;
+					case 2: // transparent
+						contentTypeMask = staticMobility ? CullingData::STATIC_TRANSPARENT_CONTENT_TYPE_BIT : CullingData::DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT;
+						break;
+					default:
+						assert(false);
+						break;
+					}
 
-						auto cullAgainstPlanes = [](const glm::vec3 center, const glm::vec3 half, size_t count, const glm::vec4 *planes)
+					const glm::vec4 boundingSphere = m_boundingSpheres[p.first];
+					const glm::vec3 boundingSpherePos = transformationComponent.m_position + transformationComponent.m_orientation * (transformationComponent.m_scale * glm::vec3(boundingSphere));
+					const float boundingSphereRadius = boundingSphere.w * transformationComponent.m_scale;
+
+					for (const auto &cullData : frustumCullData)
+					{
+						// only add draw call to list if content type matches
+						if ((cullData.m_contentTypeFlags & contentTypeMask) == contentTypeMask)
 						{
-							for (size_t i = 0; i < count; ++i)
+							bool culled = false;
+							for (size_t i = 0; i < cullData.m_planeCount; ++i)
 							{
-								glm::vec3 normal = planes[i];
-								float extent = glm::dot(half, glm::abs(normal));
-								float s = glm::dot(center, normal) + planes[i].w;
-								if (!((s - extent > 0) || !(s + extent < 0)))
+								if (glm::dot(glm::vec4(boundingSpherePos, 1.0f), cullData.m_planes[i]) <= -boundingSphereRadius)
 								{
-									return false;
+									culled = true;
+									break;
 								}
 							}
-							return true;
-						};
+							if (culled)
+							{
+								continue;
+							}
 
-						viewFrustumCulled = !cullAgainstPlanes(center, half, 6, viewFrustumPlaneEquations);
-						shadowFrustumCulled = !cullAgainstPlanes(center, half, 4, shadowFrustumPlaneEquations);
-					}
+							switch (m_materialBatchAssignment[p.second])
+							{
+							case 0: // Opaque
+								++renderLists[cullData.m_renderListIndex].m_opaqueCount;
+								break;
+							case 1: // Alpha tested
+								++renderLists[cullData.m_renderListIndex].m_maskedCount;
+								break;
+							case 2: // transparent
+								++renderLists[cullData.m_renderListIndex].m_transparentCount;
+								break;
+							default:
+								assert(false);
+								break;
+							}
+							
+							auto createMask = [](uint32_t size) {return size == 64 ? ~uint64_t() : (uint64_t(1) << size) - 1; };
 
-					if (!viewFrustumCulled)
-					{
-						// opaque batch
-						if (batchAssigment & 1)
-						{
-							m_opaqueBatch.push_back(instanceData);
-						}
-						// masked batch
-						else if (batchAssigment & (1 << 1))
-						{
-							m_alphaTestedBatch.push_back(instanceData);
-						}
-						// transparent batch
-						else if (batchAssigment & (1 << 2))
-						{
-							m_transparentBatch.push_back(instanceData);
-						}
-					}
+							const uint32_t depth = 0;// (0.0f / planes.m_depthRange) * createMask(22);
 
-					if (!shadowFrustumCulled)
-					{
-						glm::vec4 corners[8] =
-						{
-							{ aabb.m_min.x, aabb.m_min.y, aabb.m_min.z, 1.0f},
-							{ aabb.m_min.x, aabb.m_max.y, aabb.m_min.z, 1.0f},
-							{ aabb.m_max.x, aabb.m_min.y, aabb.m_min.z, 1.0f},
-							{ aabb.m_max.x, aabb.m_max.y, aabb.m_min.z, 1.0f},
-							{ aabb.m_min.x, aabb.m_min.y, aabb.m_max.z, 1.0f},
-							{ aabb.m_min.x, aabb.m_max.y, aabb.m_max.z, 1.0f},
-							{ aabb.m_max.x, aabb.m_min.y, aabb.m_max.z, 1.0f},
-							{ aabb.m_max.x, aabb.m_max.y, aabb.m_max.z, 1.0f},
-						};
+							// key:
+							// [drawListIdx 8][type 2][depth 22][instanceIdx 32]
+							uint64_t drawCallKey = 0;
+							drawCallKey |= (cullData.m_renderListIndex & createMask(8)) << 56;
+							drawCallKey |= (m_materialBatchAssignment[p.second] & createMask(2)) << 54;
+							drawCallKey |= (depth & createMask(22)) << 32;
+							drawCallKey |= static_cast<uint32_t>(m_subMeshInstanceData.size());
+							
+							drawCallKeys.push_back(drawCallKey);
 
-						float nearest = orthoNear;
-						float farthest = orthoFar;
-
-						for (size_t i = 0; i < 8; ++i)
-						{
-							auto c = corners[i] * unifiedDirectionalLightViewProjectionMatrix;
-							nearest = std::min(c.z, nearest);
-							farthest = std::max(c.z, farthest);
-						}
-
-						// opaque batch
-						if (batchAssigment & 1)
-						{
-							orthoNear = std::min(orthoNear, nearest);
-							orthoFar = std::max(orthoFar, farthest);
-							m_opaqueShadowBatch.push_back(instanceData);
-						}
-						// masked batch
-						else if (batchAssigment & (1 << 1))
-						{
-							orthoNear = std::min(orthoNear, nearest);
-							orthoFar = std::max(orthoFar, farthest);
-							m_alphaTestedShadowBatch.push_back(instanceData);
+							m_subMeshInstanceData.push_back(instanceData);
 						}
 					}
 				}
 			});
 
-			std::sort(m_opaqueBatch.begin(), m_opaqueBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
-			std::sort(m_alphaTestedBatch.begin(), m_alphaTestedBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
-			std::sort(m_transparentBatch.begin(), m_transparentBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
-			std::sort(m_alphaTestedShadowBatch.begin(), m_alphaTestedShadowBatch.end(), [](const auto &lhs, const auto &rhs) {return lhs.m_materialIndex < rhs.m_materialIndex; });
+			// sort draw call keys
+			std::sort(drawCallKeys.begin(), drawCallKeys.end());
+
+			// calculate the correct offsets into the *sorted* data
+			uint32_t currentOffset = 0;
+			for (auto &list : renderLists)
+			{
+				list.m_opaqueOffset = currentOffset;
+				currentOffset += list.m_opaqueCount;
+				list.m_maskedOffset = currentOffset;
+				currentOffset += list.m_maskedCount;
+				list.m_transparentOffset = currentOffset;
+				currentOffset += list.m_transparentCount;
+			}
 		}
+
+		assert(drawCallKeys.size() == m_subMeshInstanceData.size());
 
 		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
 		m_commonRenderData.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
@@ -395,22 +386,15 @@ void VEngine::RenderSystem::update(float timeDelta)
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
 		renderData.m_transformData = m_transformData.data();
-		renderData.m_opaqueBatchSize = static_cast<uint32_t>(m_opaqueBatch.size());
-		renderData.m_opaqueBatch = m_opaqueBatch.data();
-		renderData.m_alphaTestedBatchSize = static_cast<uint32_t>(m_alphaTestedBatch.size());
-		renderData.m_alphaTestedBatch = m_alphaTestedBatch.data();
-		renderData.m_transparentBatchSize = static_cast<uint32_t>(m_transparentBatch.size());
-		renderData.m_transparentBatch = m_transparentBatch.data();
-		renderData.m_opaqueShadowBatchSize = static_cast<uint32_t>(m_opaqueShadowBatch.size());
-		renderData.m_opaqueShadowBatch = m_opaqueShadowBatch.data();
-		renderData.m_alphaTestedShadowBatchSize = static_cast<uint32_t>(m_alphaTestedShadowBatch.size());
-		renderData.m_alphaTestedShadowBatch = m_alphaTestedShadowBatch.data();
-		renderData.m_orthoNearest = orthoNear;
-		renderData.m_orthoFarthest = orthoFar;
-		renderData.m_projScaleXInv = projScaleXInv;
-		renderData.m_projScaleYInv = projScaleYInv;
-		renderData.m_lightView = lightView;
-		renderData.m_cameraToLightView = lightView * m_commonRenderData.m_invViewMatrix;
+		renderData.m_shadowMatrixCount = static_cast<uint32_t>(m_shadowMatrices.size());
+		renderData.m_shadowMatrices = m_shadowMatrices.data();
+		renderData.m_subMeshInstanceDataCount = static_cast<uint32_t>(m_subMeshInstanceData.size());
+		renderData.m_subMeshInstanceData = m_subMeshInstanceData.data();
+		renderData.m_drawCallKeys = drawCallKeys.data();
+		renderData.m_mainViewRenderListIndex = 0;
+		renderData.m_shadowCascadeViewRenderListOffset = 1;
+		renderData.m_shadowCascadeViewRenderListCount = static_cast<uint32_t>(m_shadowMatrices.size());
+		renderData.m_renderLists = renderLists.data();
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
 		++m_commonRenderData.m_frame;
@@ -454,7 +438,12 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 	m_renderer->createSubMeshes(count, subMeshes, handles);
 	for (uint32_t i = 0; i < count; ++i)
 	{
-		m_aabbs[handles[i]] = { subMeshes[i].m_minCorner, subMeshes[i].m_maxCorner };
+		const glm::vec3 minC = subMeshes[i].m_minCorner;
+		const glm::vec3 maxC = subMeshes[i].m_maxCorner;
+		m_aabbs[handles[i]] = { minC, maxC };
+		const glm::vec3 center = minC + (maxC - minC) * 0.5f;
+		const float radius = glm::distance(center, maxC);
+		m_boundingSpheres[handles[i]] = glm::vec4(center, radius);
 	}
 }
 
@@ -492,21 +481,102 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		auto &batchAssignment = m_materialBatchAssignment[handles[i]];
+		m_materialBatchAssignment[handles[i]] = static_cast<uint8_t>(materials[i].m_alpha);
+	}
+}
 
-		switch (materials[i].m_alpha)
+void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices)
+{
+	const float aspectRatio = m_commonRenderData.m_width * (1.0f / m_commonRenderData.m_height);
+	const float tanFovX = glm::tan(0.5f * m_commonRenderData.m_fovy * aspectRatio);
+	const float tanFovY = glm::tan(0.5f * m_commonRenderData.m_fovy);
+	constexpr size_t maxShadowCascades = 8;
+	float splits[maxShadowCascades];
+
+	assert(cascadeCount <= maxShadowCascades);
+
+	// compute split distances
+	const float nearPlane = m_commonRenderData.m_nearPlane;
+	const float farPlane = glm::min(m_commonRenderData.m_farPlane, maxShadowDistance);
+	const float range = farPlane - nearPlane;
+	const float ratio = farPlane / nearPlane;
+	const float invCascadeCount = 1.0f / cascadeCount;
+	for (size_t i = 0; i < cascadeCount; ++i)
+	{
+		float p = (i + 1) * invCascadeCount;
+		float log = nearPlane * std::pow(ratio, p);
+		float uniform = nearPlane + range * p;
+		splits[i] = splitLambda * (log - uniform) + uniform;
+	}
+
+	const glm::vec3 &camPos = m_commonRenderData.m_cameraPosition;
+	const glm::vec3 &camDir = m_commonRenderData.m_cameraDirection;
+	const glm::vec3 camRight = glm::vec3(m_commonRenderData.m_viewMatrix[0][0], m_commonRenderData.m_viewMatrix[1][0], m_commonRenderData.m_viewMatrix[2][0]);
+	const glm::vec3 camUp = glm::vec3(m_commonRenderData.m_viewMatrix[0][1], m_commonRenderData.m_viewMatrix[1][1], m_commonRenderData.m_viewMatrix[2][1]);
+
+	const glm::mat4 vulkanCorrection =
+	{
+		{ 1.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, -1.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.5f, 0.0f },
+		{ 0.0f, 0.0f, 0.5f, 1.0f }
+	};
+
+	float previousSplit = nearPlane;
+	for (size_t i = 0; i < cascadeCount; ++i)
+	{
+		// calculate split center and split bounding sphere radius
+		const float splitCenterDistance = previousSplit + (splits[i] - previousSplit) * 0.5f;
+		const glm::vec3 center = camPos + camDir * splitCenterDistance;
+		const glm::vec3 cornerPoint = camPos + (camRight * tanFovX + camUp * tanFovY + camDir) * splits[i];
+		const float radius = glm::distance(center, cornerPoint);
+
+		const glm::vec3 cornerPoint1 = camPos + (-camRight * tanFovX + -camUp * tanFovY + camDir) * previousSplit;
+		const glm::vec3 center1 = (cornerPoint + cornerPoint1) * 0.5f;
+		const float radius1 = glm::distance(cornerPoint, cornerPoint1) * 0.5f;
+
+		// https://lxjk.github.io/2017/04/15/Calculate-Minimal-Bounding-Sphere-of-Frustum.html
+		const float n = previousSplit;
+		const float f = splits[i];
+		float aspect = m_commonRenderData.m_width / static_cast<float>(m_commonRenderData.m_height);
+		const float k = glm::sqrt(1.0f + aspect * aspect) * glm::tan(m_commonRenderData.m_fovy * 0.5f);
+		
+		glm::vec3 center2;
+		float radius2;
+		const float k2 = k * k;
+		const float fnSum = f + n;
+		const float fnDiff = f - n;
+		const float fnSum2 = fnSum * fnSum;
+		const float fnDiff2 = fnDiff * fnDiff;
+		if (k2 >= fnDiff / fnSum)
 		{
-		case Material::Alpha::OPAQUE:
-			batchAssignment = 1;
-			break;
-		case Material::Alpha::MASKED:
-			batchAssignment = 1 << 1;
-			break;
-		case Material::Alpha::BLENDED:
-			batchAssignment = 1 << 2;
-			break;
-		default:
-			break;
+			center2 = glm::vec3(0.0f, 0.0f, -f);
+			radius2 = f * k;
 		}
+		else
+		{
+			center2 = glm::vec3(0.0f, 0.0f, -0.5f * fnSum * (1.0f + k2));
+			radius2 = 0.5f * sqrt(fnDiff2 + 2 * (f * f + n * n) * k2 + fnSum2 * k2 * k2);
+		}
+		glm::vec4 tmp = m_commonRenderData.m_invViewMatrix * glm::vec4(center2, 1.0f);
+		center2 = glm::vec3(tmp / tmp.w);
+
+		glm::vec3 upDir(0.0f, 1.0f, 0.0f);
+
+		// choose different up vector if light direction would be linearly dependent otherwise
+		if (abs(lightDir.x) < 0.001 && abs(lightDir.z) < 0.001)
+		{
+			upDir = glm::vec3(1.0f, 1.0f, 0.0f);
+		}
+
+		glm::mat4 lightView = glm::lookAt(center2 + lightDir * 150.0f, center2, upDir);
+
+		// snap to shadow map texel to avoid shimmering
+		lightView[3].x -= fmodf(lightView[3].x, (radius2 / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].y -= fmodf(lightView[3].y, (radius2 / static_cast<float>(shadowTextureSize)) * 2.0f);
+
+		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius2, radius2, -radius2, radius2, 00.0f, 300.0f) * lightView;
+
+		previousSplit = splits[i];
 	}
 }

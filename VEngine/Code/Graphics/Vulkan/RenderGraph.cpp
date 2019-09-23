@@ -143,11 +143,11 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 			const uint32_t subresourceCount = m_resourceDescriptions[resourceIdx].m_subresourceCount;
 			for (uint32_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
 			{
-				if (!m_resourceUsages[resourceIdx].empty())
+				if (!m_resourceUsages[subresourceIdx].empty())
 				{
 					referenced = true;
-					lifetime.first = std::min(lifetime.first, m_resourceUsages[resourceIdx].front().m_passHandle);
-					lifetime.second = std::max(lifetime.second, m_resourceUsages[resourceIdx].back().m_passHandle);
+					lifetime.first = std::min(lifetime.first, m_resourceUsages[subresourceIdx].front().m_passHandle);
+					lifetime.second = std::max(lifetime.second, m_resourceUsages[subresourceIdx].back().m_passHandle);
 				}
 			}
 			if (m_resourceDescriptions[resourceIdx].m_clear && referenced)
@@ -256,7 +256,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 						{
 							resDesc.m_imageFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 						}
-						else if (viewDesc.m_viewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+						else if (resDesc.m_imageType == VK_IMAGE_TYPE_3D && viewDesc.m_viewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
 						{
 							resDesc.m_imageFlags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 						}
@@ -475,7 +475,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 						imageBarrier.newLayout = firstUsageStateInfo.m_layout;
 						imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
 						imageBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(firstUsageQueue);
-						imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_layers, 1, relativeSubresIdx / resDesc.m_layers, 1 };
+						imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_levels, 1, relativeSubresIdx / resDesc.m_levels, 1 };
 
 						m_externalReleaseImageBarriers[queueIdx].push_back(imageBarrier);
 					}
@@ -581,7 +581,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 					imageBarrier.newLayout = curUsageInfo.m_stateInfo.m_layout;
 					imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
 					imageBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(curUsageInfo.m_queue);
-					imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_layers, 1, relativeSubresIdx / resDesc.m_layers, 1 };
+					imageBarrier.subresourceRange = { VKUtility::imageAspectMaskFromFormat(resDesc.m_format), relativeSubresIdx % resDesc.m_levels, 1, relativeSubresIdx / resDesc.m_levels, 1 };
 
 					// set buffer barrier values
 					bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;

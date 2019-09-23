@@ -12,29 +12,9 @@ layout(set = SUB_MESH_DATA_SET, binding = SUB_MESH_DATA_BINDING) readonly buffer
     SubMeshData uSubMeshData[];
 };
 
-layout(set = OPAQUE_INDIRECT_BUFFER_SET, binding = OPAQUE_INDIRECT_BUFFER_BINDING) buffer OPAQUE_INDIRECT_BUFFER 
+layout(set = INDIRECT_BUFFER_SET, binding = INDIRECT_BUFFER_BINDING) buffer INDIRECT_BUFFER 
 {
-    DrawIndexedIndirectCommand uOpaqueIndirectCommands[];
-};
-
-layout(set = MASKED_INDIRECT_BUFFER_SET, binding = MASKED_INDIRECT_BUFFER_BINDING) buffer MASKED_INDIRECT_BUFFER 
-{
-    DrawIndexedIndirectCommand uMaskedIndirectCommands[];
-};
-
-layout(set = TRANSPARENT_INDIRECT_BUFFER_SET, binding = TRANSPARENT_INDIRECT_BUFFER_BINDING) buffer TRANSPARENT_INDIRECT_BUFFER 
-{
-    DrawIndexedIndirectCommand uTransparentIndirectCommands[];
-};
-
-layout(set = OPAQUE_SHADOW_INDIRECT_BUFFER_SET, binding = OPAQUE_SHADOW_INDIRECT_BUFFER_BINDING) buffer OPAQUE_SHADOW_INDIRECT_BUFFER 
-{
-    DrawIndexedIndirectCommand uOpaqueShadowIndirectCommands[];
-};
-
-layout(set = MASKED_SHADOW_INDIRECT_BUFFER_SET, binding = MASKED_SHADOW_INDIRECT_BUFFER_BINDING) buffer MASKED_SHADOW_INDIRECT_BUFFER 
-{
-    DrawIndexedIndirectCommand uMaskedShadowIndirectCommands[];
+    DrawIndexedIndirectCommand uIndirectCommands[];
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -48,7 +28,7 @@ void main()
 {
 	uint index = gl_GlobalInvocationID.x;
 	
-	if (index >= uPushConsts.opaqueCount + uPushConsts.maskedCount + uPushConsts.transparentCount + uPushConsts.opaqueShadowCount + uPushConsts.maskedShadowCount)
+	if (index >= uPushConsts.instanceCount)
 	{
 		return;
 	}
@@ -62,30 +42,5 @@ void main()
 	cmd.vertexOffset = subMeshData.vertexOffset;
 	cmd.firstInstance = index;
 	
-	const uint opaqueCmdBegin = 0;
-	const uint maskedCmdBegin = uPushConsts.opaqueCount;
-	const uint transparentCmdBegin = maskedCmdBegin + uPushConsts.maskedCount;
-	const uint opaqueShadowCmdBegin = transparentCmdBegin + uPushConsts.transparentCount;
-	const uint maskedShadowCmdBegin = opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount;
-	
-	if (index < (opaqueCmdBegin + uPushConsts.opaqueCount))
-	{
-		uOpaqueIndirectCommands[index - opaqueCmdBegin] = cmd;
-	}
-	else if (index < (maskedCmdBegin + uPushConsts.maskedCount))
-	{
-		uMaskedIndirectCommands[index - maskedCmdBegin] = cmd;
-	}
-	else if (index < (transparentCmdBegin + uPushConsts.transparentCount))
-	{
-		uTransparentIndirectCommands[index - transparentCmdBegin] = cmd;
-	}
-	else if (index < (opaqueShadowCmdBegin + uPushConsts.opaqueShadowCount))
-	{
-		uOpaqueShadowIndirectCommands[index - opaqueShadowCmdBegin] = cmd;
-	}
-	else if (index < (maskedShadowCmdBegin + uPushConsts.maskedShadowCount))
-	{
-		uMaskedShadowIndirectCommands[index - maskedShadowCmdBegin] = cmd;
-	}
+	uIndirectCommands[index] = cmd;
 }

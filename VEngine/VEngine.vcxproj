@@ -166,6 +166,7 @@
     <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
+    <ClInclude Include="Code\Graphics\ViewRenderList.h" />
     <ClInclude Include="Code\Graphics\Vulkan\CommandBufferPool.h" />
     <ClInclude Include="Code\Graphics\Vulkan\DeferredObjectDeleter.h" />
     <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />

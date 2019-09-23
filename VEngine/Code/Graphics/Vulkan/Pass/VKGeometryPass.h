@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			uint32_t m_drawOffset;
 			uint32_t m_drawCount;
 			bool m_alphaMasked;
 			VkDescriptorBufferInfo m_instanceDataBufferInfo;

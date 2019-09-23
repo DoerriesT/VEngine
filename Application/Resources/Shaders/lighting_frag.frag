@@ -19,7 +19,7 @@ layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImag
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
-layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DShadow uShadowTexture;
+layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DArrayShadow uShadowTexture;
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
 #endif // SSAO_ENABLED
@@ -34,9 +34,9 @@ layout(set = POINT_LIGHT_DATA_SET, binding = POINT_LIGHT_DATA_BINDING) readonly 
 	PointLightData uPointLightData[];
 };
 
-layout(set = SHADOW_DATA_SET, binding = SHADOW_DATA_BINDING) readonly buffer SHADOW_DATA
+layout(set = SHADOW_MATRICES_SET, binding = SHADOW_MATRICES_BINDING) readonly buffer SHADOW_MATRICES
 {
-	ShadowData uShadowData[];
+	mat4 uShadowMatrices[];
 };
 
 layout(set = POINT_LIGHT_Z_BINS_SET, binding = POINT_LIGHT_Z_BINS_BINDING) readonly buffer POINT_LIGHT_Z_BINS
@@ -52,11 +52,6 @@ layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly 
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
 {
     MaterialData uMaterialData[];
-};
-
-layout(set = SPLITS_SET, binding = SPLITS_BINDING) buffer SPLITS
-{
-	float uSplits[PARTITIONS];
 };
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
@@ -293,7 +288,7 @@ void main()
 		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
 		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
 		uint split = 10;
-		const float shadow = directionalLightData.shadowDataCount > 0 ?
+		const float shadow = (directionalLightData.shadowDataOffsetCount & 0xFFFF) > 0 ?
 			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, gl_FragCoord.xy, split)
 			: 0.0;
 			

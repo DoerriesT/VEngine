@@ -104,8 +104,5 @@ namespace VEngine
 	extern GlobalVar<unsigned int> g_gtaoMaxRadiusPixels;
 	extern GlobalVar<unsigned int> g_windowHeight;
 	extern GlobalConst<unsigned int> g_shadowAtlasSize;
-	extern GlobalConst<unsigned int> g_shadowAtlasMinTileSize;
-	extern GlobalConst<unsigned int> g_shadowCascadeSize;
-	extern GlobalConst<unsigned int> g_shadowCascadeCount;
 	extern GlobalConst<bool> g_vulkanDebugCallBackEnabled;
 }

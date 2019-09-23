@@ -4,6 +4,8 @@
 
 namespace VEngine
 {
+	struct ViewRenderList;
+
 	struct CommonRenderData
 	{
 		float m_time;
@@ -72,21 +74,14 @@ namespace VEngine
 	{
 		uint32_t m_transformDataCount;
 		glm::mat4 *m_transformData;
-		uint32_t m_opaqueBatchSize;
-		SubMeshInstanceData *m_opaqueBatch;
-		uint32_t m_alphaTestedBatchSize;
-		SubMeshInstanceData *m_alphaTestedBatch;
-		uint32_t m_opaqueShadowBatchSize;
-		SubMeshInstanceData *m_transparentBatch;
-		uint32_t m_transparentBatchSize;
-		SubMeshInstanceData *m_opaqueShadowBatch;
-		uint32_t m_alphaTestedShadowBatchSize;
-		SubMeshInstanceData *m_alphaTestedShadowBatch;
-		float m_orthoNearest;
-		float m_orthoFarthest;
-		float m_projScaleXInv;
-		float m_projScaleYInv;
-		glm::mat4 m_lightView;
-		glm::mat4 m_cameraToLightView;
+		uint32_t m_shadowMatrixCount;
+		glm::mat4 *m_shadowMatrices;
+		uint32_t m_subMeshInstanceDataCount;
+		SubMeshInstanceData *m_subMeshInstanceData;
+		uint64_t *m_drawCallKeys;
+		uint32_t m_mainViewRenderListIndex;
+		uint32_t m_shadowCascadeViewRenderListOffset;
+		uint32_t m_shadowCascadeViewRenderListCount;
+		ViewRenderList *m_renderLists;
 	};
 }

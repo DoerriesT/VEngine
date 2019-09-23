@@ -129,34 +129,36 @@ float evaluateShadow(sampler2DShadow shadowTexture, vec3 shadowCoord, vec2 pixel
 	for(int i = 0; i < 8; ++i)
 	{
 		const vec2 offset = rotation * samples[i];
-		shadow += texture(uShadowTexture, vec3(shadowCoord.xy + offset * invShadowTextureSize * kernelScale, shadowCoord.z)).x;
+		shadow += texture(shadowTexture, vec3(shadowCoord.xy + offset * invShadowTextureSize * kernelScale, shadowCoord.z)).x;
 	}
 	shadow *= 1.0 / 8.0;
 	
-	return texture(uShadowTexture, shadowCoord).x;
+	return texture(shadowTexture, shadowCoord).x;
 }
 
-float evaluateDirectionalLightShadow(const DirectionalLightData directionalLightData, sampler2DShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
+float evaluateDirectionalLightShadow(const DirectionalLightData directionalLightData, sampler2DArrayShadow shadowTexture, mat4 invViewMatrix, vec3 viewSpacePosition, vec2 pixelCoord, out uint s)
 {
+	const vec4 offsetPos = invViewMatrix * vec4(0.1 * directionalLightData.direction.xyz + viewSpacePosition, 1.0);
+	
+	const uint shadowDataOffset = directionalLightData.shadowDataOffsetCount >> 16;
+	const uint shadowDataCount = directionalLightData.shadowDataOffsetCount & 0xFFFF;
 	// find cascade index
-	uint index = 0;
-	for (uint i = 0; i < (PARTITIONS - 1); ++i)
+	for (uint i = 0; i < shadowDataCount; ++i)
 	{
-		index = -viewSpacePosition.z >= uSplits[i] ? index + 1 : index;
+		uint index = i + shadowDataOffset;
+		const vec4 projCoords4 = uShadowMatrices[index] * offsetPos;
+		vec3 shadowCoord = (projCoords4.xyz / projCoords4.w);
+		shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5;
+		if (shadowCoord.x < 0.0 || shadowCoord.x > 1.0 || shadowCoord.y < 0.0 || shadowCoord.y > 1.0)
+		{
+			continue;
+		}
+		s = i;
+		return texture(uShadowTexture, vec4(shadowCoord.xy, index, shadowCoord.z)).x;// evaluateShadow(shadowTexture, shadowCoord, pixelCoord, 5.0);
 	}
 	
-	s = index;
-	
-	index += directionalLightData.shadowDataOffset;
-	
-	const vec4 offsetPos = invViewMatrix * vec4(0.1 * directionalLightData.direction.xyz + viewSpacePosition, 1.0);
-	const vec4 projCoords4 = uShadowData[index].shadowViewProjectionMatrix * offsetPos;
-	vec3 shadowCoord = (projCoords4.xyz / projCoords4.w);
-	shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5;
-	const vec4 scaleBias = uShadowData[index].shadowCoordScaleBias;
-	shadowCoord.xy = shadowCoord.xy * scaleBias.xy + scaleBias.zw;
-	
-	return evaluateShadow(shadowTexture, shadowCoord, pixelCoord, 5.0);
+	s = shadowDataCount;
+	return 0.0;
 }
 
 uint getTileAddress(uvec2 pixelCoord, uint width, uint wordCount)

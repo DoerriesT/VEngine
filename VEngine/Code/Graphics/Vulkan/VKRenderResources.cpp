@@ -52,7 +52,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
+		//m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
 	}
 
 	// TAA history textures

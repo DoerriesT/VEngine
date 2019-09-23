@@ -315,6 +315,9 @@
     <ClInclude Include="Code\Graphics\PassTimingInfo.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\ViewRenderList.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">

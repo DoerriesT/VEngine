@@ -10,13 +10,11 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/DeferredObjectDeleter.h"
 #include "Utility/Utility.h"
+#include <glm/vec3.hpp>
 
 namespace
 {
-	using vec3 = glm::vec3;
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
+	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/rasterTiling_bindings.h"
 }
 

@@ -41,17 +41,16 @@ namespace VEngine
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;
+		std::unique_ptr<glm::vec4[]> m_boundingSpheres;
 		CommonRenderData m_commonRenderData;
 		std::vector<glm::mat4> m_transformData;
-		std::vector<SubMeshInstanceData> m_opaqueBatch;
-		std::vector<SubMeshInstanceData> m_alphaTestedBatch;
-		std::vector<SubMeshInstanceData> m_transparentBatch;
-		std::vector<SubMeshInstanceData> m_opaqueShadowBatch;
-		std::vector<SubMeshInstanceData> m_alphaTestedShadowBatch;
+		std::vector<glm::mat4> m_shadowMatrices;
+		std::vector<SubMeshInstanceData> m_subMeshInstanceData;
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
+		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
 	};
 }

@@ -18,9 +18,6 @@ namespace VEngine
 	GlobalVar<float> g_gtaoRadius = 2.0f;
 	GlobalVar<unsigned int> g_gtaoSteps = 4;
 	GlobalVar<unsigned int> g_gtaoMaxRadiusPixels = 256;
-	GlobalConst<unsigned int> g_shadowAtlasSize = 8192;
-	GlobalConst<unsigned int> g_shadowAtlasMinTileSize = 256;
-	GlobalConst<unsigned int> g_shadowCascadeSize = 2048;
-	GlobalConst<unsigned int> g_shadowCascadeCount = 4;
+	GlobalConst<unsigned int> g_shadowAtlasSize = 4096;
 	GlobalConst<bool> g_vulkanDebugCallBackEnabled = true;
 }

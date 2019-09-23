@@ -13,12 +13,11 @@
 #include "Graphics/Vulkan/DeferredObjectDeleter.h"
 #include "Utility/Utility.h"
 #include "GlobalVar.h"
+#include <glm/vec3.hpp>
 
 namespace
 {
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
+	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/shadows_bindings.h"
 }
 
@@ -26,15 +25,14 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_shadowDataBufferHandle), ResourceState::READ_STORAGE_BUFFER_VERTEX_SHADER},
 		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
-		{ResourceViewHandle(data.m_shadowAtlasImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
+		{ResourceViewHandle(data.m_shadowImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 	};
 
 	graph.addPass(data.m_alphaMasked ? "Shadows Alpha" : "Shadows", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
-		const uint32_t width = g_shadowAtlasSize;
-		const uint32_t height = g_shadowAtlasSize;
+		const uint32_t width = data.m_shadowMapSize;
+		const uint32_t height = data.m_shadowMapSize;
 
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
@@ -109,14 +107,15 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 			RenderPassDescription renderPassDesc{};
 			renderPassDesc.m_attachmentCount = 1;
 			renderPassDesc.m_subpassCount = 1;
-			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_shadowAtlasImageHandle, ResourceState::WRITE_DEPTH_STENCIL);
+			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_shadowImageHandle, ResourceState::WRITE_DEPTH_STENCIL);
+			renderPassDesc.m_attachments[0].loadOp = data.m_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 			renderPassDesc.m_subpasses[0] = { 0, 0, true, 0 };
 			renderPassDesc.m_subpasses[0].m_depthStencilAttachment = { 0, renderPassDesc.m_attachments[0].initialLayout };
 
 			data.m_passRecordContext->m_renderPassCache->getRenderPass(renderPassDesc, renderPassCompatDesc, renderPass);
 
 			VkFramebuffer framebuffer;
-			VkImageView attachmentView = registry.getImageView(data.m_shadowAtlasImageHandle);
+			VkImageView attachmentView = registry.getImageView(data.m_shadowImageHandle);
 
 			VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 			framebufferCreateInfo.renderPass = renderPass;
@@ -134,6 +133,7 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 			data.m_passRecordContext->m_deferredObjectDeleter->add(framebuffer);
 
 			VkClearValue clearValues[1];
+			clearValues[0].depthStencil.depth = 1.0f;
 
 			VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 			renderPassBeginInfo.renderPass = renderPass;
@@ -153,18 +153,11 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			// instance data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
-
-			// transform data
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
-
-			// shadow data
-			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_shadowDataBufferHandle), SHADOW_DATA_BINDING);
 
 			if (data.m_alphaMasked)
 			{
-				// material data
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
 			}
 
@@ -183,29 +176,20 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 		}
 
-		VkViewport viewport = { 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
+		VkViewport viewport;
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(width);
+		viewport.height = static_cast<float>(height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor;
+		scissor.offset = { 0, 0 };
+		scissor.extent = { width, height };
+
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
-
-		// clear the relevant areas in the atlas
-		if (data.m_clear)
-		{
-			VkClearRect clearRects[8];
-
-			VkClearAttachment clearAttachment = {};
-			clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-			clearAttachment.clearValue.depthStencil = { 1.0f, 0 };
-
-			for (size_t i = 0; i < data.m_shadowJobCount; ++i)
-			{
-				const ShadowJob &job = data.m_shadowJobs[i];
-
-				clearRects[i].rect = { { int32_t(job.m_offsetX), int32_t(job.m_offsetY) },{ job.m_size, job.m_size } };
-				clearRects[i].baseArrayLayer = 0;
-				clearRects[i].layerCount = 1;
-			}
-
-			vkCmdClearAttachments(cmdBuf, 1, &clearAttachment, data.m_shadowJobCount, clearRects);
-		}
+		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
 		vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
@@ -215,22 +199,9 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		vkCmdBindVertexBuffers(cmdBuf, 0, data.m_alphaMasked ? 2 : 1, vertexBuffers, vertexBufferOffsets);
 
-		for (size_t i = 0; i < data.m_shadowJobCount; ++i)
-		{
-			const ShadowJob &job = data.m_shadowJobs[i];
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data.m_shadowMatrix), &data.m_shadowMatrix);
 
-			// set viewport and scissor
-			VkViewport viewport = { static_cast<float>(job.m_offsetX), static_cast<float>(job.m_offsetY), static_cast<float>(job.m_size), static_cast<float>(job.m_size), 0.0f, 1.0f };
-			VkRect2D scissor = { { static_cast<int32_t>(job.m_offsetX), static_cast<int32_t>(job.m_offsetY) }, { job.m_size, job.m_size } };
-
-			vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
-			vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
-
-			uint32_t shadowDataIndex = static_cast<uint32_t>(i);
-			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(shadowDataIndex), &shadowDataIndex);
-
-			vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
-		}
+		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
 		vkCmdEndRenderPass(cmdBuf);
 	});

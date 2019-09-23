@@ -7,12 +7,11 @@
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include <glm/vec3.hpp>
 
 namespace
 {
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
+	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/taaResolve_bindings.h"
 }
 
