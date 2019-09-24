@@ -20,6 +20,7 @@ layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DArrayShadow uShadowTexture;
+layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
 #endif // SSAO_ENABLED
@@ -283,23 +284,39 @@ void main()
 												vec4(0.0, 0.0, 0.0, 1.0)));
 	
 	// directional lights
-	for (uint i = 0; i < cDirectionalLightCount; ++i)
 	{
-		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
-		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
-		uint split = 10;
-		const float shadow = (directionalLightData.shadowDataOffsetCount & 0xFFFF) > 0 ?
-			evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, gl_FragCoord.xy, split)
-			: 0.0;
-			
-		result += contribution * (1.0 - shadow);
+		// deferred shadows
+		const uint deferredShadowCount = min(4, cDirectionalLightCount);
+		const vec4 deferredShadowValues = texelFetch(uDeferredShadowImage, ivec2(gl_FragCoord.xy), 0);
+		for (uint i = 0; i < deferredShadowCount; ++i)
+		{
+			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
+			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+			const float shadow = texelFetch(uDeferredShadowImage, ivec2(gl_FragCoord.xy), 0).x;
+			result += contribution * (1.0 - deferredShadowValues[i]);
+		}
 		
-		//result *= split == 0 ? vec3(1.0, 0.0, 0.0)
-		//		: split == 1 ? vec3(0.0, 1.0, 0.0)
-		//		: split == 2 ? vec3(0.0, 0.0, 1.0)
-		//		: split == 3 ? vec3(0.5, 0.5, 0.0)
-		//		: vec3(0.5, 0.0, 0.5);
+		// forward shadows
+		const uint forwardShadowCount = cDirectionalLightCount - deferredShadowCount;
+		for (uint i = deferredShadowCount; i < forwardShadowCount; ++i)
+		{
+			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
+			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+			uint split = 10;
+			const float shadow = (directionalLightData.shadowDataOffsetCount & 0xFFFF) > 0 ?
+				evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, gl_FragCoord.xy, split)
+				: 0.0;
+				
+			result += contribution * (1.0 - shadow);
+			
+			//result *= split == 0 ? vec3(1.0, 0.0, 0.0)
+			//		: split == 1 ? vec3(0.0, 1.0, 0.0)
+			//		: split == 2 ? vec3(0.0, 0.0, 1.0)
+			//		: split == 3 ? vec3(0.5, 0.5, 0.0)
+			//		: vec3(0.5, 0.0, 0.5);
+		}
 	}
+	
 	
 	// point lights
 	if (uPushConsts.pointLightCount > 0)

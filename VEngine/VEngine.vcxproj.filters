@@ -318,6 +318,9 @@
     <ClInclude Include="Code\Graphics\ViewRenderList.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -523,6 +526,9 @@
     </ClCompile>
     <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp">
       <Filter>Code\Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -27,6 +27,7 @@
 #include "Pass/VKGTAOTemporalFilterPass.h"
 #include "Pass/VKSDSMShadowMatrixPass.h"
 #include "Pass/VKDirectLightingPass.h"
+#include "Pass/DeferredShadowsPass.h"
 #include "Pass/ImGuiPass.h"
 #include "Pass/LuminanceHistogramReadBackCopyPass.h"
 #include "Module/VKSDSMModule.h"
@@ -204,6 +205,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoRawImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoSpatiallyFilteredImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
 	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	BufferViewHandle luminanceHistogramBufferViewHandle = VKResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
@@ -254,23 +256,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		{
 			memcpy(bufferPtr, renderData.m_shadowMatrices, renderData.m_shadowMatrixCount * sizeof(glm::mat4));
 		}
-	}
-
-	BufferViewHandle shadowMatricesBufferViewHandle = 0;
-	{
-		BufferDescription bufferDesc{};
-		bufferDesc.m_name = "Shadow Matrices";
-		bufferDesc.m_concurrent = true;
-		bufferDesc.m_size = shadowMatricesBufferInfo.range;
-
-		shadowMatricesBufferViewHandle = graph.createBufferView(
-			{
-				bufferDesc.m_name,
-				graph.importBuffer(bufferDesc, m_renderResources->m_ssboBuffers[commonData.m_currentResourceIndex].getBuffer(),
-				shadowMatricesBufferInfo.offset),
-				0,
-				shadowMatricesBufferInfo.range
-			});
 	}
 
 	// instance data write
@@ -431,6 +416,17 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
+	// deferred shadows
+	DeferredShadowsPass::Data deferredShadowsPassData;
+	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
+	deferredShadowsPassData.m_resultImageViewHandle = deferredShadowsImageViewHandle;
+	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
+	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
+	deferredShadowsPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
+	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+
+	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
+
 	// gtao
 	VKGTAOPass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = &passRecordContext;
@@ -489,7 +485,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
 	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	lightingPassData.m_shadowMatricesBufferHandle = shadowMatricesBufferViewHandle;
+	lightingPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 	lightingPassData.m_depthImageHandle = depthImageViewHandle;
 	lightingPassData.m_uvImageHandle = uvImageViewHandle;
@@ -497,6 +493,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	lightingPassData.m_shadowArrayImageViewHandle = shadowImageViewHandle;
+	lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	lightingPassData.m_occlusionImageHandle = gtaoImageViewHandle;
 	lightingPassData.m_resultImageHandle = lightImageViewHandle;
 

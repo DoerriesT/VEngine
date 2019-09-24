@@ -15,7 +15,7 @@ namespace VEngine
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
-			BufferViewHandle m_shadowMatricesBufferHandle;
+			VkDescriptorBufferInfo m_shadowMatricesBufferInfo;
 			BufferViewHandle m_pointLightBitMaskBufferHandle;
 			ImageViewHandle m_depthImageHandle;
 			ImageViewHandle m_uvImageHandle;
@@ -23,6 +23,7 @@ namespace VEngine
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_shadowArrayImageViewHandle;
+			ImageViewHandle m_deferredShadowImageViewHandle;
 			ImageViewHandle m_occlusionImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};

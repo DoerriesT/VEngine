@@ -221,6 +221,23 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 		}
 
+		inline ImageViewHandle createDeferredShadowsImageViewHandle(RenderGraph &graph, uint32_t width, uint32_t height)
+		{
+			ImageDescription desc = {};
+			desc.m_name = "Deferred Shadows Image";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = width;
+			desc.m_height = height;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+		}
+
 		inline BufferViewHandle createPointLightBitMaskBufferViewHandle(RenderGraph &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
 		{
 			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);

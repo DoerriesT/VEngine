@@ -38,5 +38,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c drawCallCompaction_comp.comp -o drawC
 glslc --target-env=vulkan1.1 -O -Werror -c rendergraphtest_comp.comp -o rendergraphtest_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c imgui_vert.vert -o imgui_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c imgui_frag.frag -o imgui_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c deferredShadows_comp.comp -o deferredShadows_comp.spv
 
 pause
