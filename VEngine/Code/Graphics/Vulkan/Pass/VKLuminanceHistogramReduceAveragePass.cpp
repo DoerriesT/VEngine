@@ -64,8 +64,8 @@ void VEngine::VKLuminanceHistogramAveragePass::addToGraph(RenderGraph &graph, co
 		pushConsts.bias = -data.m_logMin * (1.0f / pushConsts.invScale);
 		pushConsts.lowerBound = static_cast<uint32_t>(width * height * lowerBoundPercentage);
 		pushConsts.upperBound = static_cast<uint32_t>(width * height * upperBoundPercentage);
-		pushConsts.currentResourceIndex = data.m_passRecordContext->m_commonRenderData->m_currentResourceIndex;
-		pushConsts.previousResourceIndex = data.m_passRecordContext->m_commonRenderData->m_previousResourceIndex;
+		pushConsts.currentResourceIndex = data.m_passRecordContext->m_commonRenderData->m_curResIdx;
+		pushConsts.previousResourceIndex = data.m_passRecordContext->m_commonRenderData->m_prevResIdx;
 
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);

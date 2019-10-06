@@ -238,6 +238,61 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 		}
 
+		inline ImageViewHandle createReprojectedDepthUintImageViewHandle(RenderGraph &graph, uint32_t width, uint32_t height)
+		{
+			ImageDescription desc = {};
+			desc.m_name = "Reprojected Depth Uint Image";
+			desc.m_concurrent = false;
+			desc.m_clear = true;
+			desc.m_clearValue.m_imageClearValue.color.uint32[0] = 0;
+			desc.m_clearValue.m_imageClearValue.color.uint32[1] = 0;
+			desc.m_clearValue.m_imageClearValue.color.uint32[2] = 0;
+			desc.m_clearValue.m_imageClearValue.color.uint32[3] = 0;
+			desc.m_width = width / 4;
+			desc.m_height = height / 4;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R32_UINT;
+
+			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+		}
+
+		inline ImageViewHandle createReprojectedDepthImageViewHandle(RenderGraph &graph, uint32_t width, uint32_t height)
+		{
+			ImageDescription desc = {};
+			desc.m_name = "Reprojected Depth Image";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = width / 4;
+			desc.m_height = height / 4;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_D32_SFLOAT;
+
+			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 } });
+		}
+
+		inline ImageHandle createDepthPyramidImageHandle(RenderGraph &graph, uint32_t pyramidWidth, uint32_t pyramidHeight, uint32_t pyramidLevels)
+		{
+			ImageDescription desc = {};
+			desc.m_name = "Depth Pyramid Image";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = pyramidWidth;
+			desc.m_height = pyramidHeight;
+			desc.m_layers = 1;
+			desc.m_levels = pyramidLevels;
+			desc.m_samples = 1;
+			desc.m_format = VK_FORMAT_R32_SFLOAT;
+			desc.m_usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+			return graph.createImage(desc);
+		}
+
 		inline BufferViewHandle createPointLightBitMaskBufferViewHandle(RenderGraph &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
 		{
 			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
@@ -286,10 +341,11 @@ namespace VEngine
 			BufferDescription desc = {};
 			desc.m_name = "Indirect Draw Counts Buffer";
 			desc.m_concurrent = false;
-			desc.m_clear = true;
+			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * drawCount;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+			desc.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -354,6 +410,19 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * 6 * partitions;
+			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
+
+			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
+		}
+
+		inline BufferViewHandle createOcclusionCullingVisibilityBufferViewHandle(RenderGraph &graph, uint32_t instances)
+		{
+			BufferDescription desc = {};
+			desc.m_name = "Occlusion Culling Visibility Buffer";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_bufferClearValue = 0;
+			desc.m_size = sizeof(uint32_t) * instances;
 			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });

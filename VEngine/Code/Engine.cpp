@@ -142,6 +142,17 @@ void VEngine::Engine::start()
 			ImGui::Text("%30s : %f ms", totalStr, total);
 		}
 
+		ImGui::NewLine();
+		ImGui::Text("Occlusion Culling");
+		ImGui::Separator();
+		{
+			uint32_t draws = 0;
+			uint32_t totalDraws = 1;
+			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
+			ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
+		}
+		
+
 		ImGui::End();
 
 		m_userInput->input();

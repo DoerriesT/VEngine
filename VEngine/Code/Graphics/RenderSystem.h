@@ -34,6 +34,7 @@ namespace VEngine
 		const uint32_t *getLuminanceHistogram() const;
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
+		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 
 	private:
 		entt::registry &m_entityRegistry;

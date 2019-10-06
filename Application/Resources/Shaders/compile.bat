@@ -39,5 +39,14 @@ glslc --target-env=vulkan1.1 -O -Werror -c rendergraphtest_comp.comp -o rendergr
 glslc --target-env=vulkan1.1 -O -Werror -c imgui_vert.vert -o imgui_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c imgui_frag.frag -o imgui_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c deferredShadows_comp.comp -o deferredShadows_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c meshClusterVisualization_vert.vert -o meshClusterVisualization_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c meshClusterVisualization_frag.frag -o meshClusterVisualization_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingReproject_comp.comp -o occlusionCullingReproject_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCopyToDepth_frag.frag -o occlusionCullingCopyToDepth_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCulling_vert.vert -o occlusionCulling_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCulling_frag.frag -o occlusionCulling_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCreateDrawArgs_comp.comp -o occlusionCullingCreateDrawArgs_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c depthPyramid_comp.comp -o depthPyramid_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingHiZ_comp.comp -o occlusionCullingHiZ_comp.spv
 
 pause

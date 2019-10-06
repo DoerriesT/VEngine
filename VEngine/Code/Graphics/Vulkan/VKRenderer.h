@@ -42,6 +42,7 @@ namespace VEngine
 		const uint32_t *getLuminanceHistogram() const;
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
+		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
@@ -63,5 +64,8 @@ namespace VEngine
 		TextureHandle m_fontAtlasTextureIndex;
 		size_t m_passTimingCount;
 		const PassTimingInfo *m_passTimingData;
+		uint32_t m_opaqueDraws;
+		uint32_t m_totalOpaqueDraws;
+		uint32_t m_totalOpaqueDrawsPending[RendererConsts::FRAMES_IN_FLIGHT];
 	};
 }

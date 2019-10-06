@@ -15,24 +15,30 @@ namespace VEngine
 	struct VKRenderResources
 	{
 		// images
-		VKImage m_shadowTexture;
+		VKImage m_depthImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_gtaoHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
+		VKImage m_depthPyramidImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
+		VKImage m_dummyImage;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
+		VkImageView m_dummyImageView;
 
 		// buffers
 		VKBuffer m_lightProxyVertexBuffer;
 		VKBuffer m_lightProxyIndexBuffer;
+		VKBuffer m_boxIndexBuffer;
 		VKBuffer m_avgLuminanceBuffer;
 		VKBuffer m_luminanceHistogramReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_occlusionCullStatsReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
 		VKBuffer m_vertexBuffer;
 		VKBuffer m_indexBuffer;
 		VKBuffer m_subMeshDataInfoBuffer;
+		VKBuffer m_subMeshBoundingBoxBuffer;
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 
@@ -52,12 +58,14 @@ namespace VEngine
 		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// rendergraph external info
-		VkQueue m_shadowMapQueue = RenderGraph::undefinedQueue;
-		ResourceState m_shadowMapResourceState = ResourceState::UNDEFINED;
+		VkQueue m_depthImageQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_depthImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_taaHistoryTextureQueue[RendererConsts::FRAMES_IN_FLIGHT];
 		ResourceState m_taaHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_gtaoHistoryTextureQueue[RendererConsts::FRAMES_IN_FLIGHT];
 		ResourceState m_gtaoHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
+		VkQueue m_depthPyramidImageQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_depthPyramidImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_avgLuminanceBufferQueue = RenderGraph::undefinedQueue;
 		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
 

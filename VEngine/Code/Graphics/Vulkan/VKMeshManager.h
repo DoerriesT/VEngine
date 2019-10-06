@@ -11,7 +11,7 @@ namespace VEngine
 	class VKMeshManager
 	{
 	public:
-		explicit VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexBuffer, VKBuffer &indexBuffer, VKBuffer &subMeshInfoBuffer);
+		explicit VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexBuffer, VKBuffer &indexBuffer, VKBuffer &subMeshInfoBuffer, VKBuffer &subMeshBoundingBoxesBuffer);
 		~VKMeshManager();
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
@@ -24,6 +24,7 @@ namespace VEngine
 		VKBuffer &m_vertexBuffer;
 		VKBuffer &m_indexBuffer;
 		VKBuffer &m_subMeshInfoBuffer;
+		VKBuffer &m_subMeshBoundingBoxesBuffer;
 		SubMeshHandle *m_freeHandles;
 		uint32_t m_freeHandleCount;
 		uint32_t m_vertexCount;

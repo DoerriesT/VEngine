@@ -46,12 +46,19 @@ public:
 		entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
-		
+
 		scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
 		entt::entity interiorEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(interiorEntity, scene.m_meshInstances["Resources/Models/bistro_i"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(interiorEntity);
+
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
+		entt::entity quadEntity = entityRegistry.create();
+		auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
+		quadTc.m_scale = 60.0f;
+		entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
 
 		//scene.load(m_engine->getRenderSystem(), "Resources/Models/mori_knob");
 		//entt::entity knobEntity = entityRegistry.create();
@@ -107,7 +114,7 @@ public:
 		glm::vec3 eulerAngles;
 		glm::vec3 scale;
 		ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
-		
+
 		tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
 	};
 

@@ -116,7 +116,7 @@ namespace VEngine
 			}
 		}
 
-		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME };
+		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME };
 
 		VKSwapChainSupportDetails swapChainSupportDetails;
 

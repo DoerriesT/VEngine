@@ -297,6 +297,7 @@ void VEngine::RenderGraph::createResources()
 			for (const auto &usage : m_resourceUsages[i])
 			{
 				usageFlags |= getResourceStateInfo(usage.m_initialResourceState).m_usageFlags;
+				usageFlags |= getResourceStateInfo(usage.m_finalResourceState).m_usageFlags;
 			}
 		}
 
@@ -1089,9 +1090,27 @@ void VEngine::RenderGraph::forEachSubresource(ResourceViewHandle handle, std::fu
 	const auto &resDesc = m_resourceDescriptions[resIndex];
 	const uint32_t resourceUsagesOffset = m_resourceUsageOffsets[resIndex];
 
-	for (uint32_t i = 0; i < resDesc.m_subresourceCount; ++i)
+	if (resDesc.m_image)
 	{
-		func(i + resourceUsagesOffset);
+		const uint32_t baseLayer = viewDesc.m_subresourceRange.baseArrayLayer;
+		const uint32_t layerCount = viewDesc.m_subresourceRange.layerCount;
+		const uint32_t baseLevel = viewDesc.m_subresourceRange.baseMipLevel;
+		const uint32_t levelCount = viewDesc.m_subresourceRange.levelCount;
+		for (uint32_t layer = 0; layer < layerCount; ++layer)
+		{
+			for (uint32_t level = 0; level < levelCount; ++level)
+			{
+				const uint32_t index = (layer + baseLayer) * resDesc.m_levels + (level + baseLevel) + resourceUsagesOffset;
+				func(index);
+			}
+		}
+	}
+	else
+	{
+		for (uint32_t i = 0; i < resDesc.m_subresourceCount; ++i)
+		{
+			func(resourceUsagesOffset + i);
+		}
 	}
 }
 
@@ -1226,7 +1245,7 @@ VEngine::ImageHandle VEngine::RenderGraph::createImage(const ImageDescription &i
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = imageDesc.m_name;
-	resDesc.m_usageFlags = imageDesc.m_usageFlags;
+	resDesc.m_usageFlags = imageDesc.m_usageFlags | (imageDesc.m_clear ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0);
 	resDesc.m_clear = imageDesc.m_clear;
 	resDesc.m_clearValue = imageDesc.m_clearValue;
 	resDesc.m_width = imageDesc.m_width;
@@ -1255,7 +1274,7 @@ VEngine::BufferHandle VEngine::RenderGraph::createBuffer(const BufferDescription
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = bufferDesc.m_name;
-	resDesc.m_usageFlags = bufferDesc.m_usageFlags;
+	resDesc.m_usageFlags = bufferDesc.m_usageFlags | (bufferDesc.m_clear ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0);
 	resDesc.m_clear = bufferDesc.m_clear;
 	resDesc.m_clearValue = bufferDesc.m_clearValue;
 	resDesc.m_offset = 0;
@@ -1275,7 +1294,7 @@ VEngine::ImageHandle VEngine::RenderGraph::importImage(const ImageDescription &i
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = imageDesc.m_name;
-	resDesc.m_usageFlags = imageDesc.m_usageFlags;
+	resDesc.m_usageFlags = imageDesc.m_usageFlags | (imageDesc.m_clear ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0);
 	resDesc.m_clear = imageDesc.m_clear;
 	resDesc.m_clearValue = imageDesc.m_clearValue;
 	resDesc.m_width = imageDesc.m_width;
@@ -1311,7 +1330,7 @@ VEngine::BufferHandle VEngine::RenderGraph::importBuffer(const BufferDescription
 {
 	ResourceDescription resDesc{};
 	resDesc.m_name = bufferDesc.m_name;
-	resDesc.m_usageFlags = bufferDesc.m_usageFlags;
+	resDesc.m_usageFlags = bufferDesc.m_usageFlags | (bufferDesc.m_clear ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0);
 	resDesc.m_clear = bufferDesc.m_clear;
 	resDesc.m_clearValue = bufferDesc.m_clearValue;
 	resDesc.m_offset = offset;

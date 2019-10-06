@@ -1,4 +1,4 @@
-#include "VKGeometryPass.h"
+#include "MeshClusterVisualizationPass.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKUtility.h"
 #include "Graphics/Vulkan/VKContext.h"
@@ -14,23 +14,20 @@
 namespace
 {
 	using namespace glm;
-#include "../../../../../Application/Resources/Shaders/geometry_bindings.h"
+#include "../../../../../Application/Resources/Shaders/meshClusterVisualization_bindings.h"
 }
 
-void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
+
+void VEngine::MeshClusterVisualizationPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
 		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
-		{ResourceViewHandle(data.m_uvImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_ddxyLengthImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_ddxyRotMaterialIdImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_tangentSpaceImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_drawCountBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
+		{ResourceViewHandle(data.m_colorImageHandle), ResourceState::WRITE_ATTACHMENT},
 	};
 
-	graph.addPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]) - (data.m_alphaMasked ? 1 : 0), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Mesh Cluster Visualization", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
@@ -40,30 +37,21 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		RenderPassCompatibilityDescription renderPassCompatDesc;
 		{
 			RenderPassDescription renderPassDesc{};
-			renderPassDesc.m_attachmentCount = 5;
+			renderPassDesc.m_attachmentCount = 2;
 			renderPassDesc.m_subpassCount = 1;
-			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_depthImageHandle, ResourceState::WRITE_DEPTH_STENCIL, true);
-			renderPassDesc.m_attachments[1] = registry.getAttachmentDescription(data.m_uvImageHandle, ResourceState::WRITE_ATTACHMENT);
-			renderPassDesc.m_attachments[2] = registry.getAttachmentDescription(data.m_ddxyLengthImageHandle, ResourceState::WRITE_ATTACHMENT);
-			renderPassDesc.m_attachments[3] = registry.getAttachmentDescription(data.m_ddxyRotMaterialIdImageHandle, ResourceState::WRITE_ATTACHMENT);
-			renderPassDesc.m_attachments[4] = registry.getAttachmentDescription(data.m_tangentSpaceImageHandle, ResourceState::WRITE_ATTACHMENT);
-			renderPassDesc.m_subpasses[0] = { 0, 4, true, 0 };
+			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_depthImageHandle, ResourceState::WRITE_DEPTH_STENCIL);
+			renderPassDesc.m_attachments[1] = registry.getAttachmentDescription(data.m_colorImageHandle, ResourceState::WRITE_ATTACHMENT);
+			renderPassDesc.m_subpasses[0] = { 0, 1, true, 0 };
 			renderPassDesc.m_subpasses[0].m_colorAttachments[0] = { 1, renderPassDesc.m_attachments[1].initialLayout };
-			renderPassDesc.m_subpasses[0].m_colorAttachments[1] = { 2, renderPassDesc.m_attachments[2].initialLayout };
-			renderPassDesc.m_subpasses[0].m_colorAttachments[2] = { 3, renderPassDesc.m_attachments[3].initialLayout };
-			renderPassDesc.m_subpasses[0].m_colorAttachments[3] = { 4, renderPassDesc.m_attachments[4].initialLayout };
 			renderPassDesc.m_subpasses[0].m_depthStencilAttachment = { 0, renderPassDesc.m_attachments[0].initialLayout };
 
 			data.m_passRecordContext->m_renderPassCache->getRenderPass(renderPassDesc, renderPassCompatDesc, renderPass);
 
 			VkFramebuffer framebuffer;
-			VkImageView attachmentViews[] = 
+			VkImageView attachmentViews[] =
 			{
 				registry.getImageView(data.m_depthImageHandle),
-				registry.getImageView(data.m_uvImageHandle),
-				registry.getImageView(data.m_ddxyLengthImageHandle),
-				registry.getImageView(data.m_ddxyRotMaterialIdImageHandle),
-				registry.getImageView(data.m_tangentSpaceImageHandle),
+				registry.getImageView(data.m_colorImageHandle),
 			};
 
 			VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
@@ -81,7 +69,7 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			data.m_passRecordContext->m_deferredObjectDeleter->add(framebuffer);
 
-			VkClearValue clearValues[5];
+			VkClearValue clearValues[2];
 			clearValues[0].depthStencil = { 0.0f, 0 };
 
 			VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
@@ -97,18 +85,14 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		// create pipeline description
 		VKGraphicsPipelineDescription pipelineDesc;
 		{
-			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/geometry_vert.spv");
-			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
+			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/meshClusterVisualization_vert.spv");
+			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/meshClusterVisualization_frag.spv");
 
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 3;
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
 			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[1] = { 1, sizeof(VertexNormal), VK_VERTEX_INPUT_RATE_VERTEX };
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[2] = { 2, sizeof(VertexTexCoord), VK_VERTEX_INPUT_RATE_VERTEX };
 
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 3;
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 1;
 			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 1, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 };
 
 			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
@@ -121,7 +105,7 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 			pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
 			pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
 			pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
-			pipelineDesc.m_rasterizationState.m_cullMode = data.m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+			pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_NONE;
 			pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 			pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
 			pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
@@ -142,11 +126,8 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			pipelineDesc.m_blendState.m_logicOpEnable = false;
 			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-			pipelineDesc.m_blendState.m_attachmentCount = 4;
+			pipelineDesc.m_blendState.m_attachmentCount = 1;
 			pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
 
 			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
 			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
@@ -166,18 +147,12 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 
-			if (data.m_alphaMasked)
-			{
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
-			}
-
 			writer.commit();
 		}
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
 
-		VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, data.m_alphaMasked ? 2 : 1, descriptorSets, 0, nullptr);
+		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 		VkViewport viewport;
 		viewport.x = 0.0f;
@@ -206,21 +181,10 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		PushConsts pushConsts;
 		pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-		pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
-		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
-		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-		if (data.m_alphaMasked)
-		{
-			vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
-		}
-		else
-		{
-			vkCmdDrawIndexedIndirectCountKHR(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), registry.getBuffer(data.m_drawCountBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
-		}
-		
+		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
 
 		vkCmdEndRenderPass(cmdBuf);
 	});

@@ -306,9 +306,6 @@
     <ClInclude Include="Code\Graphics\imgui\ImGuizmo.h">
       <Filter>Code\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Gui\MemoryAllocatorPlot.h">
       <Filter>Code\Gui</Filter>
     </ClInclude>
@@ -319,6 +316,30 @@
       <Filter>Code\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -521,13 +542,34 @@
     <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp">
       <Filter>Code\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReadBackCopyPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp">
       <Filter>Code\Gui</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

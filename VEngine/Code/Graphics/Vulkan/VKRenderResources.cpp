@@ -18,6 +18,8 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 {
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
+		m_depthImageQueue[i] = RenderGraph::undefinedQueue;
+		m_depthImageResourceState[i] = ResourceState::UNDEFINED;
 		m_taaHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
 		m_taaHistoryTextureResourceState[i] = ResourceState::UNDEFINED;
 		m_gtaoHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
@@ -33,26 +35,29 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		g_context.m_queueFamilyIndices.m_transferFamily
 	};
 
-	// shadow atlas
+	// depth images
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_D16_UNORM;
-		imageCreateInfo.extent.width = g_shadowAtlasSize;
-		imageCreateInfo.extent.height = g_shadowAtlasSize;
+		imageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
 		imageCreateInfo.extent.depth = 1;
 		imageCreateInfo.mipLevels = 1;
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		//m_shadowTexture.create(imageCreateInfo, allocCreateInfo);
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			m_depthImages[i].create(imageCreateInfo, allocCreateInfo);
+		}
 	}
 
 	// TAA history textures
@@ -102,6 +107,59 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
 			m_gtaoHistoryTextures[i].create(imageCreateInfo, allocCreateInfo);
+		}
+	}
+
+	// dummy image
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateInfo.extent.width = 1;
+		imageCreateInfo.extent.height = 1;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_dummyImage.create(imageCreateInfo, allocCreateInfo);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+
+		VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+		{
+			VKUtility::setImageLayout(
+				copyCmd,
+				m_dummyImage.getImage(),
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				subresourceRange,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+		}
+		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
+
+		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_dummyImage.getImage();
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_dummyImage.getFormat();
+		viewInfo.subresourceRange = subresourceRange;
+
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_dummyImageView) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create image view!", -1);
 		}
 	}
 
@@ -183,6 +241,25 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
+	// luminance histogram readback buffers
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = sizeof(uint32_t);
+		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			m_occlusionCullStatsReadBackBuffers[i].create(bufferCreateInfo, allocCreateInfo);
+		}
+	}
+
 	// staging buffer
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -258,6 +335,21 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		m_subMeshDataInfoBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
+	// submesh bounding box buffer
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = RendererConsts::MAX_SUB_MESHES * sizeof(float) * 6;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_subMeshBoundingBoxBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
 	// shadow sampler
 	{
 		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
@@ -295,7 +387,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = 1;
+		samplerCreateInfo.maxLod = 14.0f;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
@@ -332,7 +424,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = 1;
+		samplerCreateInfo.maxLod = 14.0f;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
@@ -597,6 +689,47 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
 	}
+
+	// box index buffer
+	{
+		uint16_t indices[] =
+		{
+			0, 1, 3,
+			0, 3, 2,
+			3, 7, 6,
+			3, 6, 2,
+			1, 5, 7,
+			1, 7, 3,
+			5, 4, 6,
+			5, 6, 7,
+			0, 4, 5,
+			0, 5, 1,
+			2, 6, 4,
+			2, 4, 0
+		};
+
+		VkBufferCreateInfo indexBufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		indexBufferInfo.size = sizeof(indices);
+		indexBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		indexBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_boxIndexBuffer.create(indexBufferInfo, allocCreateInfo);
+
+		void *data;
+		g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), &data);
+		memcpy(data, indices, sizeof(indices));
+		g_context.m_allocator.unmapMemory(m_stagingBuffer.getAllocation());
+
+		VkCommandBuffer commandBuffer = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+		{
+			VkBufferCopy copyRegionIndex = { 0, 0, sizeof(indices) };
+			vkCmdCopyBuffer(commandBuffer, m_stagingBuffer.getBuffer(), m_boxIndexBuffer.getBuffer(), 1, &copyRegionIndex);
+		}
+		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, commandBuffer);
+	}
 }
 
 void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
@@ -702,7 +835,7 @@ void VEngine::VKRenderResources::createImGuiFontsTexture()
 			imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			
+
 			vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
 			VkBufferImageCopy region{};

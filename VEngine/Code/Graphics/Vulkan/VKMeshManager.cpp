@@ -6,13 +6,14 @@
 #include "VKContext.h"
 #include "VKUtility.h"
 
-VEngine::VKMeshManager::VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexBuffer, VKBuffer &indexBuffer, VKBuffer &subMeshInfoBuffer)
+VEngine::VKMeshManager::VKMeshManager(VKBuffer &stagingBuffer, VKBuffer &vertexBuffer, VKBuffer &indexBuffer, VKBuffer &subMeshInfoBuffer, VKBuffer &subMeshBoundingBoxesBuffer)
 	:m_vertexDataAllocator(RendererConsts::MAX_VERTICES, 1),
 	m_indexDataAllocator(RendererConsts::MAX_INDICES * sizeof(uint16_t), 1),
 	m_stagingBuffer(stagingBuffer),
 	m_vertexBuffer(vertexBuffer),
 	m_indexBuffer(indexBuffer),
 	m_subMeshInfoBuffer(subMeshInfoBuffer),
+	m_subMeshBoundingBoxesBuffer(subMeshBoundingBoxesBuffer),
 	m_freeHandles(new SubMeshHandle[RendererConsts::MAX_SUB_MESHES]),
 	m_freeHandleCount(RendererConsts::MAX_SUB_MESHES),
 	m_vertexSpans(new void*[RendererConsts::MAX_SUB_MESHES]),
@@ -32,7 +33,7 @@ VEngine::VKMeshManager::~VKMeshManager()
 
 void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles)
 {
-	VkBufferCopy *bufferCopies = new VkBufferCopy[count * 5];
+	VkBufferCopy *bufferCopies = new VkBufferCopy[count * 6];
 
 	// map staging buffer
 	uint8_t *stagingBufferPtr;
@@ -153,6 +154,26 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 			m_subMeshInfo[handles[i]] = subMeshInfo;
 		}
 
+		// bounding box
+		{
+			float boundingBoxData[6];
+			for (size_t j = 0; j < 6; ++j)
+			{
+				boundingBoxData[j] = j < 3 ? subMeshes[i].m_minCorner[j] : subMeshes[i].m_maxCorner[j - 3];
+			}
+
+			VkBufferCopy &boundingBoxCopy = bufferCopies[i + count * 5];
+			boundingBoxCopy.srcOffset = currentStagingBufferOffset;
+			boundingBoxCopy.dstOffset = handles[i] * sizeof(boundingBoxData);
+			boundingBoxCopy.size = sizeof(boundingBoxData);
+
+			// copy to staging buffer
+			memcpy(stagingBufferPtr + currentStagingBufferOffset, boundingBoxData, boundingBoxCopy.size);
+
+			currentStagingBufferOffset += boundingBoxCopy.size;
+			assert(boundingBoxCopy.dstOffset + boundingBoxCopy.size <= m_subMeshBoundingBoxesBuffer.getSize());
+		}
+
 		m_vertexCount += subMeshes[i].m_vertexCount;
 		m_indexCount += subMeshes[i].m_indexCount;
 	}
@@ -167,6 +188,7 @@ void VEngine::VKMeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes,
 		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_vertexBuffer.getBuffer(), count * 3, bufferCopies);
 		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_indexBuffer.getBuffer(), count, bufferCopies + count * 3);
 		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_subMeshInfoBuffer.getBuffer(), count, bufferCopies + count * 4);
+		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_subMeshBoundingBoxesBuffer.getBuffer(), count, bufferCopies + count * 5);
 	}
 	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
 

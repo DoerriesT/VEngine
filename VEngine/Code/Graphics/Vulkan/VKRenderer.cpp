@@ -29,7 +29,14 @@
 #include "Pass/VKDirectLightingPass.h"
 #include "Pass/DeferredShadowsPass.h"
 #include "Pass/ImGuiPass.h"
-#include "Pass/LuminanceHistogramReadBackCopyPass.h"
+#include "Pass/ReadBackCopyPass.h"
+#include "Pass/MeshClusterVisualizationPass.h"
+#include "Pass/OcclusionCullingReprojectionPass.h"
+#include "Pass/OcclusionCullingCopyToDepthPass.h"
+#include "Pass/OcclusionCullingPass.h"
+#include "Pass/OcclusionCullingCreateDrawArgsPass.h"
+#include "Pass/OcclusionCullingHiZPass.h"
+#include "Pass/DepthPyramidPass.h"
 #include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -56,7 +63,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_deferredObjectDeleter = std::make_unique<DeferredObjectDeleter>();
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
-	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer);
+	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
 	m_swapChain = std::make_unique<VKSwapChain>(width, height);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
@@ -86,28 +93,47 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData)
 {
-	auto &graph = *m_frameGraphs[commonData.m_currentResourceIndex];
+	auto &graph = *m_frameGraphs[commonData.m_curResIdx];
 
 	// reset per frame resources
 	graph.reset();
-	m_renderResources->m_mappableUBOBlock[commonData.m_currentResourceIndex]->reset();
-	m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->reset();
+	m_renderResources->m_mappableUBOBlock[commonData.m_curResIdx]->reset();
+	m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->reset();
 	m_descriptorSetCache->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 	m_deferredObjectDeleter->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 
 	// read back luminance histogram
 	{
-		auto &buffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_currentResourceIndex];
+		auto &buffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_curResIdx];
 		uint32_t *data;
 		g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
 
 		VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
 		range.memory = buffer.getDeviceMemory();
-		range.offset = buffer.getOffset();
-		range.size = buffer.getSize();
+		range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
+		range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
 
 		vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
 		memcpy(m_luminanceHistogram, data, sizeof(m_luminanceHistogram));
+
+		g_context.m_allocator.unmapMemory(buffer.getAllocation());
+	}
+
+	// read back occlusion cull stats
+	{
+		auto &buffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx];
+		uint32_t *data;
+		g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
+
+		VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+		range.memory = buffer.getDeviceMemory();
+		range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
+		range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
+
+		vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
+		m_opaqueDraws = *data;
+		m_totalOpaqueDraws = m_totalOpaqueDrawsPending[commonData.m_curResIdx];
+		m_totalOpaqueDrawsPending[commonData.m_curResIdx] = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
 
 		g_context.m_allocator.unmapMemory(buffer.getAllocation());
 	}
@@ -116,6 +142,36 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	graph.getTimingInfo(&m_passTimingCount, &m_passTimingData);
 
 	// import resources into graph
+
+	ImageViewHandle depthImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Depth Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_depthImages[commonData.m_curResIdx].getFormat();
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_depthImages[commonData.m_curResIdx].getImage(), &m_renderResources->m_depthImageQueue[commonData.m_curResIdx], &m_renderResources->m_depthImageResourceState[commonData.m_curResIdx]);
+		depthImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle prevDepthImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Prev Depth Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_depthImages[commonData.m_prevResIdx].getFormat();
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_depthImages[commonData.m_prevResIdx].getImage(), &m_renderResources->m_depthImageQueue[commonData.m_prevResIdx], &m_renderResources->m_depthImageResourceState[commonData.m_prevResIdx]);
+		prevDepthImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 } });
+	}
 
 	ImageViewHandle taaHistoryImageViewHandle = 0;
 	{
@@ -126,9 +182,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
-		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getFormat();
+		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_prevResIdx].getFormat();
 
-		ImageHandle taaHistoryImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_previousResourceIndex].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_previousResourceIndex], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_previousResourceIndex]);
+		ImageHandle taaHistoryImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_prevResIdx].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_prevResIdx], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_prevResIdx]);
 		taaHistoryImageViewHandle = graph.createImageView({ desc.m_name, taaHistoryImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
@@ -141,9 +197,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
-		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getFormat();
+		desc.m_format = m_renderResources->m_taaHistoryTextures[commonData.m_curResIdx].getFormat();
 
-		ImageHandle taaResolveImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_currentResourceIndex].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_currentResourceIndex], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_currentResourceIndex]);
+		ImageHandle taaResolveImageHandle = graph.importImage(desc, m_renderResources->m_taaHistoryTextures[commonData.m_curResIdx].getImage(), &m_renderResources->m_taaHistoryTextureQueue[commonData.m_curResIdx], &m_renderResources->m_taaHistoryTextureResourceState[commonData.m_curResIdx]);
 		taaResolveImageViewHandle = graph.createImageView({ desc.m_name, taaResolveImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
@@ -156,9 +212,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
-		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getFormat();
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_prevResIdx].getFormat();
 
-		ImageHandle gtaoPreviousImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_previousResourceIndex].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_previousResourceIndex], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_previousResourceIndex]);
+		ImageHandle gtaoPreviousImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_prevResIdx].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_prevResIdx], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_prevResIdx]);
 		gtaoPreviousImageViewHandle = graph.createImageView({ desc.m_name, gtaoPreviousImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
@@ -171,9 +227,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
-		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getFormat();
+		desc.m_format = m_renderResources->m_gtaoHistoryTextures[commonData.m_curResIdx].getFormat();
 
-		ImageHandle gtaoImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_currentResourceIndex].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_currentResourceIndex], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_currentResourceIndex]);
+		ImageHandle gtaoImageHandle = graph.importImage(desc, m_renderResources->m_gtaoHistoryTextures[commonData.m_curResIdx].getImage(), &m_renderResources->m_gtaoHistoryTextureQueue[commonData.m_curResIdx], &m_renderResources->m_gtaoHistoryTextureResourceState[commonData.m_curResIdx]);
 		gtaoImageViewHandle = graph.createImageView({ desc.m_name, gtaoImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
@@ -192,7 +248,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// create graph managed resources
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle depthImageViewHandle = VKResourceDefinitions::createDepthImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyLengthImageViewHandle = VKResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyRotMaterialIdImageViewHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
@@ -206,15 +261,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle gtaoRawImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoSpatiallyFilteredImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	BufferViewHandle luminanceHistogramBufferViewHandle = VKResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
+	BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
+	BufferViewHandle drawCountsBufferViewHandle = VKResourceDefinitions::createIndirectDrawCountsBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
+
 
 	// transform data write
 	VkDescriptorBufferInfo transformDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(transformDataBufferInfo.range, transformDataBufferInfo.offset, transformDataBufferInfo.buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(transformDataBufferInfo.range, transformDataBufferInfo.offset, transformDataBufferInfo.buffer, bufferPtr);
 		if (renderData.m_transformDataCount)
 		{
 			memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::mat4));
@@ -225,7 +285,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VkDescriptorBufferInfo directionalLightDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(directionalLightDataBufferInfo.range, directionalLightDataBufferInfo.offset, directionalLightDataBufferInfo.buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightDataBufferInfo.range, directionalLightDataBufferInfo.offset, directionalLightDataBufferInfo.buffer, bufferPtr);
 		if (!lightData.m_directionalLightData.empty())
 		{
 			memcpy(bufferPtr, lightData.m_directionalLightData.data(), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData));
@@ -237,9 +297,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VkDescriptorBufferInfo pointLightZBinsBufferInfo{ VK_NULL_HANDLE, 0, std::max(lightData.m_zBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightDataBufferInfo.range, pointLightDataBufferInfo.offset, pointLightDataBufferInfo.buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(pointLightDataBufferInfo.range, pointLightDataBufferInfo.offset, pointLightDataBufferInfo.buffer, dataBufferPtr);
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(pointLightZBinsBufferInfo.range, pointLightZBinsBufferInfo.offset, pointLightZBinsBufferInfo.buffer, zBinsBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(pointLightZBinsBufferInfo.range, pointLightZBinsBufferInfo.offset, pointLightZBinsBufferInfo.buffer, zBinsBufferPtr);
 		if (!lightData.m_pointLightData.empty())
 		{
 			memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
@@ -251,7 +311,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VkDescriptorBufferInfo shadowMatricesBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(shadowMatricesBufferInfo.range, shadowMatricesBufferInfo.offset, shadowMatricesBufferInfo.buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowMatricesBufferInfo.range, shadowMatricesBufferInfo.offset, shadowMatricesBufferInfo.buffer, bufferPtr);
 		if (renderData.m_shadowMatrixCount)
 		{
 			memcpy(bufferPtr, renderData.m_shadowMatrices, renderData.m_shadowMatrixCount * sizeof(glm::mat4));
@@ -262,7 +322,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_currentResourceIndex]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(instanceDataBufferInfo.range, instanceDataBufferInfo.offset, instanceDataBufferInfo.buffer, bufferPtr);
 
 		// copy instance data to gpu memory and sort it according to the sorted drawCallKeys list
 		SubMeshInstanceData *instanceData = (SubMeshInstanceData *)bufferPtr;
@@ -280,6 +340,39 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
 	passRecordContext.m_commonRenderData = &commonData;
 
+
+	//// reproject previous depth buffer to create occlusion culling depth buffer
+	//OcclusionCullingReprojectionPass::Data occlusionCullingReprojData;
+	//occlusionCullingReprojData.m_passRecordContext = &passRecordContext;
+	//occlusionCullingReprojData.m_prevDepthImageViewHandle = prevDepthImageViewHandle;
+	//occlusionCullingReprojData.m_resultImageViewHandle = reprojectedDepthUintImageViewHandle;
+
+	//OcclusionCullingReprojectionPass::addToGraph(graph, occlusionCullingReprojData);
+
+
+	//// copy from uint image to depth image
+	//OcclusionCullingCopyToDepthPass::Data occlusionCullingCopyData;
+	//occlusionCullingCopyData.m_passRecordContext = &passRecordContext;
+	//occlusionCullingCopyData.m_inputImageHandle = reprojectedDepthUintImageViewHandle;
+	//occlusionCullingCopyData.m_resultImageHandle = reprojectedDepthImageViewHandle;
+
+	//OcclusionCullingCopyToDepthPass::addToGraph(graph, occlusionCullingCopyData);
+
+
+	// render obbs against reprojected depth buffer to test for occlusion
+	OcclusionCullingPass::Data occlusionCullingPassData;
+	occlusionCullingPassData.m_passRecordContext = &passRecordContext;
+	occlusionCullingPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	occlusionCullingPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	occlusionCullingPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	occlusionCullingPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	occlusionCullingPassData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
+	occlusionCullingPassData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+	occlusionCullingPassData.m_depthImageHandle = reprojectedDepthImageViewHandle;
+
+	//OcclusionCullingPass::addToGraph(graph, occlusionCullingPassData);
+
+
 	// prepare indirect buffers
 	VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
 	prepareIndirectBuffersPassData.m_passRecordContext = &passRecordContext;
@@ -292,6 +385,71 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	{
 		VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
 	}
+
+	// depth pyramid
+	ImageViewHandle depthPyramidImageViewHandle = 0;
+	{
+		auto getMipLevelCount = [](uint32_t w, uint32_t h)
+		{
+			uint32_t result = 1;
+			while (w > 1 || h > 1)
+			{
+				result++;
+				w /= 2;
+				h /= 2;
+			}
+			return result;
+		};
+		const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
+
+		ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
+
+		DepthPyramidPass::Data depthPyramidPassData;
+		depthPyramidPassData.m_passRecordContext = &passRecordContext;
+		depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
+		depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
+
+		DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
+
+		depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
+	}
+
+	// HiZ Culling
+	OcclusionCullingHiZPass::Data occlusionCullingHiZData;
+	occlusionCullingHiZData.m_passRecordContext = &passRecordContext;
+	occlusionCullingHiZData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
+	occlusionCullingHiZData.m_drawCount = occlusionCullingPassData.m_drawCount;
+	occlusionCullingHiZData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	occlusionCullingHiZData.m_transformDataBufferInfo = transformDataBufferInfo;
+	occlusionCullingHiZData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
+	occlusionCullingHiZData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+	occlusionCullingHiZData.m_depthPyramidImageHandle = depthPyramidImageViewHandle;
+
+	OcclusionCullingHiZPass::addToGraph(graph, occlusionCullingHiZData);
+
+
+	// compact occlusion culled draws
+	OcclusionCullingCreateDrawArgsPass::Data occlusionCullingDrawArgsData;
+	occlusionCullingDrawArgsData.m_passRecordContext = &passRecordContext;
+	occlusionCullingDrawArgsData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
+	occlusionCullingDrawArgsData.m_drawCount = occlusionCullingPassData.m_drawCount;
+	occlusionCullingDrawArgsData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	occlusionCullingDrawArgsData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	occlusionCullingDrawArgsData.m_indirectBufferHandle = indirectBufferViewHandle;
+	occlusionCullingDrawArgsData.m_drawCountsBufferHandle = drawCountsBufferViewHandle;
+	occlusionCullingDrawArgsData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+
+	OcclusionCullingCreateDrawArgsPass::addToGraph(graph, occlusionCullingDrawArgsData);
+
+	// copy draw count to readback buffer
+	ReadBackCopyPass::Data drawCountReadBackCopyPassData;
+	drawCountReadBackCopyPassData.m_passRecordContext = &passRecordContext;
+	drawCountReadBackCopyPassData.m_bufferCopy = { 0, 0, sizeof(uint32_t) };
+	drawCountReadBackCopyPassData.m_srcBuffer = drawCountsBufferViewHandle;
+	drawCountReadBackCopyPassData.m_dstBuffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getBuffer();
+
+	ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
+
 
 	// draw opaque geometry to gbuffer
 	VKGeometryPass::Data opaqueGeometryPassData;
@@ -308,6 +466,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
 	opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	opaqueGeometryPassData.m_drawCountBufferHandle = drawCountsBufferViewHandle;
 
 	if (opaqueGeometryPassData.m_drawCount)
 	{
@@ -522,12 +681,13 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
 
 	// copy luminance histogram to readback buffer
-	LuminanceHistogramReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;
+	ReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;
 	luminanceHistogramReadBackCopyPassData.m_passRecordContext = &passRecordContext;
+	luminanceHistogramReadBackCopyPassData.m_bufferCopy = { 0, 0, RendererConsts::LUMINANCE_HISTOGRAM_SIZE * sizeof(uint32_t) };
 	luminanceHistogramReadBackCopyPassData.m_srcBuffer = luminanceHistogramBufferViewHandle;
-	luminanceHistogramReadBackCopyPassData.m_dstBuffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_currentResourceIndex].getBuffer();
+	luminanceHistogramReadBackCopyPassData.m_dstBuffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_curResIdx].getBuffer();
 
-	LuminanceHistogramReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
+	ReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
 
 
 	VkSwapchainKHR swapChain = m_swapChain->get();
@@ -535,7 +695,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// get swapchain image
 	ImageViewHandle swapchainImageViewHandle = 0;
 	{
-		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], VK_NULL_HANDLE, &m_swapChainImageIndex);
+		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_curResIdx], VK_NULL_HANDLE, &m_swapChainImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -602,6 +762,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	{
 		VKFXAAPass::addToGraph(graph, fxaaPassData);
 	}
+
+
+	// mesh cluster visualization
+	MeshClusterVisualizationPass::Data clusterVizPassData;
+	clusterVizPassData.m_passRecordContext = &passRecordContext;
+	clusterVizPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	clusterVizPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	clusterVizPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	clusterVizPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	clusterVizPassData.m_indirectBufferHandle = indirectBufferViewHandle;
+	clusterVizPassData.m_depthImageHandle = depthImageViewHandle;
+	clusterVizPassData.m_colorImageHandle = swapchainImageViewHandle;
+
+	//MeshClusterVisualizationPass::addToGraph(graph, clusterVizPassData);
+	//
+	//clusterVizPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+	//clusterVizPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+	//
+	//MeshClusterVisualizationPass::addToGraph(graph, clusterVizPassData);
 
 
 	// ImGui
@@ -676,7 +855,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	uint32_t semaphoreCount;
 	VkSemaphore *semaphores;
-	graph.execute(ResourceViewHandle(swapchainImageViewHandle), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_currentResourceIndex], &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::GRAPHICS);
+	graph.execute(ResourceViewHandle(swapchainImageViewHandle), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_curResIdx], &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::GRAPHICS);
 
 	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 	presentInfo.waitSemaphoreCount = semaphoreCount;
@@ -748,4 +927,10 @@ void VEngine::VKRenderer::getTimingInfo(size_t *count, const PassTimingInfo **da
 {
 	*count = m_passTimingCount;
 	*data = m_passTimingData;
+}
+
+void VEngine::VKRenderer::getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const
+{
+	draws = m_opaqueDraws;
+	totalDraws = m_totalOpaqueDraws;
 }
