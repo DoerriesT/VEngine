@@ -7,11 +7,12 @@
 #include <fstream>
 #include <limits>
 #include <cstdlib>
-#include <Windows.h>
 #include <nlohmann/json.hpp>
 #include <iomanip>
 #include <unordered_map>
 #include <set>
+#include "meshoptimizer-0.12/meshoptimizer.h"
+#include <Windows.h>
 
 #undef min
 #undef max
@@ -175,14 +176,14 @@ int main()
 		for (size_t shapeIndex = 0; shapeIndex < objShapes.size(); ++shapeIndex)
 		{
 			const auto &shape = objShapes[shapeIndex];
-			for (size_t meshIndex = 0; meshIndex < shape.mesh.indices.size(); meshIndex += 3)
+			for (size_t index = 0; index < shape.mesh.indices.size(); index += 3)
 			{
 				Index unifiedIndex;
 				unifiedIndex.m_shapeIndex = shapeIndex;
-				unifiedIndex.m_materialIndex = shape.mesh.material_ids[meshIndex / 3];
-				unifiedIndex.m_vertexIndices[0] = shape.mesh.indices[meshIndex + 0];
-				unifiedIndex.m_vertexIndices[1] = shape.mesh.indices[meshIndex + 1];
-				unifiedIndex.m_vertexIndices[2] = shape.mesh.indices[meshIndex + 2];
+				unifiedIndex.m_materialIndex = shape.mesh.material_ids[index / 3];
+				unifiedIndex.m_vertexIndices[0] = shape.mesh.indices[index + 0];
+				unifiedIndex.m_vertexIndices[1] = shape.mesh.indices[index + 1];
+				unifiedIndex.m_vertexIndices[2] = shape.mesh.indices[index + 2];
 
 				unifiedIndices.push_back(unifiedIndex);
 			}
@@ -218,22 +219,19 @@ int main()
 
 		glm::vec3 minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
 		glm::vec3 maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
-		std::vector<glm::vec3> positions;
-		std::vector<glm::vec3> normals;
-		std::vector<glm::vec2> texCoords;
-		std::vector<uint16_t> indices;
+		std::vector<glm::vec3> positionsRaw;
+		std::vector<glm::vec3> normalsRaw;
+		std::vector<glm::vec2> texCoordsRaw;
 		std::set<uint32_t> shapeIndices;
-		std::unordered_map<Vertex, uint16_t, VertexHash> vertexToIndex;
 
 		for (size_t i = 0; i < unifiedIndices.size(); ++i)
 		{
-			const auto &index = unifiedIndices[i];
-
+			const auto &unifiedIdx = unifiedIndices[i];
 			// loop over face (triangle)
 			for (size_t j = 0; j < 3; ++j)
 			{
 				Vertex vertex;
-				const auto &vertexIndex = index.m_vertexIndices[j];
+				const auto &vertexIndex = unifiedIdx.m_vertexIndices[j];
 
 				vertex.position.x = objAttrib.vertices[vertexIndex.vertex_index * 3 + 0];
 				vertex.position.y = objAttrib.vertices[vertexIndex.vertex_index * 3 + 1];
@@ -265,26 +263,53 @@ int main()
 				minMeshCorner = glm::min(minMeshCorner, vertex.position);
 				maxMeshCorner = glm::max(maxMeshCorner, vertex.position);
 
-				// if we havent encountered this vertex before, add it to the map
-				if (vertexToIndex.count(vertex) == 0)
-				{
-					vertexToIndex[vertex] = static_cast<uint16_t>(positions.size());
+				positionsRaw.push_back(vertex.position);
+				normalsRaw.push_back(vertex.normal);
+				texCoordsRaw.push_back(vertex.texCoord);
 
-					positions.push_back(vertex.position);
-					normals.push_back(vertex.normal);
-					texCoords.push_back(vertex.texCoord);
-				}
-				indices.push_back(vertexToIndex[vertex]);
+				shapeIndices.insert(unifiedIdx.m_shapeIndex);
 			}
 
-			shapeIndices.insert(index.m_shapeIndex);
-
-			// write object to file and reset data
 			if (i + 1 == unifiedIndices.size()														// last index -> we're done
-				|| indices.size() >= std::numeric_limits<uint16_t>::max() - 3
-				|| unifiedIndices[i + 1].m_materialIndex != index.m_materialIndex					// next material is different -> write to file
-				|| (!mergeByMaterial && unifiedIndices[i + 1].m_shapeIndex != index.m_shapeIndex))	// dont merge by material (keep distinct objects) and next shape is different -> write to file
+				|| positionsRaw.size() >= std::numeric_limits<uint16_t>::max() - 3
+				|| unifiedIndices[i + 1].m_materialIndex != unifiedIdx.m_materialIndex					// next material is different -> write to file
+				|| (!mergeByMaterial && unifiedIndices[i + 1].m_shapeIndex != unifiedIdx.m_shapeIndex))	// dont merge by material (keep distinct objects) and next shape is different -> write to file
 			{
+				meshopt_Stream streams[] = 
+				{
+					{positionsRaw.data(), sizeof(glm::vec3), sizeof(glm::vec3)},
+					{normalsRaw.data(), sizeof(glm::vec3), sizeof(glm::vec3)},
+					{texCoordsRaw.data(), sizeof(glm::vec2), sizeof(glm::vec2)},
+				};
+
+				const size_t totalIndices = positionsRaw.size();
+
+				// generate indices
+				std::vector<unsigned int> remap(totalIndices);
+				size_t totalVertices = meshopt_generateVertexRemapMulti(remap.data(), (uint16_t*)nullptr, totalIndices, totalIndices, streams, 3);
+			
+				// fill new index and vertex buffers
+				std::vector<uint16_t> indices(totalIndices);
+				std::vector<glm::vec3> positions(totalVertices);
+				std::vector<glm::vec3> normals(totalVertices);
+				std::vector<glm::vec2> texCoords(totalVertices);
+
+				meshopt_remapIndexBuffer(indices.data(), (uint16_t*)nullptr, totalIndices, remap.data());
+				meshopt_remapVertexBuffer(positions.data(), positionsRaw.data(), positionsRaw.size(), sizeof(float) * 3, remap.data());
+				meshopt_remapVertexBuffer(normals.data(), normalsRaw.data(), positionsRaw.size(), sizeof(float) * 3, remap.data());
+				meshopt_remapVertexBuffer(texCoords.data(), texCoordsRaw.data(), positionsRaw.size(), sizeof(float) * 2, remap.data());
+			
+				// optimize vertex cache
+				meshopt_optimizeVertexCache(indices.data(), indices.data(), totalIndices, totalVertices);
+
+				// optimize vertex order
+				meshopt_optimizeVertexFetchRemap(remap.data(), indices.data(), totalIndices, totalVertices);
+				meshopt_remapIndexBuffer(indices.data(), indices.data(), totalIndices, remap.data());
+				meshopt_remapVertexBuffer(positions.data(), positions.data(), positions.size(), sizeof(float) * 3, remap.data());
+				meshopt_remapVertexBuffer(normals.data(), normals.data(), positions.size(), sizeof(float) * 3, remap.data());
+				meshopt_remapVertexBuffer(texCoords.data(), texCoords.data(), positions.size(), sizeof(float) * 2, remap.data());
+
+				// write to file
 				dstFile.write((const char *)positions.data(), positions.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)normals.data(), normals.size() * sizeof(glm::vec3));
 				dstFile.write((const char *)texCoords.data(), texCoords.size() * sizeof(glm::vec2));
@@ -311,7 +336,7 @@ int main()
 					{
 						{ "name", shapeName },
 						{ "subMesh", j["subMeshes"].size() - 1 },
-						{ "material", index.m_materialIndex }
+						{ "material", unifiedIdx.m_materialIndex }
 					});
 
 				fileOffset += positions.size() * sizeof(glm::vec3);
@@ -322,12 +347,10 @@ int main()
 				// reset data
 				minSubMeshCorner = glm::vec3(std::numeric_limits<float>::max());
 				maxSubMeshCorner = glm::vec3(std::numeric_limits<float>::lowest());
-				positions.clear();
-				normals.clear();
-				texCoords.clear();
-				indices.clear();
+				positionsRaw.clear();
+				normalsRaw.clear();
+				texCoordsRaw.clear();
 				shapeIndices.clear();
-				vertexToIndex.clear();
 
 				std::cout << "Processed SubMesh # " << subMeshIndex++ << std::endl;
 			}

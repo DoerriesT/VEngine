@@ -137,6 +137,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Code\main.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\allocator.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\clusterizer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\indexcodec.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\indexgenerator.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\overdrawanalyzer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\overdrawoptimizer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\simplifier.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\stripifier.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\vcacheanalyzer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\vcacheoptimizer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\vertexcodec.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\vfetchanalyzer.cpp" />
+    <ClCompile Include="Code\meshoptimizer-0.12\vfetchoptimizer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Code\meshoptimizer-0.12\meshoptimizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
