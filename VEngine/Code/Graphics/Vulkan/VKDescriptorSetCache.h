@@ -3,6 +3,7 @@
 #include <map>
 #include <bitset>
 #include <vector>
+#include <memory>
 
 namespace VEngine
 {
