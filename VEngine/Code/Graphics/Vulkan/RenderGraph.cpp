@@ -559,21 +559,17 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 						passRecordInfo.m_memoryBarrierDstAccessMask |= curUsageInfo.m_stateInfo.m_accessMask;
 					}
 
-					// schedule wait on event for RAW and WAR hazards, but only if this is not the first pass.
-					// external dependencies use a pipelinebarrier instead
-					if ((prevUsageInfo.m_stateInfo.m_writeAccess || curUsageInfo.m_stateInfo.m_writeAccess) && usageIdx != 0)
+					// schedule pipeline barrier for RAW and WAR hazards
+					if (prevUsageInfo.m_stateInfo.m_writeAccess || curUsageInfo.m_stateInfo.m_writeAccess)
 					{
-						passRecordInfo.m_eventSrcStages |= prevUsageInfo.m_stateInfo.m_stageMask;
-						passRecordInfo.m_waitEvents.push_back(VkEvent(prevUsageInfo.m_passHandle));
-						m_passRecordInfo[prevUsageInfo.m_passHandle].m_endStages |= prevUsageInfo.m_stateInfo.m_stageMask;
+						passRecordInfo.m_srcStageMask |= prevUsageInfo.m_stateInfo.m_stageMask;
+						passRecordInfo.m_dstStageMask |= curUsageInfo.m_stateInfo.m_stageMask;
 					}
-
-					passRecordInfo.m_waitStages |= curUsageInfo.m_stateInfo.m_stageMask;
 				}
 
 				if (addWaitBarrier)
 				{
-					passRecordInfo.m_waitStages |= curUsageInfo.m_stateInfo.m_stageMask;
+					passRecordInfo.m_dstStageMask |= curUsageInfo.m_stateInfo.m_stageMask;
 
 					// set image barrier values
 					imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess && !scheduleSemaphore ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
@@ -642,7 +638,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 						++prevPassRecordInfo.m_releaseBufferBarrierCount;
 					}
 
-					prevPassRecordInfo.m_releaseStages |= prevUsageInfo.m_stateInfo.m_stageMask;
+					prevPassRecordInfo.m_releaseStageMask |= prevUsageInfo.m_stateInfo.m_stageMask;
 				}
 
 				// update prevUsageInfo
@@ -652,7 +648,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 		}
 	}
 
-	// create events, semaphores and batches
+	// create semaphores and batches
 	uint16_t externalSemaphoreOffsets[3];
 	for (size_t i = 0; i < 3; ++i)
 	{
@@ -732,26 +728,6 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 		}
 
 		++m_batches.back().m_passIndexCount;
-
-		// events
-		{
-			auto &passRecordInfo = m_passRecordInfo[passHandle];
-
-			// some other pass wants to wait on this one -> allocate event
-			if (passRecordInfo.m_endStages != 0)
-			{
-				passRecordInfo.m_endEvent = g_context.m_syncPrimitivePool.acquireEvent();
-			}
-
-			// replace all wait events (currently holding an index) with the actual events
-			for (auto &waitEvent : passRecordInfo.m_waitEvents)
-			{
-				VkEvent e = m_passRecordInfo[(size_t)waitEvent].m_endEvent;
-				passRecordInfo.m_eventSrcStages |= m_passRecordInfo[(size_t)waitEvent].m_endStages;
-				assert(e != VK_NULL_HANDLE);
-				waitEvent = e;
-			}
-		}
 	}
 
 	// add fence for last batch on each queue
@@ -800,6 +776,8 @@ void VEngine::RenderGraph::record()
 	// each pass uses 4 queries, so make sure, we dont exceed the query pool size
 	assert(!m_recordTimings || m_passHandleOrder.size() <= (TIMESTAMP_QUERY_COUNT / 4));
 
+	bool resetQueryPool = false;
+
 	// record passes
 	for (const auto &batch : m_batches)
 	{
@@ -825,26 +803,23 @@ void VEngine::RenderGraph::record()
 			// disable timestamps if the queue doesnt support it
 			const bool recordTimings = m_recordTimings && m_queueTimestampMasks[batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2];
 
+			if (recordTimings && !resetQueryPool)
+			{
+				vkCmdResetQueryPool(cmdBuf, m_queryPool, 0, TIMESTAMP_QUERY_COUNT);
+				resetQueryPool = true;
+			}
+
 			// write timestamp before waits
 			if (recordTimings)
 			{
-				vkCmdResetQueryPool(cmdBuf, m_queryPool, queryIndex, 4);
 				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 0);
 			}
 
-			// wait on events
-			if (!pass.m_waitEvents.empty())
-			{
-				vkCmdWaitEvents(cmdBuf, static_cast<uint32_t>(pass.m_waitEvents.size()), pass.m_waitEvents.data(),
-					pass.m_eventSrcStages, pass.m_waitStages, 1, &memoryBarrier,
-					pass.m_waitBufferBarrierCount, pass.m_bufferBarriers.data(),
-					pass.m_waitImageBarrierCount, pass.m_imageBarriers.data());
-			}
-
 			// pipeline barrier
-			if (pass.m_waitEvents.empty() && (pass.m_waitBufferBarrierCount || pass.m_waitImageBarrierCount || memoryBarrier.srcAccessMask))
+			if ((pass.m_waitBufferBarrierCount || pass.m_waitImageBarrierCount || memoryBarrier.srcAccessMask))
 			{
-				vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pass.m_waitStages, 0, 0, nullptr,
+				vkCmdPipelineBarrier(cmdBuf, (pass.m_srcStageMask != 0) ? pass.m_srcStageMask : pass.m_srcStageMask | VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pass.m_dstStageMask, 0,
+					1, &memoryBarrier,
 					pass.m_waitBufferBarrierCount, pass.m_bufferBarriers.data(),
 					pass.m_waitImageBarrierCount, pass.m_imageBarriers.data());
 			}
@@ -867,15 +842,9 @@ void VEngine::RenderGraph::record()
 			// release resources
 			if (pass.m_releaseBufferBarrierCount || pass.m_releaseImageBarrierCount)
 			{
-				vkCmdPipelineBarrier(cmdBuf, pass.m_releaseStages, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
+				vkCmdPipelineBarrier(cmdBuf, pass.m_releaseStageMask, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
 					pass.m_releaseBufferBarrierCount, pass.m_bufferBarriers.data() + pass.m_waitBufferBarrierCount,
 					pass.m_releaseImageBarrierCount, pass.m_imageBarriers.data() + pass.m_waitImageBarrierCount);
-			}
-
-			// signal end event
-			if (pass.m_endEvent != VK_NULL_HANDLE)
-			{
-				vkCmdSetEvent(cmdBuf, pass.m_endEvent, pass.m_endStages);
 			}
 
 			// write timestamp after all commands
@@ -1382,15 +1351,6 @@ void VEngine::RenderGraph::reset()
 		if (semaphore != VK_NULL_HANDLE)
 		{
 			g_context.m_syncPrimitivePool.freeSemaphore(semaphore);
-		}
-	}
-
-	// release events
-	for (const auto &recordInfo : m_passRecordInfo)
-	{
-		if (recordInfo.m_endEvent != VK_NULL_HANDLE)
-		{
-			g_context.m_syncPrimitivePool.freeEvent(recordInfo.m_endEvent);
 		}
 	}
 

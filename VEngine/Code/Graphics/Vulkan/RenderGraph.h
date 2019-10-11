@@ -297,20 +297,17 @@ namespace VEngine
 		{
 			RecordFunc m_recordFunc;
 			VkQueue m_queue;
-			VkPipelineStageFlags m_eventSrcStages;
-			VkPipelineStageFlags m_waitStages;
-			VkPipelineStageFlags m_releaseStages;
-			VkPipelineStageFlags m_endStages;
+			VkPipelineStageFlags m_srcStageMask;
+			VkPipelineStageFlags m_dstStageMask;
+			VkPipelineStageFlags m_releaseStageMask;
 			VkAccessFlags m_memoryBarrierSrcAccessMask;
 			VkAccessFlags m_memoryBarrierDstAccessMask;
 			uint8_t m_waitImageBarrierCount;
 			uint8_t m_waitBufferBarrierCount;
 			uint8_t m_releaseImageBarrierCount;
 			uint8_t m_releaseBufferBarrierCount;
-			std::vector<VkEvent> m_waitEvents;
 			std::vector<VkImageMemoryBarrier> m_imageBarriers;
 			std::vector<VkBufferMemoryBarrier> m_bufferBarriers;
-			VkEvent m_endEvent;
 		};
 
 		struct Batch
