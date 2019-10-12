@@ -16,6 +16,8 @@ namespace VEngine
 			VkDescriptorBufferInfo m_instanceDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
+			VkDescriptorBufferInfo m_subMeshInfoBufferInfo;
+			BufferViewHandle m_indicesBufferHandle;
 			BufferViewHandle m_indirectBufferHandle;
 			BufferViewHandle m_drawCountBufferHandle;
 			ImageViewHandle m_depthImageHandle;

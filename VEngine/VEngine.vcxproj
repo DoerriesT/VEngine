@@ -173,6 +173,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\PassRecordContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h" />
@@ -259,6 +260,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp" />

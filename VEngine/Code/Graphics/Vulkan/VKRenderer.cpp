@@ -37,6 +37,7 @@
 #include "Pass/OcclusionCullingCreateDrawArgsPass.h"
 #include "Pass/OcclusionCullingHiZPass.h"
 #include "Pass/DepthPyramidPass.h"
+#include "Pass/BuildIndexBufferPass.h"
 #include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -51,6 +52,7 @@
 #include "DeferredObjectDeleter.h"
 #include "Graphics/imgui/imgui.h"
 #include "Graphics/ViewRenderList.h"
+#include "Utility/Timer.h"
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -319,6 +321,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// instance data write
+	std::vector<SubMeshInstanceData> sortedInstanceData(renderData.m_subMeshInstanceDataCount);
 	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
@@ -328,7 +331,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		SubMeshInstanceData *instanceData = (SubMeshInstanceData *)bufferPtr;
 		for (size_t i = 0; i < renderData.m_subMeshInstanceDataCount; ++i)
 		{
-			instanceData[i] = renderData.m_subMeshInstanceData[static_cast<uint32_t>(renderData.m_drawCallKeys[i] & 0xFFFFFFFF)];
+			instanceData[i] = sortedInstanceData[i] = renderData.m_subMeshInstanceData[static_cast<uint32_t>(renderData.m_drawCallKeys[i] & 0xFFFFFFFF)];
 		}
 	}
 
@@ -409,7 +412,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
 		depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
 
-		DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
+		//DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
 
 		depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
 	}
@@ -425,7 +428,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	occlusionCullingHiZData.m_visibilityBufferHandle = visibilityBufferViewHandle;
 	occlusionCullingHiZData.m_depthPyramidImageHandle = depthPyramidImageViewHandle;
 
-	OcclusionCullingHiZPass::addToGraph(graph, occlusionCullingHiZData);
+	//OcclusionCullingHiZPass::addToGraph(graph, occlusionCullingHiZData);
 
 
 	// compact occlusion culled draws
@@ -439,7 +442,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	occlusionCullingDrawArgsData.m_drawCountsBufferHandle = drawCountsBufferViewHandle;
 	occlusionCullingDrawArgsData.m_visibilityBufferHandle = visibilityBufferViewHandle;
 
-	OcclusionCullingCreateDrawArgsPass::addToGraph(graph, occlusionCullingDrawArgsData);
+	//OcclusionCullingCreateDrawArgsPass::addToGraph(graph, occlusionCullingDrawArgsData);
 
 	// copy draw count to readback buffer
 	ReadBackCopyPass::Data drawCountReadBackCopyPassData;
@@ -448,7 +451,98 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	drawCountReadBackCopyPassData.m_srcBuffer = drawCountsBufferViewHandle;
 	drawCountReadBackCopyPassData.m_dstBuffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getBuffer();
 
-	ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
+	//ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
+
+
+	// build index buffer
+	BufferViewHandle indirectDrawBufferViewHandle;
+	BufferViewHandle filteredIndicesBufferViewHandle;
+	{
+		struct ClusterInfo
+		{
+			uint32_t indexCount;
+			uint32_t indexOffset;
+			int32_t vertexOffset;
+			uint32_t drawCallIndex;
+			uint32_t transformIndex;
+		};
+
+		std::vector<ClusterInfo> clusterInfoList;
+		uint32_t filteredTriangleIndexBufferSize = 0;
+		{
+			uint32_t drawCallIndex = 0;
+
+			const auto *subMeshInfoList = m_meshManager->getSubMeshInfo();
+
+			for (uint32_t i = 0; i < renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount; ++i)
+			{
+				const auto &subMeshInfo = subMeshInfoList[sortedInstanceData[i].m_subMeshIndex];
+				uint32_t indexCount = subMeshInfo.m_indexCount;
+				uint32_t indexOffset = subMeshInfo.m_firstIndex;
+
+				filteredTriangleIndexBufferSize += indexCount;
+
+				while (indexCount)
+				{
+					ClusterInfo clusterInfo;
+					clusterInfo.indexCount = std::min(indexCount, RendererConsts::TRIANGLE_FILTERING_CLUSTER_SIZE * 3u); // clusterSize is in triangles, so one triangle -> three indices
+					clusterInfo.indexOffset = indexOffset;
+					clusterInfo.vertexOffset = subMeshInfo.m_vertexOffset;
+					clusterInfo.drawCallIndex = drawCallIndex;
+					clusterInfo.transformIndex = sortedInstanceData[i].m_transformIndex;
+
+					clusterInfoList.push_back(clusterInfo);
+
+					indexCount -= clusterInfo.indexCount;
+					indexOffset += clusterInfo.indexCount;
+				}
+
+				++drawCallIndex;
+			}
+		}
+
+		// cluster info write
+		VkDescriptorBufferInfo clusterInfoBufferInfo{ VK_NULL_HANDLE, 0, std::max(clusterInfoList.size() * sizeof(ClusterInfo), size_t(1)) };
+		{
+			uint8_t *bufferPtr;
+			m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(clusterInfoBufferInfo.range, clusterInfoBufferInfo.offset, clusterInfoBufferInfo.buffer, bufferPtr);
+			if (!clusterInfoList.empty())
+			{
+				memcpy(bufferPtr, clusterInfoList.data(), clusterInfoList.size() * sizeof(ClusterInfo));
+			}
+		}
+
+		// indirect draw buffer
+		{
+			BufferDescription bufferDesc{};
+			bufferDesc.m_name = "Indirect Draw Buffer";
+			bufferDesc.m_size = glm::max(32ull, sizeof(VkDrawIndexedIndirectCommand));
+
+			indirectDrawBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
+		}
+
+		// filtered indices buffer
+		{
+			BufferDescription bufferDesc{};
+			bufferDesc.m_name = "Filtered Indices Buffer";
+			bufferDesc.m_size = glm::max(32u, filteredTriangleIndexBufferSize * 4);
+
+			filteredIndicesBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
+		}
+
+		BuildIndexBufferPass::Data buildIndexBufferPassData;
+		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
+		buildIndexBufferPassData.m_clusterOffset = 0;
+		buildIndexBufferPassData.m_clusterCount = clusterInfoList.size();
+		buildIndexBufferPassData.m_clusterInfoBufferInfo = clusterInfoBufferInfo;
+		buildIndexBufferPassData.m_inputIndicesBufferInfo = { m_renderResources->m_indexBuffer.getBuffer(), 0, m_renderResources->m_indexBuffer.getSize() };
+		buildIndexBufferPassData.m_indirectDrawCmdBufferHandle = indirectDrawBufferViewHandle;
+		buildIndexBufferPassData.m_filteredIndicesBufferHandle = filteredIndicesBufferViewHandle;
+		buildIndexBufferPassData.m_positionsBufferInfo = { m_renderResources->m_vertexBuffer.getBuffer(), 0, RendererConsts::MAX_VERTICES * sizeof(glm::vec3) };
+		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+
+		BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
+	}
 
 
 	// draw opaque geometry to gbuffer
@@ -460,13 +554,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	opaqueGeometryPassData.m_indirectBufferHandle = indirectBufferViewHandle;
+	opaqueGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
 	opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
 	opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
 	opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
 	opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	opaqueGeometryPassData.m_drawCountBufferHandle = drawCountsBufferViewHandle;
+	opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	opaqueGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
 
 	if (opaqueGeometryPassData.m_drawCount)
 	{
@@ -483,7 +579,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	if (maskedGeometryPassData.m_drawCount)
 	{
-		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
+		//VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
 
 	//// common sdsm
