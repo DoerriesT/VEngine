@@ -169,7 +169,6 @@
     <ClInclude Include="Code\Graphics\ViewRenderList.h" />
     <ClInclude Include="Code\Graphics\Vulkan\CommandBufferPool.h" />
     <ClInclude Include="Code\Graphics\Vulkan\DeferredObjectDeleter.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\PassRecordContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
@@ -257,7 +256,6 @@
     <ClCompile Include="Code\Graphics\RenderSystem.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\CommandBufferPool.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\DeferredObjectDeleter.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.cpp" />

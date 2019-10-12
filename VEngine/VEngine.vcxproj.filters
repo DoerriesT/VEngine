@@ -22,9 +22,6 @@
     <Filter Include="Code\Graphics\Camera">
       <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\Vulkan\FrameGraph">
-      <UniqueIdentifier>{83870de2-c33c-4ac9-a94d-fc59ee01051b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\Graphics\Vulkan\Pass">
       <UniqueIdentifier>{677f189a-427e-40e2-989a-49d1555ec275}</UniqueIdentifier>
     </Filter>
@@ -98,9 +95,6 @@
     </ClInclude>
     <ClInclude Include="Code\Graphics\LightData.h">
       <Filter>Code\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.h">
-      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKImage.h">
       <Filter>Code\Graphics\Vulkan</Filter>
@@ -385,9 +379,6 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKTextureLoader.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\FrameGraph\FrameGraph.cpp">
-      <Filter>Code\Graphics\Vulkan\FrameGraph</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKImage.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>

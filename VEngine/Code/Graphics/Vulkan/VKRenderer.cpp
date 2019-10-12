@@ -7,25 +7,18 @@
 #include "Graphics/LightData.h"
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
-#include "FrameGraph/FrameGraph.h"
-#include "Pass/VKPrepareIndirectBuffersPass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
-#include "Pass/VKMemoryHeapDebugPass.h"
-#include "Pass/VKTextPass.h"
 #include "Pass/VKRasterTilingPass.h"
 #include "Pass/VKLuminanceHistogramPass.h"
 #include "Pass/VKLuminanceHistogramReduceAveragePass.h"
-#include "Pass/VKLuminanceHistogramDebugPass.h"
 #include "Pass/VKTonemapPass.h"
 #include "Pass/VKTAAResolvePass.h"
 #include "Pass/VKVelocityInitializationPass.h"
 #include "Pass/VKFXAAPass.h"
-#include "Pass/VKTransparencyWritePass.h"
 #include "Pass/VKGTAOPass.h"
 #include "Pass/VKGTAOSpatialFilterPass.h"
 #include "Pass/VKGTAOTemporalFilterPass.h"
-#include "Pass/VKSDSMShadowMatrixPass.h"
 #include "Pass/VKDirectLightingPass.h"
 #include "Pass/DeferredShadowsPass.h"
 #include "Pass/ImGuiPass.h"
@@ -38,13 +31,11 @@
 #include "Pass/OcclusionCullingHiZPass.h"
 #include "Pass/DepthPyramidPass.h"
 #include "Pass/BuildIndexBufferPass.h"
-#include "Module/VKSDSMModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
 #include "VKMeshManager.h"
 #include "VKResourceDefinitions.h"
-#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "RenderGraph.h"
 #include "PassRecordContext.h"
@@ -52,7 +43,6 @@
 #include "DeferredObjectDeleter.h"
 #include "Graphics/imgui/imgui.h"
 #include "Graphics/ViewRenderList.h"
-#include "Utility/Timer.h"
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -121,24 +111,24 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		g_context.m_allocator.unmapMemory(buffer.getAllocation());
 	}
 
-	// read back occlusion cull stats
-	{
-		auto &buffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx];
-		uint32_t *data;
-		g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
-
-		VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-		range.memory = buffer.getDeviceMemory();
-		range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
-		range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
-
-		vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
-		m_opaqueDraws = *data;
-		m_totalOpaqueDraws = m_totalOpaqueDrawsPending[commonData.m_curResIdx];
-		m_totalOpaqueDrawsPending[commonData.m_curResIdx] = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-
-		g_context.m_allocator.unmapMemory(buffer.getAllocation());
-	}
+	//// read back occlusion cull stats
+	//{
+	//	auto &buffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx];
+	//	uint32_t *data;
+	//	g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
+	//
+	//	VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+	//	range.memory = buffer.getDeviceMemory();
+	//	range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
+	//	range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
+	//
+	//	vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
+	//	m_opaqueDraws = *data;
+	//	m_totalOpaqueDraws = m_totalOpaqueDrawsPending[commonData.m_curResIdx];
+	//	m_totalOpaqueDrawsPending[commonData.m_curResIdx] = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	//
+	//	g_context.m_allocator.unmapMemory(buffer.getAllocation());
+	//}
 
 	// get timing data
 	graph.getTimingInfo(&m_passTimingCount, &m_passTimingData);
@@ -256,20 +246,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle tangentSpaceImageViewHandle = VKResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle velocityImageViewHandle = VKResourceDefinitions::createVelocityImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoRawImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoSpatiallyFilteredImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
 	BufferViewHandle luminanceHistogramBufferViewHandle = VKResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
-	BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
-	BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
-	BufferViewHandle drawCountsBufferViewHandle = VKResourceDefinitions::createIndirectDrawCountsBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
+	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
+	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
+	//BufferViewHandle drawCountsBufferViewHandle = VKResourceDefinitions::createIndirectDrawCountsBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
 
 
 	// transform data write
@@ -362,95 +352,81 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//OcclusionCullingCopyToDepthPass::addToGraph(graph, occlusionCullingCopyData);
 
 
-	// render obbs against reprojected depth buffer to test for occlusion
-	OcclusionCullingPass::Data occlusionCullingPassData;
-	occlusionCullingPassData.m_passRecordContext = &passRecordContext;
-	occlusionCullingPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-	occlusionCullingPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	occlusionCullingPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	occlusionCullingPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	occlusionCullingPassData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
-	occlusionCullingPassData.m_visibilityBufferHandle = visibilityBufferViewHandle;
-	occlusionCullingPassData.m_depthImageHandle = reprojectedDepthImageViewHandle;
-
+	//// render obbs against reprojected depth buffer to test for occlusion
+	//OcclusionCullingPass::Data occlusionCullingPassData;
+	//occlusionCullingPassData.m_passRecordContext = &passRecordContext;
+	//occlusionCullingPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	//occlusionCullingPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	//occlusionCullingPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//occlusionCullingPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//occlusionCullingPassData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
+	//occlusionCullingPassData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+	//occlusionCullingPassData.m_depthImageHandle = reprojectedDepthImageViewHandle;
+	//
 	//OcclusionCullingPass::addToGraph(graph, occlusionCullingPassData);
 
-
-	// prepare indirect buffers
-	VKPrepareIndirectBuffersPass::Data prepareIndirectBuffersPassData;
-	prepareIndirectBuffersPassData.m_passRecordContext = &passRecordContext;
-	prepareIndirectBuffersPassData.m_instanceCount = renderData.m_subMeshInstanceDataCount;
-	prepareIndirectBuffersPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	prepareIndirectBuffersPassData.m_subMeshDataBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-	prepareIndirectBuffersPassData.m_indirectBufferHandle = indirectBufferViewHandle;
-
-	if (prepareIndirectBuffersPassData.m_instanceCount)
-	{
-		VKPrepareIndirectBuffersPass::addToGraph(graph, prepareIndirectBuffersPassData);
-	}
-
-	// depth pyramid
-	ImageViewHandle depthPyramidImageViewHandle = 0;
-	{
-		auto getMipLevelCount = [](uint32_t w, uint32_t h)
-		{
-			uint32_t result = 1;
-			while (w > 1 || h > 1)
-			{
-				result++;
-				w /= 2;
-				h /= 2;
-			}
-			return result;
-		};
-		const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
-
-		ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
-
-		DepthPyramidPass::Data depthPyramidPassData;
-		depthPyramidPassData.m_passRecordContext = &passRecordContext;
-		depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-		depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
-
-		//DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
-
-		depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
-	}
-
-	// HiZ Culling
-	OcclusionCullingHiZPass::Data occlusionCullingHiZData;
-	occlusionCullingHiZData.m_passRecordContext = &passRecordContext;
-	occlusionCullingHiZData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
-	occlusionCullingHiZData.m_drawCount = occlusionCullingPassData.m_drawCount;
-	occlusionCullingHiZData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	occlusionCullingHiZData.m_transformDataBufferInfo = transformDataBufferInfo;
-	occlusionCullingHiZData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
-	occlusionCullingHiZData.m_visibilityBufferHandle = visibilityBufferViewHandle;
-	occlusionCullingHiZData.m_depthPyramidImageHandle = depthPyramidImageViewHandle;
-
-	//OcclusionCullingHiZPass::addToGraph(graph, occlusionCullingHiZData);
-
-
-	// compact occlusion culled draws
-	OcclusionCullingCreateDrawArgsPass::Data occlusionCullingDrawArgsData;
-	occlusionCullingDrawArgsData.m_passRecordContext = &passRecordContext;
-	occlusionCullingDrawArgsData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
-	occlusionCullingDrawArgsData.m_drawCount = occlusionCullingPassData.m_drawCount;
-	occlusionCullingDrawArgsData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	occlusionCullingDrawArgsData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-	occlusionCullingDrawArgsData.m_indirectBufferHandle = indirectBufferViewHandle;
-	occlusionCullingDrawArgsData.m_drawCountsBufferHandle = drawCountsBufferViewHandle;
-	occlusionCullingDrawArgsData.m_visibilityBufferHandle = visibilityBufferViewHandle;
-
-	//OcclusionCullingCreateDrawArgsPass::addToGraph(graph, occlusionCullingDrawArgsData);
-
-	// copy draw count to readback buffer
-	ReadBackCopyPass::Data drawCountReadBackCopyPassData;
-	drawCountReadBackCopyPassData.m_passRecordContext = &passRecordContext;
-	drawCountReadBackCopyPassData.m_bufferCopy = { 0, 0, sizeof(uint32_t) };
-	drawCountReadBackCopyPassData.m_srcBuffer = drawCountsBufferViewHandle;
-	drawCountReadBackCopyPassData.m_dstBuffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getBuffer();
-
+	//// depth pyramid
+	//ImageViewHandle depthPyramidImageViewHandle = 0;
+	//{
+	//	auto getMipLevelCount = [](uint32_t w, uint32_t h)
+	//	{
+	//		uint32_t result = 1;
+	//		while (w > 1 || h > 1)
+	//		{
+	//			result++;
+	//			w /= 2;
+	//			h /= 2;
+	//		}
+	//		return result;
+	//	};
+	//	const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
+	//
+	//	ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
+	//
+	//	DepthPyramidPass::Data depthPyramidPassData;
+	//	depthPyramidPassData.m_passRecordContext = &passRecordContext;
+	//	depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
+	//	depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
+	//
+	//	//DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
+	//
+	//	depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
+	//}
+	//
+	//// HiZ Culling
+	//OcclusionCullingHiZPass::Data occlusionCullingHiZData;
+	//occlusionCullingHiZData.m_passRecordContext = &passRecordContext;
+	//occlusionCullingHiZData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
+	//occlusionCullingHiZData.m_drawCount = occlusionCullingPassData.m_drawCount;
+	//occlusionCullingHiZData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//occlusionCullingHiZData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//occlusionCullingHiZData.m_aabbBufferInfo = { m_renderResources->m_subMeshBoundingBoxBuffer.getBuffer(), 0, m_renderResources->m_subMeshBoundingBoxBuffer.getSize() };
+	//occlusionCullingHiZData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+	//occlusionCullingHiZData.m_depthPyramidImageHandle = depthPyramidImageViewHandle;
+	//
+	////OcclusionCullingHiZPass::addToGraph(graph, occlusionCullingHiZData);
+	//
+	//
+	//// compact occlusion culled draws
+	//OcclusionCullingCreateDrawArgsPass::Data occlusionCullingDrawArgsData;
+	//occlusionCullingDrawArgsData.m_passRecordContext = &passRecordContext;
+	//occlusionCullingDrawArgsData.m_drawOffset = occlusionCullingPassData.m_drawOffset;
+	//occlusionCullingDrawArgsData.m_drawCount = occlusionCullingPassData.m_drawCount;
+	//occlusionCullingDrawArgsData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//occlusionCullingDrawArgsData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	//occlusionCullingDrawArgsData.m_indirectBufferHandle = indirectBufferViewHandle;
+	//occlusionCullingDrawArgsData.m_drawCountsBufferHandle = drawCountsBufferViewHandle;
+	//occlusionCullingDrawArgsData.m_visibilityBufferHandle = visibilityBufferViewHandle;
+	//
+	////OcclusionCullingCreateDrawArgsPass::addToGraph(graph, occlusionCullingDrawArgsData);
+	//
+	//// copy draw count to readback buffer
+	//ReadBackCopyPass::Data drawCountReadBackCopyPassData;
+	//drawCountReadBackCopyPassData.m_passRecordContext = &passRecordContext;
+	//drawCountReadBackCopyPassData.m_bufferCopy = { 0, 0, sizeof(uint32_t) };
+	//drawCountReadBackCopyPassData.m_srcBuffer = drawCountsBufferViewHandle;
+	//drawCountReadBackCopyPassData.m_dstBuffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getBuffer();
+	//
 	//ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
 
 	// opaque geometry
@@ -534,27 +510,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
-
-	//// common sdsm
-	//VKSDSMModule::OutputData sdsmOutputData;
-	//VKSDSMModule::InputData sdsmInputData;
-	//sdsmInputData.m_passRecordContext = &passRecordContext;
-	//sdsmInputData.m_depthImageHandle = depthImageViewHandle;
-
-	//VKSDSMModule::addToGraph(graph, sdsmInputData, sdsmOutputData);
-
-
-	//// sdsm shadow matrix
-	//VKSDSMShadowMatrixPass::Data sdsmShadowMatrixPassData;
-	//sdsmShadowMatrixPassData.m_passRecordContext = &passRecordContext;
-	//sdsmShadowMatrixPassData.m_lightView = glm::lookAt(glm::vec3(), -glm::vec3(commonData.m_invViewMatrix * lightData.m_directionalLightData.front().m_direction), glm::vec3(glm::transpose(commonData.m_viewMatrix)[0]));
-	//sdsmShadowMatrixPassData.m_lightSpaceNear = renderData.m_orthoNearest;
-	//sdsmShadowMatrixPassData.m_lightSpaceFar = renderData.m_orthoFarthest;
-	//sdsmShadowMatrixPassData.m_shadowDataBufferHandle = shadowDataBufferViewHandle;
-	//sdsmShadowMatrixPassData.m_partitionBoundsBufferHandle = sdsmOutputData.m_partitionBoundsBufferHandle;
-
-	//VKSDSMShadowMatrixPass::addToGraph(graph, sdsmShadowMatrixPassData);
-
 
 	// initialize velocity of static objects
 	VKVelocityInitializationPass::Data velocityInitializationPassData;
@@ -857,16 +812,16 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
-	// mesh cluster visualization
-	MeshClusterVisualizationPass::Data clusterVizPassData;
-	clusterVizPassData.m_passRecordContext = &passRecordContext;
-	clusterVizPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-	clusterVizPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	clusterVizPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	clusterVizPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	clusterVizPassData.m_indirectBufferHandle = indirectBufferViewHandle;
-	clusterVizPassData.m_depthImageHandle = depthImageViewHandle;
-	clusterVizPassData.m_colorImageHandle = swapchainImageViewHandle;
+	//// mesh cluster visualization
+	//MeshClusterVisualizationPass::Data clusterVizPassData;
+	//clusterVizPassData.m_passRecordContext = &passRecordContext;
+	//clusterVizPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	//clusterVizPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	//clusterVizPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//clusterVizPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//clusterVizPassData.m_indirectBufferHandle = indirectBufferViewHandle;
+	//clusterVizPassData.m_depthImageHandle = depthImageViewHandle;
+	//clusterVizPassData.m_colorImageHandle = swapchainImageViewHandle;
 
 	//MeshClusterVisualizationPass::addToGraph(graph, clusterVizPassData);
 	//
@@ -883,68 +838,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	imGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
 
 	ImGuiPass::addToGraph(graph, imGuiPassData);
-
-
-	// text pass
-	//PassTimingInfo timingInfos[128];
-	//size_t timingInfoCount;
-
-	//graph.getTimingInfo(timingInfoCount, timingInfos);
-
-	//VKTextPass::String timingInfoStrings[128];
-	//std::string timingInfoStringData[128];
-
-	//float totalPassOnly = 0.0f;
-	//float totalSyncOnly = 0.0f;
-	//float total = 0.0f;
-
-	//for (size_t i = 0; i < timingInfoCount; ++i)
-	//{
-	//	timingInfoStringData[i] = std::to_string(timingInfos[i].m_passTimeWithSync) + "ms "
-	//		//+ std::to_string(timingInfos[i].m_passTime) + "ms / "
-	//		//+ std::to_string(timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime) + "ms / "
-	//		+ timingInfos[i].m_passName;
-	//	timingInfoStrings[i].m_chars = timingInfoStringData[i].c_str();
-	//	timingInfoStrings[i].m_positionX = 0;
-	//	timingInfoStrings[i].m_positionY = i * 20;
-
-	//	totalPassOnly += timingInfos[i].m_passTime;
-	//	totalSyncOnly += timingInfos[i].m_passTimeWithSync - timingInfos[i].m_passTime;
-	//	total += timingInfos[i].m_passTimeWithSync;
-	//}
-
-	////timingInfoStringData[timingInfoCount] = std::to_string(totalPassOnly) + "ms Total Pass-Only";
-	////timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	////timingInfoStrings[timingInfoCount].m_positionX = 0;
-	////timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	////++timingInfoCount;
-	////timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly) + "ms Total Sync-Only";
-	////timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	////timingInfoStrings[timingInfoCount].m_positionX = 0;
-	////timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	////++timingInfoCount;
-	//timingInfoStringData[timingInfoCount] = std::to_string(total) + "ms Total";
-	//timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	//timingInfoStrings[timingInfoCount].m_positionX = 0;
-	//timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	//++timingInfoCount;
-	////timingInfoStringData[timingInfoCount] = std::to_string(totalSyncOnly / total * 100.0f) + "% Sync of total time";
-	////timingInfoStrings[timingInfoCount].m_chars = timingInfoStringData[timingInfoCount].c_str();
-	////timingInfoStrings[timingInfoCount].m_positionX = 0;
-	////timingInfoStrings[timingInfoCount].m_positionY = timingInfoCount * 20;
-	////++timingInfoCount;
-
-	//VKTextPass::Data textPassData;
-	//textPassData.m_renderResources = m_renderResources.get();
-	//textPassData.m_pipelineCache = m_pipelineCache.get();
-	//textPassData.m_width = m_width;
-	//textPassData.m_height = m_height;
-	//textPassData.m_atlasTextureIndex = m_fontAtlasTextureIndex;
-	//textPassData.m_stringCount = timingInfoCount;
-	//textPassData.m_strings = timingInfoStrings;
-	//textPassData.m_colorImageHandle = swapchainTextureHandle;
-
-	//VKTextPass::addToGraph(graph, textPassData);
 
 	uint32_t semaphoreCount;
 	VkSemaphore *semaphores;

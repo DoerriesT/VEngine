@@ -275,7 +275,6 @@ namespace VEngine
 					&& supportedFeatures.independentBlend
 					&& supportedFeatures.fragmentStoresAndAtomics
 					&& supportedFeatures.shaderStorageImageExtendedFormats
-					&& supportedFeatures.multiDrawIndirect
 					&& supportedFeatures.shaderStorageImageWriteWithoutFormat
 					&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing)
 				{
@@ -323,7 +322,6 @@ namespace VEngine
 			deviceFeatures.independentBlend = VK_TRUE;
 			deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 			deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
-			deviceFeatures.multiDrawIndirect = VK_TRUE;
 			deviceFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
