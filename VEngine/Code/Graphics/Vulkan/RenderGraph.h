@@ -328,7 +328,7 @@ namespace VEngine
 		VkQueue m_queues[3];
 		uint32_t m_queueFamilyIndices[3];
 		uint64_t m_queueTimestampMasks[3];
-		bool m_recordTimings = false;
+		bool m_recordTimings = true;
 		std::unique_ptr<PassTimingInfo[]> m_timingInfos;
 
 		///////////////////////////////////////////////////
@@ -359,7 +359,7 @@ namespace VEngine
 		std::vector<VkSemaphore> m_finalResourceSemaphores; // copy of some semaphores in m_semaphores: DON'T FREE THESE (double free)
 		VkFence m_fences[3];
 		CommandBufferPool m_commandBufferPool;
-		VkQueryPool m_queryPool;
+		VkQueryPool m_queryPools[3];
 
 		// data used for recording
 		uint32_t m_externalSemaphoreSignalCounts[3];

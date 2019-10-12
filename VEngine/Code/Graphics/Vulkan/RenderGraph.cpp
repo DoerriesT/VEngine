@@ -776,7 +776,7 @@ void VEngine::RenderGraph::record()
 	// each pass uses 4 queries, so make sure, we dont exceed the query pool size
 	assert(!m_recordTimings || m_passHandleOrder.size() <= (TIMESTAMP_QUERY_COUNT / 4));
 
-	bool resetQueryPool = false;
+	bool resetQueryPools[3] = {};
 
 	// record passes
 	for (const auto &batch : m_batches)
@@ -800,19 +800,20 @@ void VEngine::RenderGraph::record()
 			memoryBarrier.dstAccessMask = pass.m_memoryBarrierDstAccessMask;
 
 			const uint32_t queryIndex = (i + batch.m_passIndexOffset) * 4;
+			const uint32_t queueTypeIndex = batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2;
 			// disable timestamps if the queue doesnt support it
-			const bool recordTimings = m_recordTimings && m_queueTimestampMasks[batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2];
+			const bool recordTimings = m_recordTimings && m_queueTimestampMasks[queueTypeIndex];
 
-			if (recordTimings && !resetQueryPool)
+			if (recordTimings && !resetQueryPools[queueTypeIndex])
 			{
-				vkCmdResetQueryPool(cmdBuf, m_queryPool, 0, TIMESTAMP_QUERY_COUNT);
-				resetQueryPool = true;
+				vkCmdResetQueryPool(cmdBuf, m_queryPools[queueTypeIndex], 0, TIMESTAMP_QUERY_COUNT);
+				resetQueryPools[queueTypeIndex] = true;
 			}
 
 			// write timestamp before waits
 			if (recordTimings)
 			{
-				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 0);
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 0);
 			}
 
 			// pipeline barrier
@@ -827,7 +828,7 @@ void VEngine::RenderGraph::record()
 			// write timestamp before pass commands
 			if (recordTimings)
 			{
-				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 1);
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 1);
 			}
 
 			// record commands
@@ -836,7 +837,7 @@ void VEngine::RenderGraph::record()
 			// write timestamp after pass commands
 			if (recordTimings)
 			{
-				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 2);
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 2);
 			}
 
 			// release resources
@@ -850,7 +851,7 @@ void VEngine::RenderGraph::record()
 			// write timestamp after all commands
 			if (recordTimings)
 			{
-				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, queryIndex + 3);
+				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 3);
 			}
 
 			// end recording
@@ -1106,9 +1107,12 @@ VEngine::RenderGraph::RenderGraph()
 	queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 	queryPoolCreateInfo.queryCount = TIMESTAMP_QUERY_COUNT; // TODO: make this dynamic?
 
-	if (vkCreateQueryPool(g_context.m_device, &queryPoolCreateInfo, nullptr, &m_queryPool) != VK_SUCCESS)
+	for (size_t i = 0; i < 3; ++i)
 	{
-		Utility::fatalExit("Failed to create query pool!", EXIT_FAILURE);
+		if (vkCreateQueryPool(g_context.m_device, &queryPoolCreateInfo, nullptr, &m_queryPools[i]) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create query pool!", EXIT_FAILURE);
+		}
 	}
 
 	m_timingInfos = std::make_unique<PassTimingInfo[]>(TIMESTAMP_QUERY_COUNT);
@@ -1408,7 +1412,7 @@ void VEngine::RenderGraph::reset()
 			uint64_t data[4]{};
 			if (m_queueTimestampMasks[queueIndex])
 			{
-				if (vkGetQueryPoolResults(g_context.m_device, m_queryPool, i * 4, 4, sizeof(data), data, sizeof(data[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT) != VK_SUCCESS)
+				if (vkGetQueryPoolResults(g_context.m_device, m_queryPools[queueIndex], i * 4, 4, sizeof(data), data, sizeof(data[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT) != VK_SUCCESS)
 				{
 					assert(false);
 				}
