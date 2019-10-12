@@ -453,133 +453,82 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	//ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
 
-
-	// build index buffer
-	BufferViewHandle indirectDrawBufferViewHandle;
-	BufferViewHandle filteredIndicesBufferViewHandle;
+	// opaque geometry
+	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount)
 	{
-		struct ClusterInfo
-		{
-			uint32_t indexCount;
-			uint32_t indexOffset;
-			int32_t vertexOffset;
-			uint32_t drawCallIndex;
-			uint32_t transformIndex;
-		};
-
-		std::vector<ClusterInfo> clusterInfoList;
-		uint32_t filteredTriangleIndexBufferSize = 0;
-		{
-			uint32_t drawCallIndex = 0;
-
-			const auto *subMeshInfoList = m_meshManager->getSubMeshInfo();
-
-			for (uint32_t i = 0; i < renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount; ++i)
-			{
-				const auto &subMeshInfo = subMeshInfoList[sortedInstanceData[i].m_subMeshIndex];
-				uint32_t indexCount = subMeshInfo.m_indexCount;
-				uint32_t indexOffset = subMeshInfo.m_firstIndex;
-
-				filteredTriangleIndexBufferSize += indexCount;
-
-				while (indexCount)
-				{
-					ClusterInfo clusterInfo;
-					clusterInfo.indexCount = std::min(indexCount, RendererConsts::TRIANGLE_FILTERING_CLUSTER_SIZE * 3u); // clusterSize is in triangles, so one triangle -> three indices
-					clusterInfo.indexOffset = indexOffset;
-					clusterInfo.vertexOffset = subMeshInfo.m_vertexOffset;
-					clusterInfo.drawCallIndex = drawCallIndex;
-					clusterInfo.transformIndex = sortedInstanceData[i].m_transformIndex;
-
-					clusterInfoList.push_back(clusterInfo);
-
-					indexCount -= clusterInfo.indexCount;
-					indexOffset += clusterInfo.indexCount;
-				}
-
-				++drawCallIndex;
-			}
-		}
-
-		// cluster info write
-		VkDescriptorBufferInfo clusterInfoBufferInfo{ VK_NULL_HANDLE, 0, std::max(clusterInfoList.size() * sizeof(ClusterInfo), size_t(1)) };
-		{
-			uint8_t *bufferPtr;
-			m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(clusterInfoBufferInfo.range, clusterInfoBufferInfo.offset, clusterInfoBufferInfo.buffer, bufferPtr);
-			if (!clusterInfoList.empty())
-			{
-				memcpy(bufferPtr, clusterInfoList.data(), clusterInfoList.size() * sizeof(ClusterInfo));
-			}
-		}
-
-		// indirect draw buffer
-		{
-			BufferDescription bufferDesc{};
-			bufferDesc.m_name = "Indirect Draw Buffer";
-			bufferDesc.m_size = glm::max(32ull, sizeof(VkDrawIndexedIndirectCommand));
-
-			indirectDrawBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
-		}
-
-		// filtered indices buffer
-		{
-			BufferDescription bufferDesc{};
-			bufferDesc.m_name = "Filtered Indices Buffer";
-			bufferDesc.m_size = glm::max(32u, filteredTriangleIndexBufferSize * 4);
-
-			filteredIndicesBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
-		}
+		// build index buffer
+		BufferViewHandle indirectDrawBufferViewHandle;
+		BufferViewHandle filteredIndicesBufferViewHandle;
 
 		BuildIndexBufferPass::Data buildIndexBufferPassData;
 		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
-		buildIndexBufferPassData.m_clusterOffset = 0;
-		buildIndexBufferPassData.m_clusterCount = clusterInfoList.size();
-		buildIndexBufferPassData.m_clusterInfoBufferInfo = clusterInfoBufferInfo;
-		buildIndexBufferPassData.m_inputIndicesBufferInfo = { m_renderResources->m_indexBuffer.getBuffer(), 0, m_renderResources->m_indexBuffer.getSize() };
-		buildIndexBufferPassData.m_indirectDrawCmdBufferHandle = indirectDrawBufferViewHandle;
-		buildIndexBufferPassData.m_filteredIndicesBufferHandle = filteredIndicesBufferViewHandle;
-		buildIndexBufferPassData.m_positionsBufferInfo = { m_renderResources->m_vertexBuffer.getBuffer(), 0, RendererConsts::MAX_VERTICES * sizeof(glm::vec3) };
+		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &indirectDrawBufferViewHandle;
+		buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &filteredIndicesBufferViewHandle;
 
 		BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
-	}
 
 
-	// draw opaque geometry to gbuffer
-	VKGeometryPass::Data opaqueGeometryPassData;
-	opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
-	opaqueGeometryPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-	opaqueGeometryPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	opaqueGeometryPassData.m_alphaMasked = false;
-	opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	opaqueGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
-	opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
-	opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
-	opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-	opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-	opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-	opaqueGeometryPassData.m_drawCountBufferHandle = drawCountsBufferViewHandle;
-	opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-	opaqueGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
+		// draw opaque geometry to gbuffer
+		VKGeometryPass::Data opaqueGeometryPassData;
+		opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
+		opaqueGeometryPassData.m_alphaMasked = false;
+		opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+		opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+		opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		opaqueGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
+		opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
+		opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
+		opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+		opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+		opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+		opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+		opaqueGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
 
-	if (opaqueGeometryPassData.m_drawCount)
-	{
 		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
 	}
 
-
-	// draw alpha masked geometry to gbuffer
-	VKGeometryPass::Data maskedGeometryPassData = opaqueGeometryPassData;
-	maskedGeometryPassData.m_drawOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
-	maskedGeometryPassData.m_drawCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
-	maskedGeometryPassData.m_alphaMasked = true;
-	maskedGeometryPassData.m_indirectBufferHandle = indirectBufferViewHandle;
-
-	if (maskedGeometryPassData.m_drawCount)
+	// alpha masked geometry
+	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount)
 	{
-		//VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
+		// build index buffer
+		BufferViewHandle indirectDrawBufferViewHandle;
+		BufferViewHandle filteredIndicesBufferViewHandle;
+
+		BuildIndexBufferPass::Data buildIndexBufferPassData;
+		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
+		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &indirectDrawBufferViewHandle;
+		buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &filteredIndicesBufferViewHandle;
+
+		BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
+
+
+		// draw alpha masked geometry to gbuffer
+		VKGeometryPass::Data maskedGeometryPassData;
+		maskedGeometryPassData.m_passRecordContext = &passRecordContext;
+		maskedGeometryPassData.m_alphaMasked = true;
+		maskedGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+		maskedGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+		maskedGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		maskedGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
+		maskedGeometryPassData.m_depthImageHandle = depthImageViewHandle;
+		maskedGeometryPassData.m_uvImageHandle = uvImageViewHandle;
+		maskedGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+		maskedGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+		maskedGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+		maskedGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+		maskedGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
+
+		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
 
 	//// common sdsm
@@ -643,9 +592,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			opaqueShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
 			opaqueShadowPassData.m_alphaMasked = false;
 			opaqueShadowPassData.m_clear = true;
-			opaqueShadowPassData.m_instanceDataBufferInfo = opaqueGeometryPassData.m_instanceDataBufferInfo;
-			opaqueShadowPassData.m_materialDataBufferInfo = opaqueGeometryPassData.m_materialDataBufferInfo;
-			opaqueShadowPassData.m_transformDataBufferInfo = opaqueGeometryPassData.m_transformDataBufferInfo;
+			opaqueShadowPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+			opaqueShadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+			opaqueShadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 			opaqueShadowPassData.m_indirectBufferHandle = indirectBufferViewHandle;
 			opaqueShadowPassData.m_shadowImageHandle = shadowLayer;
 

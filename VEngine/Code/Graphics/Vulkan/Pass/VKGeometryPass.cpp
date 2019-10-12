@@ -28,10 +28,9 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		{ResourceViewHandle(data.m_ddxyLengthImageHandle), ResourceState::WRITE_ATTACHMENT},
 		{ResourceViewHandle(data.m_ddxyRotMaterialIdImageHandle), ResourceState::WRITE_ATTACHMENT},
 		{ResourceViewHandle(data.m_tangentSpaceImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_drawCountBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
 	};
 
-	graph.addPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]) - (data.m_alphaMasked ? 1 : 0), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass(data.m_alphaMasked ? "GBuffer Fill Alpha" : "GBuffer Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
@@ -203,12 +202,6 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		vkCmdBindIndexBuffer(cmdBuf, registry.getBuffer(data.m_indicesBufferHandle), 0, VK_INDEX_TYPE_UINT32);
 
-		//VkBuffer vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer.getBuffer();
-		//VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer, vertexBuffer };
-		//VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)) };
-		//
-		//vkCmdBindVertexBuffers(cmdBuf, 0, 3, vertexBuffers, vertexBufferOffsets);
-
 		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
 
 		PushConsts pushConsts;
@@ -220,15 +213,6 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
-		//if (data.m_alphaMasked)
-		//{
-		//	vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
-		//}
-		//else
-		//{
-		//	vkCmdDrawIndexedIndirectCountKHR(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), registry.getBuffer(data.m_drawCountBufferHandle), 0, data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
-		//}
-		
 
 		vkCmdEndRenderPass(cmdBuf);
 	});
