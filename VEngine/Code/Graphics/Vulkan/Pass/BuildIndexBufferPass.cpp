@@ -67,6 +67,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 		BufferDescription bufferDesc{};
 		bufferDesc.m_name = "Indirect Draw Buffer";
 		bufferDesc.m_size = glm::max(32ull, sizeof(VkDrawIndexedIndirectCommand));
+		bufferDesc.m_concurrent = true;
 
 		*data.m_indirectDrawCmdBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
 	}
@@ -76,6 +77,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 		BufferDescription bufferDesc{};
 		bufferDesc.m_name = "Filtered Indices Buffer";
 		bufferDesc.m_size = glm::max(32u, filteredTriangleIndexBufferSize * 4);
+		bufferDesc.m_concurrent = true;
 
 		*data.m_filteredIndicesBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
 	}
@@ -90,7 +92,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 		{ResourceViewHandle(filteredIndicesBufferViewHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER},
 	};
 
-	graph.addPass("Build Index Buffer", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Build Index Buffer", data.m_async ? QueueType::COMPUTE : QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			// prime indirect buffer with data
 			{
@@ -144,7 +146,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 			while (clusterCount)
 			{
 				PushConsts pushConsts;
-				pushConsts.viewProjection = renderData.m_jitteredViewProjectionMatrix;
+				pushConsts.viewProjection = data.m_viewProjectionMatrix;
 				pushConsts.resolution = glm::vec2(renderData.m_width, renderData.m_height);
 				pushConsts.clusterOffset = currentOffset;
 				pushConsts.cullBackface = 1;

@@ -328,7 +328,7 @@ namespace VEngine
 		VkQueue m_queues[3];
 		uint32_t m_queueFamilyIndices[3];
 		uint64_t m_queueTimestampMasks[3];
-		bool m_recordTimings = true;
+		bool m_recordTimings = false;
 		std::unique_ptr<PassTimingInfo[]> m_timingInfos;
 
 		///////////////////////////////////////////////////

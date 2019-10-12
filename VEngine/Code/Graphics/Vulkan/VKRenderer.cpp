@@ -464,6 +464,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
 		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+		buildIndexBufferPassData.m_async = false;
+		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
 		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
 		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
@@ -503,6 +505,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
 		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+		buildIndexBufferPassData.m_async = false;
+		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
 		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
 		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
@@ -584,36 +588,80 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			const auto &drawList = renderData.m_renderLists[renderData.m_shadowCascadeViewRenderListOffset + i];
 
 			// draw shadows
-			VKShadowPass::Data opaqueShadowPassData;
-			opaqueShadowPassData.m_passRecordContext = &passRecordContext;
-			opaqueShadowPassData.m_drawOffset = drawList.m_opaqueOffset;
-			opaqueShadowPassData.m_drawCount = drawList.m_opaqueCount;
-			opaqueShadowPassData.m_shadowMapSize = 2048;
-			opaqueShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
-			opaqueShadowPassData.m_alphaMasked = false;
-			opaqueShadowPassData.m_clear = true;
-			opaqueShadowPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-			opaqueShadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-			opaqueShadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-			opaqueShadowPassData.m_indirectBufferHandle = indirectBufferViewHandle;
-			opaqueShadowPassData.m_shadowImageHandle = shadowLayer;
-
-			if (opaqueShadowPassData.m_drawCount)
+			if (drawList.m_opaqueCount)
 			{
+				// build index buffer
+				BufferViewHandle indirectDrawBufferViewHandle;
+				BufferViewHandle filteredIndicesBufferViewHandle;
+
+				BuildIndexBufferPass::Data buildIndexBufferPassData;
+				buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
+				buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+				buildIndexBufferPassData.m_async = true;
+				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
+				buildIndexBufferPassData.m_instanceOffset = drawList.m_opaqueOffset;
+				buildIndexBufferPassData.m_instanceCount = drawList.m_opaqueCount;
+				buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+				buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &indirectDrawBufferViewHandle;
+				buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &filteredIndicesBufferViewHandle;
+
+				BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
+
+				VKShadowPass::Data opaqueShadowPassData;
+				opaqueShadowPassData.m_passRecordContext = &passRecordContext;
+				opaqueShadowPassData.m_shadowMapSize = 2048;
+				opaqueShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
+				opaqueShadowPassData.m_alphaMasked = false;
+				opaqueShadowPassData.m_clear = true;
+				opaqueShadowPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+				opaqueShadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+				opaqueShadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+				opaqueShadowPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+				opaqueShadowPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
+				opaqueShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
+				opaqueShadowPassData.m_shadowImageHandle = shadowLayer;
+
 				VKShadowPass::addToGraph(graph, opaqueShadowPassData);
 			}
 
 
-			// draw masked shadows
-			VKShadowPass::Data maskedShadowPassData = opaqueShadowPassData;
-			maskedShadowPassData.m_drawOffset = drawList.m_maskedOffset;
-			maskedShadowPassData.m_drawCount = drawList.m_maskedCount;
-			maskedShadowPassData.m_alphaMasked = true;
-			maskedShadowPassData.m_clear = opaqueShadowPassData.m_drawCount == 0;
-			maskedShadowPassData.m_indirectBufferHandle = indirectBufferViewHandle;
 
-			if (maskedShadowPassData.m_drawCount)
+			// draw masked shadows
+			if (drawList.m_maskedCount)
 			{
+				// build index buffer
+				BufferViewHandle indirectDrawBufferViewHandle;
+				BufferViewHandle filteredIndicesBufferViewHandle;
+
+				BuildIndexBufferPass::Data buildIndexBufferPassData;
+				buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
+				buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
+				buildIndexBufferPassData.m_async = true;
+				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
+				buildIndexBufferPassData.m_instanceOffset = drawList.m_maskedOffset;
+				buildIndexBufferPassData.m_instanceCount = drawList.m_maskedCount;
+				buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+				buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &indirectDrawBufferViewHandle;
+				buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &filteredIndicesBufferViewHandle;
+
+				BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
+
+				VKShadowPass::Data maskedShadowPassData;
+				maskedShadowPassData.m_passRecordContext = &passRecordContext;
+				maskedShadowPassData.m_shadowMapSize = 2048;
+				maskedShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
+				maskedShadowPassData.m_alphaMasked = true;
+				maskedShadowPassData.m_clear = drawList.m_opaqueCount == 0;
+				maskedShadowPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+				maskedShadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+				maskedShadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+				maskedShadowPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+				maskedShadowPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
+				maskedShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
+				maskedShadowPassData.m_shadowImageHandle = shadowLayer;
+
 				VKShadowPass::addToGraph(graph, maskedShadowPassData);
 			}
 		}

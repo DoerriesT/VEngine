@@ -26,6 +26,7 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 	ResourceUsageDescription passUsages[]
 	{
 		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
+		{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
 		{ResourceViewHandle(data.m_shadowImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 	};
 
@@ -44,24 +45,11 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 				strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/shadows_frag.spv");
 			}
 
-			if (data.m_alphaMasked)
-			{
-				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 2;
-				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
-				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[1] = { 1, sizeof(VertexTexCoord), VK_VERTEX_INPUT_RATE_VERTEX };
+			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 0;
+			//pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
 
-				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 2;
-				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 1, VK_FORMAT_R32G32_SFLOAT, 0 };
-			}
-			else
-			{
-				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 1;
-				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
-
-				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 1;
-				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-			}
+			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 0;
+			//pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
 
 			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
@@ -153,12 +141,17 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
+			VkBuffer vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer.getBuffer();
+
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
+			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
 
 			if (data.m_alphaMasked)
 			{
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
+				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) }, VERTEX_TEXCOORDS_BINDING);
 			}
 
 			writer.commit();
@@ -191,17 +184,11 @@ void VEngine::VKShadowPass::addToGraph(RenderGraph &graph, const Data &data)
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-		VkBuffer vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer.getBuffer();
-		VkBuffer vertexBuffers[] = { vertexBuffer, vertexBuffer };
-		VkDeviceSize vertexBufferOffsets[] = { 0, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)) };
-
-		vkCmdBindVertexBuffers(cmdBuf, 0, data.m_alphaMasked ? 2 : 1, vertexBuffers, vertexBufferOffsets);
+		vkCmdBindIndexBuffer(cmdBuf, registry.getBuffer(data.m_indicesBufferHandle), 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data.m_shadowMatrix), &data.m_shadowMatrix);
 
-		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), data.m_drawOffset * sizeof(VkDrawIndexedIndirectCommand), data.m_drawCount, sizeof(VkDrawIndexedIndirectCommand));
+		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 
 		vkCmdEndRenderPass(cmdBuf);
 	});

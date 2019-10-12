@@ -1,5 +1,6 @@
 #pragma once
 #include "Graphics/Vulkan/RenderGraph.h"
+#include <glm/mat4x4.hpp>
 
 namespace VEngine
 {
@@ -14,6 +15,8 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			const SubMeshInfo *m_subMeshInfo;
 			const SubMeshInstanceData *m_instanceData;
+			bool m_async;
+			glm::mat4 m_viewProjectionMatrix;
 			uint32_t m_instanceOffset;
 			uint32_t m_instanceCount;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
