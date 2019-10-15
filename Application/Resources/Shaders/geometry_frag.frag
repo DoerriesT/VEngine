@@ -1,5 +1,7 @@
 #version 450
 
+#extension GL_EXT_nonuniform_qualifier : enable
+
 #include "geometry_bindings.h"
 
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
@@ -123,8 +125,8 @@ void main()
 		uint albedoTextureIndex = (uMaterialData[vMaterialIndex].albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			float alpha = texture(uTextures[albedoTextureIndex - 1], vTexCoord).a;
-			alpha *= 1.0 + textureQueryLod(uTextures[albedoTextureIndex - 1], vTexCoord).x * ALPHA_MIP_SCALE;
+			float alpha = texture(uTextures[nonuniformEXT(albedoTextureIndex - 1)], vTexCoord).a;
+			alpha *= 1.0 + textureQueryLod(uTextures[nonuniformEXT(albedoTextureIndex - 1)], vTexCoord).x * ALPHA_MIP_SCALE;
 			if(alpha < ALPHA_CUTOFF)
 			{
 				discard;
