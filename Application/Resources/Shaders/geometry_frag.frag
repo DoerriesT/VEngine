@@ -46,7 +46,7 @@ mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )
  
     // construct a scale-invariant frame 
     float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
-    return mat3( T * -invmax, B * -invmax, N );
+    return mat3( T * invmax, B * invmax, N );
 }
 
 float signNotZero(in float k) 
@@ -156,7 +156,7 @@ void main()
 		vec3 normal = normalize(vNormal);
 		mat3 tbn = calculateTBN(normal, vWorldPos, vTexCoord);
 		
-		oTangentSpace = encodeTBN(tbn[2], tbn[0], (dot(tbn[0], tbn[2]) > 0.0001) ? 1 : 0);
+		oTangentSpace = encodeTBN(tbn[2], tbn[0], (dot(cross(tbn[2], tbn[0]), tbn[1]) >= 0.0) ? 1 : 0);
 	}
 }
 

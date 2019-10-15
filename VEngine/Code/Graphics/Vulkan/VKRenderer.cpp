@@ -442,6 +442,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 		buildIndexBufferPassData.m_async = false;
 		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
+		buildIndexBufferPassData.m_width = m_width;
+		buildIndexBufferPassData.m_height = m_height;
 		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
 		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
@@ -483,6 +485,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 		buildIndexBufferPassData.m_async = false;
 		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
+		buildIndexBufferPassData.m_width = m_width;
+		buildIndexBufferPassData.m_height = m_height;
 		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
 		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
@@ -555,6 +559,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 				buildIndexBufferPassData.m_async = true;
 				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
+				buildIndexBufferPassData.m_width = 2048;
+				buildIndexBufferPassData.m_height = 2048;
 				buildIndexBufferPassData.m_instanceOffset = drawList.m_opaqueOffset;
 				buildIndexBufferPassData.m_instanceCount = drawList.m_opaqueCount;
 				buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
@@ -595,6 +601,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 				buildIndexBufferPassData.m_async = true;
 				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
+				buildIndexBufferPassData.m_width = 2048;
+				buildIndexBufferPassData.m_height = 2048;
 				buildIndexBufferPassData.m_instanceOffset = drawList.m_maskedOffset;
 				buildIndexBufferPassData.m_instanceCount = drawList.m_maskedCount;
 				buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;

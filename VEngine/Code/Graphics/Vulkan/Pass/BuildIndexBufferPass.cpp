@@ -141,13 +141,11 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 			uint32_t clusterCount = clusterListSize;
 			const uint32_t limit = g_context.m_properties.limits.maxComputeWorkGroupCount[0];
 
-			const auto &renderData = *data.m_passRecordContext->m_commonRenderData;
-
 			while (clusterCount)
 			{
 				PushConsts pushConsts;
 				pushConsts.viewProjection = data.m_viewProjectionMatrix;
-				pushConsts.resolution = glm::vec2(renderData.m_width, renderData.m_height);
+				pushConsts.resolution = glm::vec2(data.m_width, data.m_height);
 				pushConsts.clusterOffset = currentOffset;
 				pushConsts.cullBackface = 1;
 

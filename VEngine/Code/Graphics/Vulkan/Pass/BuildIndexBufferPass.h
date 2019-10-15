@@ -17,6 +17,8 @@ namespace VEngine
 			const SubMeshInstanceData *m_instanceData;
 			bool m_async;
 			glm::mat4 m_viewProjectionMatrix;
+			uint32_t m_width;
+			uint32_t m_height;
 			uint32_t m_instanceOffset;
 			uint32_t m_instanceCount;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
