@@ -27,7 +27,6 @@ void VEngine::VKDirectLightingPass::addToGraph(RenderGraph &graph, const Data &d
 		{ResourceViewHandle(data.m_ddxyLengthImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_ddxyRotMaterialIdImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_tangentSpaceImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
-		{ResourceViewHandle(data.m_shadowArrayImageViewHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_deferredShadowImageViewHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_occlusionImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 	};
@@ -150,11 +149,9 @@ void VEngine::VKDirectLightingPass::addToGraph(RenderGraph &graph, const Data &d
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_ddxyLengthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), DDXY_LENGTH_IMAGE_BINDING);
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_ddxyRotMaterialIdImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), DDXY_ROT_MATERIAL_ID_IMAGE_BINDING);
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_tangentSpaceImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), TANGENT_SPACE_IMAGE_BINDING);
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_shadowArrayImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, data.m_passRecordContext->m_renderResources->m_shadowSampler), SHADOW_ATLAS_BINDING);
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_deferredShadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, data.m_passRecordContext->m_renderResources->m_pointSamplerClamp), DEFERRED_SHADOW_IMAGE_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_directionalLightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING);
-			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle), POINT_LIGHT_MASK_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
@@ -187,13 +184,8 @@ void VEngine::VKDirectLightingPass::addToGraph(RenderGraph &graph, const Data &d
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		const glm::mat4 rowMajorInvViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_invViewMatrix);
-
 		PushConsts pushConsts;
 		pushConsts.invJitteredProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
-		pushConsts.invViewMatrixRow0 = rowMajorInvViewMatrix[0];
-		pushConsts.invViewMatrixRow1 = rowMajorInvViewMatrix[1];
-		pushConsts.invViewMatrixRow2 = rowMajorInvViewMatrix[2];
 		pushConsts.pointLightCount = data.m_passRecordContext->m_commonRenderData->m_pointLightCount;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);

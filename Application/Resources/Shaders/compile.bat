@@ -49,5 +49,9 @@ glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCreateDrawArgs_comp.c
 glslc --target-env=vulkan1.1 -O -Werror -c depthPyramid_comp.comp -o depthPyramid_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingHiZ_comp.comp -o occlusionCullingHiZ_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c buildIndexBuffer_comp.comp -o buildIndexBuffer_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization_comp.comp -o screenSpaceVoxelization_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c clearVoxels_comp.comp -o clearVoxels_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_vert.vert -o voxelDebug_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_frag.frag -o voxelDebug_frag.spv
 
 pause

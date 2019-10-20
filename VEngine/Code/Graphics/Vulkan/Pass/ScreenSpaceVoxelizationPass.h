@@ -5,12 +5,11 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace VKDirectLightingPass
+	namespace ScreenSpaceVoxelizationPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_ssao;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
@@ -22,7 +21,6 @@ namespace VEngine
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
-			ImageViewHandle m_occlusionImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};
 

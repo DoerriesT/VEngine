@@ -31,6 +31,9 @@
 #include "Pass/OcclusionCullingHiZPass.h"
 #include "Pass/DepthPyramidPass.h"
 #include "Pass/BuildIndexBufferPass.h"
+#include "Pass/ScreenSpaceVoxelizationPass.h"
+#include "Pass/ClearVoxelsPass.h"
+#include "Pass/VoxelDebugPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -238,7 +241,45 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		avgLuminanceBufferViewHandle = graph.createBufferView({ desc.m_name, avgLuminanceBufferHandle, 0, desc.m_size });
 	}
 
+	ImageViewHandle voxelImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Voxel Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 128;
+		desc.m_height = 64;
+		desc.m_depth = 128;
+		desc.m_format = m_renderResources->m_voxelImage.getFormat();
+		desc.m_imageType = VK_IMAGE_TYPE_3D;
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_voxelImage.getImage(), &m_renderResources->m_voxelImageQueue, &m_renderResources->m_voxelImageResourceState);
+		voxelImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+	}
+
 	// create graph managed resources
+
+	// indirect draw buffer
+	BufferViewHandle voxelDebugIndirectBufferHandle;
+	{
+		BufferDescription bufferDesc{};
+		bufferDesc.m_name = "Voxel Indirect Draw Buffer";
+		bufferDesc.m_size = glm::max(32ull, sizeof(VkDrawIndexedIndirectCommand));
+
+		voxelDebugIndirectBufferHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
+	}
+
+	// voxel debug draw positions
+	BufferViewHandle voxelDebugDrawPositions;
+	{
+		BufferDescription bufferDesc{};
+		bufferDesc.m_name = "Voxel Debug Draw Positions";
+		bufferDesc.m_size = glm::max(32u, 128u * 64u * 128u * 4 * 4);
+
+		voxelDebugDrawPositions = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
+	}
+
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyLengthImageViewHandle = VKResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
@@ -332,7 +373,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	passRecordContext.m_pipelineCache = m_pipelineCache.get();
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
 	passRecordContext.m_commonRenderData = &commonData;
-
 
 	//// reproject previous depth buffer to create occlusion culling depth buffer
 	//OcclusionCullingReprojectionPass::Data occlusionCullingReprojData;
@@ -441,6 +481,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 		buildIndexBufferPassData.m_async = false;
+		buildIndexBufferPassData.m_cullBackFace = true;
 		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
 		buildIndexBufferPassData.m_width = m_width;
 		buildIndexBufferPassData.m_height = m_height;
@@ -484,6 +525,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 		buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 		buildIndexBufferPassData.m_async = false;
+		buildIndexBufferPassData.m_cullBackFace = false;
 		buildIndexBufferPassData.m_viewProjectionMatrix = commonData.m_jitteredViewProjectionMatrix;
 		buildIndexBufferPassData.m_width = m_width;
 		buildIndexBufferPassData.m_height = m_height;
@@ -558,6 +600,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 				buildIndexBufferPassData.m_async = true;
+				buildIndexBufferPassData.m_cullBackFace = true;
 				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
 				buildIndexBufferPassData.m_width = 2048;
 				buildIndexBufferPassData.m_height = 2048;
@@ -600,6 +643,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 				buildIndexBufferPassData.m_instanceData = sortedInstanceData.data();
 				buildIndexBufferPassData.m_async = true;
+				buildIndexBufferPassData.m_cullBackFace = false;
 				buildIndexBufferPassData.m_viewProjectionMatrix = renderData.m_shadowMatrices[i];
 				buildIndexBufferPassData.m_width = 2048;
 				buildIndexBufferPassData.m_height = 2048;
@@ -700,19 +744,53 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
 	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	lightingPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 	lightingPassData.m_depthImageHandle = depthImageViewHandle;
 	lightingPassData.m_uvImageHandle = uvImageViewHandle;
 	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
 	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-	lightingPassData.m_shadowArrayImageViewHandle = shadowImageViewHandle;
 	lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	lightingPassData.m_occlusionImageHandle = gtaoImageViewHandle;
 	lightingPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VKDirectLightingPass::addToGraph(graph, lightingPassData);
+
+
+	ClearVoxelsPass::Data clearVoxelsPassData;
+	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
+	clearVoxelsPassData.m_voxelImageHandle = voxelImageViewHandle;
+
+	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
+
+
+	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;
+	ssVoxelPassData.m_passRecordContext = &passRecordContext;
+	ssVoxelPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	ssVoxelPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	ssVoxelPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	ssVoxelPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	ssVoxelPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	ssVoxelPassData.m_depthImageHandle = depthImageViewHandle;
+	ssVoxelPassData.m_uvImageHandle = uvImageViewHandle;
+	ssVoxelPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	ssVoxelPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	ssVoxelPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	ssVoxelPassData.m_resultImageHandle = voxelImageViewHandle;
+
+	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
+
+
+	VoxelDebugPass::Data voxelDebugData;
+	voxelDebugData.m_passRecordContext = &passRecordContext;
+	voxelDebugData.m_voxelImageHandle = voxelImageViewHandle;
+	voxelDebugData.m_colorImageHandle = lightImageViewHandle;
+	voxelDebugData.m_depthImageHandle = depthImageViewHandle;
+	voxelDebugData.m_indirectBufferHandle = voxelDebugIndirectBufferHandle;
+	voxelDebugData.m_voxelPositionsHandle = voxelDebugDrawPositions;
+
+	VoxelDebugPass::addToGraph(graph, voxelDebugData);
 
 
 	// calculate luminance histograms

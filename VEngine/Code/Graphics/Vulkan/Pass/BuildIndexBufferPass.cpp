@@ -147,7 +147,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 				pushConsts.viewProjection = data.m_viewProjectionMatrix;
 				pushConsts.resolution = glm::vec2(data.m_width, data.m_height);
 				pushConsts.clusterOffset = currentOffset;
-				pushConsts.cullBackface = 1;
+				pushConsts.cullBackface = uint32_t(data.m_cullBackFace);
 
 				vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

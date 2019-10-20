@@ -1,3 +1,11 @@
+#ifndef DIFFUSE_ONLY
+#define DIFFUSE_ONLY 0
+#endif // DIFFUSE_ONLY
+
+#ifndef SHADOW_FUNCTIONS
+#define SHADOW_FUNCTIONS 1
+#endif // SHADOW_FUNCTIONS
+
 struct LightingParams
 {
 	vec3 albedo;
@@ -62,6 +70,12 @@ float getDistanceAtt(vec3 unnormalizedLightVector, float invSqrAttRadius)
 	return attenuation;
 }
 
+vec3 diffuseBrdf(const LightingParams params, vec3 radiance, vec3 L)
+{
+	const float NdotL = max(dot(params.N, L), 0.0);
+	return params.albedo * (1.0 / PI) * NdotL * radiance;
+}
+
 vec3 cookTorranceSpecularBrdf(const LightingParams params, vec3 radiance, vec3 L)
 {
 	const vec3 H = normalize(params.V + L);
@@ -92,15 +106,24 @@ vec3 evaluatePointLight(const LightingParams params, const PointLightData pointL
 	const vec3 L = normalize(unnormalizedLightVector);
 	const float att = getDistanceAtt(unnormalizedLightVector, pointLightData.colorInvSqrAttRadius.w);
 	const vec3 radiance = pointLightData.colorInvSqrAttRadius.rgb * att;
-	
+
+#if DIFFUSE_ONLY
+	return diffuseBrdf(params, radiance, L);
+#else
 	return cookTorranceSpecularBrdf(params, radiance, L);
+#endif // DIFFUSE_ONLY
 }
 
 vec3 evaluateDirectionalLight(const LightingParams params, const DirectionalLightData directionalLightData)
 {
+#if DIFFUSE_ONLY
+	return diffuseBrdf(params, directionalLightData.color.rgb, directionalLightData.direction.xyz);
+#else
 	return cookTorranceSpecularBrdf(params, directionalLightData.color.rgb, directionalLightData.direction.xyz);
+#endif // DIFFUSE_ONLY
 }
 
+#if SHADOW_FUNCTIONS
 float evaluateShadow(sampler2DShadow shadowTexture, vec3 shadowCoord, vec2 pixelCoord, float kernelScale)
 {
 	float shadow = 0.0;
@@ -160,6 +183,7 @@ float evaluateDirectionalLightShadow(const DirectionalLightData directionalLight
 	s = shadowDataCount;
 	return 0.0;
 }
+#endif // SHADOW_FUNCTIONS
 
 uint getTileAddress(uvec2 pixelCoord, uint width, uint wordCount)
 {

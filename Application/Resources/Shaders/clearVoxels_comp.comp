@@ -1,0 +1,27 @@
+#version 450
+
+#include "clearVoxels_bindings.h"
+
+layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main() 
+{
+	const ivec3 gridSize = ivec3(imageSize(uVoxelImage).xyz);
+	if (gl_GlobalInvocationID.x < gridSize.x && gl_GlobalInvocationID.y < gridSize.y && gl_GlobalInvocationID.z < gridSize.z)
+	{
+		ivec3 coord = ivec3(gl_GlobalInvocationID.xyz) + uPushConsts.diff.xyz;
+		if (any(lessThan(coord, ivec3(0))) || any(greaterThanEqual(coord, gridSize)))
+		{
+			coord += uPushConsts.camCoord.xyz - (gridSize / 2) - uPushConsts.diff.xyz;
+			coord = ivec3(fract(coord / vec3(gridSize)) * gridSize);
+			imageStore(uVoxelImage, coord, vec4(0.0));
+		}
+	}
+}

@@ -21,6 +21,7 @@ namespace VEngine
 		VKImage m_depthPyramidImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
 		VKImage m_dummyImage;
+		VKImage m_voxelImage;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
@@ -68,9 +69,13 @@ namespace VEngine
 		ResourceState m_depthPyramidImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_avgLuminanceBufferQueue = RenderGraph::undefinedQueue;
 		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
+		VkQueue m_voxelImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_voxelImageResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
+		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;
 		VkDescriptorSet m_textureDescriptorSet;
+		VkDescriptorSet m_computeTextureDescriptorSet;
 		VkDescriptorSetLayout m_imGuiDescriptorSetLayout;
 		VkDescriptorSet m_imGuiDescriptorSet;
 		VkDescriptorPool m_textureDescriptorSetPool;

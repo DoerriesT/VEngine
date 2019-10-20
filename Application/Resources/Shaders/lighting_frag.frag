@@ -8,18 +8,15 @@
 #define SSAO_ENABLED 0
 #endif // SSAO_ENABLED
 
-#define PARTITIONS 4
-
 #include "lighting_bindings.h"
 
- layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
 
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
-layout(set = SHADOW_ATLAS_SET, binding = SHADOW_ATLAS_BINDING) uniform sampler2DArrayShadow uShadowTexture;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
@@ -33,11 +30,6 @@ layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDIN
 layout(set = POINT_LIGHT_DATA_SET, binding = POINT_LIGHT_DATA_BINDING) readonly buffer POINT_LIGHT_DATA
 {
 	PointLightData uPointLightData[];
-};
-
-layout(set = SHADOW_MATRICES_SET, binding = SHADOW_MATRICES_BINDING) readonly buffer SHADOW_MATRICES
-{
-	mat4 uShadowMatrices[];
 };
 
 layout(set = POINT_LIGHT_Z_BINS_SET, binding = POINT_LIGHT_Z_BINS_BINDING) readonly buffer POINT_LIGHT_Z_BINS
@@ -66,6 +58,7 @@ layout(location = 0) in vec2 vTexCoord;
 
 layout(location = OUT_RESULT) out vec4 oResult;
 
+#define SHADOW_FUNCTIONS 0
 #include "commonLighting.h"
 
 const vec3 kRadarColors[14] = 
@@ -277,12 +270,6 @@ void main()
 		result += 1.0 * lightingParams.albedo * visibility;
 	}
 	
-	const vec2 pixelCoord = vec2(gl_FragCoord.xy) + 0.5;
-	const mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0,
-												uPushConsts.invViewMatrixRow1,
-												uPushConsts.invViewMatrixRow2,
-												vec4(0.0, 0.0, 0.0, 1.0)));
-	
 	// directional lights
 	{
 		// deferred shadows
@@ -292,31 +279,9 @@ void main()
 		{
 			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
 			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
-			const float shadow = texelFetch(uDeferredShadowImage, ivec2(gl_FragCoord.xy), 0).x;
 			result += contribution * (1.0 - deferredShadowValues[i]);
 		}
-		
-		// forward shadows
-		const uint forwardShadowCount = cDirectionalLightCount - deferredShadowCount;
-		for (uint i = deferredShadowCount; i < forwardShadowCount; ++i)
-		{
-			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
-			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
-			uint split = 10;
-			const float shadow = (directionalLightData.shadowDataOffsetCount & 0xFFFF) > 0 ?
-				evaluateDirectionalLightShadow(directionalLightData, uShadowTexture, invViewMatrix, lightingParams.viewSpacePosition, gl_FragCoord.xy, split)
-				: 0.0;
-				
-			result += contribution * (1.0 - shadow);
-			
-			//result *= split == 0 ? vec3(1.0, 0.0, 0.0)
-			//		: split == 1 ? vec3(0.0, 1.0, 0.0)
-			//		: split == 2 ? vec3(0.0, 0.0, 1.0)
-			//		: split == 3 ? vec3(0.5, 0.5, 0.0)
-			//		: vec3(0.5, 0.0, 0.5);
-		}
 	}
-	
 	
 	// point lights
 	if (uPushConsts.pointLightCount > 0)

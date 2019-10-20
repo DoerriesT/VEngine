@@ -163,6 +163,28 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
+	// voxel image
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = 128;
+		imageCreateInfo.extent.height = 64;
+		imageCreateInfo.extent.depth = 128;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_voxelImage.create(imageCreateInfo, allocCreateInfo);
+	}
+
 	// mappable blocks
 	{
 		// ubo
@@ -451,10 +473,10 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// create texture descriptor pool
 	{
-		VkDescriptorPoolSize poolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , RendererConsts::TEXTURE_ARRAY_SIZE + 1 /*ImGui Fonts texture*/ };
+		VkDescriptorPoolSize poolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , RendererConsts::TEXTURE_ARRAY_SIZE * 2 + 1 /*ImGui Fonts texture*/ };
 
 		VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		poolCreateInfo.maxSets = 2;
+		poolCreateInfo.maxSets = 3;
 		poolCreateInfo.poolSizeCount = 1;
 		poolCreateInfo.pPoolSizes = &poolSize;
 
@@ -487,6 +509,34 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		setAllocInfo.pSetLayouts = &m_textureDescriptorSetLayout;
 
 		if (vkAllocateDescriptorSets(g_context.m_device, &setAllocInfo, &m_textureDescriptorSet) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create texture array DescriptorSet!", -1);
+		}
+	}
+
+	// create compute texture descriptor set
+	{
+		VkDescriptorSetLayoutBinding binding{};
+		binding.binding = 0;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		binding.descriptorCount = RendererConsts::TEXTURE_ARRAY_SIZE;
+		binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		layoutCreateInfo.bindingCount = 1;
+		layoutCreateInfo.pBindings = &binding;
+
+		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_computeTextureDescriptorSetLayout) != VK_SUCCESS)
+		{
+			Utility::fatalExit("Failed to create texture array DescriptorSetLayout!", -1);
+		}
+
+		VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		setAllocInfo.descriptorPool = m_textureDescriptorSetPool;
+		setAllocInfo.descriptorSetCount = 1;
+		setAllocInfo.pSetLayouts = &m_computeTextureDescriptorSetLayout;
+
+		if (vkAllocateDescriptorSets(g_context.m_device, &setAllocInfo, &m_computeTextureDescriptorSet) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create texture array DescriptorSet!", -1);
 		}
@@ -747,6 +797,9 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 	write.pImageInfo = data;
 
 	vkDeviceWaitIdle(g_context.m_device);
+	vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
+
+	write.dstSet = m_computeTextureDescriptorSet;
 	vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
 }
 

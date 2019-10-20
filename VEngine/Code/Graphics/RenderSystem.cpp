@@ -28,6 +28,7 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 	}
 
 	m_renderer = std::make_unique<VKRenderer>(g_windowWidth, g_windowHeight, windowHandle);
+	memset(&m_commonRenderData, 0, sizeof(m_commonRenderData));
 }
 
 void VEngine::RenderSystem::update(float timeDelta)
@@ -105,7 +106,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 					0.0f))
 				: glm::mat4();
 
-			m_commonRenderData.m_time = 0.0f;
+			m_commonRenderData.m_time += m_commonRenderData.m_timeDelta;
 			m_commonRenderData.m_fovy = cameraComponent.m_fovy;
 			m_commonRenderData.m_nearPlane = cameraComponent.m_near;
 			m_commonRenderData.m_farPlane = cameraComponent.m_far;
