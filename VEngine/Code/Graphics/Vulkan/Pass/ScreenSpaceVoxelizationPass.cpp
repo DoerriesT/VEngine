@@ -14,9 +14,8 @@ namespace
 
 void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 {
-	ResourceUsageDescription passUsages[]
+	ResourceUsageDescription passUsages[7 + RendererConsts::VOXEL_SCENE_CASCADES]
 	{
-		{ResourceViewHandle(data.m_resultImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_uvImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
@@ -25,6 +24,11 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 		{ResourceViewHandle(data.m_tangentSpaceImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_deferredShadowImageViewHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 	};
+
+	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
+	{
+		passUsages[i + 7] = { ResourceViewHandle(data.m_voxelSceneImageHandles[i]), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER };
+	}
 
 	graph.addPass("Screen Space Voxelization", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
@@ -35,6 +39,11 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 			{
 				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/screenSpaceVoxelization_comp.spv");
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_passRecordContext->m_commonRenderData->m_directionalLightCount);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
 
 				pipelineDesc.finalize();
 			}
@@ -49,7 +58,6 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_uvImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), UV_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_ddxyLengthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DDXY_LENGTH_IMAGE_BINDING);
@@ -61,6 +69,11 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle), POINT_LIGHT_MASK_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
+
+				for (uint32_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
+				{
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneImageHandles[i], ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_IMAGE_BINDING, i);
+				}
 
 				writer.commit();
 			}
@@ -86,5 +99,5 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 			const uint32_t pixelCount = 1024 * 32;
 
 			vkCmdDispatch(cmdBuf, (pixelCount + 63) / 64, 1, 1);
-		});
+		}, true);
 }

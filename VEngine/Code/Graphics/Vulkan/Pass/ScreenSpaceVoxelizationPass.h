@@ -1,5 +1,6 @@
 #pragma once
 #include "Graphics/Vulkan/RenderGraph.h"
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
@@ -21,7 +22,7 @@ namespace VEngine
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
-			ImageViewHandle m_resultImageHandle;
+			ImageViewHandle m_voxelSceneImageHandles[RendererConsts::VOXEL_SCENE_CASCADES];
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

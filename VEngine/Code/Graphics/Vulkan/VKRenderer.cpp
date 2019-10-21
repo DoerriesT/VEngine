@@ -47,6 +47,8 @@
 #include "Graphics/imgui/imgui.h"
 #include "Graphics/ViewRenderList.h"
 
+extern uint32_t g_debugVoxelCascadeIndex;
+
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
 	g_context.init(static_cast<GLFWwindow *>(windowHandle));
@@ -241,21 +243,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		avgLuminanceBufferViewHandle = graph.createBufferView({ desc.m_name, avgLuminanceBufferHandle, 0, desc.m_size });
 	}
 
-	ImageViewHandle voxelImageViewHandle = 0;
+	ImageViewHandle voxelImageViewHandles[RendererConsts::VOXEL_SCENE_CASCADES];
 	{
+		auto &voxelSceneImages = m_renderResources->m_voxelSceneImages;
 		ImageDescription desc = {};
 		desc.m_name = "Voxel Image";
 		desc.m_concurrent = false;
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 128;
-		desc.m_height = 64;
-		desc.m_depth = 128;
-		desc.m_format = m_renderResources->m_voxelImage.getFormat();
+		desc.m_width = RendererConsts::VOXEL_SCENE_WIDTH;
+		desc.m_height = RendererConsts::VOXEL_SCENE_HEIGHT;
+		desc.m_depth = RendererConsts::VOXEL_SCENE_DEPTH;
+		desc.m_format = voxelSceneImages[0].getFormat();
 		desc.m_imageType = VK_IMAGE_TYPE_3D;
 
-		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_voxelImage.getImage(), &m_renderResources->m_voxelImageQueue, &m_renderResources->m_voxelImageResourceState);
-		voxelImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+		for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
+		{
+			ImageHandle imageHandle = graph.importImage(desc, voxelSceneImages[i].getImage(), &m_renderResources->m_voxelSceneImageQueue[i], &m_renderResources->m_voxelSceneImageResourceState[i]);
+			voxelImageViewHandles[i] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+		}
 	}
 
 	// create graph managed resources
@@ -759,7 +765,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
-	clearVoxelsPassData.m_voxelImageHandle = voxelImageViewHandle;
+	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
+	{
+		clearVoxelsPassData.m_voxelImageHandles[i] = voxelImageViewHandles[i];
+	}
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
@@ -777,14 +786,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	ssVoxelPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	ssVoxelPassData.m_resultImageHandle = voxelImageViewHandle;
+	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
+	{
+		ssVoxelPassData.m_voxelSceneImageHandles[i] = voxelImageViewHandles[i];
+	}
 
 	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
 
 	VoxelDebugPass::Data voxelDebugData;
 	voxelDebugData.m_passRecordContext = &passRecordContext;
-	voxelDebugData.m_voxelImageHandle = voxelImageViewHandle;
+	voxelDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
+	voxelDebugData.m_voxelImageHandle = voxelImageViewHandles[g_debugVoxelCascadeIndex];
 	voxelDebugData.m_colorImageHandle = lightImageViewHandle;
 	voxelDebugData.m_depthImageHandle = depthImageViewHandle;
 	voxelDebugData.m_indirectBufferHandle = voxelDebugIndirectBufferHandle;

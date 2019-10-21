@@ -166,7 +166,7 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			PushConsts pushConsts;
 			pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-			pushConsts.scale = 0.125f;
+			pushConsts.scale = RendererConsts::VOXEL_SCENE_BASE_SIZE * static_cast<float>(1 << data.m_cascadeIndex);
 			pushConsts.cameraPosition = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
@@ -174,7 +174,7 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_boxIndexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			//vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(vkCmdDrawIndexedIndirect));
-			vkCmdDrawIndexed(cmdBuf, 36, 128 * 64 * 128, 0, 0, 0);
+			vkCmdDrawIndexed(cmdBuf, 36, RendererConsts::VOXEL_SCENE_WIDTH *RendererConsts::VOXEL_SCENE_HEIGHT *RendererConsts::VOXEL_SCENE_DEPTH, 0, 0, 0);
 
 			vkCmdEndRenderPass(cmdBuf);
 		});

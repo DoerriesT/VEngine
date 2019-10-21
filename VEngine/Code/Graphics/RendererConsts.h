@@ -18,6 +18,11 @@ namespace VEngine
 		constexpr uint32_t MAPPABLE_UBO_BLOCK_SIZE = 1024 * 1024;
 		constexpr uint32_t MAPPABLE_SSBO_BLOCK_SIZE = 8 * 1024 * 1024;
 		constexpr uint32_t TRIANGLE_FILTERING_CLUSTER_SIZE = 256;
+		constexpr uint32_t VOXEL_SCENE_CASCADES = 3;
+		constexpr uint32_t VOXEL_SCENE_WIDTH = 128;
+		constexpr uint32_t VOXEL_SCENE_HEIGHT = 64;
+		constexpr uint32_t VOXEL_SCENE_DEPTH = 128;
+		constexpr float VOXEL_SCENE_BASE_SIZE = 0.25f;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

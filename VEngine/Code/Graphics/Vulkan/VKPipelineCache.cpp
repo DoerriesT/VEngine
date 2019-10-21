@@ -181,16 +181,16 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 	return pipelinePair;
 }
 
-void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription &stageDescription, 
-	VkShaderStageFlagBits stageFlag, 
-	VkShaderModule &shaderModule, 
-	VkPipelineShaderStageCreateInfo &stageCreateInfo, 
+void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription &stageDescription,
+	VkShaderStageFlagBits stageFlag,
+	VkShaderModule &shaderModule,
+	VkPipelineShaderStageCreateInfo &stageCreateInfo,
 	ReflectionInfo &reflectionInfo)
 {
 	std::vector<char> code = Utility::readBinaryFile(stageDescription.m_path);
 	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
 	if (vkCreateShaderModule(g_context.m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 	{
@@ -209,7 +209,7 @@ void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription 
 
 	// reflection
 	{
-		spirv_cross::Compiler comp(reinterpret_cast<const uint32_t*>(code.data()), code.size() / sizeof(uint32_t));
+		spirv_cross::Compiler comp(reinterpret_cast<const uint32_t *>(code.data()), code.size() / sizeof(uint32_t));
 		// The SPIR-V is now parsed, and we can perform reflection on it.
 		spirv_cross::ShaderResources resources = comp.get_shader_resources();
 
@@ -223,6 +223,43 @@ void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription 
 
 			auto &type = comp.get_type(resource.type_id);
 			uint32_t arraySize = type.array.empty() ? 1 : type.array.front();
+
+			// if the array size comes from a specialization constant, we need to hunt down the value ourselves
+			if (!type.array.empty() && !type.array_size_literal[0])
+			{
+				bool foundValue = false;
+				const auto specConsts = comp.get_specialization_constants();
+				for (const auto &sc : specConsts)
+				{
+					// arraySize currently holds the id of the spec const we're looking for
+					if (sc.id == arraySize)
+					{
+						// we found the correct spec constant; now search through the VkSpecializationInfo to look up the actual value
+						if (stageCreateInfo.pSpecializationInfo)
+						{
+							const auto &specInfo = *stageCreateInfo.pSpecializationInfo;
+							for (uint32_t i = 0; i < specInfo.mapEntryCount; ++i)
+							{
+								const auto &mapEntry = specInfo.pMapEntries[i];
+								if (mapEntry.constantID == sc.constant_id)
+								{
+									arraySize = *(uint32_t *)((uint8_t *)specInfo.pData + mapEntry.offset);
+									foundValue = true;
+									break;
+								}
+							}
+						}
+						// if there is no VkSpecializationInfo, or if it doesnt contain the value, look up the default value
+						if (!foundValue)
+						{
+							arraySize = comp.get_constant(sc.id).scalar();
+							foundValue = true;
+						}
+						break;
+					}
+				}
+				assert(foundValue);
+			}
 
 			auto &layout = reflectionInfo.m_setLayouts[set];
 			assert(layout.m_arraySizes[binding] == 0 || layout.m_arraySizes[binding] == arraySize);

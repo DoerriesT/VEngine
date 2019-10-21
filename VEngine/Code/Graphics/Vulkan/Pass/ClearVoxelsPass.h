@@ -1,5 +1,6 @@
 #pragma once
 #include "Graphics/Vulkan/RenderGraph.h"
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
@@ -10,7 +11,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			ImageViewHandle m_voxelImageHandle;
+			ImageViewHandle m_voxelImageHandles[RendererConsts::VOXEL_SCENE_CASCADES];
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

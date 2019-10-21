@@ -84,7 +84,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 
 	BufferViewHandle indirectDrawCmdBufferViewHandle = *data.m_indirectDrawCmdBufferViewHandle;
 	BufferViewHandle filteredIndicesBufferViewHandle = *data.m_filteredIndicesBufferViewHandle;
-	const uint32_t clusterListSize = clusterInfoList.size();
+	const uint32_t clusterListSize = static_cast<uint32_t>(clusterInfoList.size());
 
 	ResourceUsageDescription passUsages[]
 	{

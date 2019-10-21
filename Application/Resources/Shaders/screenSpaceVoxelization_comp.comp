@@ -9,8 +9,13 @@
 #include "commonLighting.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
+layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
+layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
+layout(constant_id = VOXEL_BASE_SCALE_CONST_ID) const float cVoxelBaseScale = 8.0;
+layout(constant_id = VOXEL_CASCADES_CONST_ID) const uint cVoxelCascades = 3;
 
-layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelImage;
+layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelImages[cVoxelCascades];
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
@@ -223,19 +228,26 @@ void main()
 												vec4(0.0, 0.0, 0.0, 1.0)));
 	const vec3 worldSpacePos = (invViewMatrix * vec4(lightingParams.viewSpacePosition, 1.0)).xyz;
 	
-	const ivec3 gridSize = ivec3(imageSize(uVoxelImage).xyz);
-	ivec3 voxelCoord = ivec3(round(worldSpacePos * 8.0));
-	ivec3 offset = ivec3(round(vec3(invViewMatrix[3]) * 8.0)) - (gridSize / 2);
-	voxelCoord -= offset;
-	if (all(greaterThanEqual(voxelCoord, ivec3(0))) && all(lessThan(voxelCoord, gridSize)))
-	{
-		voxelCoord += offset;
-		voxelCoord = ivec3(fract(voxelCoord / vec3(gridSize)) * gridSize);
+	const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
+	float currentVoxelScale = cVoxelBaseScale;
 	
-		vec4 voxel = imageLoad(uVoxelImage, voxelCoord);
-		float weight = voxel.a == 0 ? 1.0 : 0.5 * uPushConsts.deltaTime;
-		result = mix(voxel.rgb, result, weight);
+	// write voxel to all relevant cascades
+	for (int i = 0; i < cVoxelCascades; ++i)
+	{
+		ivec3 voxelCoord = ivec3(round(worldSpacePos * currentVoxelScale));
+		ivec3 offset = ivec3(round(vec3(invViewMatrix[3]) * currentVoxelScale)) - (gridSize / 2);
+		voxelCoord -= offset;
+		if (all(greaterThanEqual(voxelCoord, ivec3(0))) && all(lessThan(voxelCoord, gridSize)))
+		{
+			voxelCoord += offset;
+			voxelCoord = ivec3(fract(voxelCoord / vec3(gridSize)) * gridSize);
 		
-		imageStore(uVoxelImage, voxelCoord, vec4(result, 1.0));
+			vec4 voxel = imageLoad(uVoxelImages[i], voxelCoord);
+			float weight = voxel.a == 0 ? 1.0 : 0.5 * uPushConsts.deltaTime;
+			result = mix(voxel.rgb, result, weight);
+			
+			imageStore(uVoxelImages[i], voxelCoord, vec4(result, 1.0));
+		}
+		currentVoxelScale *= 0.5;
 	}
 }
