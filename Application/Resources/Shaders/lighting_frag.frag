@@ -47,7 +47,8 @@ layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer
     MaterialData uMaterialData[];
 };
 
-layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -209,7 +210,7 @@ void main()
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			vec4 albedoTexSample = textureGrad(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uv, derivatives.xy, derivatives.zw).rgba;
+			vec4 albedoTexSample = textureGrad(sampler2D(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).rgba;
 			albedo = albedoTexSample.rgb;
 		}
 		lightingParams.albedo = accurateSRGBToLinear(albedo);
@@ -222,7 +223,7 @@ void main()
 		if (normalTextureIndex != 0)
 		{
 			vec3 tangentSpaceNormal;
-			tangentSpaceNormal.xy = textureGrad(uTextures[nonuniformEXT(normalTextureIndex - 1)], uv, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
+			tangentSpaceNormal.xy = textureGrad(sampler2D(uTextures[nonuniformEXT(normalTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
 			normal = normalize(tbn * tangentSpaceNormal);
 		}
@@ -235,7 +236,7 @@ void main()
 		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
 		if (metalnessTextureIndex != 0)
 		{
-			metalness = textureGrad(uTextures[nonuniformEXT(metalnessTextureIndex - 1)], uv, derivatives.xy, derivatives.zw).z;
+			metalness = textureGrad(sampler2D(uTextures[nonuniformEXT(metalnessTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).z;
 		}
 		lightingParams.metalness = metalness;
 	}
@@ -246,7 +247,7 @@ void main()
 		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
 		if (roughnessTextureIndex != 0)
 		{
-			roughness = textureGrad(uTextures[nonuniformEXT(roughnessTextureIndex - 1)], uv, derivatives.xy, derivatives.zw).y;
+			roughness = textureGrad(sampler2D(uTextures[nonuniformEXT(roughnessTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).y;
 		}
 		lightingParams.roughness = roughness;
 	}

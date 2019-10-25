@@ -803,7 +803,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelDebugData.m_indirectBufferHandle = voxelDebugIndirectBufferHandle;
 	voxelDebugData.m_voxelPositionsHandle = voxelDebugDrawPositions;
 
-	VoxelDebugPass::addToGraph(graph, voxelDebugData);
+	//VoxelDebugPass::addToGraph(graph, voxelDebugData);
 
 
 	// calculate luminance histograms

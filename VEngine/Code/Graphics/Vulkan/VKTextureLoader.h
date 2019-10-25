@@ -2,7 +2,6 @@
 #include <vector>
 #include <bitset>
 #include "Graphics/Vulkan/volk.h"
-#include "VKImage.h"
 #include "VKBuffer.h"
 #include "Graphics/RendererConsts.h"
 #include "Handles.h"
@@ -23,17 +22,13 @@ namespace VEngine
 		void getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count);
 
 	private:
-		struct VKTexture
-		{
-			VkImageView m_view;
-			VkSampler m_sampler;
-			VKImage m_image;
-		};
-
-		std::bitset<RendererConsts::TEXTURE_ARRAY_SIZE> m_usedSlots;
+		TextureHandle *m_freeHandles;
+		uint32_t m_freeHandleCount;
 		VKBuffer &m_stagingBuffer;
-		VKTexture m_dummyTexture;
-		VKTexture m_textures[RendererConsts::TEXTURE_ARRAY_SIZE];
+		// first element is dummy image
+		VkImageView m_views[RendererConsts::TEXTURE_ARRAY_SIZE + 1];
+		VkImage m_images[RendererConsts::TEXTURE_ARRAY_SIZE + 1];
+		VKAllocationHandle m_allocationHandles[RendererConsts::TEXTURE_ARRAY_SIZE + 1];
 		VkDescriptorImageInfo m_descriptorImageInfos[RendererConsts::TEXTURE_ARRAY_SIZE];
 	};
 }

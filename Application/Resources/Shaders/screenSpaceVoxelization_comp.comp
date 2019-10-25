@@ -48,7 +48,8 @@ layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer
     MaterialData uMaterialData[];
 };
 
-layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -149,7 +150,7 @@ void main()
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			vec4 albedoTexSample = textureGrad(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uv, derivatives.xy, derivatives.zw).rgba;
+			vec4 albedoTexSample = textureGrad(sampler2D(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).rgba;
 			albedo = albedoTexSample.rgb;
 		}
 		lightingParams.albedo = accurateSRGBToLinear(albedo);

@@ -48,11 +48,8 @@ namespace VEngine
 		std::unique_ptr<VKMappableBufferBlock> m_mappableSSBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// samplers
+		VkSampler m_samplers[4];
 		VkSampler m_shadowSampler;
-		VkSampler m_linearSamplerClamp;
-		VkSampler m_linearSamplerRepeat;
-		VkSampler m_pointSamplerClamp;
-		VkSampler m_pointSamplerRepeat;
 
 		// semaphores
 		VkSemaphore m_swapChainImageAvailableSemaphores[RendererConsts::FRAMES_IN_FLIGHT];

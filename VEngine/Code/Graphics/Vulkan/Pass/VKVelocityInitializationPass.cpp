@@ -130,7 +130,7 @@ void VEngine::VKVelocityInitializationPass::addToGraph(RenderGraph &graph, const
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 			// depth image
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, data.m_passRecordContext->m_renderResources->m_pointSamplerClamp), DEPTH_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), DEPTH_IMAGE_BINDING);
 
 			writer.commit();
 		}

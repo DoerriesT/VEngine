@@ -125,7 +125,7 @@ void VEngine::OcclusionCullingCopyToDepthPass::addToGraph(RenderGraph & graph, c
 
 		// update descriptor sets
 		{
-			VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_pointSamplerClamp;
+			VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
 		
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 		

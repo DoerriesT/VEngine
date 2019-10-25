@@ -9,7 +9,8 @@ layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer
     MaterialData uMaterialData[];
 };
 
-layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform sampler2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
 
 #ifndef ALPHA_MASK_ENABLED
 #define ALPHA_MASK_ENABLED 0
@@ -125,8 +126,8 @@ void main()
 		uint albedoTextureIndex = (uMaterialData[vMaterialIndex].albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			float alpha = texture(uTextures[nonuniformEXT(albedoTextureIndex - 1)], vTexCoord).a;
-			alpha *= 1.0 + textureQueryLod(uTextures[nonuniformEXT(albedoTextureIndex - 1)], vTexCoord).x * ALPHA_MIP_SCALE;
+			float alpha = texture(sampler2D(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), vTexCoord).a;
+			alpha *= 1.0 + textureQueryLod(sampler2D(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), vTexCoord).x * ALPHA_MIP_SCALE;
 			if(alpha < ALPHA_CUTOFF)
 			{
 				discard;

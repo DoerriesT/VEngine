@@ -45,8 +45,8 @@ void VEngine::VKTAAResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 
 		// update descriptor sets
 		{
-			VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_pointSamplerClamp;
-			VkSampler linearSamplerClamp = data.m_passRecordContext->m_renderResources->m_linearSamplerClamp;
+			VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
+			VkSampler linearSamplerClamp = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 

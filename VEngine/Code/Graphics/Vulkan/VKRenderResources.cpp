@@ -407,8 +407,8 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerCreateInfo.mipLodBias = 0.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
+		samplerCreateInfo.anisotropyEnable = VK_TRUE;
+		samplerCreateInfo.maxAnisotropy = g_context.m_properties.limits.maxSamplerAnisotropy;
 		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
@@ -421,7 +421,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSamplerClamp) != VK_SUCCESS)
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -431,7 +431,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_linearSamplerRepeat) != VK_SUCCESS)
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -444,8 +444,8 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		samplerCreateInfo.mipLodBias = 0.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
+		samplerCreateInfo.anisotropyEnable = VK_TRUE;
+		samplerCreateInfo.maxAnisotropy = g_context.m_properties.limits.maxSamplerAnisotropy;
 		samplerCreateInfo.compareEnable = VK_FALSE;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
@@ -458,7 +458,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_pointSamplerClamp) != VK_SUCCESS)
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -468,7 +468,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_pointSamplerRepeat) != VK_SUCCESS)
+		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create sampler!", -1);
 		}
@@ -476,12 +476,16 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// create texture descriptor pool
 	{
-		VkDescriptorPoolSize poolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , RendererConsts::TEXTURE_ARRAY_SIZE * 2 + 1 /*ImGui Fonts texture*/ };
+		VkDescriptorPoolSize poolSizes[]
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE , RendererConsts::TEXTURE_ARRAY_SIZE * 2 + 1 /*ImGui Fonts texture*/ },
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 4 * 3 }
+		};
 
 		VkDescriptorPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		poolCreateInfo.maxSets = 3;
-		poolCreateInfo.poolSizeCount = 1;
-		poolCreateInfo.pPoolSizes = &poolSize;
+		poolCreateInfo.poolSizeCount = 2;
+		poolCreateInfo.pPoolSizes = poolSizes;
 
 		if (vkCreateDescriptorPool(g_context.m_device, &poolCreateInfo, nullptr, &m_textureDescriptorSetPool) != VK_SUCCESS)
 		{
@@ -491,15 +495,15 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// create texture descriptor set
 	{
-		VkDescriptorSetLayoutBinding binding{};
-		binding.binding = 0;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		binding.descriptorCount = RendererConsts::TEXTURE_ARRAY_SIZE;
-		binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding bindings[]
+		{
+			{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{1, VK_DESCRIPTOR_TYPE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layoutCreateInfo.bindingCount = 1;
-		layoutCreateInfo.pBindings = &binding;
+		layoutCreateInfo.bindingCount = 2;
+		layoutCreateInfo.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_textureDescriptorSetLayout) != VK_SUCCESS)
 		{
@@ -519,15 +523,15 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// create compute texture descriptor set
 	{
-		VkDescriptorSetLayoutBinding binding{};
-		binding.binding = 0;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		binding.descriptorCount = RendererConsts::TEXTURE_ARRAY_SIZE;
-		binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		VkDescriptorSetLayoutBinding bindings[]
+		{
+			{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, VK_SHADER_STAGE_COMPUTE_BIT},
+			{1, VK_DESCRIPTOR_TYPE_SAMPLER, 4, VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layoutCreateInfo.bindingCount = 1;
-		layoutCreateInfo.pBindings = &binding;
+		layoutCreateInfo.bindingCount = 2;
+		layoutCreateInfo.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_computeTextureDescriptorSetLayout) != VK_SUCCESS)
 		{
@@ -547,15 +551,15 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 
 	// create ImGui descriptor set
 	{
-		VkDescriptorSetLayoutBinding binding{};
-		binding.binding = 0;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		binding.descriptorCount = 1;
-		binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding bindings[]
+		{
+			{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+			{1, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, &m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX]},
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		layoutCreateInfo.bindingCount = 1;
-		layoutCreateInfo.pBindings = &binding;
+		layoutCreateInfo.bindingCount = 2;
+		layoutCreateInfo.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_imGuiDescriptorSetLayout) != VK_SUCCESS)
 		{
@@ -796,14 +800,31 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 	write.dstBinding = 0;
 	write.dstArrayElement = 0;
 	write.descriptorCount = count < RendererConsts::TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : RendererConsts::TEXTURE_ARRAY_SIZE;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	write.pImageInfo = data;
 
+	VkDescriptorImageInfo samplerInfo[4]{};
+	for (size_t i = 0; i < 4; ++i)
+	{
+		samplerInfo[i].sampler = m_samplers[i];
+	}
+
+	VkWriteDescriptorSet samplerWrite{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	samplerWrite.dstSet = m_textureDescriptorSet;
+	samplerWrite.dstBinding = 1;
+	samplerWrite.dstArrayElement = 0;
+	samplerWrite.descriptorCount = 4;
+	samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+	samplerWrite.pImageInfo = samplerInfo;
+
+	VkWriteDescriptorSet writes[]{ write, samplerWrite };
+
 	vkDeviceWaitIdle(g_context.m_device);
-	vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
+	vkUpdateDescriptorSets(g_context.m_device, 2, writes, 0, nullptr);
 
 	write.dstSet = m_computeTextureDescriptorSet;
-	vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);
+	samplerWrite.dstSet = m_computeTextureDescriptorSet;
+	vkUpdateDescriptorSets(g_context.m_device, 2, writes, 0, nullptr);
 }
 
 void VEngine::VKRenderResources::createImGuiFontsTexture()
@@ -855,12 +876,12 @@ void VEngine::VKRenderResources::createImGuiFontsTexture()
 
 	// Update the Descriptor Set:
 	{
-		VkDescriptorImageInfo imageInfo{ m_linearSamplerRepeat, m_imGuiFontsTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		VkDescriptorImageInfo imageInfo{ VK_NULL_HANDLE, m_imGuiFontsTextureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 
 		VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 		write.dstSet = m_imGuiDescriptorSet;
 		write.descriptorCount = 1;
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 		write.pImageInfo = &imageInfo;
 
 		vkUpdateDescriptorSets(g_context.m_device, 1, &write, 0, nullptr);

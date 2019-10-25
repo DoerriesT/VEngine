@@ -27,6 +27,8 @@
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
+#define SAMPLERS_SET 1
+#define SAMPLERS_BINDING 1
 
 #define OUT_RESULT 0
 

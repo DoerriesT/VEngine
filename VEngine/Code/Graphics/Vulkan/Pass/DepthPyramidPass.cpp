@@ -95,7 +95,7 @@ void VEngine::DepthPyramidPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 
-		VkSampler pointSampler = data.m_passRecordContext->m_renderResources->m_pointSamplerClamp;
+		VkSampler pointSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
 		glm::ivec2 prevMipSize = glm::ivec2(data.m_passRecordContext->m_commonRenderData->m_width, data.m_passRecordContext->m_commonRenderData->m_height);
 		uint32_t mipWidth = glm::max(prevMipSize.x / 2, 1);
 		uint32_t mipHeight = glm::max(prevMipSize.y / 2, 1);

@@ -12,8 +12,11 @@
 #define VERTEX_TEXCOORDS_BINDING 4
 #define SUB_MESH_DATA_SET 0
 #define SUB_MESH_DATA_BINDING 5
+
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
+#define SAMPLERS_SET 1
+#define SAMPLERS_BINDING 1
 
 struct PushConsts
 {

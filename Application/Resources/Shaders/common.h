@@ -2,6 +2,15 @@
 #define TEXTURE_ARRAY_SIZE (1024)
 #endif // TEXTURE_ARRAY_SIZE
 
+#ifndef SAMPLER_COUNT
+#define SAMPLER_COUNT (4)
+#endif // SAMPLER_COUNT
+
+#define SAMPLER_LINEAR_CLAMP (0)
+#define SAMPLER_LINEAR_REPEAT (1)
+#define SAMPLER_POINT_CLAMP (2)
+#define SAMPLER_POINT_REPEAT (3)
+
 #ifndef PI
 #define PI (3.14159265359)
 #endif // PI

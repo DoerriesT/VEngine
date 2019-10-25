@@ -8,15 +8,22 @@
 #include "VKUtility.h"
 
 VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
-	:m_usedSlots(),
-	m_stagingBuffer(stagingBuffer),
-	m_dummyTexture()
+	:m_freeHandles(new TextureHandle[RendererConsts::TEXTURE_ARRAY_SIZE]),
+	m_freeHandleCount(RendererConsts::TEXTURE_ARRAY_SIZE),
+	m_stagingBuffer(stagingBuffer)
 {
-	memset(m_textures, 0, sizeof(m_textures));
+	memset(m_views, 0, sizeof(m_views));
+	memset(m_images, 0, sizeof(m_images));
+	memset(m_allocationHandles, 0, sizeof(m_allocationHandles));
+
+	for (TextureHandle i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
+	{
+		m_freeHandles[i] = RendererConsts::TEXTURE_ARRAY_SIZE - i;
+	}
 
 	// create dummy texture
 	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		VkImageCreateInfo imageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 		imageCreateInfo.extent.width = 1;
@@ -29,11 +36,11 @@ VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		
-		VKAllocationCreateInfo allocCreateInfo = {};
+
+		VKAllocationCreateInfo allocCreateInfo{};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		
-		m_dummyTexture.m_image.create(imageCreateInfo, allocCreateInfo);
+
+		g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[0], m_allocationHandles[0]);
 
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -42,97 +49,63 @@ VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 		subresourceRange.baseArrayLayer = 0;
 		subresourceRange.layerCount = 1;
 
+		// change layout to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
-		{
-			VKUtility::setImageLayout(
-				copyCmd,
-				m_dummyTexture.m_image.getImage(),
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				subresourceRange,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-		}
+		VKUtility::setImageLayout(copyCmd, m_images[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
 
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = m_dummyTexture.m_image.getImage();
+		VkImageViewCreateInfo viewInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		viewInfo.image = m_images[0];
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = m_dummyTexture.m_image.getFormat();
+		viewInfo.format = imageCreateInfo.format;
 		viewInfo.subresourceRange = subresourceRange;
 
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_dummyTexture.m_view) != VK_SUCCESS)
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_views[0]) != VK_SUCCESS)
 		{
-			Utility::fatalExit("Failed to create image view!", -1);
-		}
-
-		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.mipLodBias = 0.0f;
-		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = 1;
-		samplerCreateInfo.maxAnisotropy = 1.0f;
-		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &m_dummyTexture.m_sampler) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create sampler!", -1);
+			Utility::fatalExit("Failed to create image view!", EXIT_FAILURE);
 		}
 	}
 
 	// fill VkDescriptorImageInfo array with dummy textures
 	for (size_t i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
 	{
-		m_descriptorImageInfos[i].sampler = m_dummyTexture.m_sampler;
-		m_descriptorImageInfos[i].imageView = m_dummyTexture.m_view;
+		m_descriptorImageInfos[i].sampler = VK_NULL_HANDLE;
+		m_descriptorImageInfos[i].imageView = m_views[0];
 		m_descriptorImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	}
 }
+
+uint32_t allocatedCount = 0;
 
 VEngine::VKTextureLoader::~VKTextureLoader()
 {
 	// free all remaining textures
 	for (TextureHandle i = 0; i < RendererConsts::TEXTURE_ARRAY_SIZE; ++i)
 	{
-		if (m_usedSlots[i])
+		if (m_descriptorImageInfos[i].imageView != m_views[0])
 		{
 			free(i + 1);
 		}
 	}
 
 	// destroy dummy texture
-	vkDestroyImageView(g_context.m_device, m_dummyTexture.m_view, nullptr);
-	vkDestroySampler(g_context.m_device, m_dummyTexture.m_sampler, nullptr);
-	m_dummyTexture.m_image.destroy();
+	vkDestroyImageView(g_context.m_device, m_views[0], nullptr);
+	g_context.m_allocator.destroyImage(m_images[0], m_allocationHandles[0]);
 }
 
 VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 {
-	// find free handle
+	// acquire handle
 	TextureHandle handle = 0;
 	{
-		bool foundFreeId = false;
-
-		for (; handle < RendererConsts::TEXTURE_ARRAY_SIZE; ++handle)
+		if (!m_freeHandleCount)
 		{
-			if (!m_usedSlots[handle])
-			{
-				foundFreeId = true;
-				break;
-			}
+			Utility::fatalExit("Out of Texture Handles!", EXIT_FAILURE);
 		}
 
-		if (!foundFreeId)
-		{
-			Utility::fatalExit("Ran out of free texture slots!", -1);
-		}
+		--m_freeHandleCount;
+		handle = m_freeHandles[m_freeHandleCount];
+		++allocatedCount;
 	}
 
 	// load texture
@@ -145,7 +118,7 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 
 		if (gliTex.size() > RendererConsts::STAGING_BUFFER_SIZE)
 		{
-			Utility::fatalExit("Texture is too large for staging buffer!", -1);
+			Utility::fatalExit("Texture is too large for staging buffer!", EXIT_FAILURE);
 		}
 	}
 
@@ -158,9 +131,8 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 	}
 
 	// create image
-	VKTexture &texture = m_textures[handle];
 	{
-		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		VkImageCreateInfo imageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = VkFormat(gliTex.format());
 		imageCreateInfo.extent.width = static_cast<uint32_t>(gliTex.extent().x);
@@ -174,16 +146,16 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VKAllocationCreateInfo allocCreateInfo = {};
+		VKAllocationCreateInfo allocCreateInfo{};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		texture.m_image.create(imageCreateInfo, allocCreateInfo);
+		g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[handle], m_allocationHandles[handle]);
 	}
 
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subresourceRange.baseMipLevel = 0;
-	subresourceRange.levelCount = texture.m_image.getMipLevels();
+	subresourceRange.levelCount = static_cast<uint32_t>(gliTex.levels());
 	subresourceRange.baseArrayLayer = 0;
 	subresourceRange.layerCount = 1;
 
@@ -207,33 +179,12 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 			offset += gliTex[level].size();
 		}
 
+		// copy to image and transition layout to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 		{
-			VKUtility::setImageLayout(
-				copyCmd,
-				texture.m_image.getImage(),
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				subresourceRange,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-			vkCmdCopyBufferToImage(
-				copyCmd,
-				m_stagingBuffer.getBuffer(),
-				texture.m_image.getImage(),
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				static_cast<uint32_t>(bufferCopyRegions.size()),
-				bufferCopyRegions.data());
-
-			VKUtility::setImageLayout(
-				copyCmd,
-				texture.m_image.getImage(),
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				subresourceRange,
-				VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+			VKUtility::setImageLayout(copyCmd, m_images[handle], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			vkCmdCopyBufferToImage(copyCmd, m_stagingBuffer.getBuffer(), m_images[handle], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
+			VKUtility::setImageLayout(copyCmd, m_images[handle], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 		}
 		VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
 	}
@@ -241,83 +192,50 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 	// create image view
 	{
 		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = texture.m_image.getImage();
+		viewInfo.image = m_images[handle];
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = texture.m_image.getFormat();
+		viewInfo.format = VkFormat(gliTex.format());
 		viewInfo.subresourceRange = subresourceRange;
 
-		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &texture.m_view) != VK_SUCCESS)
+		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_views[handle]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create image view!", -1);
 		}
 	}
 
-	// create sampler
-	{
-		VkSamplerCreateInfo samplerCreateInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCreateInfo.mipLodBias = 0.0f;
-		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = static_cast<float>(texture.m_image.getMipLevels());
-		samplerCreateInfo.maxAnisotropy = g_context.m_enabledFeatures.samplerAnisotropy ?
-			g_context.m_properties.limits.maxSamplerAnisotropy : 1.0f;
-		samplerCreateInfo.anisotropyEnable = g_context.m_enabledFeatures.samplerAnisotropy;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-		if (vkCreateSampler(g_context.m_device, &samplerCreateInfo, nullptr, &texture.m_sampler) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create sampler!", -1);
-		}
-	}
-
 	// create VkDescriptorImageInfo
 	{
-		m_descriptorImageInfos[handle].sampler = texture.m_sampler;
-		m_descriptorImageInfos[handle].imageView = texture.m_view;
-		m_descriptorImageInfos[handle].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		// valid handles start from 1, but we also want to use the first element in m_descriptorImageInfos too, so subtract 1
+		m_descriptorImageInfos[handle - 1].sampler = VK_NULL_HANDLE;
+		m_descriptorImageInfos[handle - 1].imageView = m_views[handle];
+		m_descriptorImageInfos[handle - 1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	}
 
-	m_usedSlots[handle] = true;
-
-	// 0 is reserved as null handle
-	return handle + 1;
+	return handle;
 }
 
 void VEngine::VKTextureLoader::free(TextureHandle handle)
 {
-	assert(handle);
+	// free handle
+	assert(m_freeHandleCount < RendererConsts::TEXTURE_ARRAY_SIZE);
+	m_freeHandles[m_freeHandleCount] = handle;
+	++m_freeHandleCount;
+	--allocatedCount;
 
-	// 0 is reserved as null handle
-	--handle;
+	// destroy resources
+	vkDestroyImageView(g_context.m_device, m_views[handle], nullptr);
+	g_context.m_allocator.destroyImage(m_images[handle], m_allocationHandles[handle]);
 
-	assert(m_usedSlots[handle]);
-
-	VKTexture &texture = m_textures[handle];
-
-	// destroy view
-	vkDestroyImageView(g_context.m_device, texture.m_view, nullptr);
-
-	// destroy sampler
-	vkDestroySampler(g_context.m_device, texture.m_sampler, nullptr);
-
-	// destroy image
-	texture.m_image.destroy();
-	
 	// clear texture
-	memset(&texture, 0, sizeof(texture));
+	m_views[handle] = VK_NULL_HANDLE;
+	m_images[handle] = VK_NULL_HANDLE;
+	m_allocationHandles[handle] = nullptr;
 
 	// set VkDescriptorImageInfo to dummy texture
-	m_descriptorImageInfos[handle].sampler = m_dummyTexture.m_sampler;
-	m_descriptorImageInfos[handle].imageView = m_dummyTexture.m_view;
-	m_descriptorImageInfos[handle].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	m_usedSlots[handle] = false;
+	// valid handles start from 1, but we also want to use the first element in m_descriptorImageInfos too, so subtract 1
+	m_descriptorImageInfos[handle - 1].sampler = VK_NULL_HANDLE;
+	m_descriptorImageInfos[handle - 1].imageView = m_views[0];
+	m_descriptorImageInfos[handle - 1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 void VEngine::VKTextureLoader::getDescriptorImageInfos(const VkDescriptorImageInfo **data, size_t &count)
