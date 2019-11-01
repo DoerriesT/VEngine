@@ -27,6 +27,11 @@ namespace VEngine
 		constexpr uint32_t VOXEL_SCENE_HEIGHT = 64;
 		constexpr uint32_t VOXEL_SCENE_DEPTH = 128;
 		constexpr float VOXEL_SCENE_BASE_SIZE = 0.25f;
+		constexpr uint32_t IRRADIANCE_VOLUME_CASCADES = 3;
+		constexpr uint32_t IRRADIANCE_VOLUME_WIDTH = 64;
+		constexpr uint32_t IRRADIANCE_VOLUME_HEIGHT = 32;
+		constexpr uint32_t IRRADIANCE_VOLUME_DEPTH = 64;
+		constexpr float IRRADIANCE_VOLUME_BASE_SIZE = 0.5f;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

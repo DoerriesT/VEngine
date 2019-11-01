@@ -163,7 +163,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
-	// voxel image
+	// voxel scene image
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
@@ -183,6 +183,31 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_voxelSceneImage.create(imageCreateInfo, allocCreateInfo);
+	}
+
+	// irradiance volume images
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = RendererConsts::IRRADIANCE_VOLUME_WIDTH;
+		imageCreateInfo.extent.height = RendererConsts::IRRADIANCE_VOLUME_DEPTH; // width and depth are same size
+		imageCreateInfo.extent.depth = RendererConsts::IRRADIANCE_VOLUME_HEIGHT * 2 // both positive and negative direction is in same image
+			* RendererConsts::IRRADIANCE_VOLUME_CASCADES; // keep all cascades in same image by extending image depth
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_irradianceVolumeXAxisImage.create(imageCreateInfo, allocCreateInfo);
+		m_irradianceVolumeYAxisImage.create(imageCreateInfo, allocCreateInfo);
+		m_irradianceVolumeZAxisImage.create(imageCreateInfo, allocCreateInfo);
 	}
 
 	// mappable blocks

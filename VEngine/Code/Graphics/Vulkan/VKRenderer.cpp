@@ -34,6 +34,7 @@
 #include "Pass/ScreenSpaceVoxelizationPass.h"
 #include "Pass/ClearVoxelsPass.h"
 #include "Pass/VoxelDebugPass.h"
+#include "Pass/IrradianceVolumeDebugPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -259,6 +260,33 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		ImageHandle imageHandle = graph.importImage(desc, voxelSceneImage.getImage(), &m_renderResources->m_voxelSceneImageQueue, &m_renderResources->m_voxelSceneImageResourceState);
 		voxelSceneImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+	}
+
+	ImageViewHandle irradianceVolumeImageViewHandles[3];
+	{
+		ImageDescription desc = {};
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = RendererConsts::IRRADIANCE_VOLUME_WIDTH;
+		desc.m_height = RendererConsts::IRRADIANCE_VOLUME_DEPTH;
+		desc.m_depth = RendererConsts::IRRADIANCE_VOLUME_HEIGHT * 2 * RendererConsts::IRRADIANCE_VOLUME_CASCADES;
+		desc.m_format = m_renderResources->m_irradianceVolumeXAxisImage.getFormat();
+		desc.m_imageType = VK_IMAGE_TYPE_3D;
+
+		ImageHandle imageHandle = 0;
+
+		desc.m_name = "Irradiance Volume X-Axis Image";
+		imageHandle = graph.importImage(desc, m_renderResources->m_irradianceVolumeXAxisImage.getImage(), &m_renderResources->m_irradianceVolumeXAxisImageQueue, &m_renderResources->m_irradianceVolumeXAxisImageResourceState);
+		irradianceVolumeImageViewHandles[0] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+
+		desc.m_name = "Irradiance Volume Y-Axis Image";
+		imageHandle = graph.importImage(desc, m_renderResources->m_irradianceVolumeYAxisImage.getImage(), &m_renderResources->m_irradianceVolumeYAxisImageQueue, &m_renderResources->m_irradianceVolumeYAxisImageResourceState);
+		irradianceVolumeImageViewHandles[1] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+
+		desc.m_name = "Irradiance Volume Z-Axis Image";
+		imageHandle = graph.importImage(desc, m_renderResources->m_irradianceVolumeZAxisImage.getImage(), &m_renderResources->m_irradianceVolumeZAxisImageQueue, &m_renderResources->m_irradianceVolumeZAxisImageResourceState);
+		irradianceVolumeImageViewHandles[2] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
 	}
 
 	// create graph managed resources
@@ -771,7 +799,19 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelDebugData.m_colorImageHandle = lightImageViewHandle;
 	voxelDebugData.m_depthImageHandle = depthImageViewHandle;
 
-	VoxelDebugPass::addToGraph(graph, voxelDebugData);
+	//VoxelDebugPass::addToGraph(graph, voxelDebugData);
+
+
+	IrradianceVolumeDebugPass::Data irradianceVolumeDebugData;
+	irradianceVolumeDebugData.m_passRecordContext = &passRecordContext;
+	irradianceVolumeDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
+	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
+	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
+
+	IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
 
 
 	// calculate luminance histograms

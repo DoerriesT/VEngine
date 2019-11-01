@@ -22,6 +22,9 @@ namespace VEngine
 		VKImage m_imGuiFontsTexture;
 		VKImage m_dummyImage;
 		VKImage m_voxelSceneImage;
+		VKImage m_irradianceVolumeXAxisImage;
+		VKImage m_irradianceVolumeYAxisImage;
+		VKImage m_irradianceVolumeZAxisImage;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
@@ -68,6 +71,12 @@ namespace VEngine
 		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
 		VkQueue m_voxelSceneImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_voxelSceneImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeXAxisImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_irradianceVolumeXAxisImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeYAxisImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_irradianceVolumeYAxisImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeZAxisImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_irradianceVolumeZAxisImageResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;
