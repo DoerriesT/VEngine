@@ -243,49 +243,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		avgLuminanceBufferViewHandle = graph.createBufferView({ desc.m_name, avgLuminanceBufferHandle, 0, desc.m_size });
 	}
 
-	ImageViewHandle voxelImageViewHandles[RendererConsts::VOXEL_SCENE_CASCADES];
+	ImageViewHandle voxelSceneImageViewHandle;
 	{
-		auto &voxelSceneImages = m_renderResources->m_voxelSceneImages;
+		auto &voxelSceneImage = m_renderResources->m_voxelSceneImage;
 		ImageDescription desc = {};
 		desc.m_name = "Voxel Image";
 		desc.m_concurrent = false;
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = RendererConsts::VOXEL_SCENE_WIDTH;
-		desc.m_height = RendererConsts::VOXEL_SCENE_HEIGHT;
-		desc.m_depth = RendererConsts::VOXEL_SCENE_DEPTH;
-		desc.m_format = voxelSceneImages[0].getFormat();
+		desc.m_height = RendererConsts::VOXEL_SCENE_DEPTH;
+		desc.m_depth = RendererConsts::VOXEL_SCENE_HEIGHT * RendererConsts::VOXEL_SCENE_CASCADES;
+		desc.m_format = voxelSceneImage.getFormat();
 		desc.m_imageType = VK_IMAGE_TYPE_3D;
 
-		for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
-		{
-			ImageHandle imageHandle = graph.importImage(desc, voxelSceneImages[i].getImage(), &m_renderResources->m_voxelSceneImageQueue[i], &m_renderResources->m_voxelSceneImageResourceState[i]);
-			voxelImageViewHandles[i] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
-		}
+		ImageHandle imageHandle = graph.importImage(desc, voxelSceneImage.getImage(), &m_renderResources->m_voxelSceneImageQueue, &m_renderResources->m_voxelSceneImageResourceState);
+		voxelSceneImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
 	}
 
 	// create graph managed resources
-
-	// indirect draw buffer
-	BufferViewHandle voxelDebugIndirectBufferHandle;
-	{
-		BufferDescription bufferDesc{};
-		bufferDesc.m_name = "Voxel Indirect Draw Buffer";
-		bufferDesc.m_size = glm::max(32ull, sizeof(VkDrawIndexedIndirectCommand));
-
-		voxelDebugIndirectBufferHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
-	}
-
-	// voxel debug draw positions
-	BufferViewHandle voxelDebugDrawPositions;
-	{
-		BufferDescription bufferDesc{};
-		bufferDesc.m_name = "Voxel Debug Draw Positions";
-		bufferDesc.m_size = glm::max(32u, 128u * 64u * 128u * 4 * 4);
-
-		voxelDebugDrawPositions = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
-	}
-
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyLengthImageViewHandle = VKResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
@@ -765,10 +741,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
-	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
-	{
-		clearVoxelsPassData.m_voxelImageHandles[i] = voxelImageViewHandles[i];
-	}
+	clearVoxelsPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
@@ -786,10 +759,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 	ssVoxelPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
-	{
-		ssVoxelPassData.m_voxelSceneImageHandles[i] = voxelImageViewHandles[i];
-	}
+	ssVoxelPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 
 	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
@@ -797,13 +767,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VoxelDebugPass::Data voxelDebugData;
 	voxelDebugData.m_passRecordContext = &passRecordContext;
 	voxelDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
-	voxelDebugData.m_voxelImageHandle = voxelImageViewHandles[g_debugVoxelCascadeIndex];
+	voxelDebugData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	voxelDebugData.m_colorImageHandle = lightImageViewHandle;
 	voxelDebugData.m_depthImageHandle = depthImageViewHandle;
-	voxelDebugData.m_indirectBufferHandle = voxelDebugIndirectBufferHandle;
-	voxelDebugData.m_voxelPositionsHandle = voxelDebugDrawPositions;
 
-	//VoxelDebugPass::addToGraph(graph, voxelDebugData);
+	VoxelDebugPass::addToGraph(graph, voxelDebugData);
 
 
 	// calculate luminance histograms

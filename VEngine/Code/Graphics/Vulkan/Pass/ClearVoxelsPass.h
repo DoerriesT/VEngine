@@ -11,7 +11,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			ImageViewHandle m_voxelImageHandles[RendererConsts::VOXEL_SCENE_CASCADES];
+			ImageViewHandle m_voxelSceneImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

@@ -164,14 +164,13 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 	}
 
 	// voxel image
-	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
 		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 		imageCreateInfo.extent.width = RendererConsts::VOXEL_SCENE_WIDTH;
-		imageCreateInfo.extent.height = RendererConsts::VOXEL_SCENE_HEIGHT;
-		imageCreateInfo.extent.depth = RendererConsts::VOXEL_SCENE_DEPTH;
+		imageCreateInfo.extent.height = RendererConsts::VOXEL_SCENE_DEPTH; // width and depth are same size
+		imageCreateInfo.extent.depth = RendererConsts::VOXEL_SCENE_HEIGHT * RendererConsts::VOXEL_SCENE_CASCADES; // keep all cascades in same image by extending image depth
 		imageCreateInfo.mipLevels = 1;
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -183,9 +182,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_voxelSceneImages[i].create(imageCreateInfo, allocCreateInfo);
-		m_voxelSceneImageQueue[i] = RenderGraph::undefinedQueue;
-		m_voxelSceneImageResourceState[i] = ResourceState::UNDEFINED;
+		m_voxelSceneImage.create(imageCreateInfo, allocCreateInfo);
 	}
 
 	// mappable blocks
@@ -822,8 +819,8 @@ void VEngine::VKRenderResources::updateTextureArray(const VkDescriptorImageInfo 
 	vkDeviceWaitIdle(g_context.m_device);
 	vkUpdateDescriptorSets(g_context.m_device, 2, writes, 0, nullptr);
 
-	write.dstSet = m_computeTextureDescriptorSet;
-	samplerWrite.dstSet = m_computeTextureDescriptorSet;
+	writes[0].dstSet = m_computeTextureDescriptorSet;
+	writes[1].dstSet = m_computeTextureDescriptorSet;
 	vkUpdateDescriptorSets(g_context.m_device, 2, writes, 0, nullptr);
 }
 

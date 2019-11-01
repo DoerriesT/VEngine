@@ -22,7 +22,7 @@ namespace VEngine
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
-			ImageViewHandle m_voxelSceneImageHandles[RendererConsts::VOXEL_SCENE_CASCADES];
+			ImageViewHandle m_voxelSceneImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

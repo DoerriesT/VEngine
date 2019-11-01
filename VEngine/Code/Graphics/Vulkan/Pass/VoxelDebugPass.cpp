@@ -21,11 +21,9 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_voxelImageHandle), ResourceState::READ_TEXTURE_VERTEX_SHADER},
+		{ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_TEXTURE_VERTEX_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 		{ResourceViewHandle(data.m_colorImageHandle), ResourceState::WRITE_ATTACHMENT},
-		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
-		{ResourceViewHandle(data.m_voxelPositionsHandle), ResourceState::READ_STORAGE_BUFFER_VERTEX_SHADER},
 	};
 
 	graph.addPass("Voxel Debug", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -87,6 +85,10 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			VKGraphicsPipelineDescription pipelineDesc;
 			{
 				strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/voxelDebug_vert.spv");
+				pipelineDesc.m_vertexShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
+				pipelineDesc.m_vertexShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
+				pipelineDesc.m_vertexShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
+
 				strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/voxelDebug_frag.spv");
 
 				pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -139,8 +141,7 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			{
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelImageHandle, ResourceState::READ_TEXTURE_VERTEX_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), VOXEL_IMAGE_BINDING);
-				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_voxelPositionsHandle), VOXEL_POSITIONS_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_TEXTURE_VERTEX_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), VOXEL_IMAGE_BINDING);
 
 				writer.commit();
 			}
@@ -168,12 +169,12 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
 			pushConsts.scale = RendererConsts::VOXEL_SCENE_BASE_SIZE * static_cast<float>(1 << data.m_cascadeIndex);
 			pushConsts.cameraPosition = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
+			pushConsts.cascadeIndex = data.m_cascadeIndex;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_boxIndexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-			//vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(vkCmdDrawIndexedIndirect));
 			vkCmdDrawIndexed(cmdBuf, 36, RendererConsts::VOXEL_SCENE_WIDTH *RendererConsts::VOXEL_SCENE_HEIGHT *RendererConsts::VOXEL_SCENE_DEPTH, 0, 0, 0);
 
 			vkCmdEndRenderPass(cmdBuf);
