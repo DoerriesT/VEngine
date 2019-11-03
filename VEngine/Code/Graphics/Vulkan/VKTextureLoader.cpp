@@ -6,6 +6,7 @@
 #include <gli/load.hpp>
 #include "VKContext.h"
 #include "VKUtility.h"
+#include "GlobalVar.h"
 
 VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 	:m_freeHandles(new TextureHandle[RendererConsts::TEXTURE_ARRAY_SIZE]),
@@ -42,6 +43,16 @@ VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 
 		g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[0], m_allocationHandles[0]);
 
+		if (g_vulkanDebugCallBackEnabled)
+		{
+			VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+			info.objectType = VK_OBJECT_TYPE_IMAGE;
+			info.objectHandle = (uint64_t)m_images[0];
+			info.pObjectName = "Dummy Image";
+
+			vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+		}
+
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		subresourceRange.baseMipLevel = 0;
@@ -63,6 +74,16 @@ VEngine::VKTextureLoader::VKTextureLoader(VKBuffer &stagingBuffer)
 		if (vkCreateImageView(g_context.m_device, &viewInfo, nullptr, &m_views[0]) != VK_SUCCESS)
 		{
 			Utility::fatalExit("Failed to create image view!", EXIT_FAILURE);
+		}
+
+		if (g_vulkanDebugCallBackEnabled)
+		{
+			VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+			info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+			info.objectHandle = (uint64_t)m_views[0];
+			info.pObjectName = "Dummy Image View";
+
+			vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
 		}
 	}
 
@@ -152,6 +173,16 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 		g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_images[handle], m_allocationHandles[handle]);
 	}
 
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		info.objectType = VK_OBJECT_TYPE_IMAGE;
+		info.objectHandle = (uint64_t)m_images[handle];
+		info.pObjectName = filepath;
+
+		vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+	}
+
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subresourceRange.baseMipLevel = 0;
@@ -201,6 +232,16 @@ VEngine::TextureHandle VEngine::VKTextureLoader::load(const char *filepath)
 		{
 			Utility::fatalExit("Failed to create image view!", -1);
 		}
+	}
+
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+		info.objectHandle = (uint64_t)m_views[handle];
+		info.pObjectName = filepath;
+
+		vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
 	}
 
 	// create VkDescriptorImageInfo

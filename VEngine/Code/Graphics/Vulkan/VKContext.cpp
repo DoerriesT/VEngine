@@ -351,6 +351,27 @@ namespace VEngine
 
 		volkLoadDevice(m_device);
 
+		// try to load VK_EXT_debug_utils functions from device (Radeon GPU Profiler can only see debug info if the functions are loaded from the device)
+		if (g_vulkanDebugCallBackEnabled)
+		{
+			auto replace = [](PFN_vkVoidFunction oldFp, PFN_vkVoidFunction newFp) 
+			{
+				// loading from device without having RGP running yields nullptr as these functions are instance functions and need to be loaded from the instance instead
+				return newFp ? newFp : oldFp; 
+			};
+			vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkCmdBeginDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkCmdBeginDebugUtilsLabelEXT"));
+			vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkCmdEndDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkCmdEndDebugUtilsLabelEXT"));
+			vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkCmdInsertDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkCmdInsertDebugUtilsLabelEXT"));
+			vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)replace((PFN_vkVoidFunction)vkCreateDebugUtilsMessengerEXT, vkGetDeviceProcAddr(m_device, "vkCreateDebugUtilsMessengerEXT"));
+			vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)replace((PFN_vkVoidFunction)vkDestroyDebugUtilsMessengerEXT, vkGetDeviceProcAddr(m_device, "vkDestroyDebugUtilsMessengerEXT"));
+			vkQueueBeginDebugUtilsLabelEXT = (PFN_vkQueueBeginDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkQueueBeginDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkQueueBeginDebugUtilsLabelEXT"));
+			vkQueueEndDebugUtilsLabelEXT = (PFN_vkQueueEndDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkQueueEndDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkQueueEndDebugUtilsLabelEXT"));
+			vkQueueInsertDebugUtilsLabelEXT = (PFN_vkQueueInsertDebugUtilsLabelEXT)replace((PFN_vkVoidFunction)vkQueueInsertDebugUtilsLabelEXT, vkGetDeviceProcAddr(m_device, "vkQueueInsertDebugUtilsLabelEXT"));
+			vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)replace((PFN_vkVoidFunction)vkSetDebugUtilsObjectNameEXT, vkGetDeviceProcAddr(m_device, "vkSetDebugUtilsObjectNameEXT"));
+			vkSetDebugUtilsObjectTagEXT = (PFN_vkSetDebugUtilsObjectTagEXT)replace((PFN_vkVoidFunction)vkSetDebugUtilsObjectTagEXT, vkGetDeviceProcAddr(m_device, "vkSetDebugUtilsObjectTagEXT"));
+			vkSubmitDebugUtilsMessageEXT = (PFN_vkSubmitDebugUtilsMessageEXT)replace((PFN_vkVoidFunction)vkSubmitDebugUtilsMessageEXT, vkGetDeviceProcAddr(m_device, "vkSubmitDebugUtilsMessageEXT"));
+		}
+
 		// create command pools
 		{
 			VkCommandPoolCreateInfo graphicsPoolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };

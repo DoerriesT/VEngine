@@ -5,6 +5,7 @@
 #include <stack>
 #include <algorithm>
 #include "VKUtility.h"
+#include "GlobalVar.h"
 
 const VkQueue VEngine::RenderGraph::undefinedQueue = VkQueue(~size_t());
 
@@ -353,6 +354,16 @@ void VEngine::RenderGraph::createResources()
 				Utility::fatalExit("Failed to create buffer!", EXIT_FAILURE);
 			}
 		}
+
+		if (g_vulkanDebugCallBackEnabled)
+		{
+			VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+			info.objectType = resDesc.m_image ? VK_OBJECT_TYPE_IMAGE : VK_OBJECT_TYPE_BUFFER;
+			info.objectHandle = resDesc.m_image ? (uint64_t)m_imageBuffers[resourceIndex].image : (uint64_t)m_imageBuffers[resourceIndex].buffer;
+			info.pObjectName = resDesc.m_name;
+
+			vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+		}
 	}
 
 	// create views
@@ -378,6 +389,16 @@ void VEngine::RenderGraph::createResources()
 			{
 				Utility::fatalExit("Failed to create image view!", EXIT_FAILURE);
 			}
+
+			if (g_vulkanDebugCallBackEnabled)
+			{
+				VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+				info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+				info.objectHandle = (uint64_t)m_imageBufferViews[viewIndex].imageView;
+				info.pObjectName = viewDesc.m_name;
+
+				vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+			}
 		}
 		else if (viewDesc.m_format != VK_FORMAT_UNDEFINED)
 		{
@@ -390,6 +411,16 @@ void VEngine::RenderGraph::createResources()
 			if (vkCreateBufferView(g_context.m_device, &viewInfo, nullptr, &m_imageBufferViews[viewIndex].bufferView) != VK_SUCCESS)
 			{
 				Utility::fatalExit("Failed to create buffer view!", EXIT_FAILURE);
+			}
+
+			if (g_vulkanDebugCallBackEnabled)
+			{
+				VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+				info.objectType = VK_OBJECT_TYPE_BUFFER_VIEW;
+				info.objectHandle = (uint64_t)m_imageBufferViews[viewIndex].bufferView;
+				info.pObjectName = viewDesc.m_name;
+
+				vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
 			}
 		}
 	}
@@ -748,6 +779,12 @@ void VEngine::RenderGraph::record()
 	m_commandBuffers.resize(m_passHandleOrder.size() + 3);
 
 	// release passes for external resources
+	const char *releasePassNames[]
+	{
+		"release barriers for external resources (graphics queue)",
+		"release barriers for external resources (compute queue)",
+		"release barriers for external resources (transfer queue)",
+	};
 	for (size_t i = 0; i < 3; ++i)
 	{
 		if (m_externalSemaphoreSignalCounts[i])
@@ -762,6 +799,13 @@ void VEngine::RenderGraph::record()
 				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 				vkBeginCommandBuffer(cmdBuf, &beginInfo);
+
+				if (g_vulkanDebugCallBackEnabled)
+				{
+					VkDebugUtilsLabelEXT label{ VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+					label.pLabelName = releasePassNames[i];
+					vkCmdInsertDebugUtilsLabelEXT(cmdBuf, &label);
+				}
 
 				vkCmdPipelineBarrier(cmdBuf, m_externalReleaseMasks[i], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
 					static_cast<uint32_t>(m_externalReleaseBufferBarriers[i].size()), m_externalReleaseBufferBarriers[i].data(),
@@ -794,6 +838,13 @@ void VEngine::RenderGraph::record()
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 			vkBeginCommandBuffer(cmdBuf, &beginInfo);
+
+			if (g_vulkanDebugCallBackEnabled)
+			{
+				VkDebugUtilsLabelEXT label{ VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+				label.pLabelName = m_passNames[passHandle];
+				vkCmdBeginDebugUtilsLabelEXT(cmdBuf, &label);
+			}
 
 			VkMemoryBarrier memoryBarrier{ VK_STRUCTURE_TYPE_MEMORY_BARRIER };
 			memoryBarrier.srcAccessMask = pass.m_memoryBarrierSrcAccessMask;
@@ -852,6 +903,11 @@ void VEngine::RenderGraph::record()
 			if (recordTimings)
 			{
 				vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 3);
+			}
+
+			if (g_vulkanDebugCallBackEnabled)
+			{
+				vkCmdEndDebugUtilsLabelEXT(cmdBuf);
 			}
 
 			// end recording
@@ -1296,6 +1352,16 @@ VEngine::ImageHandle VEngine::RenderGraph::importImage(const ImageDescription &i
 
 	m_externalResourceInfo.push_back({ queues, resourceStates });
 
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		info.objectType = VK_OBJECT_TYPE_IMAGE;
+		info.objectHandle = (uint64_t)image;
+		info.pObjectName = imageDesc.m_name;
+
+		vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+	}
+
 	return ImageHandle(m_resourceDescriptions.size());
 }
 
@@ -1321,6 +1387,16 @@ VEngine::BufferHandle VEngine::RenderGraph::importBuffer(const BufferDescription
 	m_imageBuffers.back().buffer = buffer;
 
 	m_externalResourceInfo.push_back({ queue, resourceState });
+
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		info.objectType = VK_OBJECT_TYPE_BUFFER;
+		info.objectHandle = (uint64_t)buffer;
+		info.pObjectName = bufferDesc.m_name;
+
+		vkSetDebugUtilsObjectNameEXT(g_context.m_device, &info);
+	}
 
 	return BufferHandle(m_resourceDescriptions.size());
 }
