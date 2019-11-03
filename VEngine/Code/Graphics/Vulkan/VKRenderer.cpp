@@ -34,6 +34,7 @@
 #include "Pass/ScreenSpaceVoxelizationPass.h"
 #include "Pass/ClearVoxelsPass.h"
 #include "Pass/VoxelDebugPass.h"
+#include "Pass/VoxelDebug2Pass.h"
 #include "Pass/IrradianceVolumeDebugPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -802,6 +803,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//VoxelDebugPass::addToGraph(graph, voxelDebugData);
 
 
+	VoxelDebug2Pass::Data voxelDebug2Data;
+	voxelDebug2Data.m_passRecordContext = &passRecordContext;
+	voxelDebug2Data.m_cascadeIndex = g_debugVoxelCascadeIndex;
+	voxelDebug2Data.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
+	voxelDebug2Data.m_colorImageHandle = lightImageViewHandle;
+
+	VoxelDebug2Pass::addToGraph(graph, voxelDebug2Data);
+
+
 	IrradianceVolumeDebugPass::Data irradianceVolumeDebugData;
 	irradianceVolumeDebugData.m_passRecordContext = &passRecordContext;
 	irradianceVolumeDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
@@ -811,7 +821,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
 	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
 
-	IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
+	//IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
 
 
 	// calculate luminance histograms
