@@ -176,8 +176,10 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.h" />
@@ -186,6 +188,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
@@ -267,8 +270,10 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.cpp" />
@@ -277,6 +282,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />

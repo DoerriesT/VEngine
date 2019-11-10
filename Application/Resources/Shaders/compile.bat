@@ -39,5 +39,8 @@ glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_frag.frag -o voxelDebug_fr
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_vert.vert -o irradianceVolumeDebug_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_frag.frag -o irradianceVolumeDebug_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug2_comp.comp -o voxelDebug2_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c fillLightingQueues_comp.comp -o fillLightingQueues_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c updateQueueProbability_comp.comp -o updateQueueProbability_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c lightIrradianceVolume_comp.comp -o lightIrradianceVolume_comp.spv
 
 pause

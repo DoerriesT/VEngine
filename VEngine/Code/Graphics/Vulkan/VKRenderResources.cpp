@@ -210,6 +210,28 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		m_irradianceVolumeZAxisImage.create(imageCreateInfo, allocCreateInfo);
 	}
 
+	// irradiance volume age image
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+		imageCreateInfo.format = VK_FORMAT_R8_UNORM;
+		imageCreateInfo.extent.width = RendererConsts::IRRADIANCE_VOLUME_WIDTH;
+		imageCreateInfo.extent.height = RendererConsts::IRRADIANCE_VOLUME_DEPTH; // width and depth are same size
+		imageCreateInfo.extent.depth = RendererConsts::IRRADIANCE_VOLUME_HEIGHT * RendererConsts::IRRADIANCE_VOLUME_CASCADES; // keep all cascades in same image by extending image depth
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT| VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_irradianceVolumeAgeImage.create(imageCreateInfo, allocCreateInfo);
+	}
+
 	// mappable blocks
 	{
 		// ubo
@@ -395,6 +417,26 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 		m_subMeshBoundingBoxBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	// lighting queue buffers
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = 4098 * 4;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			m_irradianceVolumeQueueBuffers[i].create(bufferCreateInfo, allocCreateInfo);
+			m_irradianceVolumeQueueBuffersQueue[i] = RenderGraph::undefinedQueue;
+			m_irradianceVolumeQueueBuffersResourceState[i] = ResourceState::UNDEFINED;
+		}
 	}
 
 	// shadow sampler

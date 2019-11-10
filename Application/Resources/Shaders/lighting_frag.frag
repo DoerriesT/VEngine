@@ -11,6 +11,11 @@
 #include "lighting_bindings.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cGridWidth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cGridHeight = 32;
+layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cCascades = 3;
+layout(constant_id = IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
 
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
@@ -18,6 +23,7 @@ layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler3D uIrradianceVolumeImages[3];
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
 #endif // SSAO_ENABLED
@@ -102,6 +108,20 @@ vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLi
         uint nColorIndex = uint(floor(log2(float(nNumLightsInThisTile)) / log2(fLogBase)));
         return kRadarColors[nColorIndex];
     }
+}
+
+vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
+{
+	vec3 nSquared = N * N;
+	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
+	tc = tc.xzy;
+	tc.z *= 0.5;
+	vec3 tcz = tc.zzz + isNegative;
+	tcz = tcz * (1.0 / cCascades) + float(cascadeIndex) / cCascades;
+	
+	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
+			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
+			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
 }
 
 float signNotZero(in float k) 
@@ -268,7 +288,32 @@ void main()
 #if SSAO_ENABLED
 		visibility = texelFetch(uOcclusionImage, ivec2(gl_FragCoord.xy), 0).x;
 #endif // SSAO_ENABLED
-		result += 1.0 * lightingParams.albedo * visibility;
+		
+		mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0, uPushConsts.invViewMatrixRow1, uPushConsts.invViewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
+		vec4 worldSpacePos4 = invViewMatrix * vec4(lightingParams.viewSpacePosition, 1.0);
+		vec3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
+
+		const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
+		float currentGridScale = cGridBaseScale;
+		bool foundCascade = false;
+		// search for highest resolution cascade containing the world space pos
+		for (int i = 0; i < cCascades; ++i)
+		{
+			// calculate coordinate in world space fixed coordinate system (scaled to voxel size)
+			vec3 coord = worldSpacePos * currentGridScale + 0.5;
+			vec3 offset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
+
+			// if coordinate is inside grid, insert value into scene voxel representation
+			if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset)))
+			{
+				result += sampleAmbientCube((invViewMatrix * vec4(lightingParams.N, 0.0)).xyz, fract(coord / vec3(gridSize)), i) * lightingParams.albedo * visibility;
+				foundCascade = true;
+				break;
+			}
+			currentGridScale *= 0.5;
+		}
+		
+		result += foundCascade ? vec3(0.0) : lightingParams.albedo * visibility;
 	}
 	
 	// directional lights

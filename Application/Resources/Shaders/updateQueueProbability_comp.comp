@@ -1,0 +1,44 @@
+#version 450
+
+#include "updateQueueProbability_bindings.h"
+
+struct VkDispatchIndirectCommand 
+{
+	uint x;
+	uint y;
+	uint z;
+};
+
+layout(set = QUEUE_BUFFER_SET, binding = QUEUE_BUFFER_BINDING) buffer QUEUE_BUFFER
+{
+	uint uQueueSize;
+	float uP;
+	uint uQueue[];
+};
+
+layout(set = PREV_QUEUE_BUFFER_SET, binding = PREV_QUEUE_BUFFER_BINDING) readonly buffer PREV_QUEUE_BUFFER
+{
+	uint uPrevQueueSize;
+	float uPrevP;
+	uint uPrevQueue[];
+};
+
+layout(set = INDIRECT_CMD_SET, binding = INDIRECT_CMD_BINDING) buffer INDIRECT_CMD_BUFFER
+{
+	VkDispatchIndirectCommand uCmd;
+};
+
+layout(constant_id = QUEUE_CAPACITY_CONST_ID) const uint cQueueCapacity = 4096;
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main() 
+{
+	const uint passedCount = uPrevQueueSize;
+	const float factor = passedCount < cQueueCapacity ? 0.9999 : passedCount > cQueueCapacity ? 1.0001 : 1.0;
+	uP = uPrevP * factor;
+	uQueueSize = 0;
+	uCmd.x = 0;
+	uCmd.y = 1;
+	uCmd.z = 1;
+}

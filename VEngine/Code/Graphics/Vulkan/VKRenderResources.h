@@ -25,6 +25,7 @@ namespace VEngine
 		VKImage m_irradianceVolumeXAxisImage;
 		VKImage m_irradianceVolumeYAxisImage;
 		VKImage m_irradianceVolumeZAxisImage;
+		VKImage m_irradianceVolumeAgeImage;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
@@ -45,6 +46,7 @@ namespace VEngine
 		VKBuffer m_subMeshBoundingBoxBuffer;
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_irradianceVolumeQueueBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 
 		// mappable buffer blocks
 		std::unique_ptr<VKMappableBufferBlock> m_mappableUBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
@@ -77,6 +79,10 @@ namespace VEngine
 		ResourceState m_irradianceVolumeYAxisImageResourceState = ResourceState::UNDEFINED;
 		VkQueue m_irradianceVolumeZAxisImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_irradianceVolumeZAxisImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeAgeImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_irradianceVolumeAgeImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeQueueBuffersQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_irradianceVolumeQueueBuffersResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;

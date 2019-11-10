@@ -5,12 +5,14 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace ClearVoxelsPass
+	namespace FillLightingQueuesPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			ImageViewHandle m_voxelSceneImageHandle;
+			ImageViewHandle m_ageImageHandle;
+			BufferViewHandle m_queueBufferHandle;
+			BufferViewHandle m_indirectBufferHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
