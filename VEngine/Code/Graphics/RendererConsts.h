@@ -32,6 +32,7 @@ namespace VEngine
 		constexpr uint32_t IRRADIANCE_VOLUME_HEIGHT = 32;
 		constexpr uint32_t IRRADIANCE_VOLUME_DEPTH = 64;
 		constexpr float IRRADIANCE_VOLUME_BASE_SIZE = 0.5f;
+		constexpr uint32_t IRRADIANCE_VOLUME_QUEUE_CAPACITY = 1024;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

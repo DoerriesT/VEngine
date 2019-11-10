@@ -40,7 +40,7 @@ void VEngine::LightIrradianceVolumePass::addToGraph(RenderGraph &graph, const Da
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(QUEUE_CAPACITY_CONST_ID, 4096);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY);
 
 				pipelineDesc.finalize();
 			}

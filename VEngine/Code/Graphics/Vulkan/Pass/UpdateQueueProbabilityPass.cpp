@@ -44,7 +44,7 @@ void VEngine::UpdateQueueProbabilityPass::addToGraph(RenderGraph &graph, const D
 			VKComputePipelineDescription pipelineDesc;
 			{
 				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/updateQueueProbability_comp.spv");
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(QUEUE_CAPACITY_CONST_ID, 4096);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY);
 
 				pipelineDesc.finalize();
 			}
