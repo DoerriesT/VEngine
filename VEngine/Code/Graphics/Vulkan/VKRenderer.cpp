@@ -914,7 +914,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
 	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
 
-	IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
+	//IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
 
 
 	// calculate luminance histograms
