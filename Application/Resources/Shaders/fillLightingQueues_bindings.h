@@ -4,6 +4,10 @@
 #define QUEUE_BUFFER_BINDING 1
 #define INDIRECT_CMD_SET 0
 #define INDIRECT_CMD_BINDING 2
+#define CULLED_BUFFER_SET 0
+#define CULLED_BUFFER_BINDING 3
+#define HIZ_IMAGE_SET 0
+#define HIZ_IMAGE_BINDING 4
 
 #define GRID_WIDTH_CONST_ID 0
 #define GRID_HEIGHT_CONST_ID 1
@@ -14,6 +18,8 @@
 
 struct PushConsts
 {
+	mat4 viewProjectionMatrix;
 	vec4 cameraPos;
+	vec2 resolution;
 	float time;
 };

@@ -122,24 +122,24 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		g_context.m_allocator.unmapMemory(buffer.getAllocation());
 	}
 
-	//// read back occlusion cull stats
-	//{
-	//	auto &buffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx];
-	//	uint32_t *data;
-	//	g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
-	//
-	//	VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
-	//	range.memory = buffer.getDeviceMemory();
-	//	range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
-	//	range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
-	//
-	//	vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
-	//	m_opaqueDraws = *data;
-	//	m_totalOpaqueDraws = m_totalOpaqueDrawsPending[commonData.m_curResIdx];
-	//	m_totalOpaqueDrawsPending[commonData.m_curResIdx] = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	//
-	//	g_context.m_allocator.unmapMemory(buffer.getAllocation());
-	//}
+	// read back occlusion cull stats
+	{
+		auto &buffer = m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx];
+		uint32_t *data;
+		g_context.m_allocator.mapMemory(buffer.getAllocation(), (void **)&data);
+	
+		VkMappedMemoryRange range{ VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+		range.memory = buffer.getDeviceMemory();
+		range.offset = Utility::alignDown(buffer.getOffset(), g_context.m_properties.limits.nonCoherentAtomSize);
+		range.size = Utility::alignUp(buffer.getSize(), g_context.m_properties.limits.nonCoherentAtomSize);
+	
+		vkInvalidateMappedMemoryRanges(g_context.m_device, 1, &range);
+		m_opaqueDraws = *data;
+		m_totalOpaqueDraws = m_totalOpaqueDrawsPending[commonData.m_curResIdx];
+		m_totalOpaqueDrawsPending[commonData.m_curResIdx] = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	
+		g_context.m_allocator.unmapMemory(buffer.getAllocation());
+	}
 
 	// get timing data
 	graph.getTimingInfo(&m_passTimingCount, &m_passTimingData);
@@ -495,33 +495,33 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//
 	//OcclusionCullingPass::addToGraph(graph, occlusionCullingPassData);
 
-	//// depth pyramid
-	//ImageViewHandle depthPyramidImageViewHandle = 0;
-	//{
-	//	auto getMipLevelCount = [](uint32_t w, uint32_t h)
-	//	{
-	//		uint32_t result = 1;
-	//		while (w > 1 || h > 1)
-	//		{
-	//			result++;
-	//			w /= 2;
-	//			h /= 2;
-	//		}
-	//		return result;
-	//	};
-	//	const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
-	//
-	//	ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
-	//
-	//	DepthPyramidPass::Data depthPyramidPassData;
-	//	depthPyramidPassData.m_passRecordContext = &passRecordContext;
-	//	depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-	//	depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
-	//
-	//	//DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
-	//
-	//	depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
-	//}
+	// depth pyramid
+	ImageViewHandle depthPyramidImageViewHandle = 0;
+	{
+		auto getMipLevelCount = [](uint32_t w, uint32_t h)
+		{
+			uint32_t result = 1;
+			while (w > 1 || h > 1)
+			{
+				result++;
+				w /= 2;
+				h /= 2;
+			}
+			return result;
+		};
+		const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
+	
+		ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
+	
+		DepthPyramidPass::Data depthPyramidPassData;
+		depthPyramidPassData.m_passRecordContext = &passRecordContext;
+		depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
+		depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
+	
+		DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
+	
+		depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
+	}
 	//
 	//// HiZ Culling
 	//OcclusionCullingHiZPass::Data occlusionCullingHiZData;
@@ -890,6 +890,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	fillLightingQueuesPassData.m_ageImageHandle = irradianceVolumeAgeImageViewHandle;
 	fillLightingQueuesPassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
 	fillLightingQueuesPassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
+	fillLightingQueuesPassData.m_culledBufferInfo = { m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getBuffer(), 0,m_renderResources->m_occlusionCullStatsReadBackBuffers[commonData.m_curResIdx].getSize() };
+	fillLightingQueuesPassData.m_hizImageHandle = depthPyramidImageViewHandle;
 
 	FillLightingQueuesPass::addToGraph(graph, fillLightingQueuesPassData);
 

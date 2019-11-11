@@ -165,7 +165,8 @@ void VEngine::Engine::start()
 			uint32_t draws = 0;
 			uint32_t totalDraws = 1;
 			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
-			ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
+			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", 64 * 64 * 32 * 3, draws, float(draws) / (64 * 64 * 32 * 3) * 100.0f);
+			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
 		}
 		
 

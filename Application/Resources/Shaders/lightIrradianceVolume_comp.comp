@@ -209,7 +209,7 @@ void main()
 			coord = coord.xzy;
 			
 			float age = imageLoad(uAgeImage, coord - ivec3(0, 0, cascade * cGridHeight * 2) + ivec3(0, 0, cascade * cGridHeight)).x;
-			float alpha = 1.0;//age == 0.0 ? 1.0 : age * 0.05;
+			float alpha = age == 0.0 ? 1.0 : age * 0.25;
 			
 			if (face == 5)
 			{

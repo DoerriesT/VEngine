@@ -10,12 +10,18 @@ struct VkDispatchIndirectCommand
 };
 
 layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING, r8) uniform image3D uAgeImage;
+layout(set = HIZ_IMAGE_SET, binding = HIZ_IMAGE_BINDING) uniform sampler2D uHizImage;
 
 layout(set = QUEUE_BUFFER_SET, binding = QUEUE_BUFFER_BINDING) buffer QUEUE_BUFFER
 {
 	uint uQueueSize;
 	float uP;
 	uint uQueue[];
+};
+
+layout(set = CULLED_BUFFER_SET, binding = CULLED_BUFFER_BINDING) buffer CULLED_BUFFER
+{
+	uint uCulled;
 };
 
 layout(set = INDIRECT_CMD_SET, binding = INDIRECT_CMD_BINDING) buffer INDIRECT_CMD_BUFFER
@@ -81,6 +87,68 @@ void main()
 			
 			// move coordinate to world space fixed coordinate system (toroidal addressing)
 			coord += cameraCoord - (gridSize / 2);
+			
+			// frustum culling
+			bool outsideFrustum = false;
+			{
+				vec4 sBox = vec4(vec2(9999.0), vec2(-9999.0));
+				float maxDepth = -9999.0;
+				float minDepth = 9999.0;
+				ivec3 outCount[2];
+				outCount[0] = ivec3(0);
+				outCount[1] = ivec3(0);
+				for (uint j = 0; j < 8; ++j)
+				{
+					vec4 position = vec4(((j & 0x4) == 0) ? -1.0 : 1.0,
+										((j & 0x2) == 0) ? -1.0 : 1.0,
+										((j & 0x1) == 0) ? -1.0 : 1.0,
+										1.0);
+					position.xyz += coord;
+					position.xyz *= 1.0 / curGridScale;
+					position = uPushConsts.viewProjectionMatrix * position;
+					const bool behindNearPlane = (abs(position.z) > position.w) || (position.z < 0.0);
+					position.xyz /= position.w;
+					
+					outCount[0][0] += position.x < -1 ? 1 : 0;
+					outCount[0][1] += position.y < -1 ? 1 : 0; 
+					outCount[0][2] += behindNearPlane ? 1 : 0; 
+					outCount[1][0] += position.x > 1 ? 1 : 0;
+					outCount[1][1] += position.y > 1 ? 1 : 0; 
+					
+					position.xy = position.xy * 0.5 + 0.5;
+					sBox.xy = min(sBox.xy, position.xy);
+					sBox.zw = max(sBox.zw, position.xy);
+					maxDepth = max(maxDepth, behindNearPlane ? 1.0 : position.z);
+					minDepth = min(minDepth, behindNearPlane ? 1.0 : position.z);
+				}
+				
+				outCount[0] = max(outCount[0], outCount[1]);
+				outsideFrustum = max(max(outCount[0].x, outCount[0].x), outCount[0].z) == 8;
+				
+				if (!outsideFrustum)
+				{
+					vec2 size = ceil(vec2(sBox.zw - sBox.xy) * uPushConsts.resolution);
+					float level = clamp(ceil(log2(max(size.x, size.y) * 0.5)), 0.0, 11.0);
+					vec4 samples;
+					samples[0] = textureLod(uHizImage, clamp(vec2(sBox.xy), 0.0.xx, 1.0.xx), level).x;
+					samples[1] = textureLod(uHizImage, clamp(vec2(sBox.zy), 0.0.xx, 1.0.xx), level).x;
+					samples[2] = textureLod(uHizImage, clamp(vec2(sBox.xw), 0.0.xx, 1.0.xx), level).x;
+					samples[3] = textureLod(uHizImage, clamp(vec2(sBox.zw), 0.0.xx, 1.0.xx), level).x;
+					float hiZDepthMin = min(min(samples.x, samples.y), min(samples.z, samples.w));
+					float hiZDepthMax = max(max(samples.x, samples.y), max(samples.z, samples.w));
+					
+					bool visible = maxDepth >= hiZDepthMin;
+					bool partiallyOccluded = visible && minDepth <= hiZDepthMax;
+					outsideFrustum = !visible;//outsideFrustum || !partiallyOccluded;
+				}
+				
+				
+				if (outsideFrustum)
+				{
+					atomicAdd(uCulled, 1);
+				}
+			}
+				
 			// apply wrapping
 			coord = ivec3(fract(coord / vec3(gridSize)) * gridSize);
 			// cascades are stacked on top of each other in order to combine them in a single image
@@ -91,7 +159,7 @@ void main()
 			const float age = imageLoad(uAgeImage, coord).x;
 			bool enqueued = false;
 			
-			if (age * rnd > p || age == 0.0)
+			if ((age * rnd > p || age == 0.0) && !outsideFrustum)
 			{
 				uint queueIndex = atomicAdd(uQueueSize, 1);
 				if (queueIndex < cQueueCapacity)

@@ -20,10 +20,16 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 		{ ResourceViewHandle(data.m_ageImageHandle), (firstTime ? ResourceState::WRITE_IMAGE_TRANSFER : ResourceState::READ_STORAGE_IMAGE_COMPUTE_SHADER), true, ResourceState::READ_STORAGE_IMAGE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_queueBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
+		{ ResourceViewHandle(data.m_hizImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 	};
 
 	graph.addPass("Fill Lighting Queues", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
+			vkCmdFillBuffer(cmdBuf, data.m_culledBufferInfo.buffer, 0, 4, 0);
+			VkMemoryBarrier barrier{ VK_STRUCTURE_TYPE_MEMORY_BARRIER };
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+			vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
 			if (data.m_passRecordContext->m_commonRenderData->m_frame == 0)
 			{
 				VkClearColorValue clearColor{};
@@ -69,8 +75,10 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_ageImageHandle, ResourceState::READ_STORAGE_IMAGE_COMPUTE_SHADER), AGE_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_hizImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), HIZ_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_queueBufferHandle), QUEUE_BUFFER_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_indirectBufferHandle), INDIRECT_CMD_BINDING);
+				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_culledBufferInfo, CULLED_BUFFER_BINDING);
 				
 				writer.commit();
 			}
@@ -78,7 +86,9 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 			PushConsts pushConsts;
+			pushConsts.viewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
 			pushConsts.cameraPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
+			pushConsts.resolution = glm::vec2(data.m_passRecordContext->m_commonRenderData->m_width / 2, data.m_passRecordContext->m_commonRenderData->m_height / 2);
 			pushConsts.time = data.m_passRecordContext->m_commonRenderData->m_time;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
