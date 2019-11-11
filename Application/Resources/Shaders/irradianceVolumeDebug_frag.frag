@@ -5,6 +5,7 @@
 layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cVolumeCascades = 3;
 
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler3D uIrradianceVolumeImages[3];
+layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING) uniform sampler3D uAgeImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -32,6 +33,16 @@ vec3 sampleAmbientCube(vec3 N, vec3 tc)
 
 void main() 
 {
-	oColor = vec4(sampleAmbientCube(normalize(vNormal), vCoord), 1.0);
+	if (uPushConsts.showAge != 0)
+	{
+		vec3 tc = vCoord.xzy;
+		tc.z = tc.z * (1.0 / cVolumeCascades) + float(uPushConsts.cascadeIndex) / cVolumeCascades;
+		float age = textureLod(uAgeImage, tc, 0).r;
+		oColor = vec4(age == 0.0 ? vec3(1.0, 0.0, 0.0) : age.xxx, 1.0);
+	}
+	else
+	{
+		oColor = vec4(sampleAmbientCube(normalize(vNormal), vCoord), 1.0);
+	}
 }
 

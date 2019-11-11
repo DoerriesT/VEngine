@@ -24,6 +24,7 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 		{ResourceViewHandle(data.m_irradianceVolumeImageHandles[0]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_irradianceVolumeImageHandles[1]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_irradianceVolumeImageHandles[2]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
+		{ResourceViewHandle(data.m_irradianceVolumeAgeImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 		{ResourceViewHandle(data.m_colorImageHandle), ResourceState::WRITE_ATTACHMENT},
 	};
@@ -149,6 +150,7 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[0], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 0);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[1], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 1);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[2], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 2);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeAgeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), AGE_IMAGE_BINDING);
 
 				writer.commit();
 			}
@@ -177,6 +179,7 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 			pushConsts.scale = RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE * static_cast<float>(1 << data.m_cascadeIndex);
 			pushConsts.cameraPosition = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 			pushConsts.cascadeIndex = data.m_cascadeIndex;
+			pushConsts.showAge = data.m_showAge ? 1 : 0;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 

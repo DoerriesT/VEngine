@@ -853,6 +853,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
 	clearVoxelsPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
+	clearVoxelsPassData.m_irradianceVolumeAgeImageHandle = irradianceVolumeAgeImageViewHandle;
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
@@ -895,6 +896,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	LightIrradianceVolumePass::Data lightIrradianceVolumePassData;
+	lightIrradianceVolumePassData.m_passRecordContext = &passRecordContext;
 	lightIrradianceVolumePassData.m_ageImageHandle = irradianceVolumeAgeImageViewHandle;
 	lightIrradianceVolumePassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	lightIrradianceVolumePassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
@@ -904,7 +906,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightIrradianceVolumePassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
 	lightIrradianceVolumePassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
-	LightIrradianceVolumePass::addToGraph(graph, lightIrradianceVolumePassData);
+	//LightIrradianceVolumePass::addToGraph(graph, lightIrradianceVolumePassData);
 
 
 	VoxelDebugPass::Data voxelDebugData;
@@ -937,13 +939,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IrradianceVolumeDebugPass::Data irradianceVolumeDebugData;
 	irradianceVolumeDebugData.m_passRecordContext = &passRecordContext;
 	irradianceVolumeDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
+	irradianceVolumeDebugData.m_showAge = g_giVoxelDebugMode == 4;
 	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
 	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
 	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
+	irradianceVolumeDebugData.m_irradianceVolumeAgeImageHandle = irradianceVolumeAgeImageViewHandle;
 	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
 	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
 
-	if (g_giVoxelDebugMode == 3)
+	if (g_giVoxelDebugMode == 3 || g_giVoxelDebugMode == 4)
 	{
 		IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
 	}

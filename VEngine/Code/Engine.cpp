@@ -83,6 +83,7 @@ void VEngine::Engine::start()
 		ImGui::RadioButton("Voxel Scene Raster", &debugMode, 1); ImGui::SameLine();
 		ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
 		ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
+		ImGui::RadioButton("Irradiance Volume Age", &debugMode, 4);
 		g_giVoxelDebugMode = debugMode;
 		int cascadeIdx = g_debugVoxelCascadeIndex;
 		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();

@@ -1,5 +1,7 @@
 #define IRRADIANCE_VOLUME_IMAGE_SET 0
 #define IRRADIANCE_VOLUME_IMAGE_BINDING 0
+#define AGE_IMAGE_SET 0
+#define AGE_IMAGE_BINDING 1
 
 #define IRRADIANCE_VOLUME_WIDTH_CONST_ID 0
 #define IRRADIANCE_VOLUME_HEIGHT_CONST_ID 1
@@ -12,4 +14,5 @@ struct PushConsts
 	vec4 cameraPosition;
 	float scale;
 	uint cascadeIndex;
+	uint showAge;
 };
