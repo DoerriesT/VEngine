@@ -304,7 +304,7 @@ void main()
 			vec3 offset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
 
 			// if coordinate is inside grid, insert value into scene voxel representation
-			if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset)))
+			if (all(greaterThanEqual(coord, offset + 0.51)) && all(lessThan(coord, gridSize + offset - 0.51)))
 			{
 				result += sampleAmbientCube((invViewMatrix * vec4(lightingParams.N, 0.0)).xyz, fract(coord / vec3(gridSize)), i) * lightingParams.albedo * visibility;
 				foundCascade = true;

@@ -853,7 +853,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
 	clearVoxelsPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
-	clearVoxelsPassData.m_irradianceVolumeAgeImageHandle = irradianceVolumeAgeImageViewHandle;
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
@@ -906,7 +905,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightIrradianceVolumePassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
 	lightIrradianceVolumePassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
-	//LightIrradianceVolumePass::addToGraph(graph, lightIrradianceVolumePassData);
+	LightIrradianceVolumePass::addToGraph(graph, lightIrradianceVolumePassData);
 
 
 	VoxelDebugPass::Data voxelDebugData;
