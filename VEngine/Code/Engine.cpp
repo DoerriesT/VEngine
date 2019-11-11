@@ -14,6 +14,9 @@
 #include "Gui/MemoryAllocatorPlot.h"
 #include "Graphics/PassTimingInfo.h"
 
+uint32_t g_debugVoxelCascadeIndex = 0;
+uint32_t g_giVoxelDebugMode = 0;
+
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
 	m_windowTitle(title)
@@ -74,6 +77,18 @@ void VEngine::Engine::start()
 		// gui window
 		ImGui::Begin("VEngine");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		int debugMode = g_giVoxelDebugMode;
+		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
+		ImGui::RadioButton("Voxel Scene Raster", &debugMode, 1); ImGui::SameLine();
+		ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
+		ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
+		g_giVoxelDebugMode = debugMode;
+		int cascadeIdx = g_debugVoxelCascadeIndex;
+		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
+		g_debugVoxelCascadeIndex = cascadeIdx;
 
 		const uint32_t *luminancHistogram = m_renderSystem->getLuminanceHistogram();
 		float(*histogramValuesGetter)(void* data, int idx) = [](void* data, int idx) -> float

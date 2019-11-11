@@ -21,6 +21,7 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
+		{ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::READ_TEXTURE_VERTEX_SHADER},
 		{ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_TEXTURE_VERTEX_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 		{ResourceViewHandle(data.m_colorImageHandle), ResourceState::WRITE_ATTACHMENT},
@@ -141,6 +142,7 @@ void VEngine::VoxelDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			{
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::READ_TEXTURE_VERTEX_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), OPACITY_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_TEXTURE_VERTEX_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), VOXEL_IMAGE_BINDING);
 
 				writer.commit();

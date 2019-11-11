@@ -3,6 +3,7 @@
 #include "lightIrradianceVolume_bindings.h"
 #include "common.h"
 
+layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING) uniform sampler3D uOpacityImage;
 layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING) uniform sampler3D uVoxelImage;
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING, rgba16f) uniform image3D uIrradianceVolumeImages[3];
 layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING, r8) uniform image3D uAgeImage;
@@ -144,7 +145,7 @@ void main()
 		vec3 ratio = (gridCoord + corner - gridCoord) * inv;
 		const vec3 ratioStep = gridStep * inv;
 
-		const int maxSteps = 80;
+		const int maxSteps = 32;
 		int curStep = 0;
 		// dda
 		while (curStep < maxSteps) 
@@ -173,10 +174,9 @@ void main()
 			// z and y axis are switched in order to "grow" the image along the z axis with each additional cascade
 			coord = coord.xzy;
 			
-			const vec4 c = texelFetch(uVoxelImage, coord, 0);
-			if (c.a > 0.0)
+			if (texelFetch(uOpacityImage, coord, 0).x > 0.0)
 			{
-				rayHitColor = c.xyz;
+				rayHitColor = texelFetch(uVoxelImage, coord, 0).xyz;
 				break;
 			}
 		

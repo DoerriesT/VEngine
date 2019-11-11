@@ -22,6 +22,7 @@ namespace VEngine
 		VKImage m_imGuiFontsTexture;
 		VKImage m_dummyImage;
 		VKImage m_voxelSceneImage;
+		VKImage m_voxelSceneOpacityImage;
 		VKImage m_irradianceVolumeXAxisImage;
 		VKImage m_irradianceVolumeYAxisImage;
 		VKImage m_irradianceVolumeZAxisImage;
@@ -73,6 +74,8 @@ namespace VEngine
 		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
 		VkQueue m_voxelSceneImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_voxelSceneImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_voxelSceneOpacityImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_voxelSceneOpacityImageResourceState = ResourceState::UNDEFINED;
 		VkQueue m_irradianceVolumeXAxisImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_irradianceVolumeXAxisImageResourceState = ResourceState::UNDEFINED;
 		VkQueue m_irradianceVolumeYAxisImageQueue = RenderGraph::undefinedQueue;

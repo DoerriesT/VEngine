@@ -16,7 +16,8 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_uvImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
@@ -54,7 +55,8 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), OPACITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_uvImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), UV_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_ddxyLengthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DDXY_LENGTH_IMAGE_BINDING);

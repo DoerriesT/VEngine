@@ -17,6 +17,7 @@ void VEngine::LightIrradianceVolumePass::addToGraph(RenderGraph &graph, const Da
 	ResourceUsageDescription passUsages[]
 	{
 		{ ResourceViewHandle(data.m_ageImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
+		{ ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_irradianceVolumeImageHandles[0]), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_irradianceVolumeImageHandles[1]), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
@@ -58,6 +59,7 @@ void VEngine::LightIrradianceVolumePass::addToGraph(RenderGraph &graph, const Da
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_ageImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), AGE_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]), OPACITY_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]), VOXEL_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_irradianceVolumeImageHandles[0], ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), IRRADIANCE_VOLUME_IMAGE_BINDING, 0);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_irradianceVolumeImageHandles[1], ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), IRRADIANCE_VOLUME_IMAGE_BINDING, 1);

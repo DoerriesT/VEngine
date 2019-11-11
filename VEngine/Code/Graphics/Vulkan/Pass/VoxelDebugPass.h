@@ -11,6 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_cascadeIndex;
+			ImageViewHandle m_voxelSceneOpacityImageHandle;
 			ImageViewHandle m_voxelSceneImageHandle;
 			ImageViewHandle m_colorImageHandle;
 			ImageViewHandle m_depthImageHandle;

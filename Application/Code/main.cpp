@@ -20,8 +20,6 @@
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
 
-uint32_t g_debugVoxelCascadeIndex = 0;
-
 class DummyLogic : public VEngine::IGameLogic
 {
 public:
@@ -94,19 +92,6 @@ public:
 		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::T);
 		VEngine::g_FXAAEnabled = input.isKeyPressed(InputKey::F);
 		VEngine::g_ssaoEnabled = input.isKeyPressed(InputKey::G);
-
-		if (input.isKeyPressed(InputKey::ONE))
-		{
-			g_debugVoxelCascadeIndex = 0;
-		}
-		if (input.isKeyPressed(InputKey::TWO))
-		{
-			g_debugVoxelCascadeIndex = 1;
-		}
-		if (input.isKeyPressed(InputKey::THREE))
-		{
-			g_debugVoxelCascadeIndex = 2;
-		}
 
 		auto &entityRegistry = m_engine->getEntityRegistry();
 

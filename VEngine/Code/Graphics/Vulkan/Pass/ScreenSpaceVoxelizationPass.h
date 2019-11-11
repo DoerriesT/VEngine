@@ -23,6 +23,7 @@ namespace VEngine
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
 			ImageViewHandle m_voxelSceneImageHandle;
+			ImageViewHandle m_voxelSceneOpacityImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

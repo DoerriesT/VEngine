@@ -36,7 +36,7 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 	ResourceUsageDescription passUsages[]
 	{
-		 { ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER }
+		 { ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER }
 	};
 
 	graph.addPass("Clear Voxels", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -65,7 +65,7 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), OPACITY_IMAGE_BINDING);
 
 				writer.commit();
 			}

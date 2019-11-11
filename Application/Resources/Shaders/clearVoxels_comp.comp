@@ -2,7 +2,7 @@
 
 #include "clearVoxels_bindings.h"
 
-layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelImage;
+layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING, r8) uniform image3D uOpacityImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -45,7 +45,7 @@ void main()
 				coord += ivec3(0, i * cVoxelGridHeight, 0);
 				// actually cascades are stacked along the z axis, so swizzle z and y
 				coord = coord.xzy;
-				imageStore(uVoxelImage, coord, vec4(0.0));
+				imageStore(uOpacityImage, coord, vec4(0.0));
 			}
 		}
 	}

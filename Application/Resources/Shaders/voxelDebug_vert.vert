@@ -6,6 +6,7 @@ layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128
 layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
 layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
 
+layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING) uniform sampler3D uOpacityImage;
 layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING) uniform sampler3D uVoxelImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -13,7 +14,7 @@ layout(push_constant) uniform PUSH_CONSTS
 	PushConsts uPushConsts;
 };
 
-layout(location = 0) flat out vec4 vColor;
+layout(location = 0) flat out vec3 vColor;
 
 void main() 
 {
@@ -32,14 +33,15 @@ void main()
 	// z and y axis are switched in order to "grow" the image along the z axis with each cascade
 	globalCoordWrapped = globalCoordWrapped.xzy;
 	
-	vColor = texelFetch(uVoxelImage, globalCoordWrapped, 0).rgba;
+	vColor = vec3(0.0);
 	
-	if (vColor.a == 0.0)
+	if (texelFetch(uOpacityImage, globalCoordWrapped, 0).x == 0.0)
 	{
 		gl_Position = vec4(0.0);
 	}
 	else
 	{
+		vColor = texelFetch(uVoxelImage, globalCoordWrapped, 0).rgb;
 		vec3 position = vec3(((gl_VertexIndex & 0x4) == 0) ? -0.5: 0.5,
 							((gl_VertexIndex & 0x2) == 0) ? -0.5 : 0.5,
 							((gl_VertexIndex & 0x1) == 0) ? -0.5 : 0.5);

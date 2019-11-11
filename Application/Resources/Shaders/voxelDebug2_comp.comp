@@ -10,6 +10,7 @@ layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
 layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
+layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING) uniform sampler3D uOpacityImage;
 layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING) uniform sampler3D uVoxelImage;
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uResultImage;
 
@@ -51,10 +52,9 @@ vec4 raymarch(vec3 p0, vec3 dir, ivec3 offset)
 		// z and y axis are switched in order to "grow" the image along the z axis with each additional cascade
 		coord = coord.xzy;
 		
-		const vec4 c = texelFetch(uVoxelImage, coord, 0);
-		if (c.a > 0.0)
+		if (texelFetch(uOpacityImage, coord, 0).x > 0.0)
 		{
-			return c;
+			return texelFetch(uVoxelImage, coord, 0);
 		}
 	
 		const ivec3 mask = ivec3(lessThanEqual(ratio.xyz, min(ratio.yzx, ratio.zxy)));

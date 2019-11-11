@@ -53,6 +53,7 @@
 #include "Graphics/ViewRenderList.h"
 
 extern uint32_t g_debugVoxelCascadeIndex;
+extern uint32_t g_giVoxelDebugMode;
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -264,6 +265,24 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		ImageHandle imageHandle = graph.importImage(desc, voxelSceneImage.getImage(), &m_renderResources->m_voxelSceneImageQueue, &m_renderResources->m_voxelSceneImageResourceState);
 		voxelSceneImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+	}
+
+	ImageViewHandle voxelSceneOpacityImageViewHandle;
+	{
+		auto &image = m_renderResources->m_voxelSceneOpacityImage;
+		ImageDescription desc = {};
+		desc.m_name = "Voxel Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = RendererConsts::VOXEL_SCENE_WIDTH;
+		desc.m_height = RendererConsts::VOXEL_SCENE_DEPTH;
+		desc.m_depth = RendererConsts::VOXEL_SCENE_HEIGHT * RendererConsts::VOXEL_SCENE_CASCADES;
+		desc.m_format = image.getFormat();
+		desc.m_imageType = VK_IMAGE_TYPE_3D;
+
+		ImageHandle imageHandle = graph.importImage(desc, image.getImage(), &m_renderResources->m_voxelSceneOpacityImageQueue, &m_renderResources->m_voxelSceneOpacityImageResourceState);
+		voxelSceneOpacityImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
 	}
 
 	ImageViewHandle irradianceVolumeImageViewHandles[3];
@@ -833,7 +852,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
-	clearVoxelsPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
+	clearVoxelsPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
@@ -852,6 +871,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	ssVoxelPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
+	ssVoxelPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
 	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
@@ -882,6 +902,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightIrradianceVolumePassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 	lightIrradianceVolumePassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
 	lightIrradianceVolumePassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
+	lightIrradianceVolumePassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
 	LightIrradianceVolumePass::addToGraph(graph, lightIrradianceVolumePassData);
 
@@ -892,8 +913,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelDebugData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	voxelDebugData.m_colorImageHandle = lightImageViewHandle;
 	voxelDebugData.m_depthImageHandle = depthImageViewHandle;
+	voxelDebugData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
-	//VoxelDebugPass::addToGraph(graph, voxelDebugData);
+	if (g_giVoxelDebugMode == 1)
+	{
+		VoxelDebugPass::addToGraph(graph, voxelDebugData);
+	}
 
 
 	VoxelDebug2Pass::Data voxelDebug2Data;
@@ -901,9 +926,13 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelDebug2Data.m_cascadeIndex = g_debugVoxelCascadeIndex;
 	voxelDebug2Data.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	voxelDebug2Data.m_colorImageHandle = lightImageViewHandle;
+	voxelDebug2Data.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
 
-	//VoxelDebug2Pass::addToGraph(graph, voxelDebug2Data);
-
+	if (g_giVoxelDebugMode == 2)
+	{
+		VoxelDebug2Pass::addToGraph(graph, voxelDebug2Data);
+	}
+	
 
 	IrradianceVolumeDebugPass::Data irradianceVolumeDebugData;
 	irradianceVolumeDebugData.m_passRecordContext = &passRecordContext;
@@ -914,7 +943,10 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
 	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
 
-	//IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
+	if (g_giVoxelDebugMode == 3)
+	{
+		IrradianceVolumeDebugPass::addToGraph(graph, irradianceVolumeDebugData);
+	}
 
 
 	// calculate luminance histograms
