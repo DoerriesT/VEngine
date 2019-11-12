@@ -292,7 +292,7 @@ void main()
 		mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0, uPushConsts.invViewMatrixRow1, uPushConsts.invViewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
 		vec4 worldSpacePos4 = invViewMatrix * vec4(lightingParams.viewSpacePosition, 1.0);
 		vec3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
-
+		vec3 worldSpaceNormal = (invViewMatrix * vec4(lightingParams.N, 0.0)).xyz;
 		const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
 		float currentGridScale = cGridBaseScale;
 		bool foundCascade = false;
@@ -300,13 +300,25 @@ void main()
 		for (int i = 0; i < cCascades; ++i)
 		{
 			// calculate coordinate in world space fixed coordinate system (scaled to voxel size)
-			vec3 coord = worldSpacePos * currentGridScale + 0.5;
+			vec3 coord = (worldSpacePos + worldSpaceNormal * 0.05) * currentGridScale;
 			vec3 offset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
 
 			// if coordinate is inside grid, insert value into scene voxel representation
-			if (all(greaterThanEqual(coord, offset + 0.51)) && all(lessThan(coord, gridSize + offset - 0.51)))
+			if (all(greaterThanEqual(floor(coord), offset)) && all(lessThan(floor(coord), gridSize + offset - 1)))
 			{
-				result += sampleAmbientCube((invViewMatrix * vec4(lightingParams.N, 0.0)).xyz, fract(coord / vec3(gridSize)), i) * lightingParams.albedo * visibility;
+				vec3 irradiance = vec3(0.0);
+				float totalWeight = 0.0;
+				for (int j = 0; j < 8; ++j)
+				{
+					vec3 probeCoord = floor(coord) + vec3(ivec3(j, j >> 1, j >> 2) & ivec3(1));
+					vec3 alpha = 1.0 - abs(probeCoord - coord);
+					float weight = alpha.x * alpha.y * alpha.z * max(0.0, dot(normalize(probeCoord - coord), worldSpaceNormal));
+					totalWeight += weight;
+					irradiance += sampleAmbientCube(worldSpaceNormal, fract((probeCoord + 0.5) / vec3(gridSize)), i) * lightingParams.albedo * visibility * weight * (1.0 / PI);
+					
+				}
+				//result += sampleAmbientCube(normal, fract(coord / vec3(gridSize)), i) * lightingParams.albedo * visibility;
+				result += irradiance / totalWeight;
 				foundCascade = true;
 				break;
 			}

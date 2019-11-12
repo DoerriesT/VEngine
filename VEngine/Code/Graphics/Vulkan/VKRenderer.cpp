@@ -852,9 +852,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	ClearVoxelsPass::Data clearVoxelsPassData;
 	clearVoxelsPassData.m_passRecordContext = &passRecordContext;
-	clearVoxelsPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
+	clearVoxelsPassData.m_clearImageHandle = voxelSceneOpacityImageViewHandle;
+	clearVoxelsPassData.m_clearMode = ClearVoxelsPass::Data::VOXEL_SCENE;
 
 	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
+
+
+	ClearVoxelsPass::Data clearVolumePassData;
+	clearVolumePassData.m_passRecordContext = &passRecordContext;
+	clearVolumePassData.m_clearImageHandle = irradianceVolumeAgeImageViewHandle;
+	clearVolumePassData.m_clearMode = ClearVoxelsPass::Data::IRRADIANCE_VOLUME;
+
+	ClearVoxelsPass::addToGraph(graph, clearVolumePassData);
 
 
 	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;
@@ -872,6 +881,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	ssVoxelPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	ssVoxelPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
+	ssVoxelPassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	ssVoxelPassData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	ssVoxelPassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 
 	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 

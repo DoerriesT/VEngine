@@ -128,7 +128,7 @@ void main()
 		// generate random direction
 		const vec3 dir = frame(frameDir) * cosineSampleHemisphere(rnd0, rnd1);
 		
-		vec3 rayHitColor = vec3(0.529, 0.808, 0.922);
+		vec3 rayHitColor = vec3(0.18);
 	
 		uint currentCascade = cascade;
 		
@@ -145,10 +145,10 @@ void main()
 		vec3 ratio = (gridCoord + corner - gridCoord) * inv;
 		const vec3 ratioStep = gridStep * inv;
 
-		const int maxSteps = 32;
+		const int maxSteps = 34;
 		int curStep = 0;
 		// dda
-		while (curStep < maxSteps) 
+		while (curStep <= maxSteps) 
 		{
 			// ray is outside of cascade
 			if (any(lessThan(gridCoord, gridOffset)) || any(greaterThanEqual(gridCoord, voxelGridSize + gridOffset)))
@@ -156,6 +156,7 @@ void main()
 				// ray is outside all cascades -> sample sky color
 				if (currentCascade == (cVoxelCascades - 1))
 				{
+					rayHitColor = vec3(0.529, 0.808, 0.922);
 					break;
 				}
 				else
@@ -174,7 +175,7 @@ void main()
 			// z and y axis are switched in order to "grow" the image along the z axis with each additional cascade
 			coord = coord.xzy;
 			
-			if (texelFetch(uOpacityImage, coord, 0).x > 0.0)
+			if (curStep > 1 && texelFetch(uOpacityImage, coord, 0).x > 0.0)
 			{
 				rayHitColor = texelFetch(uVoxelImage, coord, 0).xyz;
 				break;
@@ -209,7 +210,7 @@ void main()
 			coord = coord.xzy;
 			
 			float age = imageLoad(uAgeImage, coord - ivec3(0, 0, cascade * cGridHeight * 2) + ivec3(0, 0, cascade * cGridHeight)).x;
-			float alpha = age == 0.0 ? 1.0 : age * 0.25;
+			float alpha = age == 0.0 ? 1.0 : 0.1;
 			
 			if (face == 5)
 			{

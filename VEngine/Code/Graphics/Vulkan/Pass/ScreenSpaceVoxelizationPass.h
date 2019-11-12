@@ -24,6 +24,7 @@ namespace VEngine
 			ImageViewHandle m_deferredShadowImageViewHandle;
 			ImageViewHandle m_voxelSceneImageHandle;
 			ImageViewHandle m_voxelSceneOpacityImageHandle;
+			ImageViewHandle m_irradianceVolumeImageHandles[3];
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

@@ -14,12 +14,13 @@ namespace
 
 void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 {
+	const bool voxelClear = data.m_clearMode == Data::VOXEL_SCENE;
 	const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 	const glm::vec3 prevCamPos = data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3];
 
 	// determine if a clear is necessary
 	bool clearRequired = false;
-	float curVoxelScale = 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE;
+	float curVoxelScale = voxelClear ? 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE : 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE;
 	for (size_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
 	{
 		const ivec3 cameraCoord = ivec3(round(camPos * curVoxelScale));
@@ -36,19 +37,30 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 	ResourceUsageDescription passUsages[]
 	{
-		 { ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER }
+		 { ResourceViewHandle(data.m_clearImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER }
 	};
 
-	graph.addPass("Clear Voxels", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass(voxelClear ? "Clear Voxels" : "Clear Volume", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			VKComputePipelineDescription pipelineDesc;
 			{
 				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/clearVoxels_comp.spv");
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
+				if (data.m_clearMode == Data::VOXEL_SCENE)
+				{
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
+				}
+				else
+				{
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE);
+					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES);
+				}
 
 				pipelineDesc.finalize();
 			}
@@ -65,7 +77,7 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), OPACITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_clearImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), OPACITY_IMAGE_BINDING);
 
 				writer.commit();
 			}
@@ -78,6 +90,14 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::VOXEL_SCENE_WIDTH + 7) / 8, (RendererConsts::VOXEL_SCENE_HEIGHT + 7) / 8, RendererConsts::VOXEL_SCENE_DEPTH);
+			if (data.m_clearMode == Data::VOXEL_SCENE)
+			{
+				vkCmdDispatch(cmdBuf, (RendererConsts::VOXEL_SCENE_WIDTH + 7) / 8, (RendererConsts::VOXEL_SCENE_HEIGHT + 7) / 8, RendererConsts::VOXEL_SCENE_DEPTH);
+			}
+			else
+			{
+				vkCmdDispatch(cmdBuf, (RendererConsts::IRRADIANCE_VOLUME_WIDTH + 7) / 8, (RendererConsts::IRRADIANCE_VOLUME_HEIGHT + 7) / 8, RendererConsts::IRRADIANCE_VOLUME_DEPTH);
+			}
+			
 		}, true);
 }

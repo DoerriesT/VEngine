@@ -14,6 +14,11 @@ layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 6
 layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
 layout(constant_id = VOXEL_BASE_SCALE_CONST_ID) const float cVoxelBaseScale = 8.0;
 layout(constant_id = VOXEL_CASCADES_CONST_ID) const uint cVoxelCascades = 3;
+layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cGridWidth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cGridHeight = 32;
+layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cCascades = 3;
+layout(constant_id = IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
 
 layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelSceneImage;
 layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING, r8) uniform image3D uOpacityImage;
@@ -23,6 +28,7 @@ layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler3D uIrradianceVolumeImages[3];
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -58,6 +64,20 @@ layout(push_constant) uniform PUSH_CONSTS
 };
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
+{
+	vec3 nSquared = N * N;
+	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
+	tc = tc.xzy;
+	tc.z *= 0.5;
+	vec3 tcz = tc.zzz + isNegative;
+	tcz = tcz * (1.0 / cCascades) + float(cascadeIndex) / cCascades;
+	
+	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
+			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
+			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
+}
 
 float signNotZero(in float k) 
 {
@@ -172,7 +192,46 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	result += lightingParams.albedo;
+	{
+		mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0, uPushConsts.invViewMatrixRow1, uPushConsts.invViewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
+		vec4 worldSpacePos4 = invViewMatrix * vec4(lightingParams.viewSpacePosition, 1.0);
+		vec3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
+		vec3 worldSpaceNormal = (invViewMatrix * vec4(lightingParams.N, 0.0)).xyz;
+		const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
+		float currentGridScale = cGridBaseScale;
+		bool foundCascade = false;
+		// search for highest resolution cascade containing the world space pos
+		for (int i = 0; i < cCascades; ++i)
+		{
+			// calculate coordinate in world space fixed coordinate system (scaled to voxel size)
+			vec3 coord = (worldSpacePos + worldSpaceNormal * 0.05) * currentGridScale;
+			vec3 offset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
+
+			// if coordinate is inside grid, insert value into scene voxel representation
+			if (all(greaterThanEqual(floor(coord), offset)) && all(lessThan(floor(coord), gridSize + offset - 1)))
+			{
+				
+				vec3 irradiance = vec3(0.0);
+				float totalWeight = 0.0;
+				for (int j = 0; j < 8; ++j)
+				{
+					vec3 probeCoord = floor(coord) + vec3(ivec3(j, j >> 1, j >> 2) & ivec3(1));
+					vec3 alpha = 1.0 - abs(probeCoord - coord);
+					float weight = alpha.x * alpha.y * alpha.z * max(0.0, dot(normalize(probeCoord - coord), worldSpaceNormal));
+					totalWeight += weight;
+					irradiance += sampleAmbientCube(worldSpaceNormal, fract((probeCoord + 0.5) / vec3(gridSize)), i) * lightingParams.albedo * weight * (1.0 / PI);
+					
+				}
+				//result += sampleAmbientCube(normal, fract(coord / vec3(gridSize)), i) * lightingParams.albedo * visibility;
+				result += irradiance / totalWeight;
+				foundCascade = true;
+				break;
+			}
+			currentGridScale *= 0.5;
+		}
+		
+		result += foundCascade ? vec3(0.0) : lightingParams.albedo;
+	}
 	
 	// directional lights
 	{
