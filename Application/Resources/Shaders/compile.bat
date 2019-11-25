@@ -42,5 +42,8 @@ glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug2_comp.comp -o voxelDebug2_
 glslc --target-env=vulkan1.1 -O -Werror -c fillLightingQueues_comp.comp -o fillLightingQueues_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c updateQueueProbability_comp.comp -o updateQueueProbability_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c lightIrradianceVolume_comp.comp -o lightIrradianceVolume_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c voxelization_vert.vert -o voxelization_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c voxelization_geom.geom -o voxelization_geom.spv
+glslc --target-env=vulkan1.1 -O -Werror -c voxelization_frag.frag -o voxelization_frag.spv
 
 pause

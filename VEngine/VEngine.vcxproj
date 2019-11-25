@@ -215,6 +215,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelDebug2Pass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelDebugPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderGraph.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderPassCache.h" />
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h" />
@@ -309,6 +310,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelDebug2Pass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelDebugPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderGraph.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderPassCache.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp" />

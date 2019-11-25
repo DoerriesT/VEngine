@@ -39,6 +39,7 @@
 #include "Pass/UpdateQueueProbabilityPass.h"
 #include "Pass/FillLightingQueuesPass.h"
 #include "Pass/LightIrradianceVolumePass.h"
+#include "Pass/VoxelizationPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -559,13 +560,13 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//
 	//ReadBackCopyPass::addToGraph(graph, drawCountReadBackCopyPassData);
 
+	BufferViewHandle opaqueIndirectDrawBufferViewHandle = nullptr;
+	BufferViewHandle opaqueFilteredIndicesBufferViewHandle = nullptr;
+
 	// opaque geometry
 	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount)
 	{
 		// build index buffer
-		BufferViewHandle indirectDrawBufferViewHandle;
-		BufferViewHandle filteredIndicesBufferViewHandle;
-
 		BuildIndexBufferPass::Data buildIndexBufferPassData;
 		buildIndexBufferPassData.m_passRecordContext = &passRecordContext;
 		buildIndexBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
@@ -578,8 +579,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		buildIndexBufferPassData.m_instanceOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
 		buildIndexBufferPassData.m_instanceCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
 		buildIndexBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &indirectDrawBufferViewHandle;
-		buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &filteredIndicesBufferViewHandle;
+		buildIndexBufferPassData.m_indirectDrawCmdBufferViewHandle = &opaqueIndirectDrawBufferViewHandle;
+		buildIndexBufferPassData.m_filteredIndicesBufferViewHandle = &opaqueFilteredIndicesBufferViewHandle;
 
 		BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
 
@@ -591,14 +592,14 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 		opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 		opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		opaqueGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
+		opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
 		opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
 		opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
 		opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
 		opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
 		opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 		opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		opaqueGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
+		opaqueGeometryPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
 
 		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
 	}
@@ -866,6 +867,20 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ClearVoxelsPass::addToGraph(graph, clearVolumePassData);
 
 
+	VoxelizationPass::Data voxelizationPassData;
+	voxelizationPassData.m_passRecordContext = &passRecordContext;
+	voxelizationPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	voxelizationPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	voxelizationPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	voxelizationPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+	voxelizationPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
+	voxelizationPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
+	voxelizationPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
+	voxelizationPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
+	
+	VoxelizationPass::addToGraph(graph, voxelizationPassData);
+
+
 	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;
 	ssVoxelPassData.m_passRecordContext = &passRecordContext;
 	ssVoxelPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
@@ -885,7 +900,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
 	ssVoxelPassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 
-	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
+	//ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
 
 	UpdateQueueProbabilityPass::Data updateQueueProbabilityPassData;

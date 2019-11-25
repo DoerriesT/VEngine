@@ -276,6 +276,7 @@ namespace VEngine
 					&& supportedFeatures.fragmentStoresAndAtomics
 					&& supportedFeatures.shaderStorageImageExtendedFormats
 					&& supportedFeatures.shaderStorageImageWriteWithoutFormat
+					&& supportedFeatures.geometryShader
 					&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing)
 				{
 					m_physicalDevice = physicalDevice;
@@ -323,6 +324,7 @@ namespace VEngine
 			deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 			deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
 			deviceFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+			deviceFeatures.geometryShader = VK_TRUE;
 
 			m_enabledFeatures = deviceFeatures;
 
