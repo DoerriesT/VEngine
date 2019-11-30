@@ -179,6 +179,8 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h" />
@@ -274,6 +276,8 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp" />

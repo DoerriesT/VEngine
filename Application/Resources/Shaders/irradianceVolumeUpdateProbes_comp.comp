@@ -1,0 +1,250 @@
+#version 450
+
+#include "irradianceVolumeUpdateProbes_bindings.h"
+#include "common.h"
+
+layout(set = RAY_IMAGE_SET, binding = RAY_IMAGE_BINDING) uniform sampler2D uRayImage;
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING, rgba16f) uniform image2D uIrradianceVolumeImage;
+layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING, r8) uniform image3D uAgeImage;
+
+layout(set = QUEUE_BUFFER_SET, binding = QUEUE_BUFFER_BINDING) readonly buffer QUEUE_BUFFER
+{
+	uint uQueueSize;
+	float uP;
+	uint uQueue[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout(constant_id = GRID_WIDTH_CONST_ID) const uint cGridWidth = 64;
+layout(constant_id = GRID_HEIGHT_CONST_ID) const uint cGridHeight = 32;
+layout(constant_id = GRID_DEPTH_CONST_ID) const uint cGridDepth = 64;
+layout(constant_id = GRID_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
+layout(constant_id = CASCADES_CONST_ID) const uint cCascades = 3;
+layout(constant_id = PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+/**  Generate a spherical fibonacci point
+
+    http://lgdv.cs.fau.de/publications/publication/Pub.2015.tech.IMMD.IMMD9.spheri/
+
+    To generate a nearly uniform point distribution on the unit sphere of size N, do
+    for (float i = 0.0; i < N; i += 1.0) {
+        float3 point = sphericalFibonacci(i,N);
+    }
+
+    The points go from z = +1 down to z = -1 in a spiral. To generate samples on the +z hemisphere,
+    just stop before i > N/2.
+
+*/
+vec3 sphericalFibonacci(float i, float n) 
+{
+    const float PHI = sqrt(5) * 0.5 + 0.5;
+#   define madfrac(A, B) ((A)*(B)-floor((A)*(B)))
+    float phi = 2.0 * PI * madfrac(i, PHI - 1);
+    float cosTheta = 1.0 - (2.0 * i + 1.0) * (1.0 / n);
+    float sinTheta = sqrt(clamp(1.0 - cosTheta * cosTheta, 0.0, 1.0));
+
+    return vec3(
+        cos(phi) * sinTheta,
+        sin(phi) * sinTheta,
+        cosTheta);
+
+#   undef madfrac
+}
+
+// Compute normalized oct coord, mapping top left of top left pixel to (-1,-1)
+vec2 normalizedOctCoord(ivec2 fragCoord) 
+{
+    int probeWithBorderSide = int(cProbeSideLength + 2);
+
+    vec2 octFragCoord = vec2(fragCoord.x % probeWithBorderSide, fragCoord.y % probeWithBorderSide) - 0.5;
+    return octFragCoord * (1.0 / cProbeSideLength) * 2.0 - 1.0;
+}
+
+float signNotZero(in float k) 
+{
+    return k >= 0.0 ? 1.0 : -1.0;
+}
+
+vec2 signNotZero(in vec2 v) 
+{
+    return vec2( signNotZero(v.x), signNotZero(v.y) );
+}
+
+vec3 octDecode(vec2 xy) 
+{
+    vec3 v = vec3(xy.x, xy.y, 1.0 - abs(xy.x) - abs(xy.y));
+    if (v.z < 0) {
+        v.xy = (1.0 - abs(v.yx)) * signNotZero(v.xy);
+    }
+    return normalize(v);
+}
+
+uint rand_xorshift(uint rngState)
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    rngState ^= (rngState << 13);
+    rngState ^= (rngState >> 17);
+    rngState ^= (rngState << 5);
+    return rngState;
+}
+
+uint wang_hash(uint seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+
+mat3 randomOrientation()
+{
+	uint rngState = wang_hash(floatBitsToInt(uPushConsts.time));
+	vec3 axis = normalize(vec3(rand_xorshift(rngState), rand_xorshift(rngState), rand_xorshift(rngState)) * (1.0 / 4294967296.0));
+	float angle = rand_xorshift(rngState) * (1.0 / 4294967296.0) * 2.0 * PI;
+
+	mat3 m;
+	float c = cos(angle);
+	float s = sin(angle);
+	float oneMinusCos = 1.0 - c;
+	float x2 = axis.x * axis.x;
+	float y2 = axis.y * axis.y;
+	float z2 = axis.z * axis.z;
+	float xym = axis.x * axis.y * oneMinusCos;
+	float xzm = axis.x * axis.z * oneMinusCos;
+	float yzm = axis.y * axis.z * oneMinusCos;
+	float xSin = axis.x * s;
+	float ySin = axis.y * s;
+	float zSin = axis.z * s;
+
+	m[0][0] = x2 * oneMinusCos + c;
+	m[0][1] = xym - zSin;
+	m[0][2] = xzm + ySin;
+
+	m[1][0] = xym + zSin;
+	m[1][1] = y2 * oneMinusCos + c;
+	m[1][2] = yzm - xSin;
+
+	m[2][0] = xzm - ySin;
+	m[2][1] = yzm + xSin;
+	m[2][2] = z2 * oneMinusCos + c;
+
+	return m;
+}
+
+const float epsilon = 1e-6;
+
+void main() 
+{
+	const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
+	
+	// get cell index and cascade index
+	uint cellIndex = uQueue[gl_WorkGroupID.x];
+	const uint cascade = cellIndex / (cGridWidth * cGridHeight * cGridDepth);
+	cellIndex -= cascade * (cGridWidth * cGridHeight * cGridDepth);
+	
+	// get cell coordinate
+	ivec3 cellCoord;
+	cellCoord.y = int(cellIndex / (gridSize.x * gridSize.z));
+	cellCoord.x = int(cellIndex % gridSize.x);
+	cellCoord.z = int((cellIndex - cellCoord.y * (gridSize.x * gridSize.z)) / gridSize.x);
+	
+	ivec3 gridOffset = ivec3(round(uPushConsts.cameraPosition.xyz * (cGridBaseScale / (1 << cascade)))) - gridSize / 2;
+	cellCoord = ivec3(fract(vec3(cellCoord + gridOffset) * (1.0 / gridSize)) * gridSize);
+	
+	const ivec2 fragCoord = ivec2((gridSize.xz * ivec2(cellCoord.y, cascade) + cellCoord.xz) * (cProbeSideLength + 2)) + ivec2(gl_LocalInvocationID.xy + 1);
+	
+	const vec3 texelDir = randomOrientation() * octDecode(normalizedOctCoord(fragCoord));
+	
+	vec4 result = vec4(0.0);
+	for (uint i = 0; i < 64; ++i)
+	{
+		const vec3 rayDir = sphericalFibonacci(float(i), 64.0);
+		const float weight = max(dot(rayDir, texelDir), 0.0);
+		if (weight >= epsilon)
+		{
+			vec4 rayResult = texelFetch(uRayImage, ivec2(i, gl_WorkGroupID.x), 0);
+			result += vec4(rayResult.rgb * weight, weight);
+		}
+	}
+	
+	if (result.w >= epsilon)
+	{
+		result.rgb /= result.w;
+		
+		float age = imageLoad(uAgeImage, cellCoord.xzy + ivec3(0, 0, cascade * gridSize.y)).x;
+		float alpha = age == 0.0 ? 1.0 : 0.03;
+		
+		vec3 color = vec3(0.0);
+		if (alpha != 1.0)
+		{
+			color = imageLoad(uIrradianceVolumeImage, fragCoord).rgb;
+		}
+		
+		color = mix(color, result.rgb, alpha);
+		
+		imageStore(uIrradianceVolumeImage, fragCoord, vec4(color, 1.0));
+		
+		const bvec4 border = bvec4(gl_LocalInvocationID.x == 0, gl_LocalInvocationID.y == 0, 
+							gl_LocalInvocationID.x == (cProbeSideLength - 1), gl_LocalInvocationID.y == (cProbeSideLength - 1));
+		
+		const ivec2 offset = ivec2(gl_LocalInvocationID.xy) * -2 + (int(cProbeSideLength) - 1);
+		
+		// left border
+		if (border.x)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(-1, offset.y), vec4(color, 1.0));
+		}
+		// right border
+		else if (border.z)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(1, offset.y), vec4(color, 1.0));
+		}
+		
+		// top border
+		if (border.y)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(offset.x, -1), vec4(color, 1.0));
+		}
+		// bottom border
+		else if (border.w)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(offset.x, 1), vec4(color, 1.0));
+		}
+		
+		// top left corner
+		if (border.x && border.y)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(cProbeSideLength, cProbeSideLength), vec4(color, 1.0));
+		}
+		// bottom left corner
+		else if (border.x && border.w)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(cProbeSideLength, -cProbeSideLength), vec4(color, 1.0));
+		}
+		// top right corner
+		else if (border.z && border.y)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(-cProbeSideLength, cProbeSideLength), vec4(color, 1.0));
+		}
+		// bottom right corner
+		else if (border.z && border.w)
+		{
+			imageStore(uIrradianceVolumeImage, fragCoord + ivec2(-cProbeSideLength, -cProbeSideLength), vec4(color, 1.0));
+		}
+	}
+	
+	barrier();
+	
+	if (gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0)
+	{
+		imageStore(uAgeImage, cellCoord.xzy + ivec3(0, 0, cascade * gridSize.y), vec4(1.0 / 256.0));
+	}
+}

@@ -2,6 +2,8 @@
 
 #include "irradianceVolumeDebug_bindings.h"
 
+layout(location = 0) in vec3 inPosition;
+
 layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cVolumeWidth = 64;
 layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cVolumeHeight = 32;
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cVolumeDepth = 64;
@@ -27,11 +29,9 @@ void main()
 	
 	vCoord = fract(globalCoord / vec3(gridSize));
 	
-	vec3 position = vec3(((gl_VertexIndex & 0x4) == 0) ? -0.5: 0.5,
-							((gl_VertexIndex & 0x2) == 0) ? -0.5 : 0.5,
-							((gl_VertexIndex & 0x1) == 0) ? -0.5 : 0.5);
+	vec3 position = inPosition;
 	
-	vNormal = position;
+	vNormal = inPosition;
 	position *= 0.1;
 					
 	position += vec3(globalCoord);					
