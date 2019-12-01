@@ -254,6 +254,28 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		m_irradianceVolumeImage.create(imageCreateInfo, allocCreateInfo);
 	}
 
+	// irradiance volume depth image
+	{
+		VkImageCreateInfo imageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16_SFLOAT;
+		imageCreateInfo.extent.width = RendererConsts::IRRADIANCE_VOLUME_WIDTH * (RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH + 2) * RendererConsts::IRRADIANCE_VOLUME_HEIGHT;
+		imageCreateInfo.extent.height = RendererConsts::IRRADIANCE_VOLUME_DEPTH * (RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH + 2) * RendererConsts::IRRADIANCE_VOLUME_CASCADES;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_irradianceVolumeDepthImage.create(imageCreateInfo, allocCreateInfo);
+	}
+
 	// irradiance volume age image
 	{
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };

@@ -34,6 +34,7 @@ namespace VEngine
 		constexpr float IRRADIANCE_VOLUME_BASE_SIZE = 1.0f;
 		constexpr uint32_t IRRADIANCE_VOLUME_QUEUE_CAPACITY = 1024;
 		constexpr uint32_t IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH = 8;
+		constexpr uint32_t IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH = 16;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

@@ -16,6 +16,7 @@ namespace VEngine
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			ImageViewHandle m_irradianceVolumeImageHandle;
+			ImageViewHandle m_irradianceVolumeDepthImageHandle;
 			BufferViewHandle m_pointLightBitMaskBufferHandle;
 			ImageViewHandle m_depthImageHandle;
 			ImageViewHandle m_uvImageHandle;

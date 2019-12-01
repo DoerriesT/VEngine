@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_depth;
 			ImageViewHandle m_ageImageHandle;
 			ImageViewHandle m_irradianceVolumeImageHandle;
 			ImageViewHandle m_rayMarchingResultImageHandle;

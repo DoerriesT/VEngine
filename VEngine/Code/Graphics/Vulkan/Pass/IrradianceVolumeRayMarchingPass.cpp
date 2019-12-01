@@ -19,6 +19,7 @@ void VEngine::IrradianceVolumeRayMarchingPass::addToGraph(RenderGraph &graph, co
 		{ ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_rayMarchingResultImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
+		{ ResourceViewHandle(data.m_rayMarchingResultDistanceImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_queueBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER },
 	};
@@ -57,6 +58,7 @@ void VEngine::IrradianceVolumeRayMarchingPass::addToGraph(RenderGraph &graph, co
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]), OPACITY_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]), VOXEL_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_rayMarchingResultImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_rayMarchingResultDistanceImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), DISTANCE_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_queueBufferHandle), QUEUE_BUFFER_BINDING);
 
 				writer.commit();

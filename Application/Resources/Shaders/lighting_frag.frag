@@ -17,6 +17,7 @@ layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 6
 layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cCascades = 3;
 layout(constant_id = IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
 layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
+layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const uint cDepthProbeSideLength = 16;
 
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
@@ -25,6 +26,7 @@ layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAG
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
+layout(set = IRRADIANCE_VOLUME_DEPTH_IMAGE_SET, binding = IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeDepthImage;
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
 #endif // SSAO_ENABLED
@@ -217,11 +219,11 @@ vec2 octEncode(in vec3 v)
     return result;
 }
 
-vec2 texCoordFromDir(vec3 dir, ivec3 probeCoord, int cascade)
+vec2 texCoordFromDir(vec3 dir, ivec3 probeCoord, int cascade, int probeSideLength)
 {
-	vec2 texelCoord = vec2((ivec2(cGridWidth, cGridDepth) * ivec2(probeCoord.y, cascade) + probeCoord.xz) * (cProbeSideLength + 2)) + 1.0;
-	texelCoord += (octEncode(dir) * 0.5 + 0.5) * float(cProbeSideLength);
-	const vec2 texelSize = 1.0 / vec2(ivec2(cGridWidth, cGridDepth) * ivec2(cGridHeight, cCascades) * ivec2(cProbeSideLength + 2));
+	vec2 texelCoord = vec2((ivec2(cGridWidth, cGridDepth) * ivec2(probeCoord.y, cascade) + probeCoord.xz) * (probeSideLength + 2)) + 1.0;
+	texelCoord += (octEncode(dir) * 0.5 + 0.5) * float(probeSideLength);
+	const vec2 texelSize = 1.0 / vec2(ivec2(cGridWidth, cGridDepth) * ivec2(cGridHeight, cCascades) * ivec2(probeSideLength + 2));
 	return texelCoord  * texelSize;
 }
 
@@ -343,16 +345,42 @@ void main()
 			vec3 cameraOffset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
 			vec3 pointGridCoord = worldSpacePos * currentGridScale - cameraOffset;
 			ivec3 baseCoord = ivec3(pointGridCoord);
+			vec3 worldSpaceViewDir = normalize(invViewMatrix[3].xyz - worldSpacePos);
 			vec4 sum = vec4(0.0);
 			for (int i = 0; i < 8; ++i)
 			{
 				ivec3 probeGridCoord = baseCoord + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
-				vec3 pointToProbe = vec3(probeGridCoord) - pointGridCoord;
-				vec3 trilinear =  1.0 - abs(pointToProbe);
+				vec3 trilinear =  1.0 - abs(vec3(probeGridCoord) - pointGridCoord);
 				float weight = 1.0;
 				
+				const vec3 trueDirToProbe = vec3(probeGridCoord) - pointGridCoord;
+				const bool probeInPoint = dot(trueDirToProbe, trueDirToProbe) < 0.0001;
+				
 				// smooth backface test
-				weight *= square(max(0.0001, (dot(pointToProbe, worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
+				{
+					weight *= probeInPoint ? 1.0 : square(max(0.0001, (dot(normalize(trueDirToProbe), worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
+				}
+				
+				
+				// moment visibility test
+				if (!probeInPoint)
+				{
+					vec3 worldSpaceProbePos = vec3(probeGridCoord + cameraOffset) / currentGridScale;
+					vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos;// + (worldSpaceNormal + 3.0 * worldSpaceViewDir); // * normalBias
+					vec3 dir = normalize(biasedProbeToPoint);
+					vec2 texCoord = texCoordFromDir(dir, probeGridCoord, int(cascadeIndex), int(cDepthProbeSideLength));
+					float distToProbe = length(biasedProbeToPoint);
+					
+					vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
+					float mean = temp.x;
+					float variance = abs(temp.x * temp.x - temp.y);
+					
+					float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
+					
+					chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
+					
+					weight *= (distToProbe <= mean) ? 1.0 : 0.0;//chebyshevWeight;
+				}
 				
 				// avoid zero weight
 				weight = max(0.000001, weight);
@@ -368,7 +396,7 @@ void main()
 				
 				probeGridCoord = ivec3(fract((probeGridCoord + cameraOffset) / vec3(gridSize)) * gridSize);
 				
-				vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, probeGridCoord, int(cascadeIndex));
+				vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, probeGridCoord, int(cascadeIndex), int(cProbeSideLength));
 				vec3 probeIrradiance = textureLod(uIrradianceVolumeImage, probeTexCoord, 0).rgb;
 				
 				probeIrradiance = sqrt(probeIrradiance);

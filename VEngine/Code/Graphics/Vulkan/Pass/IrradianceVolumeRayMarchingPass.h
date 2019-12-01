@@ -13,6 +13,7 @@ namespace VEngine
 			ImageViewHandle m_voxelSceneOpacityImageHandle;
 			ImageViewHandle m_voxelSceneImageHandle;
 			ImageViewHandle m_rayMarchingResultImageHandle;
+			ImageViewHandle m_rayMarchingResultDistanceImageHandle;
 			BufferViewHandle m_queueBufferHandle;
 			BufferViewHandle m_indirectBufferHandle;
 		};

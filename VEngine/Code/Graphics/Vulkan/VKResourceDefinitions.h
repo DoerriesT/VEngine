@@ -293,7 +293,7 @@ namespace VEngine
 			return graph.createImage(desc);
 		}
 
-		inline ImageViewHandle createRayMarchingResultViewHandle(RenderGraph &graph, uint32_t width, uint32_t height)
+		inline ImageViewHandle createRayMarchingResultViewHandle(RenderGraph &graph, uint32_t width, uint32_t height, bool depthImage = false)
 		{
 			ImageDescription desc = {};
 			desc.m_name = "Ray Marching Result";
@@ -305,7 +305,7 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+			desc.m_format = depthImage ? VK_FORMAT_R16G16_SFLOAT : VK_FORMAT_R16G16B16A16_SFLOAT;
 
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 		}

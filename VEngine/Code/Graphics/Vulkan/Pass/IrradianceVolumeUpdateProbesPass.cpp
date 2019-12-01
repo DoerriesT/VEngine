@@ -27,13 +27,13 @@ void VEngine::IrradianceVolumeUpdateProbesPass::addToGraph(RenderGraph &graph, c
 		{
 			VKComputePipelineDescription pipelineDesc;
 			{
-				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/irradianceVolumeUpdateProbes_comp.spv");
+				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, data.m_depth ? "Resources/Shaders/irradianceVolumeUpdateProbes_OUTPUT_DEPTH_comp.spv" : "Resources/Shaders/irradianceVolumeUpdateProbes_comp.spv");
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE);
 				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH);
+				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(PROBE_SIDE_LENGTH_CONST_ID, data.m_depth ? RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH :  RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH);
 
 				pipelineDesc.finalize();
 			}

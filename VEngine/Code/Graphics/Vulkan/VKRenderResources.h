@@ -24,6 +24,7 @@ namespace VEngine
 		VKImage m_voxelSceneImage;
 		VKImage m_voxelSceneOpacityImage;
 		VKImage m_irradianceVolumeImage;
+		VKImage m_irradianceVolumeDepthImage;
 		//VKImage m_irradianceVolumeXAxisImage;
 		//VKImage m_irradianceVolumeYAxisImage;
 		//VKImage m_irradianceVolumeZAxisImage;
@@ -89,6 +90,8 @@ namespace VEngine
 		ResourceState m_irradianceVolumeQueueBuffersResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_irradianceVolumeImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_irradianceVolumeImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_irradianceVolumeDepthImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_irradianceVolumeDepthImageResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;
