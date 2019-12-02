@@ -78,6 +78,8 @@ namespace VEngine
 		glm::mat4 *m_shadowMatrices;
 		uint32_t m_subMeshInstanceDataCount;
 		SubMeshInstanceData *m_subMeshInstanceData;
+		uint32_t m_allInstanceDataCount;
+		SubMeshInstanceData *m_allInstanceData;
 		uint64_t *m_drawCallKeys;
 		uint32_t m_mainViewRenderListIndex;
 		uint32_t m_shadowCascadeViewRenderListOffset;

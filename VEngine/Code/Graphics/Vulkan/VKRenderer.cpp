@@ -914,12 +914,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelizationPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 	voxelizationPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	voxelizationPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-	voxelizationPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
-	voxelizationPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
+	//voxelizationPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
+	//voxelizationPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
 	voxelizationPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	voxelizationPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
+	voxelizationPassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
+	voxelizationPassData.m_instanceData = renderData.m_allInstanceData;
+	voxelizationPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	voxelizationPassData.m_shadowImageViewHandle = shadowImageViewHandle;
+	voxelizationPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
+	voxelizationPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	
-	//VoxelizationPass::addToGraph(graph, voxelizationPassData);
+	VoxelizationPass::addToGraph(graph, voxelizationPassData);
 
 
 	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;
@@ -940,7 +946,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
 	ssVoxelPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
 
-	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
+	//ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
 
 	UpdateQueueProbabilityPass::Data updateQueueProbabilityPassData;

@@ -21,10 +21,11 @@ void VEngine::VoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
-		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
+		//{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
+		//{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
 		{ResourceViewHandle(data.m_voxelSceneImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_voxelSceneOpacityImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
+		{ResourceViewHandle(data.m_shadowImageViewHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 	};
 
 	graph.addPass("Voxelization", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -79,6 +80,7 @@ void VEngine::VoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 				pipelineDesc.m_fragmentShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
 				pipelineDesc.m_fragmentShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
 				pipelineDesc.m_fragmentShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
+				pipelineDesc.m_fragmentShaderStage.m_specializationInfo.addEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_passRecordContext->m_commonRenderData->m_directionalLightCount);
 
 				pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 0;
 				pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 0;
@@ -135,12 +137,16 @@ void VEngine::VoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) }, VERTEX_NORMALS_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) }, VERTEX_TEXCOORDS_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
+				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
+				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneOpacityImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), OPACITY_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_voxelSceneImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), VOXEL_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_shadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER), SHADOW_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
+				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_lightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);
+				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
 
 				writer.commit();
 			}
@@ -165,24 +171,35 @@ void VEngine::VoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 			vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-			vkCmdBindIndexBuffer(cmdBuf, registry.getBuffer(data.m_indicesBufferHandle), 0, VK_INDEX_TYPE_UINT32);
+			//vkCmdBindIndexBuffer(cmdBuf, registry.getBuffer(data.m_indicesBufferHandle), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 			float curVoxelScale = 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE;
 
 			for (uint32_t i = 0; i < RendererConsts::VOXEL_SCENE_CASCADES; ++i)
 			{
-				PushConsts pushConsts;
-				pushConsts.superSamplingFactor = superSamplingFactor;
-				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT, RendererConsts::VOXEL_SCENE_DEPTH) / 2.0f);
-				pushConsts.voxelScale = curVoxelScale;
-				pushConsts.invGridResolution = 1.0f / voxelGridResolution;
-				pushConsts.cascade = i;
+				for (uint32_t j = 0; j < data.m_instanceDataCount; ++j)
+				{
+					const auto &instanceData = data.m_instanceData[j];
+					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
-				vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+					PushConsts pushConsts;
+					pushConsts.superSamplingFactor = superSamplingFactor;
+					pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT, RendererConsts::VOXEL_SCENE_DEPTH) / 2.0f);
+					pushConsts.voxelScale = curVoxelScale;
+					pushConsts.invGridResolution = 1.0f / voxelGridResolution;
+					pushConsts.cascade = i;
+					pushConsts.transformIndex = instanceData.m_transformIndex;
+					pushConsts.materialIndex = instanceData.m_materialIndex;
+					pushConsts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 
-				vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+					vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 
+					vkCmdDrawIndexed(cmdBuf, subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+					//vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+				}
+				
 				curVoxelScale *= 0.5f;
 			}
 

@@ -16,21 +16,33 @@
 #define VOXEL_IMAGE_BINDING 7
 #define OPACITY_IMAGE_SET 0
 #define OPACITY_IMAGE_BINDING 8
+#define SHADOW_IMAGE_SET 0
+#define SHADOW_IMAGE_BINDING 9
+#define SHADOW_SAMPLER_SET 0
+#define SHADOW_SAMPLER_BINDING 10
+#define DIRECTIONAL_LIGHT_DATA_SET 0
+#define DIRECTIONAL_LIGHT_DATA_BINDING 11
+#define SHADOW_MATRICES_SET 0
+#define SHADOW_MATRICES_BINDING 12
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
 #define SAMPLERS_SET 1
 #define SAMPLERS_BINDING 1
 
-#define VOXEL_GRID_WIDTH_CONST_ID 0
-#define VOXEL_GRID_HEIGHT_CONST_ID 1
-#define VOXEL_GRID_DEPTH_CONST_ID 2
+#define DIRECTIONAL_LIGHT_COUNT_CONST_ID 0
+#define VOXEL_GRID_WIDTH_CONST_ID 1
+#define VOXEL_GRID_HEIGHT_CONST_ID 2
+#define VOXEL_GRID_DEPTH_CONST_ID 3
 
 struct PushConsts
 {
+	mat4 invViewMatrix;
 	vec3 gridOffset;
 	float voxelScale;
 	float invGridResolution;
 	uint cascade;
 	uint superSamplingFactor;
+	uint transformIndex;
+	uint materialIndex;
 };

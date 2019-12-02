@@ -42,6 +42,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 	m_lightData.m_spotLightData.clear();
 
 	std::vector<ViewRenderList> renderLists;
+	std::vector<SubMeshInstanceData> allInstanceData;
 
 	struct CullingData
 	{
@@ -292,9 +293,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 					{
 					case 0: // Opaque
 						contentTypeMask = staticMobility ? CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT : CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT;
+						allInstanceData.push_back(instanceData);
 						break;
 					case 1: // Alpha tested
 						contentTypeMask = staticMobility ? CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT : CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+						allInstanceData.push_back(instanceData);
 						break;
 					case 2: // transparent
 						contentTypeMask = staticMobility ? CullingData::STATIC_TRANSPARENT_CONTENT_TYPE_BIT : CullingData::DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT;
@@ -396,6 +399,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_shadowCascadeViewRenderListOffset = 1;
 		renderData.m_shadowCascadeViewRenderListCount = static_cast<uint32_t>(m_shadowMatrices.size());
 		renderData.m_renderLists = renderLists.data();
+		renderData.m_allInstanceDataCount = allInstanceData.size();
+		renderData.m_allInstanceData = allInstanceData.data();
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
 		++m_commonRenderData.m_frame;
