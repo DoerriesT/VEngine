@@ -34,13 +34,13 @@ public:
 		m_engine->getRenderSystem().setCameraEntity(cameraEntity);
 
 		VEngine::Scene scene = {};
-		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 		entt::entity sponzaEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);*/
+		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
 
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
+		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 		entt::entity giHouseEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(giHouseEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(giHouseEntity, scene.m_meshInstances["Resources/Models/gihouse"]);
@@ -51,7 +51,7 @@ public:
 		auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		quadTc.m_scale = 60.0f;
 		entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
+		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);*/
 		
 
 		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");

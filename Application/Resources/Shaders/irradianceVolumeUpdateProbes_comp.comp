@@ -176,12 +176,12 @@ void main()
 	
 	const ivec2 fragCoord = ivec2((gridSize.xz * ivec2(cellCoord.y, cascade) + cellCoord.xz) * (cProbeSideLength + 2)) + ivec2(gl_LocalInvocationID.xy + 1);
 	
-	const vec3 texelDir = randomOrientation() * octDecode(normalizedOctCoord(fragCoord));
+	const vec3 texelDir = normalize(octDecode(normalizedOctCoord(fragCoord)));
 	
 	vec4 result = vec4(0.0);
 	for (uint i = 0; i < 64; ++i)
 	{
-		const vec3 rayDir = sphericalFibonacci(float(i), 64.0);
+		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), 64.0));
 #if !OUTPUT_DEPTH
 		const float weight = max(dot(rayDir, texelDir), 0.0);
 		if (weight >= epsilon)

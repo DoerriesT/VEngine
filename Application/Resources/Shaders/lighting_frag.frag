@@ -361,14 +361,15 @@ void main()
 					weight *= probeInPoint ? 1.0 : square(max(0.0001, (dot(normalize(trueDirToProbe), worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
 				}
 				
+				const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord + cameraOffset) / vec3(gridSize)) * gridSize);
 				
 				// moment visibility test
 				if (!probeInPoint)
 				{
 					vec3 worldSpaceProbePos = vec3(probeGridCoord + cameraOffset) / currentGridScale;
-					vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos;// + (worldSpaceNormal + 3.0 * worldSpaceViewDir); // * normalBias
+					vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.25;
 					vec3 dir = normalize(biasedProbeToPoint);
-					vec2 texCoord = texCoordFromDir(dir, probeGridCoord, int(cascadeIndex), int(cDepthProbeSideLength));
+					vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascadeIndex), int(cDepthProbeSideLength));
 					float distToProbe = length(biasedProbeToPoint);
 					
 					vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
@@ -379,7 +380,7 @@ void main()
 					
 					chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
 					
-					weight *= (distToProbe <= mean) ? 1.0 : 0.0;//chebyshevWeight;
+					weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
 				}
 				
 				// avoid zero weight
@@ -394,9 +395,7 @@ void main()
 				// trilinear
 				weight *= trilinear.x * trilinear.y * trilinear.z;
 				
-				probeGridCoord = ivec3(fract((probeGridCoord + cameraOffset) / vec3(gridSize)) * gridSize);
-				
-				vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, probeGridCoord, int(cascadeIndex), int(cProbeSideLength));
+				vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, wrappedProbeGridCoord, int(cascadeIndex), int(cProbeSideLength));
 				vec3 probeIrradiance = textureLod(uIrradianceVolumeImage, probeTexCoord, 0).rgb;
 				
 				probeIrradiance = sqrt(probeIrradiance);
