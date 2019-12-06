@@ -5,17 +5,15 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace IrradianceVolumeDebugPass
+	namespace IrradianceVolumeUpdateACProbesPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			uint32_t m_cascadeIndex;
-			bool m_showAge;
+			ImageViewHandle m_ageImageHandle;
 			ImageViewHandle m_irradianceVolumeImageHandles[3];
-			ImageViewHandle m_irradianceVolumeAgeImageHandle;
-			ImageViewHandle m_colorImageHandle;
-			ImageViewHandle m_depthImageHandle;
+			ImageViewHandle m_rayMarchingResultImageHandle;
+			BufferViewHandle m_queueBufferHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

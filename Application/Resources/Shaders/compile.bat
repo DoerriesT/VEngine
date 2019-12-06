@@ -48,5 +48,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c voxelization_frag.frag -o voxelizatio
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching_comp.comp -o irradianceVolumeRayMarching_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeUpdateProbes_comp.comp -o irradianceVolumeUpdateProbes_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DOUTPUT_DEPTH=1 irradianceVolumeUpdateProbes_comp.comp -o irradianceVolumeUpdateProbes_OUTPUT_DEPTH_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeUpdateACProbes_comp.comp -o irradianceVolumeUpdateACProbes_comp.spv
 
 pause

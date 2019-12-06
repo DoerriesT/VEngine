@@ -1,0 +1,223 @@
+#version 450
+
+#include "irradianceVolumeUpdateACProbes_bindings.h"
+#include "common.h"
+
+layout(set = RAY_IMAGE_SET, binding = RAY_IMAGE_BINDING) uniform sampler2D uRayImage;
+layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING, r8) uniform image3D uAgeImage;
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING, rgba16f) uniform image3D uIrradianceVolumeImages[3];
+
+layout(set = QUEUE_BUFFER_SET, binding = QUEUE_BUFFER_BINDING) readonly buffer QUEUE_BUFFER
+{
+	uint uQueueSize;
+	float uP;
+	uint uQueue[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout(constant_id = GRID_WIDTH_CONST_ID) const uint cGridWidth = 64;
+layout(constant_id = GRID_HEIGHT_CONST_ID) const uint cGridHeight = 32;
+layout(constant_id = GRID_DEPTH_CONST_ID) const uint cGridDepth = 64;
+layout(constant_id = GRID_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
+layout(constant_id = CASCADES_CONST_ID) const uint cCascades = 3;
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+/**  Generate a spherical fibonacci point
+
+    http://lgdv.cs.fau.de/publications/publication/Pub.2015.tech.IMMD.IMMD9.spheri/
+
+    To generate a nearly uniform point distribution on the unit sphere of size N, do
+    for (float i = 0.0; i < N; i += 1.0) {
+        float3 point = sphericalFibonacci(i,N);
+    }
+
+    The points go from z = +1 down to z = -1 in a spiral. To generate samples on the +z hemisphere,
+    just stop before i > N/2.
+
+*/
+vec3 sphericalFibonacci(float i, float n) 
+{
+    const float PHI = sqrt(5) * 0.5 + 0.5;
+#   define madfrac(A, B) ((A)*(B)-floor((A)*(B)))
+    float phi = 2.0 * PI * madfrac(i, PHI - 1);
+    float cosTheta = 1.0 - (2.0 * i + 1.0) * (1.0 / n);
+    float sinTheta = sqrt(clamp(1.0 - cosTheta * cosTheta, 0.0, 1.0));
+
+    return vec3(
+        cos(phi) * sinTheta,
+        sin(phi) * sinTheta,
+        cosTheta);
+
+#   undef madfrac
+}
+
+uint rand_xorshift(uint rngState)
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    rngState ^= (rngState << 13);
+    rngState ^= (rngState >> 17);
+    rngState ^= (rngState << 5);
+    return rngState;
+}
+
+uint wang_hash(uint seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+
+mat3 randomOrientation()
+{
+	uint rngState = wang_hash(floatBitsToInt(uPushConsts.time));
+	vec3 axis = normalize(vec3(rand_xorshift(rngState), rand_xorshift(rngState), rand_xorshift(rngState)) * (1.0 / 4294967296.0));
+	float angle = rand_xorshift(rngState) * (1.0 / 4294967296.0) * 2.0 * PI;
+
+	mat3 m;
+	float c = cos(angle);
+	float s = sin(angle);
+	float oneMinusCos = 1.0 - c;
+	float x2 = axis.x * axis.x;
+	float y2 = axis.y * axis.y;
+	float z2 = axis.z * axis.z;
+	float xym = axis.x * axis.y * oneMinusCos;
+	float xzm = axis.x * axis.z * oneMinusCos;
+	float yzm = axis.y * axis.z * oneMinusCos;
+	float xSin = axis.x * s;
+	float ySin = axis.y * s;
+	float zSin = axis.z * s;
+
+	m[0][0] = x2 * oneMinusCos + c;
+	m[0][1] = xym - zSin;
+	m[0][2] = xzm + ySin;
+
+	m[1][0] = xym + zSin;
+	m[1][1] = y2 * oneMinusCos + c;
+	m[1][2] = yzm - xSin;
+
+	m[2][0] = xzm - ySin;
+	m[2][1] = yzm + xSin;
+	m[2][2] = z2 * oneMinusCos + c;
+
+	return m;
+}
+
+const float epsilon = 1e-6;
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x >= uQueueSize)
+	{
+		return;
+	}
+	
+	vec4 result[6];
+	for (uint i = 0; i < 6; ++i)
+	{
+		result[i] = vec4(0.0);
+	}
+	
+	for (uint i = 0; i < 64; ++i)
+	{
+		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), 64.0));
+		const vec4 rayResult = texelFetch(uRayImage, ivec2(i, gl_GlobalInvocationID.x), 0);
+		float weight = 0.0;
+
+		weight = max(dot(rayDir, vec3(1.0, 0.0, 0.0)), 0.0);
+		result[0] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+		
+		weight = max(dot(rayDir, vec3(0.0, 1.0, 0.0)), 0.0);
+		result[1] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+		
+		weight = max(dot(rayDir, vec3(0.0, 0.0, 1.0)), 0.0);
+		result[2] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+		
+		weight = max(dot(rayDir, vec3(-1.0, 0.0, 0.0)), 0.0);
+		result[3] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+		
+		weight = max(dot(rayDir, vec3(0.0, -1.0, 0.0)), 0.0);
+		result[4] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+		
+		weight = max(dot(rayDir, vec3(0.0, 0.0, -1.0)), 0.0);
+		result[5] += weight >= epsilon ? vec4(rayResult.rgb * weight, weight) : vec4(0.0);
+	}
+	
+	const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
+	
+	// get cell index and cascade index
+	uint cellIndex = uQueue[gl_GlobalInvocationID.x];
+	const uint cascade = cellIndex / (cGridWidth * cGridHeight * cGridDepth);
+	cellIndex -= cascade * (cGridWidth * cGridHeight * cGridDepth);
+	
+	// get cell coordinate
+	ivec3 coord;
+	coord.y = int(cellIndex / (gridSize.x * gridSize.z));
+	coord.x = int(cellIndex % gridSize.x);
+	coord.z = int((cellIndex - coord.y * (gridSize.x * gridSize.z)) / gridSize.x);
+	
+	ivec3 gridOffset = ivec3(round(uPushConsts.cameraPosition.xyz * (cGridBaseScale / (1 << cascade)))) - gridSize / 2;
+	coord = ivec3(fract(vec3(coord + gridOffset) * (1.0 / gridSize)) * gridSize);
+	
+	// z and y axis are switched in order to "grow" the image along the z axis with each additional cascade
+	coord = coord.xzy;
+	
+	float age = imageLoad(uAgeImage, coord + ivec3(0, 0, cascade * cGridHeight)).x;
+	imageStore(uAgeImage, coord + ivec3(0, 0, cascade * cGridHeight), vec4(1.0 / 256.0));
+	
+	// cascades are stacked on top of each other inside the same image
+	coord += ivec3(0, 0, cascade * cGridHeight * 2);
+	
+	float alpha = age == 0.0 ? 1.0 : 0.02;
+	
+	vec3 color = vec3(0.0);
+	
+	// +X
+	if (result[0].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[0], coord).rgb;
+		imageStore(uIrradianceVolumeImages[0], coord, vec4(mix(color, result[0].rgb / result[0].w, alpha), 1.0));
+	}		
+	
+	// -X
+	if (result[3].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[0], coord + ivec3(0, 0, gridSize.y)).rgb;
+		imageStore(uIrradianceVolumeImages[0], coord + ivec3(0, 0, gridSize.y), vec4(mix(color, result[3].rgb / result[3].w, alpha), 1.0));
+	}
+	
+	// +Y
+	if (result[1].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[1], coord).rgb;
+		imageStore(uIrradianceVolumeImages[1], coord, vec4(mix(color, result[1].rgb / result[1].w, alpha), 1.0));
+	}
+	
+	// -Y
+	if (result[4].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[1], coord + ivec3(0, 0, gridSize.y)).rgb;
+		imageStore(uIrradianceVolumeImages[1], coord + ivec3(0, 0, gridSize.y), vec4(mix(color, result[4].rgb / result[4].w, alpha), 1.0));
+	}
+	
+	// +Z
+	if (result[2].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[2], coord).rgb;
+		imageStore(uIrradianceVolumeImages[2], coord, vec4(mix(color, result[2].rgb / result[2].w, alpha), 1.0));
+	}
+	
+	// -Z
+	if (result[5].w >= epsilon)
+	{
+		color = imageLoad(uIrradianceVolumeImages[2], coord + ivec3(0, 0, gridSize.y)).rgb;
+		imageStore(uIrradianceVolumeImages[2], coord + ivec3(0, 0, gridSize.y), vec4(mix(color, result[5].rgb / result[5].w, alpha), 1.0));
+	}
+}

@@ -372,6 +372,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateACProbesPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -633,6 +636,9 @@
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateACProbesPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

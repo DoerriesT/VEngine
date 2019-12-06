@@ -159,7 +159,7 @@ void main()
 			const float age = imageLoad(uAgeImage, coord).x;
 			bool enqueued = false;
 			
-			if ((age * rnd > p || age == 0.0) && !outsideFrustum)
+			if ((rnd > p || age == 0.0) && !outsideFrustum)
 			{
 				uint queueIndex = atomicAdd(uQueueSize, 1);
 				if (queueIndex < cQueueCapacity)
