@@ -28,17 +28,18 @@ void VEngine::DeferredShadowsPass::addToGraph(RenderGraph &graph, const Data &da
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
+		SpecEntry specEntries[]
 		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/deferredShadows_comp.spv");
-			pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, glm::min(data.m_passRecordContext->m_commonRenderData->m_directionalLightCount, 4u));
-			pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(WIDTH_CONST_ID, width);
-			pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(HEIGHT_CONST_ID, height);
-			pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(TEXEL_WIDTH_CONST_ID, 1.0f / width);
-			pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(TEXEL_HEIGHT_CONST_ID, 1.0f / height);
+			SpecEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, glm::min(data.m_passRecordContext->m_commonRenderData->m_directionalLightCount, 4u)),
+			SpecEntry(WIDTH_CONST_ID, width),
+			SpecEntry(HEIGHT_CONST_ID, height),
+			SpecEntry(TEXEL_WIDTH_CONST_ID, 1.0f / width),
+			SpecEntry(TEXEL_HEIGHT_CONST_ID, 1.0f / height),
+		};
 
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/deferredShadows_comp.spv", sizeof(specEntries) / sizeof(specEntries[0]), specEntries);
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

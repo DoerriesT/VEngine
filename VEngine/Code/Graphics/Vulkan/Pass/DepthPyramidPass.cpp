@@ -84,12 +84,9 @@ void VEngine::DepthPyramidPass::addToGraph(RenderGraph &graph, const Data &data)
 		//}
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/depthPyramid_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/depthPyramid_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

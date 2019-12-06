@@ -42,28 +42,19 @@ void VEngine::ClearVoxelsPass::addToGraph(RenderGraph &graph, const Data &data)
 
 	graph.addPass(voxelClear ? "Clear Voxels" : "Clear Volume", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
-			VKComputePipelineDescription pipelineDesc;
+			// create pipeline description
+			SpecEntry specEntries[]
 			{
-				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/clearVoxels_comp.spv");
-				if (data.m_clearMode == Data::VOXEL_SCENE)
-				{
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
-				}
-				else
-				{
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE);
-					pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES);
-				}
+				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, data.m_clearMode == Data::VOXEL_SCENE ? RendererConsts::VOXEL_SCENE_WIDTH : RendererConsts::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, data.m_clearMode == Data::VOXEL_SCENE ? RendererConsts::VOXEL_SCENE_HEIGHT : RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, data.m_clearMode == Data::VOXEL_SCENE ? RendererConsts::VOXEL_SCENE_DEPTH : RendererConsts::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / (data.m_clearMode == Data::VOXEL_SCENE ? RendererConsts::VOXEL_SCENE_BASE_SIZE : RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE)),
+				SpecEntry(VOXEL_CASCADES_CONST_ID, data.m_clearMode == Data::VOXEL_SCENE ? RendererConsts::VOXEL_SCENE_CASCADES : RendererConsts::IRRADIANCE_VOLUME_CASCADES),
+			};
 
-				pipelineDesc.finalize();
-			}
+			ComputePipelineDesc pipelineDesc;
+			pipelineDesc.setComputeShader("Resources/Shaders/clearVoxels_comp.spv", sizeof(specEntries) / sizeof(specEntries[0]), specEntries);
+			pipelineDesc.finalize();
 
 			auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

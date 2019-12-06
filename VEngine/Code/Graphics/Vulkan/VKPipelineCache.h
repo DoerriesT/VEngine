@@ -26,8 +26,8 @@ namespace VEngine
 			VkPipelineLayout m_layout;
 		};
 
-		PipelineData getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const RenderPassCompatibilityDescription &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass);
-		PipelineData getPipeline(const VKComputePipelineDescription &pipelineDesc);
+		PipelineData getPipeline(const GraphicsPipelineDesc &pipelineDesc, const RenderPassCompatDesc &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass);
+		PipelineData getPipeline(const ComputePipelineDesc &pipelineDesc);
 
 	private:
 		struct ReflectionInfo
@@ -62,10 +62,10 @@ namespace VEngine
 			uint32_t m_setMask;
 		};
 
-		std::unordered_map<VKCombinedGraphicsPipelineRenderPassDescription, PipelineData, VKCombinedGraphicsPipelineRenderPassDescriptionHash> m_graphicsPipelines;
-		std::unordered_map<VKComputePipelineDescription, PipelineData, VKComputePipelineDescriptionHash> m_computePipelines;
+		std::unordered_map<CombinedGraphicsPipelineRenderPassDesc, PipelineData, CombinedGraphicsPipelineRenderPassDescHash> m_graphicsPipelines;
+		std::unordered_map<ComputePipelineDesc, PipelineData, ComputePipelineDescHash> m_computePipelines;
 
-		void createShaderStage(const VKShaderStageDescription &stageDescription, VkShaderStageFlagBits stageFlag, VkShaderModule &shaderModule, VkPipelineShaderStageCreateInfo &stageCreateInfo, ReflectionInfo &reflectionInfo);
+		void createShaderStage(const ShaderStageDesc &stageDescription, VkShaderStageFlagBits stageFlag, VkShaderModule &shaderModule, VkPipelineShaderStageCreateInfo &stageCreateInfo, ReflectionInfo &reflectionInfo, VkSpecializationInfo & specInfo);
 		void createPipelineLayout(const ReflectionInfo &reflectionInfo, VkPipelineLayout &pipelineLayout, DescriptorSetLayoutData &descriptorSetLayoutData);
 	};
 }

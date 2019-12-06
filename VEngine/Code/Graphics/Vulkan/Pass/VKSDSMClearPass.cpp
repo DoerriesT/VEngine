@@ -22,12 +22,9 @@ void VEngine::VKSDSMClearPass::addToGraph(RenderGraph &graph, const Data &data)
 	graph.addPass("SDSM Clear", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/sdsmClear_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/sdsmClear_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

@@ -41,13 +41,15 @@ void VEngine::UpdateQueueProbabilityPass::addToGraph(RenderGraph &graph, const D
 				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 				vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
 			}
-			VKComputePipelineDescription pipelineDesc;
-			{
-				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/updateQueueProbability_comp.spv");
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY);
 
-				pipelineDesc.finalize();
-			}
+			SpecEntry specEntries[]
+			{
+				SpecEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY),
+			};
+
+			ComputePipelineDesc pipelineDesc;
+			pipelineDesc.setComputeShader("Resources/Shaders/updateQueueProbability_comp.spv", sizeof(specEntries) / sizeof(specEntries[0]), specEntries);
+			pipelineDesc.finalize();
 
 			auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

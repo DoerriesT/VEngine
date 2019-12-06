@@ -108,11 +108,9 @@ void VEngine::BuildIndexBufferPass::addToGraph(RenderGraph &graph, const Data &d
 			}
 
 			// create pipeline description
-			VKComputePipelineDescription pipelineDesc;
-			{
-				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/buildIndexBuffer_comp.spv");
-				pipelineDesc.finalize();
-			}
+			ComputePipelineDesc pipelineDesc;
+			pipelineDesc.setComputeShader("Resources/Shaders/buildIndexBuffer_comp.spv");
+			pipelineDesc.finalize();
 
 			auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

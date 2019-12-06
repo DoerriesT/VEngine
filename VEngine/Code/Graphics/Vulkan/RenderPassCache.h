@@ -8,9 +8,9 @@ namespace VEngine
 	class RenderPassCache
 	{
 	public:
-		void getRenderPass(const RenderPassDescription &renderPassDesc, RenderPassCompatibilityDescription &compatDesc, VkRenderPass &renderPass);
+		void getRenderPass(const RenderPassDesc &renderPassDesc, RenderPassCompatDesc &compatDesc, VkRenderPass &renderPass);
 
 	private:
-		std::unordered_map<RenderPassDescription, VkRenderPass, RenderPassDescriptionHash> m_renderPasses;
+		std::unordered_map<RenderPassDesc, VkRenderPass, RenderPassDescHash> m_renderPasses;
 	};
 }

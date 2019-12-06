@@ -33,12 +33,9 @@ void VEngine::OcclusionCullingCreateDrawArgsPass::addToGraph(RenderGraph &graph,
 		vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/occlusionCullingCreateDrawArgs_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/occlusionCullingCreateDrawArgs_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

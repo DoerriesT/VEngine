@@ -30,12 +30,9 @@ void VEngine::VKTonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/tonemap_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/tonemap_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

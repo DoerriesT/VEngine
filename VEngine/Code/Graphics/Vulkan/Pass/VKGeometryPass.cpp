@@ -37,9 +37,9 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 
 		// begin renderpass
 		VkRenderPass renderPass;
-		RenderPassCompatibilityDescription renderPassCompatDesc;
+		RenderPassCompatDesc renderPassCompatDesc;
 		{
-			RenderPassDescription renderPassDesc{};
+			RenderPassDesc renderPassDesc{};
 			renderPassDesc.m_attachmentCount = 5;
 			renderPassDesc.m_subpassCount = 1;
 			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_depthImageHandle, ResourceState::WRITE_DEPTH_STENCIL, true);
@@ -95,65 +95,24 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		}
 
 		// create pipeline description
-		VKGraphicsPipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/geometry_vert.spv");
-			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
+		VkPipelineColorBlendAttachmentState colorBlendAttachments[]
+		{ 
+			GraphicsPipelineDesc::s_defaultBlendAttachment,
+			GraphicsPipelineDesc::s_defaultBlendAttachment,
+			GraphicsPipelineDesc::s_defaultBlendAttachment,
+			GraphicsPipelineDesc::s_defaultBlendAttachment,
+		};
 
-			pipelineDesc.m_vertexInputState.m_vertexBindingDescriptionCount = 0;
-			//pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[0] = { 0, sizeof(VertexPosition), VK_VERTEX_INPUT_RATE_VERTEX };
-			//pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[1] = { 1, sizeof(VertexNormal), VK_VERTEX_INPUT_RATE_VERTEX };
-			//pipelineDesc.m_vertexInputState.m_vertexBindingDescriptions[2] = { 2, sizeof(VertexTexCoord), VK_VERTEX_INPUT_RATE_VERTEX };
+		VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-			pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptionCount = 0;
-			//pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-			//pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[1] = { 1, 1, VK_FORMAT_R32G32B32_SFLOAT, 0 };
-			//pipelineDesc.m_vertexInputState.m_vertexAttributeDescriptions[2] = { 2, 2, VK_FORMAT_R32G32_SFLOAT, 0 };
-
-			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
-
-			pipelineDesc.m_viewportState.m_viewportCount = 1;
-			pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
-			pipelineDesc.m_viewportState.m_scissorCount = 1;
-			pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
-
-			pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
-			pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
-			pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
-			pipelineDesc.m_rasterizationState.m_cullMode = data.m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
-			pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-			pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
-			pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
-
-			pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-			pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
-			pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
-
-			pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
-			pipelineDesc.m_depthStencilState.m_depthWriteEnable = true;
-			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
-			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
-			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
-
-			VkPipelineColorBlendAttachmentState defaultBlendAttachment = {};
-			defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-			defaultBlendAttachment.blendEnable = VK_FALSE;
-
-			pipelineDesc.m_blendState.m_logicOpEnable = false;
-			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-			pipelineDesc.m_blendState.m_attachmentCount = 4;
-			pipelineDesc.m_blendState.m_attachments[0] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[1] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[2] = defaultBlendAttachment;
-			pipelineDesc.m_blendState.m_attachments[3] = defaultBlendAttachment;
-
-			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
-			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
-			pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
-
-			pipelineDesc.finalize();
-		}
+		GraphicsPipelineDesc pipelineDesc;
+		pipelineDesc.setVertexShader("Resources/Shaders/geometry_vert.spv");
+		pipelineDesc.setFragmentShader(data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
+		pipelineDesc.setPolygonModeCullMode(VK_POLYGON_MODE_FILL, data.m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		pipelineDesc.setDepthTest(true, true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+		pipelineDesc.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
+		pipelineDesc.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc, renderPassCompatDesc, 0, renderPass);
 

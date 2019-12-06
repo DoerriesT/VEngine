@@ -28,12 +28,9 @@ void VEngine::VKLuminanceHistogramAveragePass::addToGraph(RenderGraph &graph, co
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/luminanceHistogramReduceAverage_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/luminanceHistogramReduceAverage_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

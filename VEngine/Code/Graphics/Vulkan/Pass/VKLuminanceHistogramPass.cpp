@@ -31,12 +31,9 @@ void VEngine::VKLuminanceHistogramPass::addToGraph(RenderGraph &graph, const Dat
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
 		// create pipeline description
-		VKComputePipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/luminanceHistogram_comp.spv");
-
-			pipelineDesc.finalize();
-		}
+		ComputePipelineDesc pipelineDesc;
+		pipelineDesc.setComputeShader("Resources/Shaders/luminanceHistogram_comp.spv");
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

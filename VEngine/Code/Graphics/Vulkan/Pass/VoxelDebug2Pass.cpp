@@ -27,21 +27,22 @@ void VEngine::VoxelDebug2Pass::addToGraph(RenderGraph &graph, const Data &data)
 			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
 			// create pipeline description
-			VKComputePipelineDescription pipelineDesc;
+			SpecEntry specEntries[]
 			{
-				strcpy_s(pipelineDesc.m_computeShaderStage.m_path, "Resources/Shaders/voxelDebug2_comp.spv");
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH);
-				//pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE);
-				//pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(WIDTH_CONST_ID, width);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(HEIGHT_CONST_ID, height);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(TEXEL_WIDTH_CONST_ID, 1.0f / width);
-				pipelineDesc.m_computeShaderStage.m_specializationInfo.addEntry(TEXEL_HEIGHT_CONST_ID, 1.0f / height);
+				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH),
+				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT),
+				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH),
+				//SpecEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE),
+				//SpecEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES),
+				SpecEntry(WIDTH_CONST_ID, width),
+				SpecEntry(HEIGHT_CONST_ID, height),
+				SpecEntry(TEXEL_WIDTH_CONST_ID, 1.0f / width),
+				SpecEntry(TEXEL_HEIGHT_CONST_ID, 1.0f / height),
+			};
 
-				pipelineDesc.finalize();
-			}
+			ComputePipelineDesc pipelineDesc;
+			pipelineDesc.setComputeShader("Resources/Shaders/voxelDebug2_comp.spv", sizeof(specEntries) / sizeof(specEntries[0]), specEntries);
+			pipelineDesc.finalize();
 
 			auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc);
 

@@ -3,7 +3,7 @@
 #include "Utility/Utility.h"
 #include <iostream>
 
-void VEngine::RenderPassCache::getRenderPass(const RenderPassDescription &renderPassDesc, RenderPassCompatibilityDescription &compatDesc, VkRenderPass &renderPass)
+void VEngine::RenderPassCache::getRenderPass(const RenderPassDesc &renderPassDesc, RenderPassCompatDesc &compatDesc, VkRenderPass &renderPass)
 {
 	// get renderPass from cache or create a new one
 	{
@@ -13,7 +13,7 @@ void VEngine::RenderPassCache::getRenderPass(const RenderPassDescription &render
 		if (pass == VK_NULL_HANDLE)
 		{
 			std::cout << "Creating RenderPass!" << std::endl;
-			VkSubpassDescription subpasses[RenderPassDescription::MAX_SUBPASSES];
+			VkSubpassDescription subpasses[RenderPassDesc::MAX_SUBPASSES];
 
 			for (size_t i = 0; i < renderPassDesc.m_subpassCount; ++i)
 			{

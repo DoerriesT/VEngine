@@ -2,51 +2,51 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 #include <spirv-cross/spirv_cross.hpp>
-#include <iostream>
 
-VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const VKGraphicsPipelineDescription &pipelineDesc, const RenderPassCompatibilityDescription &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass)
+VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const GraphicsPipelineDesc &pipelineDesc, const RenderPassCompatDesc &renderPassDesc, uint32_t subpassIndex, VkRenderPass renderPass)
 {
 	auto &pipelinePair = m_graphicsPipelines[{pipelineDesc, renderPassDesc, subpassIndex}];
 
 	// pipeline does not exist yet -> create it
 	if (pipelinePair.m_pipeline == VK_NULL_HANDLE)
 	{
-		std::cout << "Creating Pipeline!" << std::endl;
+		printf("Creating Pipeline!\n");
 
 		uint32_t stageCount = 0;
 		VkShaderModule shaderModules[5] = {};
 		VkPipelineShaderStageCreateInfo shaderStages[5] = {};
+		VkSpecializationInfo specInfo[5];
 		ReflectionInfo reflectionInfo{};
 
 		// create shaders and perform reflection
 		{
-			if (pipelineDesc.m_vertexShaderStage.m_path[0])
+			if (pipelineDesc.m_vertexShader.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_vertexShaderStage, VK_SHADER_STAGE_VERTEX_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_vertexShader, VK_SHADER_STAGE_VERTEX_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo, specInfo[stageCount]);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_tesselationControlShaderStage.m_path[0])
+			if (pipelineDesc.m_tessControlShader.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_tesselationControlShaderStage, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_tessControlShader, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo, specInfo[stageCount]);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_tesselationEvaluationShaderStage.m_path[0])
+			if (pipelineDesc.m_tessEvalShader.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_tesselationEvaluationShaderStage, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_tessEvalShader, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo, specInfo[stageCount]);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_geometryShaderStage.m_path[0])
+			if (pipelineDesc.m_geometryShader.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_geometryShaderStage, VK_SHADER_STAGE_GEOMETRY_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_geometryShader, VK_SHADER_STAGE_GEOMETRY_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo, specInfo[stageCount]);
 				++stageCount;
 			}
 
-			if (pipelineDesc.m_fragmentShaderStage.m_path[0])
+			if (pipelineDesc.m_fragmentShader.m_path[0])
 			{
-				createShaderStage(pipelineDesc.m_fragmentShaderStage, VK_SHADER_STAGE_FRAGMENT_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo);
+				createShaderStage(pipelineDesc.m_fragmentShader, VK_SHADER_STAGE_FRAGMENT_BIT, shaderModules[stageCount], shaderStages[stageCount], reflectionInfo, specInfo[stageCount]);
 				++stageCount;
 			}
 		}
@@ -68,7 +68,7 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 		VkPipelineViewportStateCreateInfo viewportState = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 		viewportState.viewportCount = pipelineDesc.m_viewportState.m_viewportCount;
 		viewportState.pViewports = pipelineDesc.m_viewportState.m_viewports;
-		viewportState.scissorCount = pipelineDesc.m_viewportState.m_scissorCount;
+		viewportState.scissorCount = pipelineDesc.m_viewportState.m_viewportCount;
 		viewportState.pScissors = pipelineDesc.m_viewportState.m_scissors;
 
 		VkPipelineRasterizationStateCreateInfo rasterizationState = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
@@ -129,12 +129,12 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = pipelinePair.m_layout;
 		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.subpass = 0;
+		pipelineInfo.subpass = subpassIndex;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		if (vkCreateGraphicsPipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelinePair.m_pipeline) != VK_SUCCESS)
 		{
-			Utility::fatalExit("Failed to create pipeline!", -1);
+			Utility::fatalExit("Failed to create pipeline!", EXIT_FAILURE);
 		}
 
 		for (uint32_t i = 0; i < stageCount; ++i)
@@ -146,21 +146,22 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 	return pipelinePair;
 }
 
-VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const VKComputePipelineDescription &pipelineDesc)
+VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(const ComputePipelineDesc &pipelineDesc)
 {
 	auto &pipelinePair = m_computePipelines[pipelineDesc];
 
 	// pipeline does not exist yet -> create it
 	if (pipelinePair.m_pipeline == VK_NULL_HANDLE)
 	{
-		std::cout << "Creating Pipeline!" << std::endl;
+		printf("Creating Pipeline!\n");
 
 		VkShaderModule compShaderModule;
 		VkPipelineShaderStageCreateInfo compShaderStageInfo;
 		ReflectionInfo reflectionInfo{};
+		VkSpecializationInfo specInfo;
 
 		// create shader and perform reflection
-		createShaderStage(pipelineDesc.m_computeShaderStage, VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule, compShaderStageInfo, reflectionInfo);
+		createShaderStage(pipelineDesc.m_computeShader, VK_SHADER_STAGE_COMPUTE_BIT, compShaderModule, compShaderStageInfo, reflectionInfo, specInfo);
 
 		// create descriptor set layouts and pipeline layout
 		memset(&pipelinePair.m_descriptorSetLayoutData, 0, sizeof(pipelinePair.m_descriptorSetLayoutData));
@@ -172,7 +173,7 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 
 		if (vkCreateComputePipelines(g_context.m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelinePair.m_pipeline) != VK_SUCCESS)
 		{
-			Utility::fatalExit("Failed to create pipeline!", -1);
+			Utility::fatalExit("Failed to create pipeline!", EXIT_FAILURE);
 		}
 
 		vkDestroyShaderModule(g_context.m_device, compShaderModule, nullptr);
@@ -181,20 +182,21 @@ VEngine::VKPipelineCache::PipelineData VEngine::VKPipelineCache::getPipeline(con
 	return pipelinePair;
 }
 
-void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription &stageDescription,
+void VEngine::VKPipelineCache::createShaderStage(const ShaderStageDesc &stageDesc,
 	VkShaderStageFlagBits stageFlag,
 	VkShaderModule &shaderModule,
 	VkPipelineShaderStageCreateInfo &stageCreateInfo,
-	ReflectionInfo &reflectionInfo)
+	ReflectionInfo &reflectionInfo,
+	VkSpecializationInfo &specInfo)
 {
-	std::vector<char> code = Utility::readBinaryFile(stageDescription.m_path);
+	std::vector<char> code = Utility::readBinaryFile(stageDesc.m_path);
 	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
 	if (vkCreateShaderModule(g_context.m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 	{
-		Utility::fatalExit("Failed to create shader module!", -1);
+		Utility::fatalExit("Failed to create shader module!", EXIT_FAILURE);
 	}
 
 	stageCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -202,9 +204,14 @@ void VEngine::VKPipelineCache::createShaderStage(const VKShaderStageDescription 
 	stageCreateInfo.module = shaderModule;
 	stageCreateInfo.pName = "main";
 
-	if (auto *info = stageDescription.m_specializationInfo.getInfo(); info->mapEntryCount)
+	if (stageDesc.m_specConstCount)
 	{
-		stageCreateInfo.pSpecializationInfo = info;
+		specInfo.mapEntryCount = stageDesc.m_specConstCount;
+		specInfo.pMapEntries = stageDesc.m_specializationEntries;
+		specInfo.dataSize = stageDesc.m_specConstCount * 4;
+		specInfo.pData = stageDesc.m_specializationData;
+		
+		stageCreateInfo.pSpecializationInfo = &specInfo;
 	}
 
 	// reflection

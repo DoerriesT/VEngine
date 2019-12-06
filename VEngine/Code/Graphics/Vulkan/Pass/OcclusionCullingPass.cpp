@@ -40,9 +40,9 @@ void VEngine::OcclusionCullingPass::addToGraph(RenderGraph &graph, const Data &d
 
 		// begin renderpass
 		VkRenderPass renderPass;
-		RenderPassCompatibilityDescription renderPassCompatDesc;
+		RenderPassCompatDesc renderPassCompatDesc;
 		{
-			RenderPassDescription renderPassDesc{};
+			RenderPassDesc renderPassDesc{};
 			renderPassDesc.m_attachmentCount = 1;
 			renderPassDesc.m_subpassCount = 1;
 			renderPassDesc.m_attachments[0] = registry.getAttachmentDescription(data.m_depthImageHandle, ResourceState::READ_DEPTH_STENCIL);
@@ -86,46 +86,14 @@ void VEngine::OcclusionCullingPass::addToGraph(RenderGraph &graph, const Data &d
 		}
 
 		// create pipeline description
-		VKGraphicsPipelineDescription pipelineDesc;
-		{
-			strcpy_s(pipelineDesc.m_vertexShaderStage.m_path, "Resources/Shaders/occlusionCulling_vert.spv");
-			strcpy_s(pipelineDesc.m_fragmentShaderStage.m_path, "Resources/Shaders/occlusionCulling_frag.spv");
+		VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-			pipelineDesc.m_inputAssemblyState.m_primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-			pipelineDesc.m_inputAssemblyState.m_primitiveRestartEnable = false;
-
-			pipelineDesc.m_viewportState.m_viewportCount = 1;
-			pipelineDesc.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
-			pipelineDesc.m_viewportState.m_scissorCount = 1;
-			pipelineDesc.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
-
-			pipelineDesc.m_rasterizationState.m_depthClampEnable = false;
-			pipelineDesc.m_rasterizationState.m_rasterizerDiscardEnable = false;
-			pipelineDesc.m_rasterizationState.m_polygonMode = VK_POLYGON_MODE_FILL;
-			pipelineDesc.m_rasterizationState.m_cullMode = VK_CULL_MODE_NONE;
-			pipelineDesc.m_rasterizationState.m_frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-			pipelineDesc.m_rasterizationState.m_depthBiasEnable = false;
-			pipelineDesc.m_rasterizationState.m_lineWidth = 1.0f;
-
-			pipelineDesc.m_multiSampleState.m_rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-			pipelineDesc.m_multiSampleState.m_sampleShadingEnable = false;
-			pipelineDesc.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
-
-			pipelineDesc.m_depthStencilState.m_depthTestEnable = true;
-			pipelineDesc.m_depthStencilState.m_depthWriteEnable = false;
-			pipelineDesc.m_depthStencilState.m_depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
-			pipelineDesc.m_depthStencilState.m_depthBoundsTestEnable = false;
-			pipelineDesc.m_depthStencilState.m_stencilTestEnable = false;
-
-			pipelineDesc.m_blendState.m_logicOpEnable = false;
-			pipelineDesc.m_blendState.m_logicOp = VK_LOGIC_OP_COPY;
-
-			pipelineDesc.m_dynamicState.m_dynamicStateCount = 2;
-			pipelineDesc.m_dynamicState.m_dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
-			pipelineDesc.m_dynamicState.m_dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
-
-			pipelineDesc.finalize();
-		}
+		GraphicsPipelineDesc pipelineDesc;
+		pipelineDesc.setVertexShader("Resources/Shaders/occlusionCulling_vert.spv");
+		pipelineDesc.setFragmentShader("Resources/Shaders/occlusionCulling_frag.spv");
+		pipelineDesc.setDepthTest(true, false, VK_COMPARE_OP_GREATER_OR_EQUAL);
+		pipelineDesc.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+		pipelineDesc.finalize();
 
 		auto pipelineData = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineDesc, renderPassCompatDesc, 0, renderPass);
 
