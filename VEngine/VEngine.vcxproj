@@ -149,6 +149,8 @@
     <ClInclude Include="Code\Components\RenderableComponent.h" />
     <ClInclude Include="Code\Components\SpotLightComponent.h" />
     <ClInclude Include="Code\Components\TransformationComponent.h" />
+    <ClInclude Include="Code\Editor\Editor.h" />
+    <ClInclude Include="Code\Editor\EntityDetailsWindow.h" />
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
@@ -246,6 +248,7 @@
     <ClInclude Include="Code\Input\IInputListener.h" />
     <ClInclude Include="Code\Input\InputTokens.h" />
     <ClInclude Include="Code\Input\UserInput.h" />
+    <ClInclude Include="Code\Level.h" />
     <ClInclude Include="Code\Scene.h" />
     <ClInclude Include="Code\Utility\AxisAlignedBoundingBox.h" />
     <ClInclude Include="Code\Utility\ContainerUtility.h" />
@@ -256,6 +259,8 @@
     <ClInclude Include="Code\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Code\Editor\Editor.cpp" />
+    <ClCompile Include="Code\Editor\EntityDetailsWindow.cpp" />
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />

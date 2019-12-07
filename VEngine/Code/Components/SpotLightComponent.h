@@ -5,7 +5,6 @@ namespace VEngine
 {
 	struct SpotLightComponent
 	{
-		glm::vec3 m_direction;
 		glm::vec3 m_color;
 		float m_luminousPower;
 		float m_radius;

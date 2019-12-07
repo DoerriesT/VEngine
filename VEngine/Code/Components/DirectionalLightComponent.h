@@ -7,6 +7,7 @@ namespace VEngine
 	{
 		enum {MAX_CASCADES = 8};
 		glm::vec3 m_color;
+		float m_intensity;
 		bool m_shadows;
 		uint32_t m_cascadeCount;
 		float m_maxShadowDistance;

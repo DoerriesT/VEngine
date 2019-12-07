@@ -161,7 +161,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 					DirectionalLightData directionalLightData
 					{
-						glm::vec4(directionalLightComponent.m_color, 1.0f),
+						glm::vec4(directionalLightComponent.m_color * directionalLightComponent.m_intensity, 1.0f),
 						m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f),
 						(static_cast<uint32_t>(m_shadowMatrices.size()) << 16) | (directionalLightComponent.m_cascadeCount & 0xFFFF)
 					};
