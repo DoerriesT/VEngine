@@ -22,7 +22,7 @@ namespace VEngine
 		bool m_showProfilerWindow = false;
 		bool m_showMemoryWindow = false;
 		bool m_showLuminanceHistogramWindow = false;
-		bool m_showEntityWindow = true;
-		bool m_showEntityDetailWindow = true;
+		bool m_showEntityWindow = false;
+		bool m_showEntityDetailWindow = false;
 	};
 }

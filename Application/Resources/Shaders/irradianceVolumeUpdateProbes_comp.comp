@@ -205,7 +205,7 @@ void main()
 		result.rgb /= result.w;
 		
 		float age = imageLoad(uAgeImage, cellCoord.xzy + ivec3(0, 0, cascade * gridSize.y)).x;
-		float alpha = age == 0.0 ? 1.0 : 0.1;
+		float alpha = age == 0.0 ? 1.0 : 0.02;
 		
 		vec3 color = vec3(0.0);
 		if (alpha != 1.0)

@@ -86,33 +86,33 @@ void VEngine::Engine::start()
 
 
 		// gui window
-		//ImGui::Begin("VEngine");
-		//
-		//int debugMode = g_giVoxelDebugMode;
-		//ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
-		//ImGui::RadioButton("Voxel Scene Raster", &debugMode, 1); ImGui::SameLine();
-		//ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
-		//ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
-		//ImGui::RadioButton("Irradiance Volume Age", &debugMode, 4);
-		//g_giVoxelDebugMode = debugMode;
-		//int cascadeIdx = g_debugVoxelCascadeIndex;
-		//ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
-		//ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
-		//ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
-		//g_debugVoxelCascadeIndex = cascadeIdx;
-		//
-		//ImGui::NewLine();
-		//ImGui::Text("Occlusion Culling");
-		//ImGui::Separator();
-		//{
-		//	uint32_t draws = 0;
-		//	uint32_t totalDraws = 1;
-		//	m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
-		//	ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", 64 * 64 * 32 * 3, draws, float(draws) / (64 * 64 * 32 * 3) * 100.0f);
-		//	//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
-		//}
-		//
-		//ImGui::End();
+		ImGui::Begin("VEngine");
+		
+		int debugMode = g_giVoxelDebugMode;
+		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
+		ImGui::RadioButton("Voxel Scene Raster", &debugMode, 1); ImGui::SameLine();
+		ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
+		ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
+		ImGui::RadioButton("Irradiance Volume Age", &debugMode, 4);
+		g_giVoxelDebugMode = debugMode;
+		int cascadeIdx = g_debugVoxelCascadeIndex;
+		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
+		g_debugVoxelCascadeIndex = cascadeIdx;
+		
+		ImGui::NewLine();
+		ImGui::Text("Occlusion Culling");
+		ImGui::Separator();
+		{
+			uint32_t draws = 0;
+			uint32_t totalDraws = 1;
+			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
+			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", 64 * 64 * 32 * 3, draws, float(draws) / (64 * 64 * 32 * 3) * 100.0f);
+			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
+		}
+		
+		ImGui::End();
 
 		ImGui::Render();
 		m_renderSystem->update(timeDelta);

@@ -25,7 +25,7 @@ layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
-layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler3D uIrradianceVolumeImages[3];
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
 layout(set = IRRADIANCE_VOLUME_DEPTH_IMAGE_SET, binding = IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeDepthImage;
 #if SSAO_ENABLED
 layout(set = OCCLUSION_IMAGE_SET, binding = OCCLUSION_IMAGE_BINDING) uniform sampler2D uOcclusionImage;
@@ -113,19 +113,19 @@ vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLi
     }
 }
 
-vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
-{
-	vec3 nSquared = N * N;
-	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
-	tc = tc.xzy;
-	tc.z *= 0.5;
-	vec3 tcz = tc.zzz + isNegative;
-	tcz = tcz * (1.0 / cCascades) + float(cascadeIndex) / cCascades;
-	
-	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
-			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
-			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
-}
+//vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
+//{
+//	vec3 nSquared = N * N;
+//	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
+//	tc = tc.xzy;
+//	tc.z *= 0.5;
+//	vec3 tcz = tc.zzz + isNegative;
+//	tcz = tcz * (1.0 / cCascades) + float(cascadeIndex) / cCascades;
+//	
+//	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
+//			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
+//			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
+//}
 
 float signNotZero(in float k) 
 {
@@ -342,70 +342,71 @@ void main()
 		// if cascade was found, calculate diffuse indirect light
 		if (cascadeIndex < cCascades)
 		{
-			//vec3 cameraOffset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
-			//vec3 pointGridCoord = worldSpacePos * currentGridScale - cameraOffset;
-			//ivec3 baseCoord = ivec3(pointGridCoord);
-			//vec3 worldSpaceViewDir = normalize(invViewMatrix[3].xyz - worldSpacePos);
-			vec3 irradiance = sampleAmbientCube(worldSpaceNormal, fract(((worldSpacePos * currentGridScale)) / vec3(gridSize)), cascadeIndex);
-			//vec4 sum = vec4(0.0);
-			//for (int i = 0; i < 8; ++i)
-			//{
-			//	ivec3 probeGridCoord = baseCoord + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
-			//	vec3 trilinear =  1.0 - abs(vec3(probeGridCoord) - pointGridCoord);
-			//	float weight = 1.0;
-			//	
-			//	const vec3 trueDirToProbe = vec3(probeGridCoord) - pointGridCoord;
-			//	const bool probeInPoint = dot(trueDirToProbe, trueDirToProbe) < 0.0001;
-			//	
-			//	// smooth backface test
-			//	{
-			//		weight *= probeInPoint ? 1.0 : square(max(0.0001, (dot(normalize(trueDirToProbe), worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
-			//	}
-			//	
-			//	const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord + cameraOffset) / vec3(gridSize)) * gridSize);
-			//	
-			//	// moment visibility test
-			//	if (!probeInPoint)
-			//	{
-			//		vec3 worldSpaceProbePos = vec3(probeGridCoord + cameraOffset) / currentGridScale;
-			//		vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.25;
-			//		vec3 dir = normalize(biasedProbeToPoint);
-			//		vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascadeIndex), int(cDepthProbeSideLength));
-			//		float distToProbe = length(biasedProbeToPoint);
-			//		
-			//		vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
-			//		float mean = temp.x;
-			//		float variance = abs(temp.x * temp.x - temp.y);
-			//		
-			//		float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
-			//		
-			//		chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
-			//		
-			//		weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
-			//	}
-			//	
-			//	// avoid zero weight
-			//	weight = max(0.000001, weight);
-			//	
-			//	const float crushThreshold = 0.2;
-			//	if (weight < crushThreshold)
-			//	{
-			//		weight *= weight * weight * (1.0 / square(crushThreshold));
-			//	}
-			//	
-			//	// trilinear
-			//	weight *= trilinear.x * trilinear.y * trilinear.z;
-			//	
-			//	vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, wrappedProbeGridCoord, int(cascadeIndex), int(cProbeSideLength));
-			//	vec3 probeIrradiance = textureLod(uIrradianceVolumeImage, probeTexCoord, 0).rgb;
-			//	
-			//	probeIrradiance = sqrt(probeIrradiance);
-			//	
-			//	sum += vec4(probeIrradiance * weight, weight);
-			//}
-			//vec3 irradiance = sum.xyz / sum.w;
-			//
-			//irradiance = irradiance * irradiance;
+			//vec3 irradiance = sampleAmbientCube(worldSpaceNormal, fract(((worldSpacePos * currentGridScale)) / vec3(gridSize)), cascadeIndex);
+			vec3 cameraOffset = round(vec3(invViewMatrix[3]) * currentGridScale) - (gridSize / 2);
+			vec3 pointGridCoord = worldSpacePos * currentGridScale - cameraOffset;
+			ivec3 baseCoord = ivec3(pointGridCoord);
+			vec3 worldSpaceViewDir = normalize(invViewMatrix[3].xyz - worldSpacePos);
+			
+			vec4 sum = vec4(0.0);
+			for (int i = 0; i < 8; ++i)
+			{
+				ivec3 probeGridCoord = baseCoord + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
+				vec3 trilinear =  1.0 - abs(vec3(probeGridCoord) - pointGridCoord);
+				float weight = 1.0;
+				
+				const vec3 trueDirToProbe = vec3(probeGridCoord) - pointGridCoord;
+				const bool probeInPoint = dot(trueDirToProbe, trueDirToProbe) < 1e-6;
+				
+				// smooth backface test
+				{
+					weight *= probeInPoint ? 1.0 : square(max(0.0001, (dot(normalize(trueDirToProbe), worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
+				}
+				
+				const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord + cameraOffset) / vec3(gridSize)) * gridSize);
+				
+				// moment visibility test
+				//if (!probeInPoint)
+				//{
+				//	vec3 worldSpaceProbePos = vec3(probeGridCoord + cameraOffset) / currentGridScale;
+				//	vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.25;
+				//	vec3 dir = normalize(biasedProbeToPoint);
+				//	vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascadeIndex), int(cDepthProbeSideLength));
+				//	float distToProbe = length(biasedProbeToPoint);
+				//	
+				//	vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
+				//	float mean = temp.x;
+				//	float variance = abs(temp.x * temp.x - temp.y);
+				//	
+				//	float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
+				//	
+				//	chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
+				//	
+				//	weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
+				//}
+				
+				// avoid zero weight
+				weight = max(0.000001, weight);
+				
+				const float crushThreshold = 0.2;
+				if (weight < crushThreshold)
+				{
+					weight *= weight * weight * (1.0 / square(crushThreshold));
+				}
+				
+				// trilinear
+				weight *= trilinear.x * trilinear.y * trilinear.z;
+				
+				vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, wrappedProbeGridCoord, int(cascadeIndex), int(cProbeSideLength));
+				vec3 probeIrradiance = textureLod(uIrradianceVolumeImage, probeTexCoord, 0).rgb;
+				
+				probeIrradiance = sqrt(probeIrradiance);
+				
+				sum += vec4(probeIrradiance * weight, weight);
+			}
+			vec3 irradiance = sum.xyz / sum.w;
+			
+			irradiance = irradiance * irradiance;
 			
 			result += irradiance * lightingParams.albedo * visibility * (1.0 / PI);
 		}
