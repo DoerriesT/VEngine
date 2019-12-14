@@ -3,42 +3,43 @@
 #include <glm/common.hpp>
 #include <glm/geometric.hpp>
 
-void VEngine::BVH::build(size_t triangleCount, const glm::vec3 *vertices)
+void VEngine::BVH::build(size_t triangleCount, const glm::vec3 *vertices, uint32_t maxLeafTriangles)
 {
-	m_internalNodes.clear();
-	m_internalNodes.reserve(triangleCount - 1 + triangleCount);
-	m_leafNodes.clear();
-	m_leafNodes.resize(triangleCount);
-	memcpy(m_leafNodes.data(), vertices, triangleCount * sizeof(LeafNode));
+	m_maxLeafTriangles = maxLeafTriangles;
+	m_nodes.clear();
+	m_nodes.reserve(triangleCount - 1 + triangleCount);
+	m_triangles.clear();
+	m_triangles.resize(triangleCount);
+	memcpy(m_triangles.data(), vertices, triangleCount * sizeof(Triangle));
 
 	buildRecursive(0, triangleCount);
 }
 
-const std::vector<VEngine::InternalNode> &VEngine::BVH::getInternalNodes() const
+const std::vector<VEngine::BVHNode> &VEngine::BVH::getNodes() const
 {
-	return m_internalNodes;
+	return m_nodes;
 }
 
-const std::vector<VEngine::LeafNode> &VEngine::BVH::getLeafNodes() const
+const std::vector<VEngine::Triangle> &VEngine::BVH::getTriangles() const
 {
-	return m_leafNodes;
+	return m_triangles;
 }
 
 uint32_t VEngine::BVH::getDepth(uint32_t node) const
 {
-	if (node >= (1u << 31))
+	if ((m_nodes[node].m_primitiveCountAxis >> 16))
 	{
 		return 1;
 	}
-	return 1 + glm::max(getDepth(m_internalNodes[node].m_leftChild), getDepth(m_internalNodes[node].m_rightChild));
+	return 1 + glm::max(getDepth(++node), getDepth(m_nodes[node].m_offset));
 }
 
 bool VEngine::BVH::validate()
 {
-	bool *reachedLeaves = new bool[m_leafNodes.size()];
-	memset(reachedLeaves, 0, m_leafNodes.size() * sizeof(bool));
+	bool *reachedLeaves = new bool[m_triangles.size()];
+	memset(reachedLeaves, 0, m_triangles.size() * sizeof(bool));
 	bool ret = validateRecursive(0, reachedLeaves);
-	for (size_t i = 0; i < m_leafNodes.size(); ++i)
+	for (size_t i = 0; i < m_triangles.size(); ++i)
 	{
 		if (!reachedLeaves[i])
 		{
@@ -50,135 +51,142 @@ bool VEngine::BVH::validate()
 	return ret;
 }
 
-static bool isLeafNode(uint32_t node)
-{
-	return node >= (1u << 31);
-}
-
-static bool intersectAABB(const glm::vec3 &invDir, const glm::vec3 &originDivDir, const glm::vec3 &aabbMin, const glm::vec3 &aabbMax, float &tNear)
+static bool intersectAABB(const glm::vec3 invDir, const glm::vec3 originDivDir, const glm::vec3 aabbMin, const glm::vec3 aabbMax, const float rayTMin, float &rayTMax)
 {
 	const glm::vec3 tMin = aabbMin * invDir - originDivDir;
 	const glm::vec3 tMax = aabbMax * invDir - originDivDir;
 	const glm::vec3 t1 = min(tMin, tMax);
 	const glm::vec3 t2 = max(tMin, tMax);
-	tNear = glm::max(glm::max(t1.x, t1.y), glm::max(t1.z, 0.0f));
+	const float tNear = glm::max(glm::max(t1.x, t1.y), glm::max(t1.z, 0.0f));
 	const float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
-	return tNear <= tFar;
+	bool hit = tNear <= tFar && tNear <= rayTMax && tNear >= rayTMin;
+	//rayTMax = hit ? tNear : rayTMax;
+	return hit;
 }
 
-static bool intersectTriangle(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir, const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, glm::vec3 &uvt)
+static bool intersectTriangle(const glm::vec3 rayOrigin, const glm::vec3 rayDir, const glm::vec3 v0, const glm::vec3 v1, const glm::vec3 v2, const float rayTMin, float &rayTMax, glm::vec2 &uv)
 {
 	const glm::vec3 e0 = v1 - v0;
 	const glm::vec3 e1 = v2 - v0;
-	const glm::vec3 s0 = glm::cross(rayDir, e1);
+	const glm::vec3 s0 = cross(rayDir, e1);
 	const float  invd = 1.0 / (dot(s0, e0));
 	const glm::vec3 d = rayOrigin - v0;
 	const float  b0 = dot(d, s0) * invd;
-	const glm::vec3 s1 = glm::cross(d, e0);
-	const float  b1 = glm::dot(rayDir, s1) * invd;
-	const float temp = glm::dot(e1, s1) * invd;
+	const glm::vec3 s1 = cross(d, e0);
+	const float  b1 = dot(rayDir, s1) * invd;
+	const float temp = dot(e1, s1) * invd;
 
-	uvt = glm::vec3(b0, b1, temp);
-	return !(b0 < 0.0 || b0 > 1.0 || b1 < 0.0 || b0 + b1 > 1.0 || temp < 0.0/* || temp > isect.uvwt.w*/);
+	bool hit = !(b0 < 0.0 || b0 > 1.0 || b1 < 0.0 || b0 + b1 > 1.0 || temp < 0.0 || temp > rayTMax || temp < rayTMin);
+	uv = glm::vec2(b0, b1);
+	rayTMax = hit ? temp : rayTMax;
+	return hit;
 }
 
 bool VEngine::BVH::trace(const glm::vec3 &origin, const glm::vec3 &dir, float &t)
 {
+	float rayTMin = 0.0;
+	float rayTMax = 10000.0;
 	glm::vec3 rayOrigin = origin;
-	glm::vec3 rayDir = glm::normalize(dir);
-	glm::vec3 invRayDir = 1.0f / rayDir;
-	//invRayDir[0] = 1.0 / (rayDir[0] != 0.0 ? rayDir[0] : pow(2.0, -80.0));
-	//invRayDir[1] = 1.0 / (rayDir[1] != 0.0 ? rayDir[1] : pow(2.0, -80.0));
-	//invRayDir[2] = 1.0 / (rayDir[2] != 0.0 ? rayDir[2] : pow(2.0, -80.0));
+	glm::vec3 rayDir = normalize(dir);
+	glm::vec3 invRayDir;
+	invRayDir[0] = 1.0 / (rayDir[0] != 0.0 ? rayDir[0] : pow(2.0, -80.0));
+	invRayDir[1] = 1.0 / (rayDir[1] != 0.0 ? rayDir[1] : pow(2.0, -80.0));
+	invRayDir[2] = 1.0 / (rayDir[2] != 0.0 ? rayDir[2] : pow(2.0, -80.0));
 	glm::vec3 originDivDir = rayOrigin * invRayDir;
+	glm::bvec3 dirIsNeg = lessThan(invRayDir, glm::vec3(0.0));
 
-	uint32_t stack[32];
-	uint32_t stackPtr = 0;
-	stack[stackPtr++] = -1;
+	uint32_t nodesToVisit[32];
+	uint32_t toVisitOffset = 0;
+	uint32_t currentNodeIndex = 0;
 
-	uint32_t curNodeIdx = 0;
+	glm::vec2 uv = glm::vec2(0.0);
 	uint32_t triangleIdx = -1;
-	glm::vec3 barycentrics = glm::vec3(-1.0);
 	uint32_t iterations = 0;
+	glm::vec3 bary{};
 
-	while (curNodeIdx != -1)
+	while (true)
 	{
-		assert(stackPtr < 32);
 		++iterations;
-		InternalNode node = m_internalNodes[curNodeIdx];
-		if (isLeafNode(node.m_leftChild))
+		const BVHNode &node = m_nodes[currentNodeIndex];
+		if (intersectAABB(invRayDir, originDivDir, node.m_aabbMin,node.m_aabbMax, rayTMin, rayTMax))
 		{
-			LeafNode triangle = m_leafNodes[node.m_leftChild - (1u << 31)];
-			if (intersectTriangle(rayOrigin, rayDir, triangle.m_vertices[0], triangle.m_vertices[1], triangle.m_vertices[2], barycentrics))
+			const uint32_t primitiveCount = (node.m_primitiveCountAxis >> 16);
+			if (primitiveCount > 0)
 			{
-				triangleIdx = node.m_leftChild - (1u << 31);
-				t = barycentrics.z;
-				break;
+				for (uint32_t i = 0; i < primitiveCount; ++i)
+				{
+					Triangle triangle = m_triangles[node.m_offset + i];
+					if (intersectTriangle(rayOrigin, rayDir, triangle.m_vertices[0], triangle.m_vertices[1], triangle.m_vertices[2], rayTMin, rayTMax, uv))
+					{
+						triangleIdx = node.m_offset + i;
+					}
+				}
+				if (toVisitOffset == 0)
+				{
+					break;
+				}
+				currentNodeIndex = nodesToVisit[--toVisitOffset];
 			}
 			else
 			{
-				curNodeIdx = stack[--stackPtr]; // pop
+				if (dirIsNeg[(node.m_primitiveCountAxis >> 8) & 0xFF])
+				{
+					nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
+					currentNodeIndex = node.m_offset;
+				}
+				else
+				{
+					nodesToVisit[toVisitOffset++] = node.m_offset;
+					currentNodeIndex = currentNodeIndex + 1;
+				}
 			}
 		}
 		else
 		{
-			InternalNode leftChild = m_internalNodes[node.m_leftChild];
-			float leftTMin = 0.0f;
-			bool hitLeft = intersectAABB(invRayDir, originDivDir, leftChild.m_aabbMin, leftChild.m_aabbMax, leftTMin);
-
-			InternalNode rightChild = m_internalNodes[node.m_rightChild];
-			float rightTMin = 0.0f;
-			bool hitRight = intersectAABB(invRayDir, originDivDir, rightChild.m_aabbMin, rightChild.m_aabbMax, rightTMin);
-
-			if (!hitLeft && !hitRight)
+			if (toVisitOffset == 0)
 			{
-				curNodeIdx = stack[--stackPtr]; // pop
+				break;
 			}
-			else
-			{
-				curNodeIdx = hitLeft ? node.m_leftChild : node.m_rightChild;
-				if (hitLeft && hitRight)
-				{
-					stack[stackPtr++] = node.m_rightChild; // push
-				}
-			}
+			currentNodeIndex = nodesToVisit[--toVisitOffset];
 		}
 	}
+	t = rayTMax;
 	return triangleIdx != -1;
 }
 
 uint32_t VEngine::BVH::buildRecursive(size_t begin, size_t end)
 {
-	uint32_t nodeIndex = m_internalNodes.size();
-	m_internalNodes.push_back({});
-	InternalNode internalNode = {};
-	internalNode.m_aabbMin = glm::vec3(std::numeric_limits<float>::max());
-	internalNode.m_aabbMax = glm::vec3(std::numeric_limits<float>::lowest());
+	uint32_t nodeIndex = m_nodes.size();
+	m_nodes.push_back({});
+	BVHNode node = {};
+	node.m_aabbMin = glm::vec3(std::numeric_limits<float>::max());
+	node.m_aabbMax = glm::vec3(std::numeric_limits<float>::lowest());
 
 	// compute node aabb
 	for (size_t i = begin; i < end; ++i)
 	{
-		const auto &nodeVertices = m_leafNodes[i].m_vertices;
-		internalNode.m_aabbMin = glm::min(internalNode.m_aabbMin, nodeVertices[0]);
-		internalNode.m_aabbMin = glm::min(internalNode.m_aabbMin, nodeVertices[1]);
-		internalNode.m_aabbMin = glm::min(internalNode.m_aabbMin, nodeVertices[2]);
+		const auto &nodeVertices = m_triangles[i].m_vertices;
+		node.m_aabbMin = glm::min(node.m_aabbMin, nodeVertices[0]);
+		node.m_aabbMin = glm::min(node.m_aabbMin, nodeVertices[1]);
+		node.m_aabbMin = glm::min(node.m_aabbMin, nodeVertices[2]);
 		
 
-		internalNode.m_aabbMax = glm::max(internalNode.m_aabbMax, nodeVertices[0]);
-		internalNode.m_aabbMax = glm::max(internalNode.m_aabbMax, nodeVertices[1]);
-		internalNode.m_aabbMax = glm::max(internalNode.m_aabbMax, nodeVertices[2]);
+		node.m_aabbMax = glm::max(node.m_aabbMax, nodeVertices[0]);
+		node.m_aabbMax = glm::max(node.m_aabbMax, nodeVertices[1]);
+		node.m_aabbMax = glm::max(node.m_aabbMax, nodeVertices[2]);
 	}
 
-	if (end - begin > 1)
+	if (end - begin > m_maxLeafTriangles)
 	{
 		// determine best axis to split this node
-		auto aabbExtent = internalNode.m_aabbMax - internalNode.m_aabbMin;
-		uint32_t splitAxis = aabbExtent[0] > aabbExtent[1] ? 0 : aabbExtent[1] > aabbExtent[2] ? 1 : 2;
+		auto aabbExtent = node.m_aabbMax - node.m_aabbMin;
+		uint32_t axis = (aabbExtent[0] > aabbExtent[1] ? 0 : aabbExtent[1] > aabbExtent[2] ? 1 : 2);
+		node.m_primitiveCountAxis |= axis << 8;
 
 		// sort triangles along split axis
-		std::sort(m_leafNodes.data() + begin, m_leafNodes.data() + end, [&](const auto &lhs, const auto &rhs)
+		std::sort(m_triangles.data() + begin, m_triangles.data() + end, [&](const auto &lhs, const auto &rhs)
 			{
-				return ((lhs.m_vertices[0] + lhs.m_vertices[1] + lhs.m_vertices[2]) / 3.0f)[splitAxis] < ((rhs.m_vertices[0] + rhs.m_vertices[1] + rhs.m_vertices[2]) / 3.0f)[splitAxis];
+				return ((lhs.m_vertices[0] + lhs.m_vertices[1] + lhs.m_vertices[2]) / 3.0f)[axis] < ((rhs.m_vertices[0] + rhs.m_vertices[1] + rhs.m_vertices[2]) / 3.0f)[axis];
 			});
 
 		// determine best split
@@ -220,29 +228,37 @@ uint32_t VEngine::BVH::buildRecursive(size_t begin, size_t end)
 		//}
 
 		// compute children
-		internalNode.m_leftChild = buildRecursive(begin, bestSplitCandidate);
-		internalNode.m_rightChild = buildRecursive(bestSplitCandidate, end);
+		uint32_t leftChildIndex = buildRecursive(begin, bestSplitCandidate);
+		assert(leftChildIndex == nodeIndex + 1);
+		node.m_offset = buildRecursive(bestSplitCandidate, end);
 	}
 	else
 	{
 		// leaf node
-		internalNode.m_leftChild = begin | (1u << 31);
-		internalNode.m_rightChild = -1;
+		node.m_offset = begin;
+		node.m_primitiveCountAxis |= (end - begin) << 16;
 	}
-	m_internalNodes[nodeIndex] = internalNode;
+	m_nodes[nodeIndex] = node;
 	return nodeIndex;
 }
 
 bool VEngine::BVH::validateRecursive(uint32_t node, bool *reachedLeafs)
 {
-	if (m_internalNodes[node].m_leftChild >= (1u << 31))
+	if (m_nodes[node].m_primitiveCountAxis >> 16)
 	{
-		if (reachedLeafs[m_internalNodes[node].m_leftChild - (1u << 31)])
+		for (size_t i = 0; i < (m_nodes[node].m_primitiveCountAxis >> 16); ++i)
 		{
-			return false;
+			if (reachedLeafs[m_nodes[node].m_offset + i])
+			{
+				return false;
+			}
+			reachedLeafs[m_nodes[node].m_offset + i] = true;
 		}
-		reachedLeafs[m_internalNodes[node].m_leftChild - (1u << 31)] = true;
+		
 		return true;
 	}
-	return validateRecursive(m_internalNodes[node].m_leftChild, reachedLeafs) && validateRecursive(m_internalNodes[node].m_rightChild, reachedLeafs);
+	else
+	{
+		return validateRecursive(node + 1, reachedLeafs) && validateRecursive(m_nodes[node].m_offset, reachedLeafs);
+	}
 }

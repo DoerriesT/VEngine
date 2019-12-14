@@ -404,6 +404,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
 		++m_commonRenderData.m_frame;
+		//float t = 0.0f;
+		//if (m_bvh.trace(m_commonRenderData.m_cameraPosition + m_commonRenderData.m_cameraDirection * m_commonRenderData.m_nearPlane, m_commonRenderData.m_cameraDirection, t))
+		//{
+		//	printf("%f\n", t);
+		//}
 	}
 }
 
@@ -463,10 +468,10 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 				vertices.push_back(positions[subMeshes[i].m_indices[j]]);
 			}
 		}
-		m_bvh.build(vertices.size() / 3, vertices.data());
+		m_bvh.build(vertices.size() / 3, vertices.data(), 1);
 		printf("BVH Depth: %d\n", m_bvh.getDepth());
 		assert(m_bvh.validate());
-		m_renderer->setBVH(m_bvh.getInternalNodes().size(), m_bvh.getInternalNodes().data(), m_bvh.getLeafNodes().size(), m_bvh.getLeafNodes().data());
+		m_renderer->setBVH(m_bvh.getNodes().size(), m_bvh.getNodes().data(), m_bvh.getTriangles().size(), m_bvh.getTriangles().data());
 	}
 }
 

@@ -1073,8 +1073,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	RayTraceTestPass::Data rayTraceTestPassData;
 	rayTraceTestPassData.m_passRecordContext = &passRecordContext;
 	rayTraceTestPassData.m_resultImageHandle = lightImageViewHandle;
-	rayTraceTestPassData.m_internalNodesBufferInfo = { m_renderResources->m_bvhInternalNodesBuffer.getBuffer(), 0, m_renderResources->m_bvhInternalNodesBuffer.getSize() };
-	rayTraceTestPassData.m_leafNodesBufferInfo = { m_renderResources->m_bvhLeafNodesBuffer.getBuffer(), 0, m_renderResources->m_bvhLeafNodesBuffer.getSize() };
+	rayTraceTestPassData.m_internalNodesBufferInfo = { m_renderResources->m_bvhNodesBuffer.getBuffer(), 0, m_renderResources->m_bvhNodesBuffer.getSize() };
+	rayTraceTestPassData.m_leafNodesBufferInfo = { m_renderResources->m_bvhTrianglesBuffer.getBuffer(), 0, m_renderResources->m_bvhTrianglesBuffer.getSize() };
 
 	RayTraceTestPass::addToGraph(graph, rayTraceTestPassData);
 
@@ -1293,7 +1293,7 @@ void VEngine::VKRenderer::getOcclusionCullingStats(uint32_t &draws, uint32_t &to
 	totalDraws = m_totalOpaqueDraws;
 }
 
-void VEngine::VKRenderer::setBVH(uint32_t internalNodeCount, const InternalNode *internalNodes, uint32_t leafNodeCount, const LeafNode *leafNodes)
+void VEngine::VKRenderer::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles)
 {
-	m_renderResources->setBVH(internalNodeCount, internalNodes, leafNodeCount, leafNodes);
+	m_renderResources->setBVH(nodeCount, nodes, triangleCount, triangles);
 }

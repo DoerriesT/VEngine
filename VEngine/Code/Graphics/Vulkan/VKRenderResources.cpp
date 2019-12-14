@@ -1070,9 +1070,9 @@ void VEngine::VKRenderResources::createImGuiFontsTexture()
 	io.Fonts->TexID = (ImTextureID)(intptr_t)m_imGuiFontsTexture.getImage();
 }
 
-void VEngine::VKRenderResources::setBVH(uint32_t internalNodeCount, const InternalNode *internalNodes, uint32_t leafNodeCount, const LeafNode *leafNodes)
+void VEngine::VKRenderResources::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles)
 {
-	assert(internalNodeCount * sizeof(InternalNode) + leafNodeCount * sizeof(LeafNode) < m_stagingBuffer.getSize());
+	assert(nodeCount * sizeof(BVHNode) + triangleCount * sizeof(Triangle) < m_stagingBuffer.getSize());
 
 	uint32_t queueFamilyIndices[] =
 	{
@@ -1081,15 +1081,15 @@ void VEngine::VKRenderResources::setBVH(uint32_t internalNodeCount, const Intern
 		g_context.m_queueFamilyIndices.m_transferFamily
 	};
 
-	if (m_bvhInternalNodesBuffer.isValid() && m_bvhInternalNodesBuffer.getSize() < internalNodeCount * sizeof(InternalNode))
+	if (m_bvhNodesBuffer.isValid() && m_bvhNodesBuffer.getSize() < nodeCount * sizeof(BVHNode))
 	{
-		m_bvhInternalNodesBuffer.destroy();
+		m_bvhNodesBuffer.destroy();
 	}
 
-	if (!m_bvhInternalNodesBuffer.isValid())
+	if (!m_bvhNodesBuffer.isValid())
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = internalNodeCount * sizeof(InternalNode);
+		bufferCreateInfo.size = nodeCount * sizeof(BVHNode);
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 		bufferCreateInfo.queueFamilyIndexCount = 3;
@@ -1098,18 +1098,18 @@ void VEngine::VKRenderResources::setBVH(uint32_t internalNodeCount, const Intern
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_bvhInternalNodesBuffer.create(bufferCreateInfo, allocCreateInfo);
+		m_bvhNodesBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
-	if (m_bvhLeafNodesBuffer.isValid() && m_bvhLeafNodesBuffer.getSize() < leafNodeCount * sizeof(LeafNode))
+	if (m_bvhTrianglesBuffer.isValid() && m_bvhTrianglesBuffer.getSize() < triangleCount * sizeof(Triangle))
 	{
-		m_bvhLeafNodesBuffer.destroy();
+		m_bvhTrianglesBuffer.destroy();
 	}
 
-	if (!m_bvhLeafNodesBuffer.isValid())
+	if (!m_bvhTrianglesBuffer.isValid())
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = leafNodeCount * sizeof(LeafNode);
+		bufferCreateInfo.size = triangleCount * sizeof(Triangle);
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 		bufferCreateInfo.queueFamilyIndexCount = 3;
@@ -1118,24 +1118,24 @@ void VEngine::VKRenderResources::setBVH(uint32_t internalNodeCount, const Intern
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_bvhLeafNodesBuffer.create(bufferCreateInfo, allocCreateInfo);
+		m_bvhTrianglesBuffer.create(bufferCreateInfo, allocCreateInfo);
 	}
 
 	// map staging buffer
 	uint8_t *stagingBufferPtr;
 	g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), (void **)&stagingBufferPtr);
 	
-	memcpy(stagingBufferPtr, internalNodes, internalNodeCount * sizeof(InternalNode));
-	memcpy(stagingBufferPtr + internalNodeCount * sizeof(InternalNode), leafNodes, leafNodeCount * sizeof(LeafNode));
+	memcpy(stagingBufferPtr, nodes, nodeCount * sizeof(BVHNode));
+	memcpy(stagingBufferPtr + nodeCount * sizeof(BVHNode), triangles, triangleCount * sizeof(Triangle));
 
-	VkBufferCopy internalNodesCopy{ 0, 0, internalNodeCount * sizeof(InternalNode) };
-	VkBufferCopy leafNodesCopy{ internalNodeCount * sizeof(InternalNode), 0, leafNodeCount * sizeof(LeafNode) };
+	VkBufferCopy nodesCopy{ 0, 0, nodeCount * sizeof(BVHNode) };
+	VkBufferCopy trianglesCopy{ nodeCount * sizeof(BVHNode), 0, triangleCount * sizeof(Triangle) };
 
 	// copy from staging buffer to device local memory
 	VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
 	{
-		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhInternalNodesBuffer.getBuffer(), 1, &internalNodesCopy);
-		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhLeafNodesBuffer.getBuffer(), 1, &leafNodesCopy);
+		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhNodesBuffer.getBuffer(), 1, &nodesCopy);
+		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhTrianglesBuffer.getBuffer(), 1, &trianglesCopy);
 	}
 	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
 
