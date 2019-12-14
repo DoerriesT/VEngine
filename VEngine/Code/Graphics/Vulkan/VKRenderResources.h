@@ -11,6 +11,8 @@ namespace VEngine
 	class VKRenderer;
 	class VKPipelineCache;
 	class VKMappableBufferBlock;
+	struct InternalNode;
+	struct LeafNode;
 
 	struct VKRenderResources
 	{
@@ -50,6 +52,8 @@ namespace VEngine
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_irradianceVolumeQueueBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_bvhInternalNodesBuffer = {};
+		VKBuffer m_bvhLeafNodesBuffer = {};
 
 		// mappable buffer blocks
 		std::unique_ptr<VKMappableBufferBlock> m_mappableUBOBlock[RendererConsts::FRAMES_IN_FLIGHT];
@@ -111,5 +115,6 @@ namespace VEngine
 		void resize(uint32_t width, uint32_t height);
 		void updateTextureArray(const VkDescriptorImageInfo *data, size_t count);
 		void createImGuiFontsTexture();
+		void setBVH(uint32_t internalNodeCount, const InternalNode *internalNodes, uint32_t leafNodeCount, const LeafNode *leafNodes);
 	};
 }

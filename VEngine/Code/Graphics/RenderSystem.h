@@ -8,6 +8,7 @@
 #include "Handles.h"
 #include "Utility/AxisAlignedBoundingBox.h"
 #include "Vulkan/VKMemoryAllocator.h"
+#include "BVH.h"
 
 namespace VEngine
 {
@@ -50,6 +51,7 @@ namespace VEngine
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
+		BVH m_bvh;
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
 		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);

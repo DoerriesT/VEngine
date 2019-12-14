@@ -6,6 +6,7 @@
 #include "VKPipelineCache.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Mesh.h"
+#include "Graphics/BVH.h"
 #include "RenderGraph.h"
 #include "Graphics/imgui/imgui.h"
 
@@ -1067,6 +1068,79 @@ void VEngine::VKRenderResources::createImGuiFontsTexture()
 
 	// Store our identifier
 	io.Fonts->TexID = (ImTextureID)(intptr_t)m_imGuiFontsTexture.getImage();
+}
+
+void VEngine::VKRenderResources::setBVH(uint32_t internalNodeCount, const InternalNode *internalNodes, uint32_t leafNodeCount, const LeafNode *leafNodes)
+{
+	assert(internalNodeCount * sizeof(InternalNode) + leafNodeCount * sizeof(LeafNode) < m_stagingBuffer.getSize());
+
+	uint32_t queueFamilyIndices[] =
+	{
+		g_context.m_queueFamilyIndices.m_graphicsFamily,
+		g_context.m_queueFamilyIndices.m_computeFamily,
+		g_context.m_queueFamilyIndices.m_transferFamily
+	};
+
+	if (m_bvhInternalNodesBuffer.isValid() && m_bvhInternalNodesBuffer.getSize() < internalNodeCount * sizeof(InternalNode))
+	{
+		m_bvhInternalNodesBuffer.destroy();
+	}
+
+	if (!m_bvhInternalNodesBuffer.isValid())
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = internalNodeCount * sizeof(InternalNode);
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_bvhInternalNodesBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	if (m_bvhLeafNodesBuffer.isValid() && m_bvhLeafNodesBuffer.getSize() < leafNodeCount * sizeof(LeafNode))
+	{
+		m_bvhLeafNodesBuffer.destroy();
+	}
+
+	if (!m_bvhLeafNodesBuffer.isValid())
+	{
+		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferCreateInfo.size = leafNodeCount * sizeof(LeafNode);
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = 3;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		m_bvhLeafNodesBuffer.create(bufferCreateInfo, allocCreateInfo);
+	}
+
+	// map staging buffer
+	uint8_t *stagingBufferPtr;
+	g_context.m_allocator.mapMemory(m_stagingBuffer.getAllocation(), (void **)&stagingBufferPtr);
+	
+	memcpy(stagingBufferPtr, internalNodes, internalNodeCount * sizeof(InternalNode));
+	memcpy(stagingBufferPtr + internalNodeCount * sizeof(InternalNode), leafNodes, leafNodeCount * sizeof(LeafNode));
+
+	VkBufferCopy internalNodesCopy{ 0, 0, internalNodeCount * sizeof(InternalNode) };
+	VkBufferCopy leafNodesCopy{ internalNodeCount * sizeof(InternalNode), 0, leafNodeCount * sizeof(LeafNode) };
+
+	// copy from staging buffer to device local memory
+	VkCommandBuffer copyCmd = VKUtility::beginSingleTimeCommands(g_context.m_graphicsCommandPool);
+	{
+		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhInternalNodesBuffer.getBuffer(), 1, &internalNodesCopy);
+		vkCmdCopyBuffer(copyCmd, m_stagingBuffer.getBuffer(), m_bvhLeafNodesBuffer.getBuffer(), 1, &leafNodesCopy);
+	}
+	VKUtility::endSingleTimeCommands(g_context.m_graphicsQueue, g_context.m_graphicsCommandPool, copyCmd);
+
+	// unmap staging buffer
+	g_context.m_allocator.unmapMemory(m_stagingBuffer.getAllocation());
 }
 
 VEngine::VKRenderResources::VKRenderResources()

@@ -387,6 +387,12 @@
     <ClInclude Include="Code\Editor\Editor.h">
       <Filter>Code\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\BVH.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -658,6 +664,12 @@
     </ClCompile>
     <ClCompile Include="Code\Editor\Editor.cpp">
       <Filter>Code\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\BVH.cpp">
+      <Filter>Code\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -153,6 +153,7 @@
     <ClInclude Include="Code\Editor\EntityDetailsWindow.h" />
     <ClInclude Include="Code\Engine.h" />
     <ClInclude Include="Code\GlobalVar.h" />
+    <ClInclude Include="Code\Graphics\BVH.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
     <ClInclude Include="Code\Graphics\imgui\imconfig.h" />
     <ClInclude Include="Code\Graphics\imgui\imgui.h" />
@@ -186,6 +187,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.h" />
@@ -263,6 +265,7 @@
     <ClCompile Include="Code\Editor\EntityDetailsWindow.cpp" />
     <ClCompile Include="Code\Engine.cpp" />
     <ClCompile Include="Code\GlobalVar.cpp" />
+    <ClCompile Include="Code\Graphics\BVH.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Code\Graphics\imgui\imgui.cpp" />
     <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp" />
@@ -287,6 +290,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.cpp" />

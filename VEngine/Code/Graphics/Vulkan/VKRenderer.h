@@ -24,6 +24,8 @@ namespace VEngine
 	struct LightData;
 	struct Material;
 	struct SubMesh;
+	struct InternalNode;
+	struct LeafNode;
 
 	class VKRenderer
 	{
@@ -43,6 +45,7 @@ namespace VEngine
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
+		void setBVH(uint32_t internalNodeCount, const InternalNode *internalNodes, uint32_t leafNodeCount, const LeafNode *leafNodes);
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;
