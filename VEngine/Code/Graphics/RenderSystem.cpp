@@ -468,7 +468,7 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 				vertices.push_back(positions[subMeshes[i].m_indices[j]]);
 			}
 		}
-		m_bvh.build(vertices.size() / 3, vertices.data(), 1);
+		m_bvh.build(vertices.size() / 3, vertices.data(), 3);
 		printf("BVH Depth: %d\n", m_bvh.getDepth());
 		assert(m_bvh.validate());
 		m_renderer->setBVH(m_bvh.getNodes().size(), m_bvh.getNodes().data(), m_bvh.getTriangles().size(), m_bvh.getTriangles().data());
