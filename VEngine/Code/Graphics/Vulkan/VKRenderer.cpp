@@ -44,6 +44,7 @@
 #include "Pass/IrradianceVolumeUpdateProbesPass.h"
 #include "Pass/IrradianceVolumeUpdateACProbesPass.h"
 #include "Pass/RayTraceTestPass.h"
+#include "Pass/SharpenFfxCasPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -414,6 +415,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	// create graph managed resources
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle finalImageViewHandle2 = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyLengthImageViewHandle = VKResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle ddxyRotMaterialIdImageViewHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
@@ -1076,7 +1078,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	rayTraceTestPassData.m_internalNodesBufferInfo = { m_renderResources->m_bvhNodesBuffer.getBuffer(), 0, m_renderResources->m_bvhNodesBuffer.getSize() };
 	rayTraceTestPassData.m_leafNodesBufferInfo = { m_renderResources->m_bvhTrianglesBuffer.getBuffer(), 0, m_renderResources->m_bvhTrianglesBuffer.getSize() };
 
-	RayTraceTestPass::addToGraph(graph, rayTraceTestPassData);
+	//RayTraceTestPass::addToGraph(graph, rayTraceTestPassData);
 
 
 	// calculate luminance histograms
@@ -1160,28 +1162,50 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
-	ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled ? finalImageViewHandle : swapchainImageViewHandle;
+	ImageViewHandle currentOutput = lightImageViewHandle;
+	ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainImageViewHandle;
 
 	// tonemap
 	VKTonemapPass::Data tonemapPassData;
 	tonemapPassData.m_passRecordContext = &passRecordContext;
-	tonemapPassData.m_srcImageHandle = lightImageViewHandle;
+	tonemapPassData.m_applyLinearToGamma = g_FXAAEnabled || !g_CASEnabled;
+	tonemapPassData.m_srcImageHandle = currentOutput;
 	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
 	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
 	VKTonemapPass::addToGraph(graph, tonemapPassData);
 
+	currentOutput = tonemapTargetTextureHandle;
+
+
+	ImageViewHandle fxaaTargetTextureHandle = g_CASEnabled ? finalImageViewHandle2 : swapchainImageViewHandle;
 
 	// FXAA
 	VKFXAAPass::Data fxaaPassData;
 	fxaaPassData.m_passRecordContext = &passRecordContext;
-	fxaaPassData.m_inputImageHandle = tonemapTargetTextureHandle;
-	fxaaPassData.m_resultImageHandle = swapchainImageViewHandle;
+	fxaaPassData.m_inputImageHandle = currentOutput;
+	fxaaPassData.m_resultImageHandle = fxaaTargetTextureHandle;
 
 	if (g_FXAAEnabled)
 	{
 		VKFXAAPass::addToGraph(graph, fxaaPassData);
+		currentOutput = fxaaTargetTextureHandle;
 	}
+
+
+	// Sharpen (CAS)
+	SharpenFfxCasPass::Data sharpenFfxCasPassData;
+	sharpenFfxCasPassData.m_passRecordContext = &passRecordContext;
+	sharpenFfxCasPassData.m_gammaSpaceInput = tonemapPassData.m_applyLinearToGamma;
+	sharpenFfxCasPassData.m_sharpness = g_CASSharpness;
+	sharpenFfxCasPassData.m_srcImageHandle = currentOutput;
+	sharpenFfxCasPassData.m_dstImageHandle = swapchainImageViewHandle;
+
+	if (g_CASEnabled)
+	{
+		SharpenFfxCasPass::addToGraph(graph, sharpenFfxCasPassData);
+	}
+	
 
 
 	//// mesh cluster visualization

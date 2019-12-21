@@ -458,21 +458,21 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 	}
 
 	// create BVH
-	{
-		std::vector<glm::vec3> vertices;
-		for (size_t i = 0; i < count; ++i)
-		{
-			glm::vec3 *positions = (glm::vec3 *)subMeshes[i].m_positions;
-			for (size_t j = 0; j < subMeshes[i].m_indexCount; ++j)
-			{
-				vertices.push_back(positions[subMeshes[i].m_indices[j]]);
-			}
-		}
-		m_bvh.build(vertices.size() / 3, vertices.data(), 3);
-		printf("BVH Depth: %d\n", m_bvh.getDepth());
-		assert(m_bvh.validate());
-		m_renderer->setBVH(m_bvh.getNodes().size(), m_bvh.getNodes().data(), m_bvh.getTriangles().size(), m_bvh.getTriangles().data());
-	}
+	//{
+	//	std::vector<glm::vec3> vertices;
+	//	for (size_t i = 0; i < count; ++i)
+	//	{
+	//		glm::vec3 *positions = (glm::vec3 *)subMeshes[i].m_positions;
+	//		for (size_t j = 0; j < subMeshes[i].m_indexCount; ++j)
+	//		{
+	//			vertices.push_back(positions[subMeshes[i].m_indices[j]]);
+	//		}
+	//	}
+	//	m_bvh.build(vertices.size() / 3, vertices.data(), 3);
+	//	printf("BVH Depth: %d\n", m_bvh.getDepth());
+	//	assert(m_bvh.validate());
+	//	m_renderer->setBVH(m_bvh.getNodes().size(), m_bvh.getNodes().data(), m_bvh.getTriangles().size(), m_bvh.getTriangles().data());
+	//}
 }
 
 void VEngine::RenderSystem::destroySubMeshes(uint32_t count, SubMeshHandle *handles)

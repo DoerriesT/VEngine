@@ -52,8 +52,10 @@ void VEngine::VKTonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-		uint32_t luminanceIndex = static_cast<uint32_t>(data.m_passRecordContext->m_commonRenderData->m_curResIdx);
-		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(luminanceIndex), &luminanceIndex);
+		PushConsts pushConsts;
+		pushConsts.luminanceIndex = static_cast<uint32_t>(data.m_passRecordContext->m_commonRenderData->m_curResIdx);
+		pushConsts.applyLinearToGamma = data.m_applyLinearToGamma;
+		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		VKUtility::dispatchComputeHelper(cmdBuf, width, height, 1, 8, 8, 1);
 	});

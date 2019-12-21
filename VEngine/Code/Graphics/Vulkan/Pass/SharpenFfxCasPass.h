@@ -5,15 +5,15 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace VKTonemapPass
+	namespace SharpenFfxCasPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_applyLinearToGamma;
+			bool m_gammaSpaceInput;
+			float m_sharpness;
 			ImageViewHandle m_srcImageHandle;
 			ImageViewHandle m_dstImageHandle;
-			BufferViewHandle m_avgLuminanceBufferHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

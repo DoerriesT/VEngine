@@ -87,6 +87,13 @@ void VEngine::Engine::start()
 
 		// gui window
 		ImGui::Begin("VEngine");
+
+		bool casEnabled = g_CASEnabled;
+		ImGui::Checkbox("CAS", &casEnabled);
+		g_CASEnabled = casEnabled;
+		float casSharpness = g_CASSharpness;
+		ImGui::SliderFloat("CAS Sharpness", &casSharpness, 0.0f, 1.0f);
+		g_CASSharpness = casSharpness;
 		
 		int debugMode = g_giVoxelDebugMode;
 		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();

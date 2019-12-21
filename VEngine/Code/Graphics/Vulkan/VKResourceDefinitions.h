@@ -20,7 +20,7 @@ namespace VEngine
 			desc.m_layers = 1;
 			desc.m_levels = 1;
 			desc.m_samples = 1;
-			desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+			desc.m_format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
 
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 		}

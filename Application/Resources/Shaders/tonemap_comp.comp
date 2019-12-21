@@ -258,7 +258,10 @@ void main()
 	//vec3 whiteScale = 1.0/uncharted2Tonemap(W);
 	//color *= whiteScale;
     // gamma correct
-    color = accurateLinearToSRGB(color);//pow(color, vec3(1.0/2.2));
+	if (uPushConsts.applyLinearToGamma != 0)
+	{
+		color = accurateLinearToSRGB(color);//pow(color, vec3(1.0/2.2));
+	}
 	
 	imageStore(uTonemapResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, dot(color.rgb, vec3(0.299, 0.587, 0.114))));
 }

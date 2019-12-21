@@ -14,6 +14,8 @@ namespace VEngine
 	GlobalVar<float> g_FXAAQualitySubpix = 0.75f;
 	GlobalVar<float> g_FXAAQualityEdgeThreshold = 0.166f;
 	GlobalVar<float> g_FXAAQualityEdgeThresholdMin = 0.0833f;
+	GlobalVar<bool> g_CASEnabled = true;
+	GlobalVar<float> g_CASSharpness = 0.5f;
 	GlobalVar<unsigned int> g_ssaoEnabled = 0;
 	GlobalVar<float> g_gtaoRadius = 2.0f;
 	GlobalVar<unsigned int> g_gtaoSteps = 4;
