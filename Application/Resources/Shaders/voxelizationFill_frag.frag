@@ -2,16 +2,18 @@
 
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#include "voxelization_bindings.h"
+#include "voxelizationFill_bindings.h"
 #include "common.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
 layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
 layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
 layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
+layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 1.0;
 
-layout(set = VOXEL_IMAGE_SET, binding = VOXEL_IMAGE_BINDING, rgba16f) uniform image3D uVoxelSceneImage;
-layout(set = OPACITY_IMAGE_SET, binding = OPACITY_IMAGE_BINDING, r8) uniform image3D uOpacityImage;
+layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING) uniform usampler3D uVoxelPtrImage;
+layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
+layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
 
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
 {
@@ -109,22 +111,50 @@ void main()
 	}
 	
 	const vec3 gridSize = vec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
-	ivec3 coord = ivec3(round(vWorldPos * uPushConsts.voxelScale));
-	if (all(greaterThanEqual(coord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(coord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
+	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
+	ivec3 brickCoord = coord / 16;
+	if (all(greaterThanEqual(brickCoord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(brickCoord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
 	{
-		coord = ivec3(fract(coord / gridSize) * gridSize);
-		// cascades are stacked on top of each other inside the same image
-		coord += ivec3(0, uPushConsts.cascade * cVoxelGridHeight, 0);
-		// z and y axis are switched in order to "grow" the image along the z axis with each additional cascade
-		coord = coord.xzy;
-	
-		vec3 voxel = imageLoad(uVoxelSceneImage, coord).rgb;
-		float opacity = imageLoad(uOpacityImage, coord).x;
-		float weight = opacity == 0.0 ? 1.0 : 0.03;
-		result = mix(voxel.rgb, result, weight);
+		ivec3 cubeCoord = coord / 4;
+		ivec3 localCubeCoord = ivec3(fract(cubeCoord / 4.0) * 4.0);
+		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
+		ivec3 bitCoord = ivec3(fract(coord / 4.0) * 4.0);
+		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
+		bool upper = bitIdx > 31;
+		bitIdx = upper ? bitIdx - 32 : bitIdx;
 		
-		imageStore(uVoxelSceneImage, coord, vec4(result, 1.0));
-		imageStore(uOpacityImage, coord, vec4(1.0));
+		const vec3 brickGridSize = vec3(128, 64, 128);
+		const vec3 invBrickGridSize = 1.0 / brickGridSize;
+		
+		ivec3 brickCoord = ivec3(fract((coord / 16) * invBrickGridSize) * brickGridSize);
+		uint brickPtr = texelFetch(uVoxelPtrImage, brickCoord, 0).x;
+		
+		if (brickPtr != 0)
+		{
+			--brickPtr;
+			imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), (1u << bitIdx));
+			vec3 prevColor = imageLoad(uColorImageBuffer, int(brickPtr * 64 + cubeIdx)).rgb;
+			imageStore(uColorImageBuffer, int(brickPtr * 64 + cubeIdx), vec4(mix(result, prevColor, 0.98), 1.0));
+		}
+		
+		
+		
+		//ivec3 localCoord = ivec3(fract(coord / 16.0) * 16.0);
+		//ivec3 cubeCoord = localCoord / 4;
+		//ivec3 bitCoord = localCoord % 4;
+		//uint bitPos = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
+		//uint wordIdx = 2 * (cubeCoord.x + cubeCoord.z * (16 / 4) + cubeCoord.y * ((16 / 4) * (16 / 4)));
+		//wordIdx = bitPos > 31 ? wordIdx + 1 : wordIdx;
+		//bitPos = bitPos > 31 ? bitPos - 32 : bitPos;
+		//brickCoord = ivec3(fract(brickCoord / floor(gridSize / 16.0)) * floor(gridSize / 16.0));
+		//
+		//uint voxelPtr = texelFetch(uVoxelPtrImage, brickCoord, 0).x;
+		//if (voxelPtr != 0)
+		//{
+		//	--voxelPtr;
+		//	imageAtomicOr(uBinVisImageBuffer, int(voxelPtr * 128 + wordIdx), (1u << bitPos));
+		//	imageStore(uColorImageBuffer, int(voxelPtr * 64 + (wordIdx / 2)), vec4(result, 1.0));
+		//}
 	}
 }
 

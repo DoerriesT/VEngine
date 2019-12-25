@@ -23,6 +23,7 @@ namespace VEngine
 		VKImage m_depthPyramidImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
 		VKImage m_dummyImage;
+		VKImage m_brickPointerImage;
 		VKImage m_voxelSceneImage;
 		VKImage m_voxelSceneOpacityImage;
 		VKImage m_irradianceVolumeImage;
@@ -43,6 +44,7 @@ namespace VEngine
 		VKBuffer m_avgLuminanceBuffer;
 		VKBuffer m_luminanceHistogramReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_occlusionCullStatsReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_brickPoolStatsReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_stagingBuffer;
 		VKBuffer m_materialBuffer;
 		VKBuffer m_vertexBuffer;
@@ -52,6 +54,9 @@ namespace VEngine
 		VKBuffer m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 		VKBuffer m_irradianceVolumeQueueBuffers[RendererConsts::FRAMES_IN_FLIGHT];
+		VKBuffer m_freeBricksBuffer;
+		VKBuffer m_binVisBricksBuffer;
+		VKBuffer m_colorBricksBuffer;
 		VKBuffer m_bvhNodesBuffer = {};
 		VKBuffer m_bvhTrianglesBuffer = {};
 
@@ -96,6 +101,14 @@ namespace VEngine
 		ResourceState m_irradianceVolumeImageResourceState = ResourceState::UNDEFINED;
 		VkQueue m_irradianceVolumeDepthImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_irradianceVolumeDepthImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_brickPointerImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_brickPointerImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_freeBricksBufferQueue = RenderGraph::undefinedQueue;
+		ResourceState m_freeBricksBufferResourceState = ResourceState::UNDEFINED;
+		VkQueue m_colorBricksBufferQueue = RenderGraph::undefinedQueue;
+		ResourceState m_colorBricksBufferResourceState = ResourceState::UNDEFINED;
+		VkQueue m_binVisBricksBufferQueue = RenderGraph::undefinedQueue;
+		ResourceState m_binVisBricksBufferResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;

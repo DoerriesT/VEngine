@@ -15,6 +15,7 @@
 
 uint32_t g_debugVoxelCascadeIndex = 0;
 uint32_t g_giVoxelDebugMode = 0;
+uint32_t g_allocatedBricks = 0;
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -94,6 +95,9 @@ void VEngine::Engine::start()
 		float casSharpness = g_CASSharpness;
 		ImGui::SliderFloat("CAS Sharpness", &casSharpness, 0.0f, 1.0f);
 		g_CASSharpness = casSharpness;
+
+		ImGui::NewLine();
+		ImGui::Text("Allocated Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 32.0f) * 100.0f);
 		
 		int debugMode = g_giVoxelDebugMode;
 		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
@@ -101,6 +105,7 @@ void VEngine::Engine::start()
 		ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
 		ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
 		ImGui::RadioButton("Irradiance Volume Age", &debugMode, 4);
+		ImGui::RadioButton("Bricks", &debugMode, 6);
 		g_giVoxelDebugMode = debugMode;
 		int cascadeIdx = g_debugVoxelCascadeIndex;
 		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();

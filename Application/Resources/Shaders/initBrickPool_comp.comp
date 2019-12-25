@@ -1,0 +1,31 @@
+#version 450
+
+#include "initBrickPool_bindings.h"
+
+layout(set = FREE_BRICKS_BUFFER_SET, binding = FREE_BRICKS_BUFFER_BINDING) buffer FREE_BRICKS_BUFFER 
+{
+	int uNextFreeBrick;
+    uint uFreeBricks[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x < uPushConsts.count)
+	{
+		uint offset = gl_GlobalInvocationID.x + uPushConsts.offset;
+		uFreeBricks[offset] = offset;
+	}
+	
+	if (gl_GlobalInvocationID.x == 0 && uPushConsts.clearNextFree != 0)
+	{
+		uNextFreeBrick = 0;
+	}
+}

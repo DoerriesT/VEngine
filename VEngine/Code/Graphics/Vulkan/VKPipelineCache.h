@@ -41,7 +41,9 @@ namespace VEngine
 			struct SetLayout
 			{
 				uint32_t m_uniformBufferMask;
+				uint32_t m_uniformTexelBufferMask;
 				uint32_t m_storageBufferMask;
+				uint32_t m_storageTexelBufferMask;
 				uint32_t m_subpassInputMask;
 				uint32_t m_storageImageMask;
 				uint32_t m_sampledImageMask;

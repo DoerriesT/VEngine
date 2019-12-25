@@ -303,13 +303,20 @@ void VEngine::VKPipelineCache::createShaderStage(const ShaderStageDesc &stageDes
 			reflectionInfo.m_setLayouts[set].m_subpassInputMask |= 1u << binding;
 		}
 
-		// storage images
+		// storage images / texel buffers
 		for (auto &resource : resources.storage_images)
 		{
 			uint32_t set;
 			uint32_t binding;
 			updateLayout(resource, set, binding);
-			reflectionInfo.m_setLayouts[set].m_storageImageMask |= 1u << binding;
+			if (comp.get_type(resource.type_id).image.dim == spv::Dim::DimBuffer)
+			{
+				reflectionInfo.m_setLayouts[set].m_storageTexelBufferMask |= 1u << binding;
+			}
+			else
+			{
+				reflectionInfo.m_setLayouts[set].m_storageImageMask |= 1u << binding;
+			}
 		}
 
 		// sampled images
@@ -318,7 +325,14 @@ void VEngine::VKPipelineCache::createShaderStage(const ShaderStageDesc &stageDes
 			uint32_t set;
 			uint32_t binding;
 			updateLayout(resource, set, binding);
-			reflectionInfo.m_setLayouts[set].m_sampledImageMask |= 1u << binding;
+			if (comp.get_type(resource.type_id).image.dim == spv::Dim::DimBuffer)
+			{
+				reflectionInfo.m_setLayouts[set].m_uniformTexelBufferMask |= 1u << binding;
+			}
+			else
+			{
+				reflectionInfo.m_setLayouts[set].m_sampledImageMask |= 1u << binding;
+			}
 		}
 
 		// separate images
@@ -327,7 +341,14 @@ void VEngine::VKPipelineCache::createShaderStage(const ShaderStageDesc &stageDes
 			uint32_t set;
 			uint32_t binding;
 			updateLayout(resource, set, binding);
-			reflectionInfo.m_setLayouts[set].m_separateImageMask |= 1u << binding;
+			if (comp.get_type(resource.type_id).image.dim == spv::Dim::DimBuffer)
+			{
+				reflectionInfo.m_setLayouts[set].m_uniformTexelBufferMask |= 1u << binding;
+			}
+			else
+			{
+				reflectionInfo.m_setLayouts[set].m_separateImageMask |= 1u << binding;
+			}
 		}
 
 		// separate samplers
@@ -372,10 +393,24 @@ void VEngine::VKPipelineCache::createPipelineLayout(const ReflectionInfo &reflec
 					++count;
 				}
 
+				if ((setLayout.m_uniformTexelBufferMask & (1u << j)) != 0)
+				{
+					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
+					descriptorSetLayoutData.m_counts[i][VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] += setLayout.m_arraySizes[j];
+					++count;
+				}
+
 				if ((setLayout.m_storageBufferMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
 					descriptorSetLayoutData.m_counts[i][VK_DESCRIPTOR_TYPE_STORAGE_BUFFER] += setLayout.m_arraySizes[j];
+					++count;
+				}
+
+				if ((setLayout.m_storageTexelBufferMask & (1u << j)) != 0)
+				{
+					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
+					descriptorSetLayoutData.m_counts[i][VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 

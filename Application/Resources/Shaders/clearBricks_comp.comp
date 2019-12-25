@@ -1,0 +1,61 @@
+#version 450
+
+#include "clearBricks_bindings.h"
+
+layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uVoxelPtrImage;
+layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
+layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
+
+layout(set = FREE_BRICKS_BUFFER_SET, binding = FREE_BRICKS_BUFFER_BINDING) buffer FREE_BRICKS_BUFFER 
+{
+	int uNextFreeBrick;
+    uint uFreeBricks[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
+layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
+layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+void main() 
+{
+	const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
+	
+	// early exit if this invocation is outside the grid
+	if (gl_GlobalInvocationID.x < gridSize.x && gl_GlobalInvocationID.y < gridSize.y && gl_GlobalInvocationID.z < gridSize.z)
+	{		
+		// is the voxel outside the grid after applying camera movement?
+		ivec3 coord = ivec3(gl_GlobalInvocationID.xyz) + uPushConsts.diff;
+		if (any(lessThan(coord, ivec3(0))) || any(greaterThanEqual(coord, gridSize)))
+		{
+			// move coordinate to world space fixed coordinate system (toroidal addressing)
+			coord += uPushConsts.cameraCoord.xyz - (gridSize / 2) - uPushConsts.diff;
+			// apply wrapping
+			coord = ivec3(fract(coord / vec3(gridSize)) * gridSize);
+			
+			uint ptr = imageLoad(uVoxelPtrImage, coord).x;
+			if (ptr != 0)
+			{
+				--ptr;
+				
+				// clear brick
+				for (int i = 0; i < 64; ++i)
+				{
+					imageStore(uBinVisImageBuffer, (i * 2) + int(ptr) * 128, uvec4(0));
+					imageStore(uBinVisImageBuffer, (i * 2 + 1) + int(ptr) * 128, uvec4(0));
+					imageStore(uColorImageBuffer, i + int(ptr) * 64, vec4(0.0));
+				}
+				
+				uint offset = atomicAdd(uNextFreeBrick, -1) - 1;
+				uFreeBricks[offset] = ptr + 1;
+				imageStore(uVoxelPtrImage, coord, uvec4(0));
+			}
+		}
+	}
+}
