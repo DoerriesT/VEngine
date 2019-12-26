@@ -49,7 +49,7 @@ void VEngine::InitBrickPoolPass::addToGraph(RenderGraph &graph, const Data &data
 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-			constexpr uint32_t brickCount = 1024 * 32;
+			constexpr uint32_t brickCount = 1024 * 64;
 
 			PushConsts pushConsts;
 			pushConsts.count  = brickCount;

@@ -112,13 +112,15 @@ void main()
 	
 	const vec3 gridSize = vec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
 	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
-	ivec3 brickCoord = coord / 16;
+	ivec3 brickCoord = ivec3(floor(vec3(coord) / 16.0));
+	
 	if (all(greaterThanEqual(brickCoord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(brickCoord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
 	{
-		ivec3 cubeCoord = coord / 4;
+		ivec3 localCoord = ivec3(fract(vec3(coord) / 16.0) * 16.0);
+		ivec3 cubeCoord = localCoord / 4;
 		ivec3 localCubeCoord = ivec3(fract(cubeCoord / 4.0) * 4.0);
 		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
-		ivec3 bitCoord = ivec3(fract(coord / 4.0) * 4.0);
+		ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
 		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
 		bool upper = bitIdx > 31;
 		bitIdx = upper ? bitIdx - 32 : bitIdx;
@@ -126,7 +128,7 @@ void main()
 		const vec3 brickGridSize = vec3(128, 64, 128);
 		const vec3 invBrickGridSize = 1.0 / brickGridSize;
 		
-		ivec3 brickCoord = ivec3(fract((coord / 16) * invBrickGridSize) * brickGridSize);
+		ivec3 brickCoord = ivec3(fract(floor(vec3(coord) / 16.0) * invBrickGridSize) * brickGridSize);
 		uint brickPtr = texelFetch(uVoxelPtrImage, brickCoord, 0).x;
 		
 		if (brickPtr != 0)
@@ -136,25 +138,6 @@ void main()
 			vec3 prevColor = imageLoad(uColorImageBuffer, int(brickPtr * 64 + cubeIdx)).rgb;
 			imageStore(uColorImageBuffer, int(brickPtr * 64 + cubeIdx), vec4(mix(result, prevColor, 0.98), 1.0));
 		}
-		
-		
-		
-		//ivec3 localCoord = ivec3(fract(coord / 16.0) * 16.0);
-		//ivec3 cubeCoord = localCoord / 4;
-		//ivec3 bitCoord = localCoord % 4;
-		//uint bitPos = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
-		//uint wordIdx = 2 * (cubeCoord.x + cubeCoord.z * (16 / 4) + cubeCoord.y * ((16 / 4) * (16 / 4)));
-		//wordIdx = bitPos > 31 ? wordIdx + 1 : wordIdx;
-		//bitPos = bitPos > 31 ? bitPos - 32 : bitPos;
-		//brickCoord = ivec3(fract(brickCoord / floor(gridSize / 16.0)) * floor(gridSize / 16.0));
-		//
-		//uint voxelPtr = texelFetch(uVoxelPtrImage, brickCoord, 0).x;
-		//if (voxelPtr != 0)
-		//{
-		//	--voxelPtr;
-		//	imageAtomicOr(uBinVisImageBuffer, int(voxelPtr * 128 + wordIdx), (1u << bitPos));
-		//	imageStore(uColorImageBuffer, int(voxelPtr * 64 + (wordIdx / 2)), vec4(result, 1.0));
-		//}
 	}
 }
 

@@ -97,7 +97,7 @@ void VEngine::Engine::start()
 		g_CASSharpness = casSharpness;
 
 		ImGui::NewLine();
-		ImGui::Text("Allocated Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 32.0f) * 100.0f);
+		ImGui::Text("Allocated Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
 		
 		int debugMode = g_giVoxelDebugMode;
 		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();

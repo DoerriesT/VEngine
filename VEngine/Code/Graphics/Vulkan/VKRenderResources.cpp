@@ -364,7 +364,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
-	constexpr uint32_t brickCount = 1024 * 32;
+	constexpr uint32_t brickCount = 1024 * 64;
 
 	// free bricks list
 	{

@@ -21,7 +21,8 @@ layout(location = 0) in vec3 vWorldPos;
 void main() 
 {
 	const vec3 gridSize = vec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
-	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale)) / 16;
+	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
+	coord = ivec3(floor(vec3(coord) / 16.0));
 	if (all(greaterThanEqual(coord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(coord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
 	{
 		coord = ivec3(fract(coord / gridSize) * gridSize);

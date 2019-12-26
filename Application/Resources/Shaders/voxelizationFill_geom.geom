@@ -32,7 +32,7 @@ void main()
 	{
 		const vec3 worldPos = gl_in[i].gl_Position.xyz;
 		// world space to voxel grid space
-		gl_Position.xyz = worldPos * cVoxelScale - uPushConsts.gridOffset.xyz;
+		gl_Position.xyz = worldPos * cVoxelScale - (uPushConsts.gridOffset.xyz);
 		gl_Position.xyz *= uPushConsts.superSamplingFactor;
 		
 		// project onto dominant axis

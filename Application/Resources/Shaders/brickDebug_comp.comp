@@ -30,15 +30,16 @@ bool fetchVisibility(ivec3 coord, out vec3 color)
 	const vec3 invBrickGridSize = 1.0 / brickGridSize;
 	const vec3 invGridSize = 1.0 / vec3(gridSize);
 	
-	ivec3 brickCoord = ivec3(fract((coord / 16) * invBrickGridSize) * brickGridSize);
+	ivec3 brickCoord = ivec3(fract(floor(vec3(coord) / 16.0) * invBrickGridSize) * brickGridSize);
 	uint brickPtr = texelFetch(uBrickPtrImage, brickCoord, 0).x;
 	
 	if (brickPtr != 0)
 	{
-		ivec3 cubeCoord = coord / 4;
+		ivec3 localCoord = ivec3(fract(vec3(coord) / 16.0) * 16.0);
+		ivec3 cubeCoord = localCoord / 4;
 		ivec3 localCubeCoord = ivec3(fract(cubeCoord / 4.0) * 4.0);
 		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
-		ivec3 bitCoord = ivec3(fract(coord / 4.0) * 4.0);
+		ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
 		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
 		bool upper = bitIdx > 31;
 		bitIdx = upper ? bitIdx - 32 : bitIdx;

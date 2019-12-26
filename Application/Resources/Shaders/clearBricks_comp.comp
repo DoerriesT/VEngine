@@ -53,7 +53,7 @@ void main()
 				}
 				
 				uint offset = atomicAdd(uNextFreeBrick, -1) - 1;
-				uFreeBricks[offset] = ptr + 1;
+				uFreeBricks[offset] = ptr;
 				imageStore(uVoxelPtrImage, coord, uvec4(0));
 			}
 		}
