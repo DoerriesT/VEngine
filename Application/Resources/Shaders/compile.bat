@@ -61,5 +61,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c voxelizationFill_frag.frag -o voxeliz
 glslc --target-env=vulkan1.1 -O -Werror -c clearBricks_comp.comp -o clearBricks_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c initBrickPool_comp.comp -o initBrickPool_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c brickDebug_comp.comp -o brickDebug_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching2_comp.comp -o irradianceVolumeRayMarching2_comp.spv
 
 pause

@@ -51,6 +51,7 @@
 #include "Pass/VoxelizationAllocatePass.h"
 #include "Pass/VoxelizationFillPass.h"
 #include "Pass/BrickDebugPass.h"
+#include "Pass/IrradianceVolumeRayMarching2Pass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -1169,7 +1170,21 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	irradianceVolumeRayMarchingPassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
 	irradianceVolumeRayMarchingPassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
 
-	IrradianceVolumeRayMarchingPass::addToGraph(graph, irradianceVolumeRayMarchingPassData);
+	//IrradianceVolumeRayMarchingPass::addToGraph(graph, irradianceVolumeRayMarchingPassData);
+
+
+	IrradianceVolumeRayMarching2Pass::Data irradianceVolumeRayMarching2PassData;
+	irradianceVolumeRayMarching2PassData.m_passRecordContext = &passRecordContext;
+	irradianceVolumeRayMarching2PassData.m_brickPtrImageHandle = brickPointerImageViewHandle;
+	irradianceVolumeRayMarching2PassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
+	irradianceVolumeRayMarching2PassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
+	irradianceVolumeRayMarching2PassData.m_rayMarchingResultImageHandle = rayMarchingResultImageViewHandle;
+	irradianceVolumeRayMarching2PassData.m_rayMarchingResultDistanceImageHandle = rayMarchingResultDistanceImageViewHandle;
+	irradianceVolumeRayMarching2PassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
+	irradianceVolumeRayMarching2PassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
+
+	IrradianceVolumeRayMarching2Pass::addToGraph(graph, irradianceVolumeRayMarching2PassData);
+
 
 	// probe depth
 	IrradianceVolumeUpdateProbesPass::Data irradianceVolumeUpdateProbesPassData;
