@@ -1001,6 +1001,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		ClearBricksPass::addToGraph(graph, clearBricksPassData);
 
+		ImageDescription markImageDesc = {};
+		markImageDesc.m_name = "Brick Mark Image";
+		markImageDesc.m_concurrent = false;
+		markImageDesc.m_clear = true;
+		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[0] = 0;
+		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[1] = 0;
+		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[2] = 0;
+		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[3] = 0;
+		markImageDesc.m_width = RendererConsts::BRICK_VOLUME_WIDTH;
+		markImageDesc.m_height = RendererConsts::BRICK_VOLUME_HEIGHT;
+		markImageDesc.m_depth = RendererConsts::BRICK_VOLUME_DEPTH;
+		markImageDesc.m_layers = 1;
+		markImageDesc.m_levels = 1;
+		markImageDesc.m_samples = 1;
+		markImageDesc.m_imageType = VK_IMAGE_TYPE_3D;
+		markImageDesc.m_format = VK_FORMAT_R8_UINT;
+
+		ImageViewHandle markImageHandle = graph.createImageView({ markImageDesc.m_name, graph.createImage(markImageDesc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+
 
 		// mark
 		VoxelizationMarkPass::Data voxelizeMarkPassData;
@@ -1009,7 +1028,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizeMarkPassData.m_instanceData = renderData.m_allInstanceData;
 		voxelizeMarkPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 		voxelizeMarkPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		voxelizeMarkPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
+		voxelizeMarkPassData.m_markImageHandle = markImageHandle;
 
 		VoxelizationMarkPass::addToGraph(graph, voxelizeMarkPassData);
 
@@ -1019,6 +1038,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizeAllocatePassData.m_passRecordContext = &passRecordContext;
 		voxelizeAllocatePassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
 		voxelizeAllocatePassData.m_freeBricksBufferHandle = freeBricksBufferViewHandle;
+		voxelizeAllocatePassData.m_markImageHandle = markImageHandle;
 
 		VoxelizationAllocatePass::addToGraph(graph, voxelizeAllocatePassData);
 

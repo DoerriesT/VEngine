@@ -16,7 +16,7 @@ namespace VEngine
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
-			ImageViewHandle m_brickPointerImageHandle;
+			ImageViewHandle m_markImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

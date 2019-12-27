@@ -9,7 +9,7 @@
 namespace
 {
 	using namespace glm;
-#include "../../../../../Application/Resources/Shaders/clearBricks_bindings.h"
+#include "../../../../../Application/Resources/Shaders/voxelizationAllocate_bindings.h"
 }
 
 void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Data &data)
@@ -17,10 +17,11 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 	ResourceUsageDescription passUsages[]
 	{
 		 { ResourceViewHandle(data.m_brickPointerImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
+		 {ResourceViewHandle(data.m_markImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		 { ResourceViewHandle(data.m_freeBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
 	};
 
-	graph.addPass("Voxelization Allocate", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Voxelization Allocate", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			// create pipeline description
 			SpecEntry specEntries[]
@@ -45,6 +46,7 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_PTR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_markImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), MARK_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_freeBricksBufferHandle), FREE_BRICKS_BUFFER_BINDING);
 
 				writer.commit();

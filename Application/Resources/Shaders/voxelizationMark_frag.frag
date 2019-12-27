@@ -8,7 +8,7 @@ layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 6
 layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
 layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 1.0;
 
-layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uVoxelPtrImage;
+layout(set = MARK_IMAGE_SET, binding = MARK_IMAGE_BINDING, r8ui) uniform uimage3D uMarkImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -27,7 +27,7 @@ void main()
 	{
 		coord = ivec3(fract(coord / gridSize) * gridSize);
 		
-		imageAtomicCompSwap(uVoxelPtrImage, coord, 0, 0xFFFFFFFF);
+		imageStore(uMarkImage, coord, uvec4(1));
 	}
 }
 
