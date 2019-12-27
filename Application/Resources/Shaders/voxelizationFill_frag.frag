@@ -8,12 +8,15 @@
 #include "common.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
-layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
-layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
-layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
-layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 1.0;
+layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
+layout(constant_id = BRICK_VOLUME_HEIGHT_CONST_ID) const uint cBrickVolumeHeight = 64;
+layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth = 128;
+layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 16.0;
+layout(constant_id = INV_VOXEL_BRICK_SIZE_CONST_ID) const float cInvVoxelBrickSize = 0.625;
+layout(constant_id = BIN_VIS_BRICK_SIZE_CONST_ID) const uint cBinVisBrickSize = 16;
+layout(constant_id = COLOR_BRICK_SIZE_CONST_ID) const uint cColorBrickSize = 4;
 
-layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING) uniform usampler3D uVoxelPtrImage;
+layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
 layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
 layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
 
@@ -100,7 +103,7 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	//result += albedo * (1.0 / PI);
+	result += albedo * (1.0 / PI);
 	
 	// directional lights
 	for (uint lightIdx = 0; lightIdx < cDirectionalLightCount; ++lightIdx)
@@ -137,41 +140,43 @@ void main()
 		result += (1.0 - shadow) * albedo * (1.0 / PI) * NdotL * lightData.color.rgb;
 	}
 	
-	const vec3 gridSize = vec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
+	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
 	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
-	ivec3 brickCoord = ivec3(floor(vec3(coord) / 16.0));
+	ivec3 brickCoord = ivec3(floor(vec3(coord) * cInvVoxelBrickSize));
 	
 	if (all(greaterThanEqual(brickCoord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(brickCoord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
 	{
-		ivec3 localCoord = ivec3(fract(vec3(coord) / 16.0) * 16.0);
+		ivec3 localCoord = ivec3(fract(vec3(coord) / float(cBinVisBrickSize)) * cBinVisBrickSize);
 		ivec3 cubeCoord = localCoord / 4;
-		ivec3 localCubeCoord = ivec3(fract(cubeCoord / 4.0) * 4.0);
+		float cubesPerBrick = cBinVisBrickSize * 0.25;
+		ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
 		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
 		ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
 		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
 		bool upper = bitIdx > 31;
 		bitIdx = upper ? bitIdx - 32 : bitIdx;
 		
-		const vec3 brickGridSize = vec3(128, 64, 128);
-		const vec3 invBrickGridSize = 1.0 / brickGridSize;
-		
-		ivec3 brickCoord = ivec3(fract(floor(vec3(coord) / 16.0) * invBrickGridSize) * brickGridSize);
-		uint brickPtr = texelFetch(uVoxelPtrImage, brickCoord, 0).x;
+		brickCoord = ivec3(fract(brickCoord / gridSize) * gridSize);
+		uint brickPtr = texelFetch(uBrickPtrImage, brickCoord, 0).x;
 		
 		if (brickPtr != 0)
 		{
 			--brickPtr;
-			//uint prev = imageLoad(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0))).x;
-			//imageStore(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), uvec4(prev | (1u << bitIdx)));
-			//imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), (1u << bitIdx));
 			
+			const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
+			const int binVisIdx = int(brickPtr * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
 			uint payload = (1u << bitIdx);
-			if (subgroupCompactValue(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0), payload) == 0)
+			if (subgroupCompactValue(binVisIdx, payload) == 0)
 			{
-				imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), payload);
+				imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
 			}
-			vec3 prevColor = imageLoad(uColorImageBuffer, int(brickPtr * 64 + cubeIdx)).rgb;
-			imageStore(uColorImageBuffer, int(brickPtr * 64 + cubeIdx), vec4(mix(result, prevColor, 0.98), 1.0));
+			
+			const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
+			const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
+			const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
+			
+			vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
+			imageStore(uColorImageBuffer, colorIdx, vec4(mix(result, prevColor, 0.98), 1.0));
 		}
 	}
 }

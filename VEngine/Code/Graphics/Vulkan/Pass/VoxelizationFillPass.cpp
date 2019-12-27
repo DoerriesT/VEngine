@@ -31,8 +31,8 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 
 	graph.addPass("Voxelization Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
-			const uint32_t superSamplingFactor = 16 * 4;
-			const uint32_t voxelGridResolution = glm::max(glm::max(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT), RendererConsts::VOXEL_SCENE_DEPTH) * superSamplingFactor;
+			const uint32_t superSamplingFactor = RendererConsts::BINARY_VIS_BRICK_SIZE * 4;
+			const uint32_t voxelGridResolution = glm::max(glm::max(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT), RendererConsts::BRICK_VOLUME_DEPTH) * superSamplingFactor;
 
 			// begin renderpass
 			VkRenderPass renderPass;
@@ -75,16 +75,19 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			// create pipeline description
 			SpecEntry fragmentShaderSpecEntries[]
 			{
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH),
 				SpecEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_passRecordContext->m_commonRenderData->m_directionalLightCount),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SCALE / 16.0f)),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
+				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
 			};
 
 			SpecEntry geomShaderSpecEntries[]
 			{
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / RendererConsts::BRICK_SCALE),
+				SpecEntry(BRICK_SCALE_CONST_ID, 1.0f / RendererConsts::BRICK_SIZE),
 			};
 
 			VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -115,7 +118,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), VOXEL_PTR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), BRICK_PTR_IMAGE_BINDING);
 				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
 				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_shadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER), SHADOW_IMAGE_BINDING);
@@ -150,7 +153,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
-			float curVoxelScale = 1.0f / RendererConsts::BRICK_SCALE;
+			float curVoxelScale = 1.0f / RendererConsts::BRICK_SIZE;
 
 			for (uint32_t j = 0; j < data.m_instanceDataCount; ++j)
 			{
@@ -159,7 +162,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 
 				PushConsts pushConsts;
 				pushConsts.superSamplingFactor = superSamplingFactor;
-				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT, RendererConsts::VOXEL_SCENE_DEPTH) / 2.0f);
+				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2.0f);
 				pushConsts.invGridResolution = 1.0f / voxelGridResolution;
 				pushConsts.transformIndex = instanceData.m_transformIndex;
 				pushConsts.materialIndex = instanceData.m_materialIndex;

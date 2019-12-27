@@ -2,7 +2,7 @@
 
 #include "clearBricks_bindings.h"
 
-layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uVoxelPtrImage;
+layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uBrickPtrImage;
 layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
 layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
 
@@ -17,15 +17,15 @@ layout(push_constant) uniform PUSH_CONSTS
 	PushConsts uPushConsts;
 };
 
-layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
-layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
-layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
+layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
+layout(constant_id = BRICK_VOLUME_HEIGHT_CONST_ID) const uint cBrickVolumeHeight = 64;
+layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth = 128;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main() 
 {
-	const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
+	const ivec3 gridSize = ivec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
 	
 	// early exit if this invocation is outside the grid
 	if (gl_GlobalInvocationID.x < gridSize.x && gl_GlobalInvocationID.y < gridSize.y && gl_GlobalInvocationID.z < gridSize.z)
@@ -39,7 +39,7 @@ void main()
 			// apply wrapping
 			coord = ivec3(fract(coord / vec3(gridSize)) * gridSize);
 			
-			uint ptr = imageLoad(uVoxelPtrImage, coord).x;
+			uint ptr = imageLoad(uBrickPtrImage, coord).x;
 			if (ptr != 0)
 			{
 				--ptr;
@@ -54,7 +54,7 @@ void main()
 				
 				uint offset = atomicAdd(uNextFreeBrick, -1) - 1;
 				uFreeBricks[offset] = ptr;
-				imageStore(uVoxelPtrImage, coord, uvec4(0));
+				imageStore(uBrickPtrImage, coord, uvec4(0));
 			}
 		}
 	}

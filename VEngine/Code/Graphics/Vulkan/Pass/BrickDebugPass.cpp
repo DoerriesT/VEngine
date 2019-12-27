@@ -30,11 +30,15 @@ void VEngine::BrickDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH * 16),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT * 16),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH * 16),
-				//SpecEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::VOXEL_SCENE_BASE_SIZE),
-				//SpecEntry(VOXEL_CASCADES_CONST_ID, RendererConsts::VOXEL_SCENE_CASCADES),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
+				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH * RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT * RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH * RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / RendererConsts::BINARY_VIS_BRICK_SIZE)),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
 				SpecEntry(WIDTH_CONST_ID, width),
 				SpecEntry(HEIGHT_CONST_ID, height),
 				SpecEntry(TEXEL_WIDTH_CONST_ID, 1.0f / width),
@@ -64,10 +68,12 @@ void VEngine::BrickDebugPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
+			const ivec3 gridSize = ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH);
+			const float voxelScale = 1.0f / RendererConsts::BRICK_SIZE;
+
 			PushConsts pushConsts;
 			pushConsts.invViewProjection = data.m_passRecordContext->m_commonRenderData->m_invJitteredViewProjectionMatrix;
-			pushConsts.cameraPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
-			pushConsts.voxelScale = 1.0f / (RendererConsts::BRICK_SCALE / 16.0f);
+			pushConsts.gridOffset = (ivec3(round(vec3(data.m_passRecordContext->m_commonRenderData->m_cameraPosition) * voxelScale)) - (gridSize / 2)) * int32_t(RendererConsts::BINARY_VIS_BRICK_SIZE);
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

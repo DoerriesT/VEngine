@@ -2,7 +2,7 @@
 
 #include "voxelizationAllocate_bindings.h"
 
-layout(set = VOXEL_PTR_IMAGE_SET, binding = VOXEL_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uVoxelPtrImage;
+layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uBrickPtrImage;
 layout(set = MARK_IMAGE_SET, binding = MARK_IMAGE_BINDING) uniform usampler3D uMarkImage;
 
 layout(set = FREE_BRICKS_BUFFER_SET, binding = FREE_BRICKS_BUFFER_BINDING) buffer FREE_BRICKS_BUFFER 
@@ -11,23 +11,23 @@ layout(set = FREE_BRICKS_BUFFER_SET, binding = FREE_BRICKS_BUFFER_BINDING) buffe
     uint uFreeBricks[];
 };
 
-layout(constant_id = VOXEL_GRID_WIDTH_CONST_ID) const uint cVoxelGridWidth = 128;
-layout(constant_id = VOXEL_GRID_HEIGHT_CONST_ID) const uint cVoxelGridHeight = 64;
-layout(constant_id = VOXEL_GRID_DEPTH_CONST_ID) const uint cVoxelGridDepth = 128;
+layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
+layout(constant_id = BRICK_VOLUME_HEIGHT_CONST_ID) const uint cBrickVolumeHeight = 64;
+layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth = 128;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 void main() 
 {
-	const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
+	const ivec3 gridSize = ivec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
 	
 	// early exit if this invocation is outside the grid
 	if (gl_GlobalInvocationID.x < gridSize.x && gl_GlobalInvocationID.y < gridSize.y && gl_GlobalInvocationID.z < gridSize.z)
 	{
-		if (texelFetch(uMarkImage, ivec3(gl_GlobalInvocationID.xyz), 0).x != 0 && imageLoad(uVoxelPtrImage, ivec3(gl_GlobalInvocationID.xyz)).x == 0)
+		if (texelFetch(uMarkImage, ivec3(gl_GlobalInvocationID.xyz), 0).x != 0 && imageLoad(uBrickPtrImage, ivec3(gl_GlobalInvocationID.xyz)).x == 0)
 		{
 			uint idx = atomicAdd(uNextFreeBrick, 1);
-			imageStore(uVoxelPtrImage, ivec3(gl_GlobalInvocationID.xyz), uvec4(uFreeBricks[idx] + 1));
+			imageStore(uBrickPtrImage, ivec3(gl_GlobalInvocationID.xyz), uvec4(uFreeBricks[idx] + 1));
 		}
 	}
 }

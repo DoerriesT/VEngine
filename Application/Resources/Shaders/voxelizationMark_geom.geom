@@ -2,7 +2,7 @@
 
 #include "voxelizationMark_bindings.h"
 
-layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 1.0;
+layout(constant_id = BRICK_SCALE_CONST_ID) const float cBrickScale = 1.0;
 
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
@@ -24,7 +24,7 @@ void main()
 	{
 		const vec3 worldPos = gl_in[i].gl_Position.xyz;
 		// world space to voxel grid space
-		gl_Position.xyz = worldPos * cVoxelScale - uPushConsts.gridOffset.xyz;
+		gl_Position.xyz = worldPos * cBrickScale - uPushConsts.gridOffset.xyz;
 		gl_Position.xyz *= uPushConsts.superSamplingFactor;
 		
 		// project onto dominant axis

@@ -38,7 +38,7 @@ namespace VEngine
 		constexpr uint32_t BRICK_VOLUME_WIDTH = 128;
 		constexpr uint32_t BRICK_VOLUME_HEIGHT = 64;
 		constexpr uint32_t BRICK_VOLUME_DEPTH = 128;
-		constexpr float BRICK_SCALE = 1.0f;
+		constexpr float BRICK_SIZE = 1.0f;
 		constexpr uint32_t BINARY_VIS_BRICK_SIZE = 16;
 		constexpr uint32_t COLOR_BRICK_SIZE = 4;
 		constexpr float Z_BIN_DEPTH = 1.0f;

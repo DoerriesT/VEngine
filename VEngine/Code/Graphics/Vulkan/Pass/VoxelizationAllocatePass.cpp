@@ -26,9 +26,9 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -45,7 +45,7 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 			{
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_PTR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), BRICK_PTR_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_markImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), MARK_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_freeBricksBufferHandle), FREE_BRICKS_BUFFER_BINDING);
 
@@ -54,7 +54,7 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::VOXEL_SCENE_WIDTH + 7) / 8, (RendererConsts::VOXEL_SCENE_HEIGHT + 7) / 8, RendererConsts::VOXEL_SCENE_DEPTH);
+			vkCmdDispatch(cmdBuf, (RendererConsts::BRICK_VOLUME_WIDTH + 7) / 8, (RendererConsts::BRICK_VOLUME_HEIGHT + 7) / 8, RendererConsts::BRICK_VOLUME_DEPTH);
 
 		}, true);
 }

@@ -16,8 +16,8 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 	const glm::vec3 prevCamPos = data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3];
-	const glm::ivec3 cameraCoord = ivec3(round(camPos / RendererConsts::BRICK_SCALE));
-	const glm::ivec3 prevCameraCoord = ivec3(round(prevCamPos / RendererConsts::BRICK_SCALE));
+	const glm::ivec3 cameraCoord = ivec3(round(camPos / RendererConsts::BRICK_SIZE));
+	const glm::ivec3 prevCameraCoord = ivec3(round(prevCamPos / RendererConsts::BRICK_SIZE));
 	const glm::ivec3 diff = cameraCoord - prevCameraCoord;
 
 	if (diff == glm::ivec3(0))
@@ -38,9 +38,9 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH ),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH ),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -57,7 +57,7 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 			{
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), VOXEL_PTR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), BRICK_PTR_IMAGE_BINDING);
 				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
 				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_freeBricksBufferHandle), FREE_BRICKS_BUFFER_BINDING);
@@ -68,12 +68,12 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 			PushConsts pushConsts;
-			pushConsts.cameraCoord = ivec4(round(data.m_passRecordContext->m_commonRenderData->m_cameraPosition / RendererConsts::BRICK_SCALE));
-			pushConsts.diff = pushConsts.cameraCoord - ivec4(round(data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3] / RendererConsts::BRICK_SCALE));
+			pushConsts.cameraCoord = ivec4(round(data.m_passRecordContext->m_commonRenderData->m_cameraPosition / RendererConsts::BRICK_SIZE));
+			pushConsts.diff = pushConsts.cameraCoord - ivec4(round(data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3] / RendererConsts::BRICK_SIZE));
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::VOXEL_SCENE_WIDTH + 7) / 8, (RendererConsts::VOXEL_SCENE_HEIGHT + 7) / 8, RendererConsts::VOXEL_SCENE_DEPTH);
+			vkCmdDispatch(cmdBuf, (RendererConsts::BRICK_VOLUME_WIDTH + 7) / 8, (RendererConsts::BRICK_VOLUME_HEIGHT + 7) / 8, RendererConsts::BRICK_VOLUME_DEPTH);
 
 		}, true);
 }

@@ -26,8 +26,8 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 
 	graph.addPass("Voxelization Mark", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
-			const uint32_t superSamplingFactor = 16 * 4;
-			const uint32_t voxelGridResolution = glm::max(glm::max(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT), RendererConsts::VOXEL_SCENE_DEPTH) * superSamplingFactor;
+			const uint32_t superSamplingFactor = RendererConsts::BINARY_VIS_BRICK_SIZE * 4;
+			const uint32_t voxelGridResolution = glm::max(glm::max(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT), RendererConsts::BRICK_VOLUME_DEPTH) * superSamplingFactor;
 
 			// begin renderpass
 			VkRenderPass renderPass;
@@ -70,15 +70,16 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 			// create pipeline description
 			SpecEntry fragmentShaderSpecEntries[]
 			{
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::VOXEL_SCENE_WIDTH),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::VOXEL_SCENE_HEIGHT),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::VOXEL_SCENE_DEPTH),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SCALE / 16.0f)),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
+				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / RendererConsts::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
 			};
 
 			SpecEntry geomShaderSpecEntries[]
 			{
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / RendererConsts::BRICK_SCALE),
+				SpecEntry(BRICK_SCALE_CONST_ID, 1.0f / RendererConsts::BRICK_SIZE),
 			};
 
 			VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -131,7 +132,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
-			float curVoxelScale = 1.0f / RendererConsts::BRICK_SCALE;
+			float curVoxelScale = 1.0f / RendererConsts::BRICK_SIZE;
 
 			for (uint32_t j = 0; j < data.m_instanceDataCount; ++j)
 			{
@@ -140,7 +141,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 
 				PushConsts pushConsts;
 				pushConsts.superSamplingFactor = superSamplingFactor;
-				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::VOXEL_SCENE_WIDTH, RendererConsts::VOXEL_SCENE_HEIGHT, RendererConsts::VOXEL_SCENE_DEPTH) / 2.0f);
+				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2.0f);
 				pushConsts.invGridResolution = 1.0f / voxelGridResolution;
 				pushConsts.transformIndex = instanceData.m_transformIndex;
 
