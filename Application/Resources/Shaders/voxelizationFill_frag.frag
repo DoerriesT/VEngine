@@ -1,6 +1,8 @@
 #version 450
 
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
 
 #include "voxelizationFill_bindings.h"
 #include "common.h"
@@ -49,6 +51,31 @@ layout(location = 3) flat in uint vMaterialIndex;
 #define DIFFUSE_ONLY 1
 #define SHADOW_FUNCTIONS 0
 #include "commonLighting.h"
+
+uint subgroupCompactValue(uint checkValue, inout uint payload)
+{
+	uvec4 mask; // thread unique compaction mask
+	for (;;) // loop until all active threads are removed
+	{
+		uint firstValue = subgroupBroadcastFirst(checkValue);
+		// mask is only updated for active threads
+		mask = subgroupBallot(firstValue == checkValue && !gl_HelperInvocation);
+		if (firstValue == checkValue)
+		{
+			payload = subgroupOr(payload);
+		}
+		// exclude all threads with firstValue from next iteration
+		if (firstValue == checkValue)
+		{
+			break;
+		}
+	}
+	
+	// at this point, each thread of mask should contain a bit mask of all
+	// other lanes with the same value
+	uint index = subgroupBallotExclusiveBitCount(mask);
+	return index;
+}
 
 void main() 
 {
@@ -134,7 +161,15 @@ void main()
 		if (brickPtr != 0)
 		{
 			--brickPtr;
-			imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), (1u << bitIdx));
+			//uint prev = imageLoad(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0))).x;
+			//imageStore(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), uvec4(prev | (1u << bitIdx)));
+			//imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), (1u << bitIdx));
+			
+			uint payload = (1u << bitIdx);
+			if (subgroupCompactValue(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0), payload) == 0)
+			{
+				imageAtomicOr(uBinVisImageBuffer, int(brickPtr * 128 + cubeIdx * 2 + (upper ? 1 : 0)), payload);
+			}
 			vec3 prevColor = imageLoad(uColorImageBuffer, int(brickPtr * 64 + cubeIdx)).rgb;
 			imageStore(uColorImageBuffer, int(brickPtr * 64 + cubeIdx), vec4(mix(result, prevColor, 0.98), 1.0));
 		}

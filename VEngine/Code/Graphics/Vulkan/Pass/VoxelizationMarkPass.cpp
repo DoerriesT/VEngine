@@ -21,7 +21,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_markImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
+		{ResourceViewHandle(data.m_markImageHandle), ResourceState::WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
 	};
 
 	graph.addPass("Voxelization Mark", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -104,7 +104,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_markImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), MARK_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_markImageHandle, ResourceState::WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), MARK_IMAGE_BINDING);
 
 				writer.commit();
 			}
