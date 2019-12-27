@@ -42,5 +42,6 @@ namespace VEngine
 		constexpr uint32_t BINARY_VIS_BRICK_SIZE = 16;
 		constexpr uint32_t COLOR_BRICK_SIZE = 4;
 		constexpr float Z_BIN_DEPTH = 1.0f;
+		constexpr uint32_t IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT = 256;
 	}
 }

@@ -103,7 +103,7 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// ambient
-	result += albedo * (1.0 / PI);
+	//result += albedo * (1.0 / PI);
 	
 	// directional lights
 	for (uint lightIdx = 0; lightIdx < cDirectionalLightCount; ++lightIdx)

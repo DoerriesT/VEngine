@@ -511,8 +511,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle gtaoRawImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle gtaoSpatiallyFilteredImageViewHandle = VKResourceDefinitions::createGTAOImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle rayMarchingResultImageViewHandle = VKResourceDefinitions::createRayMarchingResultViewHandle(graph, 64, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY);
-	ImageViewHandle rayMarchingResultDistanceImageViewHandle = VKResourceDefinitions::createRayMarchingResultViewHandle(graph, 64, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY, true);
+	ImageViewHandle rayMarchingResultImageViewHandle = VKResourceDefinitions::createRayMarchingResultViewHandle(graph, RendererConsts::IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY);
+	ImageViewHandle rayMarchingResultDistanceImageViewHandle = VKResourceDefinitions::createRayMarchingResultViewHandle(graph, RendererConsts::IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY, true);
 	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));

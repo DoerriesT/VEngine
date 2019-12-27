@@ -179,9 +179,9 @@ void main()
 	const vec3 texelDir = normalize(octDecode(normalizedOctCoord(fragCoord)));
 	
 	vec4 result = vec4(0.0);
-	for (uint i = 0; i < 64; ++i)
+	for (uint i = 0; i < IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT; ++i)
 	{
-		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), 64.0));
+		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT));
 #if !OUTPUT_DEPTH
 		const float weight = max(dot(rayDir, texelDir), 0.0);
 		if (weight >= epsilon)

@@ -32,7 +32,7 @@ layout(constant_id = VOXEL_CASCADES_CONST_ID) const uint cVoxelCascades = 3;
 layout(constant_id = VOXEL_BASE_SCALE_CONST_ID) const float cVoxelGridBaseScale = 4.0;
 
 
-layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT, local_size_y = 1, local_size_z = 1) in;
 
 
 /**  Generate a spherical fibonacci point
@@ -136,7 +136,7 @@ void main()
 	ivec3 gridOffset = ivec3(round(uPushConsts.cameraPosition.xyz * (cGridBaseScale / (1 << cascade)))) - gridSize / 2;
 	const vec3 worldSpacePos = vec3(cellCoord + gridOffset) / (cGridBaseScale / (1 << cascade));
 	
-	const vec3 dir = randomOrientation() * sphericalFibonacci(float(gl_LocalInvocationID.x), 64.0);
+	const vec3 dir = randomOrientation() * sphericalFibonacci(float(gl_LocalInvocationID.x), IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT);
 	vec3 rayHitColor = vec3(0.18);
 	
 	uint currentCascade = cascade;
