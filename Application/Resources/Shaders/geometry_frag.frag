@@ -155,6 +155,7 @@ void main()
 	// tangent frame
 	{
 		vec3 normal = normalize(vNormal);
+		normal = gl_FrontFacing ? normal : -normal;
 		mat3 tbn = calculateTBN(normal, vWorldPos, vTexCoord);
 		
 		oTangentSpace = encodeTBN(tbn[2], tbn[0], (dot(cross(tbn[2], tbn[0]), tbn[1]) >= 0.0) ? 1 : 0);

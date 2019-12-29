@@ -909,6 +909,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	VKGTAOPass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = &passRecordContext;
 	gtaoPassData.m_depthImageHandle = depthImageViewHandle;
+	gtaoPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
 	if (g_ssaoEnabled)
