@@ -227,7 +227,7 @@ vec2 texCoordFromDir(vec3 dir, ivec3 probeCoord, int cascade, int probeSideLengt
 	return texelCoord  * texelSize;
 }
 
-vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpaceNormal, const int cascade)
+vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpaceNormal, const vec3 worldSpaceViewDir, const int cascade)
 {
 	const float gridScale = cGridBaseScale / (1 << cascade);
 	vec3 pointGridCoord = worldSpacePos * gridScale;
@@ -252,24 +252,24 @@ vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpa
 		const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord) / vec3(gridSize)) * gridSize);
 		
 		// moment visibility test
-		//if (!probeInPoint)
-		//{
-		//	vec3 worldSpaceProbePos = vec3(probeGridCoord + cameraOffset) / gridScale;
-		//	vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.25;
-		//	vec3 dir = normalize(biasedProbeToPoint);
-		//	vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascade), int(cDepthProbeSideLength));
-		//	float distToProbe = length(biasedProbeToPoint);
-		//	
-		//	vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
-		//	float mean = temp.x;
-		//	float variance = abs(temp.x * temp.x - temp.y);
-		//	
-		//	float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
-		//	
-		//	chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
-		//	
-		//	weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
-		//}
+		if (!probeInPoint)
+		{
+			vec3 worldSpaceProbePos = vec3(probeGridCoord) / gridScale;
+			vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.3;
+			vec3 dir = normalize(biasedProbeToPoint);
+			vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascade), int(cDepthProbeSideLength));
+			float distToProbe = length(biasedProbeToPoint) + 0.12;
+			
+			vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
+			float mean = temp.x;
+			float variance = abs(temp.x * temp.x - temp.y);
+			
+			float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
+			
+			chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
+			
+			weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
+		}
 		
 		// avoid zero weight
 		weight = max(0.000001, weight);
@@ -301,6 +301,7 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 	vec4 worldSpacePos4 = invViewMatrix * vec4(viewSpacePos, 1.0);
 	vec3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
 	vec3 worldSpaceNormal = (invViewMatrix * vec4(viewSpaceNormal, 0.0)).xyz;
+	vec3 worldSpaceViewDir = normalize(invViewMatrix[3].xyz - worldSpacePos);
 	vec3 camPos = invViewMatrix[3].xyz;
 	const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
 	float currentGridScale = cGridBaseScale;
@@ -328,13 +329,13 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 		currentGridScale *= 0.5;
 	}
 	
-	vec3 irradiance = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, cascadeIndex);
+	vec3 irradiance = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex);
 	if (cascadeWeight < 1.0)
 	{
 		vec3 irradiance2 = vec3(0.18);
-		if (cascadeIndex + 1 < cCascades)
+		if ((cascadeIndex + 1) < cCascades)
 		{
-			irradiance2 = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, cascadeIndex + 1);
+			irradiance2 = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex + 1);
 		}
 		irradiance = mix(irradiance2, irradiance, cascadeWeight);
 	}

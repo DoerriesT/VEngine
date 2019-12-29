@@ -221,8 +221,11 @@ void main()
 	const vec3 dir = randomOrientation() * sphericalFibonacci(float(gl_LocalInvocationID.x), IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT);
 	
 	float hitDistance = 0.0;
+	const float maxDistance = (1.0 / cGridBaseScale * (1 << cascade)) * 4.0;
 	vec4 rayHitColor = raymarch(worldSpacePos + dir * 0.11, dir, hitDistance);
 	rayHitColor.rgb = rayHitColor.a != 0 ? rayHitColor.rgb : vec3(0.529, 0.808, 0.922);
+	
+	hitDistance = min(maxDistance, hitDistance);
 	
 	imageStore(uResultImage, ivec2(gl_LocalInvocationID.x, gl_WorkGroupID.x), vec4(rayHitColor.rgb, 1.0));
 	imageStore(uDistanceImage, ivec2(gl_LocalInvocationID.x, gl_WorkGroupID.x), vec4(hitDistance));
