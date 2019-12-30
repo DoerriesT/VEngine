@@ -27,6 +27,8 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 		{ResourceViewHandle(data.m_binVisBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_colorBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_shadowImageViewHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
+		{ ResourceViewHandle(data.m_irradianceVolumeImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
+		{ ResourceViewHandle(data.m_irradianceVolumeDepthImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
 	};
 
 	graph.addPass("Voxelization Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -83,6 +85,13 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
 				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
 				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH),
 			};
 
 			SpecEntry geomShaderSpecEntries[]
@@ -125,6 +134,8 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_lightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeDepthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING);
 
 				writer.commit();
 			}

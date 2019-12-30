@@ -1062,6 +1062,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizationFillPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 		voxelizationFillPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
 		voxelizationFillPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+		voxelizationFillPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
+		voxelizationFillPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
 
 		VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
 

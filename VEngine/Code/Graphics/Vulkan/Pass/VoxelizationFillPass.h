@@ -27,6 +27,8 @@ namespace VEngine
 			ImageViewHandle m_shadowImageViewHandle;
 			VkDescriptorBufferInfo m_lightDataBufferInfo;
 			VkDescriptorBufferInfo m_shadowMatricesBufferInfo;
+			ImageViewHandle m_irradianceVolumeImageHandle;
+			ImageViewHandle m_irradianceVolumeDepthImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
