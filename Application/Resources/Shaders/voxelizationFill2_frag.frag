@@ -4,7 +4,7 @@
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-#include "voxelizationFill_bindings.h"
+#include "voxelizationFill2_bindings.h"
 #include "common.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
@@ -55,14 +55,48 @@ layout(push_constant) uniform PUSH_CONSTS
 	PushConsts uPushConsts;
 };
 
-layout(location = 0) in vec2 vTexCoord;
-layout(location = 1) in vec3 vNormal;
-layout(location = 2) in vec3 vWorldPos;
-layout(location = 3) flat in uint vMaterialIndex;
-
 #define DIFFUSE_ONLY 1
 #define SHADOW_FUNCTIONS 0
 #include "commonLighting.h"
+
+// IN voxels extents snapped to voxel grid (post swizzle)
+layout(location = 0) flat in ivec3 vMinVoxIndex;
+layout(location = 1) flat in ivec3 vMaxVoxIndex;
+
+// IN 2D projected edge normals
+layout(location = 2) flat in vec2 vN_e0_xy;
+layout(location = 3) flat in vec2 vN_e1_xy;
+layout(location = 4) flat in vec2 vN_e2_xy;
+layout(location = 5) flat in vec2 vN_e0_yz;
+layout(location = 6) flat in vec2 vN_e1_yz;
+layout(location = 7) flat in vec2 vN_e2_yz;
+layout(location = 8) flat in vec2 vN_e0_zx;
+layout(location = 9) flat in vec2 vN_e1_zx;
+layout(location = 10) flat in vec2 vN_e2_zx;
+
+// IN
+layout(location = 11) flat in float vD_e0_xy;
+layout(location = 12) flat in float vD_e1_xy;
+layout(location = 13) flat in float vD_e2_xy;
+layout(location = 14) flat in float vD_e0_yz;
+layout(location = 15) flat in float vD_e1_yz;
+layout(location = 16) flat in float vD_e2_yz;
+layout(location = 17) flat in float vD_e0_zx;
+layout(location = 18) flat in float vD_e1_zx;
+layout(location = 19) flat in float vD_e2_zx;
+
+// IN pre-calculated triangle intersection stuff
+layout(location = 20) flat in vec3 vNProj;
+layout(location = 21) flat in float vDTriFatMin;
+layout(location = 22) flat in float vDTriFatMax;
+layout(location = 23) flat in float vNzInv;
+
+layout(location = 24) flat in int vZ;
+
+layout(location = 25) in vec2 vTexCoord;
+layout(location = 26) in vec3 vNormal;
+layout(location = 27) in vec3 vVoxelPos;
+layout(location = 28) flat in uint vMaterialIndex;
 
 float signNotZero(in float k) 
 {
@@ -205,34 +239,52 @@ vec3 sampleIrradianceVolume(const vec3 worldSpacePos, const vec3 worldSpaceNorma
 	}
 }
 
-
-uint subgroupCompactValue(uint checkValue, inout uint payload)
+void writeVoxels(ivec3 coord, uint val, vec3 color)
 {
-	uvec4 mask; // thread unique compaction mask
-	for (;;) // loop until all active threads are removed
-	{
-		uint firstValue = subgroupBroadcastFirst(checkValue);
-		// mask is only updated for active threads
-		mask = subgroupBallot(firstValue == checkValue && !gl_HelperInvocation);
-		if (firstValue == checkValue)
-		{
-			payload = subgroupOr(payload);
-		}
-		// exclude all threads with firstValue from next iteration
-		if (firstValue == checkValue)
-		{
-			break;
-		}
-	}
+	coord += ivec3(floor(uPushConsts.gridOffset.xyz));
+	vec3 localCoord = floor(fract(coord / float(cBinVisBrickSize)) * cBinVisBrickSize);
+	vec3 cubeCoord = localCoord * 0.25;
+	float cubesPerBrick = cBinVisBrickSize * 0.25;
+	ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
+	uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
+	ivec3 bitCoord = ivec3(fract(localCoord * 0.25) * 4.0);
+	uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
+	bool upper = bitIdx > 31;
+	bitIdx = upper ? bitIdx - 32 : bitIdx;
 	
-	// at this point, each thread of mask should contain a bit mask of all
-	// other lanes with the same value
-	uint index = subgroupBallotExclusiveBitCount(mask);
-	return index;
+	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
+	
+	vec3 brickCoord = floor(coord * cInvVoxelBrickSize);
+	brickCoord = floor(fract(brickCoord / gridSize) * gridSize);
+	uint brickPtr = texelFetch(uBrickPtrImage, ivec3(brickCoord), 0).x;
+	
+	if (brickPtr != 0)
+	{
+		--brickPtr;
+		
+		const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
+		const int binVisIdx = int(brickPtr * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
+		uint payload = (1u << bitIdx);
+		imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
+		
+		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
+		const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
+		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
+		
+		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
+		imageStore(uColorImageBuffer, colorIdx, vec4(mix(color, prevColor, 0.98), 1.0));
+	}
 }
 
 void main() 
 {
+	if(any(greaterThan(vVoxelPos, vMaxVoxIndex)) || any(lessThan(vVoxelPos, vMinVoxIndex)))
+	{
+		discard;
+		return;
+	}
+	
+	
 	const MaterialData materialData = uMaterialData[vMaterialIndex];
 	
 	vec3 albedo = vec3(0.0);
@@ -249,7 +301,9 @@ void main()
 		}
 		albedo = accurateSRGBToLinear(albedo);
 	}
-	const vec3 worldSpacePos = vWorldPos;
+	vec3 worldSpacePos = (vZ == 0) ? vVoxelPos.yzx : (vZ == 1) ? vVoxelPos.zxy : vVoxelPos.xyz;
+	worldSpacePos += uPushConsts.gridOffset.xyz;
+	worldSpacePos /= cVoxelScale;
 	
 	vec3 result = vec3(0.0);
 	
@@ -291,87 +345,60 @@ void main()
 		const float NdotL = max(dot(N, L), 0.0);
 		result += (1.0 - shadow) * albedo * (1.0 / PI) * NdotL * lightData.color.rgb;
 	}
-	
-	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
-	
-	
-	vec3 coord = floor(vWorldPos * cVoxelScale);
-	vec3 brickCoord = floor(coord * cInvVoxelBrickSize);
-	
-	if (all(greaterThanEqual(brickCoord, uPushConsts.gridOffset.xyz)) && all(lessThan(brickCoord, gridSize + uPushConsts.gridOffset.xyz)))
+
+	ivec3 p = ivec3(floor(vVoxelPos));	//voxel coordinate (swizzled)
+	int   zMin,      zMax;			//voxel Z-range
+	float zMinInt,   zMaxInt;		//voxel Z-intersection min/max
+	float zMinFloor, zMaxCeil;		//voxel Z-intersection floor/ceil
+
+	float dd_e0_xy = vD_e0_xy + dot(vN_e0_xy, p.xy);
+	float dd_e1_xy = vD_e1_xy + dot(vN_e1_xy, p.xy);
+	float dd_e2_xy = vD_e2_xy + dot(vN_e2_xy, p.xy);
+
+	bool xy_overlap = (dd_e0_xy >= 0) && (dd_e1_xy >= 0) && (dd_e2_xy >= 0);
+
+	if(xy_overlap)	//figure 17 line 15, figure 18 line 14
 	{
-		vec3 localCoord = floor(fract(coord / float(cBinVisBrickSize)) * cBinVisBrickSize);
-		vec3 cubeCoord = localCoord * 0.25;
-		float cubesPerBrick = cBinVisBrickSize * 0.25;
-		ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
-		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
-		ivec3 bitCoord = ivec3(fract(localCoord * 0.25) * 4.0);
-		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
-		bool upper = bitIdx > 31;
-		bitIdx = upper ? bitIdx - 32 : bitIdx;
-		
-		brickCoord = floor(fract(brickCoord / gridSize) * gridSize);
-		uint brickPtr = texelFetch(uBrickPtrImage, ivec3(brickCoord), 0).x;
-		
-		if (brickPtr != 0)
+		float dot_n_p = dot(vNProj.xy, p.xy);
+		zMinInt = (-dot_n_p + vDTriFatMin) * vNzInv;
+		zMaxInt = (-dot_n_p + vDTriFatMax) * vNzInv;
+
+		zMinFloor = floor(zMinInt);
+		zMaxCeil  =  ceil(zMaxInt);
+
+		zMin = int(zMinFloor) - int(zMinFloor == zMinInt);
+		zMax = int(zMaxCeil ) + int(zMaxCeil  == zMaxInt);
+
+		zMin = max(vMinVoxIndex.z, zMin);	//clamp to bounding box max Z
+		zMax = min(vMaxVoxIndex.z, zMax);	//clamp to bounding box min Z
+
+		for(p.z = zMin; p.z < zMax; p.z++)	//figure 17/18 line 18
 		{
-			--brickPtr;
-			
-			const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-			const int binVisIdx = int(brickPtr * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
-			uint payload = (1u << bitIdx);
-			if (subgroupCompactValue(binVisIdx, payload) == 0)
+			float dd_e0_yz = vD_e0_yz + dot(vN_e0_yz, p.yz);
+			float dd_e1_yz = vD_e1_yz + dot(vN_e1_yz, p.yz);
+			float dd_e2_yz = vD_e2_yz + dot(vN_e2_yz, p.yz);
+	
+			float dd_e0_zx = vD_e0_zx + dot(vN_e0_zx, p.zx);
+			float dd_e1_zx = vD_e1_zx + dot(vN_e1_zx, p.zx);
+			float dd_e2_zx = vD_e2_zx + dot(vN_e2_zx, p.zx);
+	
+			bool yz_overlap = (dd_e0_yz >= 0) && (dd_e1_yz >= 0) && (dd_e2_yz >= 0);
+			bool zx_overlap = (dd_e0_zx >= 0) && (dd_e1_zx >= 0) && (dd_e2_zx >= 0);
+
+			if(yz_overlap && zx_overlap)	//figure 17/18 line 19
 			{
-				imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
+				//Calculate color and other attributes here if applicable
+				//vec3 color = (material.texCount == 0) ? material.diffuse.xyz : texture2D(diffuseTex, In.texCoord).xyz;
+				
+				ivec3 origCoord = (vZ == 0) ? p.yzx : (vZ == 1) ? p.zxy : p.xyz;	//this actually slightly outperforms unswizzle
+
+				writeVoxels(origCoord, 1, result);	//figure 17/18 line 20
 			}
-			
-			const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
-			const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
-			const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
-			
-			vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
-			imageStore(uColorImageBuffer, colorIdx, vec4(mix(result, prevColor, 0.98), 1.0));
 		}
+		//z-loop
 	}
-	
-	
-	//ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
-	//ivec3 brickCoord = ivec3(floor(vec3(coord) * cInvVoxelBrickSize));
-	//
-	//if (all(greaterThanEqual(brickCoord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(brickCoord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
-	//{
-	//	ivec3 localCoord = ivec3(fract(vec3(coord) / float(cBinVisBrickSize)) * cBinVisBrickSize);
-	//	ivec3 cubeCoord = localCoord / 4;
-	//	float cubesPerBrick = cBinVisBrickSize * 0.25;
-	//	ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
-	//	uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
-	//	ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
-	//	uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
-	//	bool upper = bitIdx > 31;
-	//	bitIdx = upper ? bitIdx - 32 : bitIdx;
-	//	
-	//	brickCoord = ivec3(fract(brickCoord / gridSize) * gridSize);
-	//	uint brickPtr = texelFetch(uBrickPtrImage, brickCoord, 0).x;
-	//	
-	//	if (brickPtr != 0)
-	//	{
-	//		--brickPtr;
-	//		
-	//		const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-	//		const int binVisIdx = int(brickPtr * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
-	//		uint payload = (1u << bitIdx);
-	//		if (subgroupCompactValue(binVisIdx, payload) == 0)
-	//		{
-	//			imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
-	//		}
-	//		
-	//		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
-	//		const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
-	//		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
-	//		
-	//		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
-	//		imageStore(uColorImageBuffer, colorIdx, vec4(mix(result, prevColor, 0.98), 1.0));
-	//	}
-	//}
+	//xy-overlap test
+
+	discard;
 }
 

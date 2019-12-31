@@ -72,7 +72,7 @@ vec4 raymarch(vec3 worldSpacePos, vec3 dir)
 {
 	// world space offset of grid (grid is centered on camera)
 	//ivec3 offset = ivec3(round(vec3(uPushConsts.cameraPos) * cVoxelScale)) - (gridSize / 2);
-	vec3 p0 = worldSpacePos.xyz * cVoxelScale + 0.5;
+	vec3 p0 = worldSpacePos.xyz * cVoxelScale;
 	
 	// grid space
 	vec3 gridCoord = floor(p0);

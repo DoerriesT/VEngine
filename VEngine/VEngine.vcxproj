@@ -228,7 +228,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelDebug2Pass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFill2Pass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMark2Pass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\RenderGraph.h" />
@@ -339,7 +341,9 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelDebug2Pass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFill2Pass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMark2Pass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\RenderGraph.cpp" />

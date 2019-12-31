@@ -1,0 +1,242 @@
+#version 450
+
+#include "voxelizationMark2_bindings.h"
+
+layout(constant_id = BRICK_GRID_WIDTH_CONST_ID) const uint cBrickGridWidth = 128;
+layout(constant_id = BRICK_GRID_HEIGHT_CONST_ID) const uint cBrickGridHeight = 64;
+layout(constant_id = BRICK_GRID_DEPTH_CONST_ID) const uint cBrickGridDepth = 128;
+layout(constant_id = BRICK_SCALE_CONST_ID) const float cBrickScale = 1.0;
+
+layout(set = MARK_IMAGE_SET, binding = MARK_IMAGE_BINDING, r8ui) uniform uimage3D uMarkImage;
+
+layout(set = TRANSFORM_DATA_SET, binding = TRANSFORM_DATA_BINDING) readonly buffer TRANSFORM_DATA 
+{
+    mat4 uTransformData[];
+};
+
+layout(set = POSITIONS_SET, binding = POSITIONS_BINDING) readonly buffer POSITIONS 
+{
+    float uPositions[];
+};
+
+layout(set = INDICES_SET, binding = INDICES_BINDING) readonly buffer INDICES 
+{
+    uint uIndices[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+//swizzle triangle vertices
+void swizzleTri(inout vec3 v0, inout vec3 v1, inout vec3 v2, out vec3 n, out int domAxis)
+{
+	//       cross(e0, e1);
+	n = cross(v1 - v0, v2 - v1);
+
+	vec3 absN = abs(n);
+	float maxAbsN = max(max(absN.x, absN.y), absN.z);
+
+	if(absN.x >= absN.y && absN.x >= absN.z)			//X-direction dominant (YZ-plane)
+	{													//Then you want to look down the X-direction
+		v0.xyz = v0.yzx;
+		v1.xyz = v1.yzx;
+		v2.xyz = v2.yzx;
+		
+		n.xyz = n.yzx;
+
+		//XYZ <-> YZX
+		domAxis = 1;
+	}
+	else if(absN.y >= absN.x && absN.y >= absN.z)		//Y-direction dominant (ZX-plane)
+	{													//Then you want to look down the Y-direction
+		v0.xyz = v0.zxy;
+		v1.xyz = v1.zxy;
+		v2.xyz = v2.zxy;
+
+		n.xyz = n.zxy;
+
+		//XYZ <-> ZXY
+		domAxis = 0;
+	}
+	else												//Z-direction dominant (XY-plane)
+	{													//Then you want to look down the Z-direction (the default)
+		v0.xyz = v0.xyz;
+		v1.xyz = v1.xyz;
+		v2.xyz = v2.xyz;
+
+		n.xyz = n.xyz;
+
+		//XYZ <-> XYZ
+		domAxis = 2;
+	}
+}
+
+void writeVoxels(ivec3 coord, uint val, vec3 color)
+{
+	const vec3 gridSize = vec3(cBrickGridWidth, cBrickGridHeight, cBrickGridDepth);
+	coord = ivec3(floor(fract(vec3(coord) / gridSize) * gridSize));
+	imageStore(uMarkImage, coord, uvec4(1));
+}
+
+void voxelizeTriPostSwizzle(vec3 v0, vec3 v1, vec3 v2, vec3 n, int domAxis, ivec3 minVoxIndex, ivec3 maxVoxIndex)
+{
+	vec3 e0 = v1 - v0;	//figure 17/18 line 2
+	vec3 e1 = v2 - v1;	//figure 17/18 line 2
+	vec3 e2 = v0 - v2;	//figure 17/18 line 2
+
+	//INward Facing edge normals XY
+	vec2 n_e0_xy = (n.z >= 0) ? vec2(-e0.y, e0.x) : vec2(e0.y, -e0.x);	//figure 17/18 line 4
+	vec2 n_e1_xy = (n.z >= 0) ? vec2(-e1.y, e1.x) : vec2(e1.y, -e1.x);	//figure 17/18 line 4
+	vec2 n_e2_xy = (n.z >= 0) ? vec2(-e2.y, e2.x) : vec2(e2.y, -e2.x);	//figure 17/18 line 4
+
+	//INward Facing edge normals YZ
+	vec2 n_e0_yz = (n.x >= 0) ? vec2(-e0.z, e0.y) : vec2(e0.z, -e0.y);	//figure 17/18 line 5
+	vec2 n_e1_yz = (n.x >= 0) ? vec2(-e1.z, e1.y) : vec2(e1.z, -e1.y);	//figure 17/18 line 5
+	vec2 n_e2_yz = (n.x >= 0) ? vec2(-e2.z, e2.y) : vec2(e2.z, -e2.y);	//figure 17/18 line 5
+
+	//INward Facing edge normals ZX
+	vec2 n_e0_zx = (n.y >= 0) ? vec2(-e0.x, e0.z) : vec2(e0.x, -e0.z);	//figure 17/18 line 6
+	vec2 n_e1_zx = (n.y >= 0) ? vec2(-e1.x, e1.z) : vec2(e1.x, -e1.z);	//figure 17/18 line 6
+	vec2 n_e2_zx = (n.y >= 0) ? vec2(-e2.x, e2.z) : vec2(e2.x, -e2.z);	//figure 17/18 line 6
+
+	float d_e0_xy = -dot(n_e0_xy, v0.xy) + max(0.0f, n_e0_xy.x) + max(0.0f, n_e0_xy.y);	//figure 17 line 7
+	float d_e1_xy = -dot(n_e1_xy, v1.xy) + max(0.0f, n_e1_xy.x) + max(0.0f, n_e1_xy.y);	//figure 17 line 7
+	float d_e2_xy = -dot(n_e2_xy, v2.xy) + max(0.0f, n_e2_xy.x) + max(0.0f, n_e2_xy.y);	//figure 17 line 7
+
+	float d_e0_yz = -dot(n_e0_yz, v0.yz) + max(0.0f, n_e0_yz.x) + max(0.0f, n_e0_yz.y);	//figure 17 line 8
+	float d_e1_yz = -dot(n_e1_yz, v1.yz) + max(0.0f, n_e1_yz.x) + max(0.0f, n_e1_yz.y);	//figure 17 line 8
+	float d_e2_yz = -dot(n_e2_yz, v2.yz) + max(0.0f, n_e2_yz.x) + max(0.0f, n_e2_yz.y);	//figure 17 line 8
+
+	float d_e0_zx = -dot(n_e0_zx, v0.zx) + max(0.0f, n_e0_zx.x) + max(0.0f, n_e0_zx.y);	//figure 18 line 9
+	float d_e1_zx = -dot(n_e1_zx, v1.zx) + max(0.0f, n_e1_zx.x) + max(0.0f, n_e1_zx.y);	//figure 18 line 9
+	float d_e2_zx = -dot(n_e2_zx, v2.zx) + max(0.0f, n_e2_zx.x) + max(0.0f, n_e2_zx.y);	//figure 18 line 9
+
+	vec3 nProj = (n.z < 0.0) ? -n : n;	//figure 17/18 line 10
+
+	const float dTri = dot(nProj, v0);
+
+	const float dTriFatMin = dTri - max(nProj.x, 0) - max(nProj.y, 0);	//figure 17 line 11
+	const float dTriFatMax = dTri - min(nProj.x, 0) - min(nProj.y, 0);	//figure 17 line 12
+
+	const float nzInv = 1.0 / nProj.z;
+	
+	ivec3 p;					//voxel coordinate
+	int   zMin,      zMax;		//voxel Z-range
+	float zMinInt,   zMaxInt;	//voxel Z-intersection min/max
+	float zMinFloor, zMaxCeil;	//voxel Z-intersection floor/ceil
+	for(p.x = minVoxIndex.x; p.x < maxVoxIndex.x; p.x++)	//figure 17 line 13, figure 18 line 12
+	{
+		for(p.y = minVoxIndex.y; p.y < maxVoxIndex.y; p.y++)	//figure 17 line 14, figure 18 line 13
+		{
+			float dd_e0_xy = d_e0_xy + dot(n_e0_xy, p.xy);
+			float dd_e1_xy = d_e1_xy + dot(n_e1_xy, p.xy);
+			float dd_e2_xy = d_e2_xy + dot(n_e2_xy, p.xy);
+		
+			bool xy_overlap = (dd_e0_xy >= 0) && (dd_e1_xy >= 0) && (dd_e2_xy >= 0);
+
+			if(xy_overlap)	//figure 17 line 15, figure 18 line 14
+			{
+				float dot_n_p = dot(nProj.xy, p.xy);
+
+				zMinInt = (-dot_n_p + dTriFatMin) * nzInv;
+				zMaxInt = (-dot_n_p + dTriFatMax) * nzInv;
+
+				zMinFloor = floor(zMinInt);
+				zMaxCeil  =  ceil(zMaxInt);
+
+				zMin = int(zMinFloor) - int(zMinFloor == zMinInt);
+				zMax = int(zMaxCeil ) + int(zMaxCeil  == zMaxInt);
+
+				zMin = max(minVoxIndex.z, zMin);	//clamp to bounding box max Z
+				zMax = min(maxVoxIndex.z, zMax);	//clamp to bounding box min Z
+
+				for(p.z = zMin; p.z < zMax; p.z++)	//figure 17/18 line 18
+				{
+					float dd_e0_yz = d_e0_yz + dot(n_e0_yz, p.yz);
+					float dd_e1_yz = d_e1_yz + dot(n_e1_yz, p.yz);
+					float dd_e2_yz = d_e2_yz + dot(n_e2_yz, p.yz);
+
+					float dd_e0_zx = d_e0_zx + dot(n_e0_zx, p.zx);
+					float dd_e1_zx = d_e1_zx + dot(n_e1_zx, p.zx);
+					float dd_e2_zx = d_e2_zx + dot(n_e2_zx, p.zx);
+
+					bool yz_overlap = (dd_e0_yz >= 0) && (dd_e1_yz >= 0) && (dd_e2_yz >= 0);
+					bool zx_overlap = (dd_e0_zx >= 0) && (dd_e1_zx >= 0) && (dd_e2_zx >= 0);
+
+					if(yz_overlap && zx_overlap)	//figure 17/18 line 19
+					{
+						ivec3 origCoord = (domAxis == 0) ? p.yzx : (domAxis == 1) ? p.zxy : p.xyz;	//this actually slightly outperforms unswizzle
+						writeVoxels(origCoord, 1, vec3(0));	//figure 17/18 line 20
+					}
+				}
+				//z-loop
+			}
+			//xy-overlap test
+		}
+		//y-loop
+	}
+	//x-loop
+}
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x * 3 < uPushConsts.indexCount)
+	{
+		uint indices[3];
+		uint indexBaseOffset = uPushConsts.indexOffset + gl_GlobalInvocationID.x * 3;
+		bool lower = (indexBaseOffset & 1) == 0;
+		indexBaseOffset /= 2;
+		uint indices16[2];
+		indices16[0] = uIndices[indexBaseOffset + 0];
+		indices16[1] = uIndices[indexBaseOffset + 1];
+		
+		indices[0] = lower ? (indices16[0] & 0xFFFF) : (indices16[0] >> 16);
+		indices[1] = lower ? (indices16[0] >> 16) : (indices16[1] & 0xFFFF);
+		indices[2] = lower ? (indices16[1] & 0xFFFF) : (indices16[1] >> 16);
+		
+		vec3 vertices[3];
+		vertices[0].x = uPositions[(indices[0] + uPushConsts.vertexOffset) * 3 + 0];
+		vertices[0].y = uPositions[(indices[0] + uPushConsts.vertexOffset) * 3 + 1];
+		vertices[0].z = uPositions[(indices[0] + uPushConsts.vertexOffset) * 3 + 2];
+		vertices[1].x = uPositions[(indices[1] + uPushConsts.vertexOffset) * 3 + 0];
+		vertices[1].y = uPositions[(indices[1] + uPushConsts.vertexOffset) * 3 + 1];
+		vertices[1].z = uPositions[(indices[1] + uPushConsts.vertexOffset) * 3 + 2];
+		vertices[2].x = uPositions[(indices[2] + uPushConsts.vertexOffset) * 3 + 0];
+		vertices[2].y = uPositions[(indices[2] + uPushConsts.vertexOffset) * 3 + 1];
+		vertices[2].z = uPositions[(indices[2] + uPushConsts.vertexOffset) * 3 + 2];
+		
+		const mat4 transform = uTransformData[uPushConsts.transformIndex];	
+		
+		vertices[0] = cBrickScale * (transform * vec4(vertices[0], 1.0)).xyz;
+		vertices[1] = cBrickScale * (transform * vec4(vertices[1], 1.0)).xyz;
+		vertices[2] = cBrickScale * (transform * vec4(vertices[2], 1.0)).xyz;
+		
+		const vec3 gridSize = vec3(cBrickGridWidth, cBrickGridHeight, cBrickGridDepth);
+		
+		vec3 n;
+		int domAxis;
+		vec3 v0 = vertices[0];
+		vec3 v1 = vertices[1];
+		vec3 v2 = vertices[2];
+		
+		
+		swizzleTri(v0, v1, v2, n, domAxis);
+	
+		vec3 AABBmin = min(min(v0, v1), v2);
+		vec3 AABBmax = max(max(v0, v1), v2);
+		
+		vec3 swizzledLowerBound = floor(uPushConsts.gridOffset.xyz);
+		vec3 swizzledUpperBound = floor(gridSize + uPushConsts.gridOffset.xyz);
+		swizzledLowerBound = domAxis == 0 ? swizzledLowerBound.zxy : domAxis == 1 ? swizzledLowerBound.yzx : swizzledLowerBound;
+		swizzledUpperBound = domAxis == 0 ? swizzledUpperBound.zxy : domAxis == 1 ? swizzledUpperBound.yzx : swizzledUpperBound;
+		
+		ivec3 minVoxIndex = ivec3(clamp(floor(AABBmin), swizzledLowerBound, swizzledUpperBound));
+		ivec3 maxVoxIndex = ivec3(clamp( ceil(AABBmax), swizzledLowerBound, swizzledUpperBound));
+	
+		voxelizeTriPostSwizzle(v0, v1, v2, n, domAxis, minVoxIndex, maxVoxIndex);
+	}
+}

@@ -21,13 +21,12 @@ layout(location = 0) in vec3 vWorldPos;
 void main() 
 {
 	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
-	ivec3 coord = ivec3(round(vWorldPos * cVoxelScale));
-	coord = ivec3(floor(vec3(coord) * cInvVoxelBrickSize));
-	if (all(greaterThanEqual(coord, ivec3(uPushConsts.gridOffset.xyz))) && all(lessThan(coord, gridSize + ivec3(uPushConsts.gridOffset.xyz))))
+	vec3 coord = floor(vWorldPos * cVoxelScale * cInvVoxelBrickSize);
+	if (all(greaterThanEqual(coord, uPushConsts.gridOffset.xyz)) && all(lessThan(coord, gridSize + uPushConsts.gridOffset.xyz)))
 	{
-		coord = ivec3(fract(coord / gridSize) * gridSize);
+		coord = floor(fract(coord / gridSize) * gridSize);
 		
-		imageStore(uMarkImage, coord, uvec4(1));
+		imageStore(uMarkImage, ivec3(coord), uvec4(1));
 	}
 }
 
