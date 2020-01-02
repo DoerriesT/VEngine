@@ -399,13 +399,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.h">
@@ -417,10 +411,10 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarching2Pass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMark2Pass.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFill2Pass.h">
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -707,13 +701,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.cpp">
@@ -725,10 +713,10 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarching2Pass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMark2Pass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFill2Pass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

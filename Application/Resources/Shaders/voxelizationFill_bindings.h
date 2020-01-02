@@ -58,7 +58,6 @@ struct PushConsts
 	mat4 invViewMatrix;
 	vec3 gridOffset;
 	float invGridResolution;
-	uint superSamplingFactor;
 	uint transformIndex;
 	uint materialIndex;
 };

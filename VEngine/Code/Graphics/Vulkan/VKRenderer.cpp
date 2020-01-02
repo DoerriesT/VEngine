@@ -48,10 +48,8 @@
 #include "Pass/InitBrickPoolPass.h"
 #include "Pass/ClearBricksPass.h"
 #include "Pass/VoxelizationMarkPass.h"
-#include "Pass/VoxelizationMark2Pass.h"
 #include "Pass/VoxelizationAllocatePass.h"
 #include "Pass/VoxelizationFillPass.h"
-#include "Pass/VoxelizationFill2Pass.h"
 #include "Pass/BrickDebugPass.h"
 #include "Pass/IrradianceVolumeRayMarching2Pass.h"
 #include "VKPipelineCache.h"
@@ -1033,19 +1031,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizeMarkPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 		voxelizeMarkPassData.m_markImageHandle = markImageHandle;
 
-		//VoxelizationMarkPass::addToGraph(graph, voxelizeMarkPassData);
-
-
-		// mark 2
-		VoxelizationMark2Pass::Data voxelizeMark2PassData;
-		voxelizeMark2PassData.m_passRecordContext = &passRecordContext;
-		voxelizeMark2PassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-		voxelizeMark2PassData.m_instanceData = renderData.m_allInstanceData;
-		voxelizeMark2PassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		voxelizeMark2PassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		voxelizeMark2PassData.m_markImageHandle = markImageHandle;
-
-		VoxelizationMark2Pass::addToGraph(graph, voxelizeMark2PassData);
+		VoxelizationMarkPass::addToGraph(graph, voxelizeMarkPassData);
 
 
 		// allocate
@@ -1065,8 +1051,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizationFillPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
 		voxelizationFillPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 		voxelizationFillPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		//voxelizationPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
-		//voxelizationPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
 		voxelizationFillPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
 		voxelizationFillPassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
 		voxelizationFillPassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
@@ -1079,29 +1063,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		voxelizationFillPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
 		voxelizationFillPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
 
-		//VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
-
-
-		// fill 2
-		VoxelizationFill2Pass::Data voxelizationFill2PassData;
-		voxelizationFill2PassData.m_passRecordContext = &passRecordContext;
-		voxelizationFill2PassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-		voxelizationFill2PassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-		voxelizationFill2PassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		voxelizationFill2PassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		voxelizationFill2PassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
-		voxelizationFill2PassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
-		voxelizationFill2PassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
-		voxelizationFill2PassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-		voxelizationFill2PassData.m_instanceData = renderData.m_allInstanceData;
-		voxelizationFill2PassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		voxelizationFill2PassData.m_shadowImageViewHandle = shadowImageViewHandle;
-		voxelizationFill2PassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
-		voxelizationFill2PassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-		voxelizationFill2PassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
-		voxelizationFill2PassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
-
-		VoxelizationFill2Pass::addToGraph(graph, voxelizationFill2PassData);
+		VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
 
 
 		// copy allocated brick count to readback buffer

@@ -1,6 +1,6 @@
 #version 450
 
-#include "voxelizationMark2_bindings.h"
+#include "voxelizationMark_bindings.h"
 
 layout(constant_id = BRICK_GRID_WIDTH_CONST_ID) const uint cBrickGridWidth = 128;
 layout(constant_id = BRICK_GRID_HEIGHT_CONST_ID) const uint cBrickGridHeight = 64;

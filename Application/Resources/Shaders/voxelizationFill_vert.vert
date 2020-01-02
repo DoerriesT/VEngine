@@ -29,6 +29,8 @@ layout(push_constant) uniform PUSH_CONSTS
 	PushConsts uPushConsts;
 };
 
+layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 16.0;
+
 layout(location = 0) out vec2 vTexCoord;
 layout(location = 1) out vec3 vNormal;
 layout(location = 2) flat out uint vMaterialIndex;
@@ -46,5 +48,6 @@ void main()
 	vMaterialIndex = uPushConsts.materialIndex;
     
 	gl_Position = modelMatrix * vec4(position, 1.0);
+	gl_Position.xyz = gl_Position.xyz * cVoxelScale - (uPushConsts.gridOffset.xyz);
 }
 
