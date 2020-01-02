@@ -122,80 +122,71 @@ mat3 randomOrientation()
 	return m;
 }
 
-const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
-
-bool fetchVisibility(ivec3 coord, out vec3 color)
+bool raymarch(vec3 origin, vec3 dir, out vec3 color, out float dist)
 {
-	const vec3 brickGridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
-	const vec3 invBrickGridSize = 1.0 / brickGridSize;
-	
-	ivec3 brickCoord = ivec3(fract(floor(vec3(coord) / float(cBinVisBrickSize)) * invBrickGridSize) * brickGridSize);
-	uint brickPtr = texelFetch(uBrickPtrImage, brickCoord, 0).x;
-	
-	if (brickPtr != 0)
-	{
-		ivec3 localCoord = ivec3(fract(vec3(coord) / float(cBinVisBrickSize)) * cBinVisBrickSize);
-		ivec3 cubeCoord = localCoord / 4;
-		float cubesPerBrick = cBinVisBrickSize * 0.25;
-		ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
-		uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
-		ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
-		uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
-		bool upper = bitIdx > 31;
-		bitIdx = upper ? bitIdx - 32 : bitIdx;
-		
-		const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-		uint binVis = texelFetch(uBinVisImageBuffer, int((brickPtr - 1) * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0))).x;
-		if ((binVis & (1u << bitIdx)) != 0)
-		{
-			const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
-			const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
-			const uint colorIdx = localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize;
-			color = texelFetch(uColorImageBuffer, int((brickPtr - 1) * colorBrickMemSize + colorIdx)).rgb;
-			return true;
-		}
-		return false;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-vec4 raymarch(vec3 worldSpacePos, vec3 dir, out float dist)
-{
-	// world space offset of grid (grid is centered on camera)
-	//ivec3 offset = ivec3(round(vec3(uPushConsts.cameraPosition) * cVoxelScale)) - (gridSize / 2);
-	vec3 p0 = worldSpacePos.xyz * cVoxelScale + 0.5;
+	color = vec3(0.529, 0.808, 0.922);
+	dist = 999999.0;
+	vec3 p0 = origin * cVoxelScale;
 	
 	// grid space
 	vec3 gridCoord = floor(p0);
 	const vec3 gridStep = sign(dir);
 	const vec3 corner = max(gridStep, vec3(0.0));
+	const ivec3 gridSize = ivec3(cVoxelGridWidth, cVoxelGridHeight, cVoxelGridDepth);
 	const vec3 invGridSize = 1.0 / vec3(gridSize);
 	
 	// ray space
 	const vec3 inv = 1.0 / dir;
 	vec3 ratio = (gridCoord + corner - p0) * inv;
 	const vec3 ratioStep = gridStep * inv;
+
 	
 	// dda
 	while (true) 
 	{
 		if (any(lessThan(gridCoord, uPushConsts.voxelGridOffset)) || any(greaterThanEqual(gridCoord, gridSize + uPushConsts.voxelGridOffset)))
 		{
-			return vec4(0.0);
+			return false;
 		}
 		
-		vec3 color;
-		if (fetchVisibility(ivec3(gridCoord), color))
+		bool hit = false;
+		
+		const vec3 brickGridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
+		const vec3 invBrickGridSize = 1.0 / brickGridSize;
+		
+		ivec3 brickCoord = ivec3(fract(floor(gridCoord / float(cBinVisBrickSize)) * invBrickGridSize) * brickGridSize);
+		uint brickPtr = texelFetch(uBrickPtrImage, brickCoord, 0).x;
+		
+		if (brickPtr != 0)
 		{
-			dist = distance(worldSpacePos, gridCoord / cVoxelScale);
-			return vec4(color, 1.0);
+			ivec3 localCoord = ivec3(fract(gridCoord / float(cBinVisBrickSize)) * cBinVisBrickSize);
+			ivec3 cubeCoord = localCoord / 4;
+			float cubesPerBrick = cBinVisBrickSize * 0.25;
+			ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
+			uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
+			ivec3 bitCoord = ivec3(fract(localCoord / 4.0) * 4.0);
+			uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
+			bool upper = bitIdx > 31;
+			bitIdx = upper ? bitIdx - 32 : bitIdx;
+			
+			const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
+			int address = int((brickPtr - 1) * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
+			uint binVis = texelFetch(uBinVisImageBuffer, address).x;
+			hit = (binVis & (1u << bitIdx)) != 0;
+		}
+		
+		if (hit)
+		{
+			ivec3 localCoord = ivec3(fract(gridCoord / float(cBinVisBrickSize)) * cColorBrickSize);
+			const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
+			const uint colorIdx = localCoord.x + localCoord.z * cColorBrickSize + localCoord.y * cColorBrickSize * cColorBrickSize;
+			color = texelFetch(uColorImageBuffer, int((brickPtr - 1) * colorBrickMemSize + colorIdx)).rgb;
+			dist = distance(p0, gridCoord) / cVoxelScale;
+			return true;
 		}
 	
 		const ivec3 mask = ivec3(lessThanEqual(ratio.xyz, min(ratio.yzx, ratio.zxy)));
-		gridCoord += gridStep  * mask;		
+		gridCoord += gridStep * mask;		
 		ratio += ratioStep * mask;
 	}
 }
@@ -220,10 +211,10 @@ void main()
 	
 	const vec3 dir = randomOrientation() * sphericalFibonacci(float(gl_LocalInvocationID.x), IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT);
 	
-	float hitDistance = 0.0;
 	const float maxDistance = (1.0 / cGridBaseScale * (1 << cascade)) * 4.0;
-	vec4 rayHitColor = raymarch(worldSpacePos + dir * 0.11, dir, hitDistance);
-	rayHitColor.rgb = rayHitColor.a != 0 ? rayHitColor.rgb : vec3(0.529, 0.808, 0.922);
+	float hitDistance = maxDistance;
+	vec3 rayHitColor = vec3(0.529, 0.808, 0.922);
+	raymarch(worldSpacePos + dir * 0.11, dir, rayHitColor, hitDistance);
 	
 	hitDistance = min(maxDistance, hitDistance);
 	
