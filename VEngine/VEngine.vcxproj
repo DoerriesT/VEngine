@@ -189,6 +189,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateACProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.h" />
@@ -201,7 +202,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.h" />
@@ -300,6 +300,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateACProbesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\LightIrradianceVolumePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.cpp" />
@@ -312,7 +313,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKDirectLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.cpp" />

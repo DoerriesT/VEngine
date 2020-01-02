@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace VKDirectLightingPass
+	namespace LightingPass
 	{
 		struct Data
 		{

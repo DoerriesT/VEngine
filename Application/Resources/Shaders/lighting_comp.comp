@@ -11,6 +11,10 @@
 #include "lighting_bindings.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
+layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
+layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
+layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cGridWidth = 64;
 layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cGridHeight = 32;
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 64;
@@ -19,6 +23,7 @@ layout(constant_id = IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID) const float cGridBas
 layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const uint cDepthProbeSideLength = 16;
 
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
@@ -64,54 +69,10 @@ layout(push_constant) uniform PUSH_CONSTS
 	PushConsts uPushConsts;
 };
 
-layout(location = 0) in vec2 vTexCoord;
-
-layout(location = OUT_RESULT) out vec4 oResult;
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 #define SHADOW_FUNCTIONS 0
 #include "commonLighting.h"
-
-const vec3 kRadarColors[14] = 
-{
-    {0,0.9255,0.9255},   // cyan
-    {0,0.62745,0.9647},  // light blue
-    {0,0,0.9647},        // blue
-    {0,1,0},             // bright green
-    {0,0.7843,0},        // green
-    {0,0.5647,0},        // dark green
-    {1,1,0},             // yellow
-    {0.90588,0.75294,0}, // yellow-orange
-    {1,0.5647,0},        // orange
-    {1,0,0},             // bright red
-    {0.8392,0,0},        // red
-    {0.75294,0,0},       // dark red
-    {1,0,1},             // magenta
-    {0.6,0.3333,0.7882}, // purple
-};
-
-vec3 convertNumberOfLightsToRadarColor(uint nNumLightsInThisTile, uint uMaxNumLightsPerTile)
-{
-    // black for no lights
-    if( nNumLightsInThisTile == 0 ) return vec3(0.0);
-    // light purple for reaching the max
-    else if( nNumLightsInThisTile == uMaxNumLightsPerTile ) return vec3(0.847,0.745,0.921);
-    // white for going over the max
-    else if ( nNumLightsInThisTile > uMaxNumLightsPerTile ) return vec3(1.0);
-    // else use weather radar colors
-    else
-    {
-        // use a log scale to provide more detail when the number of lights is smaller
-
-        // want to find the base b such that the logb of uMaxNumLightsPerTile is 14
-        // (because we have 14 radar colors)
-        float fLogBase = exp2(0.07142857f*log2(float(uMaxNumLightsPerTile)));
-
-        // change of base
-        // logb(x) = log2(x) / log2(b)
-        uint nColorIndex = uint(floor(log2(float(nNumLightsInThisTile)) / log2(fLogBase)));
-        return kRadarColors[nColorIndex];
-    }
-}
 
 //vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
 //{
@@ -345,23 +306,27 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 
 void main() 
 {
-	const float depth = texelFetch(uDepthImage, ivec2(gl_FragCoord.xy), 0).x;
+	if (gl_GlobalInvocationID.x >= cWidth || gl_GlobalInvocationID.y >= cHeight)
+	{
+		return;
+	}
+	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
 	
 	if (depth == 0.0)
 	{
-		oResult = vec4(vec3(0.529, 0.808, 0.922), 1.0);
+		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.529, 0.808, 0.922), 1.0));
 		return;
 	}
 	
 	// get uv, derivatives, material id and tangent frame
-	const vec2 ddxyLength = texelFetch(uDdxyLengthImage, ivec2(gl_FragCoord.xy), 0).xy;
-	const uvec2 ddxyRotMaterialId = texelFetch(uDdxyRotMaterialIdImage, ivec2(gl_FragCoord.xy), 0).xy;
+	const vec2 ddxyLength = texelFetch(uDdxyLengthImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
+	const uvec2 ddxyRotMaterialId = texelFetch(uDdxyRotMaterialIdImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
 	const uint ddxyRot = ddxyRotMaterialId.x;
 	const uint materialId = ddxyRotMaterialId.y;
 	const vec4 derivatives = decodeDerivatives(ddxyRot, ddxyLength);
-	const uvec4 encodedTBN = texelFetch(uTangentSpaceImage, ivec2(gl_FragCoord.xy), 0).xyzw;
+	const uvec4 encodedTBN = texelFetch(uTangentSpaceImage, ivec2(gl_GlobalInvocationID.xy), 0).xyzw;
 	const mat3 tbn = decodeTBN(encodedTBN);
-	const vec2 uv = texelFetch(uUVImage, ivec2(gl_FragCoord.xy), 0).xy;
+	const vec2 uv = texelFetch(uUVImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
 	
 	const MaterialData materialData = uMaterialData[materialId];
 	
@@ -416,7 +381,7 @@ void main()
 	}
 	
 	// view space position
-	const vec4 clipSpacePosition = vec4(vec2(vTexCoord) * 2.0 - 1.0, depth, 1.0);
+	const vec4 clipSpacePosition = vec4(vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight)  * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
 	
@@ -429,7 +394,7 @@ void main()
 	{
 		float visibility = 1.0;
 #if SSAO_ENABLED
-		visibility = texelFetch(uOcclusionImage, ivec2(gl_FragCoord.xy), 0).x;
+		visibility = texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
 #endif // SSAO_ENABLED
 
 		result += sampleIrradianceVolume(lightingParams.viewSpacePosition, lightingParams.N) * lightingParams.albedo * visibility * (1.0 / PI);
@@ -439,7 +404,7 @@ void main()
 	{
 		// deferred shadows
 		const uint deferredShadowCount = min(4, cDirectionalLightCount);
-		const vec4 deferredShadowValues = texelFetch(uDeferredShadowImage, ivec2(gl_FragCoord.xy), 0);
+		const vec4 deferredShadowValues = texelFetch(uDeferredShadowImage, ivec2(gl_GlobalInvocationID.xy), 0);
 		for (uint i = 0; i < deferredShadowCount; ++i)
 		{
 			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
@@ -465,7 +430,7 @@ void main()
 		const uint mergedMax = subgroupBroadcastFirst(subgroupMax(maxIndex)); 
 		wordMin = max(mergedMin / 32, wordMin);
 		wordMax = min(mergedMax / 32, wordMax);
-		const uint address = getTileAddress(uvec2(gl_FragCoord.xy), uint(textureSize(uDepthImage, 0).x), wordCount);
+		const uint address = getTileAddress(uvec2(gl_GlobalInvocationID.xy), uint(textureSize(uDepthImage, 0).x), wordCount);
 		
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -492,6 +457,5 @@ void main()
 		}
 	}
 
-	oResult = vec4(result, 0.5);
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result, 1.0));
 }
-

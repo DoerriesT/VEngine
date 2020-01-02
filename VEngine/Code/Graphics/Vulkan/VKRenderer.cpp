@@ -19,7 +19,7 @@
 #include "Pass/VKGTAOPass.h"
 #include "Pass/VKGTAOSpatialFilterPass.h"
 #include "Pass/VKGTAOTemporalFilterPass.h"
-#include "Pass/VKDirectLightingPass.h"
+#include "Pass/LightingPass.h"
 #include "Pass/DeferredShadowsPass.h"
 #include "Pass/ImGuiPass.h"
 #include "Pass/ReadBackCopyPass.h"
@@ -957,27 +957,26 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// light gbuffer
-	VKDirectLightingPass::Data lightingPassData;
-	lightingPassData.m_passRecordContext = &passRecordContext;
-	lightingPassData.m_ssao = g_ssaoEnabled;
-	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-	lightingPassData.m_depthImageHandle = depthImageViewHandle;
-	lightingPassData.m_uvImageHandle = uvImageViewHandle;
-	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-	lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	lightingPassData.m_occlusionImageHandle = gtaoImageViewHandle;
-	lightingPassData.m_resultImageHandle = lightImageViewHandle;
-	lightingPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
-	lightingPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+	LightingPass::Data lightingPassData2;
+	lightingPassData2.m_passRecordContext = &passRecordContext;
+	lightingPassData2.m_ssao = g_ssaoEnabled;
+	lightingPassData2.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	lightingPassData2.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	lightingPassData2.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	lightingPassData2.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	lightingPassData2.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	lightingPassData2.m_depthImageHandle = depthImageViewHandle;
+	lightingPassData2.m_uvImageHandle = uvImageViewHandle;
+	lightingPassData2.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	lightingPassData2.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	lightingPassData2.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	lightingPassData2.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	lightingPassData2.m_occlusionImageHandle = gtaoImageViewHandle;
+	lightingPassData2.m_resultImageHandle = lightImageViewHandle;
+	lightingPassData2.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
+	lightingPassData2.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
 
-	VKDirectLightingPass::addToGraph(graph, lightingPassData);
-
+	LightingPass::addToGraph(graph, lightingPassData2);
 
 
 	// brick voxels
