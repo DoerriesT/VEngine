@@ -81,7 +81,7 @@ void VEngine::Engine::start()
 		m_userInput->input();
 		m_cameraControllerSystem->update(timeDelta);
 		m_gameLogic.update(timeDelta);
-		editor.update();
+		editor.update(timeDelta);
 
 		//ImGui::ShowDemoWindow();
 

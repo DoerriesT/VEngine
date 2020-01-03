@@ -28,7 +28,7 @@ VEngine::Editor::~Editor()
 {
 }
 
-void VEngine::Editor::update()
+void VEngine::Editor::update(float timeDelta)
 {
 	auto &renderSystem = m_engine->getRenderSystem();
 
@@ -95,7 +95,7 @@ void VEngine::Editor::update()
 	ImGui::End();
 
 	memmove(m_frametimes.get(), m_frametimes.get() + 1, (FRAME_TIME_ARRAY_SIZE - 1) * sizeof(float));
-	m_frametimes[FRAME_TIME_ARRAY_SIZE - 1] = 1000.0f / ImGui::GetIO().Framerate;
+	m_frametimes[FRAME_TIME_ARRAY_SIZE - 1] = timeDelta * 1000.0f;
 
 	if (m_showProfilerWindow)
 	{
@@ -104,7 +104,7 @@ void VEngine::Editor::update()
 
 		char overlay[32];
 		sprintf_s(overlay, "%10.10f ms", m_frametimes[FRAME_TIME_ARRAY_SIZE - 1]);
-		ImGui::PlotLines("Frametime", m_frametimes.get(), FRAME_TIME_ARRAY_SIZE, 0, overlay, 0.0f, 25.0f, ImVec2(0, 80));
+		ImGui::PlotLines("Frametime", m_frametimes.get(), FRAME_TIME_ARRAY_SIZE, 0, overlay, 0.0f, 50.0f, ImVec2(0, 80));
 
 		ImGui::Separator();
 		{

@@ -12,7 +12,7 @@ namespace VEngine
 	public:
 		explicit Editor(Engine *engine);
 		~Editor();
-		void update();
+		void update(float timeDelta);
 		uint32_t getEditorCameraEntity() const;
 
 	private:
