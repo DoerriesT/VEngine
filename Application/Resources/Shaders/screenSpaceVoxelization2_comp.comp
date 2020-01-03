@@ -1,0 +1,418 @@
+#version 450
+
+#extension GL_EXT_nonuniform_qualifier : enable
+
+#include "screenSpaceVoxelization2_bindings.h"
+
+#define DIFFUSE_ONLY 1
+#define SHADOW_FUNCTIONS 0
+#include "commonLighting.h"
+
+layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
+layout(constant_id = BRICK_VOLUME_HEIGHT_CONST_ID) const uint cBrickVolumeHeight = 64;
+layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth = 128;
+layout(constant_id = VOXEL_SCALE_CONST_ID) const float cVoxelScale = 16.0;
+layout(constant_id = INV_VOXEL_BRICK_SIZE_CONST_ID) const float cInvVoxelBrickSize = 0.625;
+layout(constant_id = BIN_VIS_BRICK_SIZE_CONST_ID) const uint cBinVisBrickSize = 16;
+layout(constant_id = COLOR_BRICK_SIZE_CONST_ID) const uint cColorBrickSize = 4;
+layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cGridWidth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cGridHeight = 32;
+layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 64;
+layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cCascades = 3;
+layout(constant_id = IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
+layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
+layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const uint cDepthProbeSideLength = 16;
+
+layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
+layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
+layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
+layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
+layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
+layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
+layout(set = IRRADIANCE_VOLUME_DEPTH_IMAGE_SET, binding = IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeDepthImage;
+
+layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
+{
+	DirectionalLightData uDirectionalLightData[];
+};
+
+layout(set = POINT_LIGHT_DATA_SET, binding = POINT_LIGHT_DATA_BINDING) readonly buffer POINT_LIGHT_DATA
+{
+	PointLightData uPointLightData[];
+};
+
+layout(set = POINT_LIGHT_Z_BINS_SET, binding = POINT_LIGHT_Z_BINS_BINDING) readonly buffer POINT_LIGHT_Z_BINS
+{
+	uint uPointLightZBins[];
+};
+
+layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly buffer POINT_LIGHT_BITMASK 
+{
+	uint uPointLightBitMask[];
+};
+
+layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
+{
+    MaterialData uMaterialData[];
+};
+
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+//vec3 sampleAmbientCube(vec3 N, vec3 tc, uint cascadeIndex)
+//{
+//	vec3 nSquared = N * N;
+//	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
+//	tc = tc.xzy;
+//	tc.z *= 0.5;
+//	vec3 tcz = tc.zzz + isNegative;
+//	tcz = tcz * (1.0 / cCascades) + float(cascadeIndex) / cCascades;
+//	
+//	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
+//			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
+//			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
+//}
+
+float signNotZero(in float k) 
+{
+    return k >= 0.0 ? 1.0 : -1.0;
+}
+
+vec2 signNotZero(in vec2 v) 
+{
+    return vec2( signNotZero(v.x), signNotZero(v.y) );
+}
+
+vec3 decodeNormal(in vec2 enc) 
+{
+    vec3 v = vec3(enc.x, enc.y, 1.0 - abs(enc.x) - abs(enc.y));
+    if (v.z < 0) 
+	{
+        v.xy = (1.0 - abs(v.yx)) * signNotZero(v.xy);
+    }
+    return normalize(v);
+}
+
+vec4 decodeDerivatives(in uint encodedDerivativesRot, in vec2 derivativesLength)
+{
+	vec2 derivativesRot;
+	derivativesRot.x = float(encodedDerivativesRot.r & 0x7F) * (1.0 / 127.0);
+	derivativesRot.y = float((encodedDerivativesRot >> 8) & 0x7F)  * (1.0 / 127.0);
+	derivativesRot = derivativesRot * 2.0 - 1.0;
+	float signX = (((encodedDerivativesRot.r >> 7u) & 0x1) == 0) ? 1.0 : -1.0;
+	float signY = (((encodedDerivativesRot.r >> 15u) & 0x1) == 0) ? 1.0 : -1.0;
+	vec4 derivatives;
+	derivatives.x = derivativesRot.x;
+	derivatives.y = sqrt(1.0 - derivativesRot.x * derivativesRot.x) * signX;
+	derivatives.z = derivativesRot.y;
+	derivatives.w = sqrt(1.0 - derivativesRot.y * derivativesRot.y) * signY;
+	derivatives.xy *= derivativesLength.x;
+	derivatives.zw *= derivativesLength.y;
+	return derivatives;
+}
+
+float square(float v)
+{
+	return v * v;
+}
+
+vec2 octEncode(in vec3 v) 
+{
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0/l1norm);
+    if (v.z < 0.0) 
+	{
+        result = (1.0 - abs(result.yx)) * signNotZero(result.xy);
+    }
+    return result;
+}
+
+vec2 texCoordFromDir(vec3 dir, ivec3 probeCoord, int cascade, int probeSideLength)
+{
+	vec2 texelCoord = vec2((ivec2(cGridWidth, cGridDepth) * ivec2(probeCoord.y, cascade) + probeCoord.xz) * (probeSideLength + 2)) + 1.0;
+	texelCoord += (octEncode(dir) * 0.5 + 0.5) * float(probeSideLength);
+	const vec2 texelSize = 1.0 / vec2(ivec2(cGridWidth, cGridDepth) * ivec2(cGridHeight, cCascades) * ivec2(probeSideLength + 2));
+	return texelCoord  * texelSize;
+}
+
+vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpaceNormal, const vec3 worldSpaceViewDir, const int cascade)
+{
+	const float gridScale = cGridBaseScale / (1 << cascade);
+	vec3 pointGridCoord = worldSpacePos * gridScale;
+	ivec3 baseCoord = ivec3(floor(pointGridCoord));
+	
+	vec4 sum = vec4(0.0);
+	for (int i = 0; i < 8; ++i)
+	{
+		ivec3 probeGridCoord = baseCoord + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
+		vec3 trilinear =  1.0 - abs(vec3(probeGridCoord) - pointGridCoord);
+		float weight = 1.0;
+		
+		const vec3 trueDirToProbe = vec3(probeGridCoord) - pointGridCoord;
+		const bool probeInPoint = dot(trueDirToProbe, trueDirToProbe) < 1e-6;
+		
+		// smooth backface test
+		{
+			weight *= probeInPoint ? 1.0 : square(max(0.0001, (dot(normalize(trueDirToProbe), worldSpaceNormal) + 1.0) * 0.5)) + 0.2;
+		}
+		
+		const vec3 gridSize = vec3(cGridWidth, cGridHeight, cGridDepth);
+		const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord) / vec3(gridSize)) * gridSize);
+		
+		// moment visibility test
+		if (!probeInPoint)
+		{
+			vec3 worldSpaceProbePos = vec3(probeGridCoord) / gridScale;
+			vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.3;
+			vec3 dir = normalize(biasedProbeToPoint);
+			vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascade), int(cDepthProbeSideLength));
+			float distToProbe = length(biasedProbeToPoint) + 0.12;
+			
+			vec2 temp = textureLod(uIrradianceVolumeDepthImage, texCoord, 0).xy;
+			float mean = temp.x;
+			float variance = abs(temp.x * temp.x - temp.y);
+			
+			float chebyshevWeight = variance / (variance + square(max(distToProbe - mean, 0.0)));
+			
+			chebyshevWeight = max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.0);
+			
+			weight *= (distToProbe <= mean) ? 1.0 : chebyshevWeight;
+		}
+		
+		// avoid zero weight
+		weight = max(0.000001, weight);
+		
+		const float crushThreshold = 0.2;
+		if (weight < crushThreshold)
+		{
+			weight *= weight * weight * (1.0 / square(crushThreshold));
+		}
+		
+		// trilinear
+		weight *= trilinear.x * trilinear.y * trilinear.z;
+		
+		vec2 probeTexCoord = texCoordFromDir(worldSpaceNormal, wrappedProbeGridCoord, int(cascade), int(cProbeSideLength));
+		vec3 probeIrradiance = textureLod(uIrradianceVolumeImage, probeTexCoord, 0).rgb;
+		
+		probeIrradiance = sqrt(probeIrradiance);
+		
+		sum += vec4(probeIrradiance * weight, weight);
+	}
+	vec3 irradiance = sum.xyz / sum.w;
+	
+	return irradiance * irradiance;
+}
+
+vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
+{
+	mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0, uPushConsts.invViewMatrixRow1, uPushConsts.invViewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
+	vec4 worldSpacePos4 = invViewMatrix * vec4(viewSpacePos, 1.0);
+	vec3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
+	vec3 worldSpaceNormal = (invViewMatrix * vec4(viewSpaceNormal, 0.0)).xyz;
+	vec3 worldSpaceViewDir = normalize(invViewMatrix[3].xyz - worldSpacePos);
+	vec3 camPos = invViewMatrix[3].xyz;
+	const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
+	float currentGridScale = cGridBaseScale;
+	int cascadeIndex = 0;
+	float cascadeWeight = 0.0;
+	
+	// search for cascade index
+	for (; cascadeIndex < cCascades; ++cascadeIndex)
+	{
+		// calculate coordinate in world space fixed coordinate system (scaled to voxel size)
+		vec3 gridPos = worldSpacePos * currentGridScale;
+		ivec3 coord = ivec3(floor(gridPos));
+		ivec3 offset = ivec3(round(camPos * currentGridScale) - (gridSize / 2));
+
+		// if coordinate is inside grid, we found the correct cascade
+		if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset - 1)))
+		{
+			const float falloffStart = 0.5;
+			vec3 smoothOffset = camPos * currentGridScale - (gridSize / 2) - 0.5;
+			vec3 relativeCoord = clamp(abs(((gridPos - smoothOffset) / vec3(gridSize)) * 2.0 - 1.0), 0.0, 1.0);
+			float minDistToBorder = 1.0 - max(relativeCoord.x, max(relativeCoord.y, relativeCoord.z));
+			cascadeWeight = minDistToBorder < falloffStart ? smoothstep(0.0, 1.0, minDistToBorder * (1.0 / falloffStart)) : 1.0;
+			break;
+		}
+		currentGridScale *= 0.5;
+	}
+	
+	vec3 irradiance = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex);
+	if (cascadeWeight < 1.0)
+	{
+		vec3 irradiance2 = vec3(0.18);
+		if ((cascadeIndex + 1) < cCascades)
+		{
+			irradiance2 = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex + 1);
+		}
+		irradiance = mix(irradiance2, irradiance, cascadeWeight);
+	}
+	
+	return irradiance;
+}
+
+uint rngState = 0;
+
+uint rand_xorshift()
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    rngState ^= (rngState << 13);
+    rngState ^= (rngState >> 17);
+    rngState ^= (rngState << 5);
+    return rngState;
+}
+
+uint wang_hash(uint seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+
+void main() 
+{
+	rngState = wang_hash(gl_GlobalInvocationID.x * floatBitsToInt(uPushConsts.time));
+	
+	const vec2 texCoord = vec2(rand_xorshift(), rand_xorshift()) * (1.0 / 4294967296.0);
+	const ivec2 pixelCoord = ivec2(texCoord * textureSize(uDepthImage, 0).xy);
+	
+	const float depth = texelFetch(uDepthImage, pixelCoord, 0).x;
+	
+	if (depth == 0.0)
+	{
+		return;
+	}
+	
+	// get uv, derivatives, material id and tangent frame
+	const vec2 ddxyLength = texelFetch(uDdxyLengthImage, pixelCoord, 0).xy;
+	const uvec2 ddxyRotMaterialId = texelFetch(uDdxyRotMaterialIdImage, pixelCoord, 0).xy;
+	const uint ddxyRot = ddxyRotMaterialId.x;
+	const uint materialId = ddxyRotMaterialId.y;
+	const vec4 derivatives = decodeDerivatives(ddxyRot, ddxyLength);
+	const uvec2 encodedTBN = texelFetch(uTangentSpaceImage, pixelCoord, 0).xy;
+	const vec2 uv = texelFetch(uUVImage, pixelCoord, 0).xy;
+	
+	const MaterialData materialData = uMaterialData[materialId];
+	
+	LightingParams lightingParams;
+	
+	// albedo
+	{
+		vec3 albedo = unpackUnorm4x8(materialData.albedoOpacity).rgb;
+		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
+		if (albedoTextureIndex != 0)
+		{
+			vec4 albedoTexSample = textureGrad(sampler2D(uTextures[nonuniformEXT(albedoTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), uv, derivatives.xy, derivatives.zw).rgba;
+			albedo = albedoTexSample.rgb;
+		}
+		lightingParams.albedo = accurateSRGBToLinear(albedo);
+	}
+	
+	lightingParams.N = decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0);
+	lightingParams.metalness = 0.0;
+	lightingParams.roughness = 0.5;
+	
+	// view space position
+	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
+	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
+	viewSpacePosition /= viewSpacePosition.w;
+	
+	lightingParams.V = -normalize(viewSpacePosition.xyz);
+	lightingParams.viewSpacePosition = viewSpacePosition.xyz;
+	
+	vec3 result = vec3(0.0);
+	
+	// ambient
+	{
+		result += sampleIrradianceVolume(lightingParams.viewSpacePosition, lightingParams.N) * lightingParams.albedo * (1.0 / PI);
+	}
+	
+	// directional lights
+	{
+		// deferred shadows
+		const uint deferredShadowCount = min(4, cDirectionalLightCount);
+		const vec4 deferredShadowValues = texelFetch(uDeferredShadowImage, pixelCoord, 0);
+		for (uint i = 0; i < deferredShadowCount; ++i)
+		{
+			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
+			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+			result += contribution * (1.0 - deferredShadowValues[i]);
+		}
+	}
+	
+	// point lights
+	if (uPushConsts.pointLightCount > 0)
+	{
+		uint wordMin = 0;
+		const uint wordCount = (uPushConsts.pointLightCount + 31) / 32;
+		uint wordMax = wordCount - 1;
+		
+		const uint zBinAddress = clamp(uint(floor(-viewSpacePosition.z)), 0, 8191);
+		const uint zBinData = uPointLightZBins[zBinAddress];
+		const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+		const uint maxIndex = zBinData & uint(0xFFFF);
+		wordMin = max(minIndex / 32, wordMin);
+		wordMax = min(maxIndex / 32, wordMax);
+		const uint address = getTileAddress(uvec2(pixelCoord), uint(textureSize(uDepthImage, 0).x), wordCount);
+		
+		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+		{
+			uint mask = uPointLightBitMask[address + wordIndex];
+			
+			// mask by zbin mask
+			const int localBaseIndex = int(wordIndex * 32);
+			const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
+			const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
+			const uint maskWidth = localMax - localMin + 1;
+			const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
+			mask &= zBinMask;
+			
+			while (mask != 0)
+			{
+				const uint bitIndex = findLSB(mask);
+				const uint index = 32 * wordIndex + bitIndex;
+				mask ^= (1 << bitIndex);
+				result += evaluatePointLight(lightingParams, uPointLightData[index]);
+			}
+		}
+	}
+	
+	const mat4 invViewMatrix = transpose(mat4(uPushConsts.invViewMatrixRow0,
+												uPushConsts.invViewMatrixRow1,
+												uPushConsts.invViewMatrixRow2,
+												vec4(0.0, 0.0, 0.0, 1.0)));
+	const vec3 worldSpacePos = (invViewMatrix * vec4(lightingParams.viewSpacePosition, 1.0)).xyz;
+	
+	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
+	
+	const vec3 coord = floor(worldSpacePos * cVoxelScale);
+	vec3 brickCoord = floor(coord * cInvVoxelBrickSize);
+	brickCoord = floor(fract(brickCoord / gridSize) * gridSize);
+	uint brickPtr = texelFetch(uBrickPtrImage, ivec3(brickCoord), 0).x;
+	
+	if (brickPtr != 0)
+	{
+		--brickPtr;
+		
+		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
+		const ivec3 localColorCoord = ivec3(floor(fract(coord / float(cBinVisBrickSize)) * cColorBrickSize));
+		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
+		
+		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
+		imageStore(uColorImageBuffer, colorIdx, vec4(mix(result, prevColor, 0.93), 1.0));
+	}
+}

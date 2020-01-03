@@ -52,6 +52,7 @@
 #include "Pass/VoxelizationFillPass.h"
 #include "Pass/BrickDebugPass.h"
 #include "Pass/IrradianceVolumeRayMarching2Pass.h"
+#include "Pass/ScreenSpaceVoxelization2Pass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -1100,6 +1101,26 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 			VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
 		}
+
+		ScreenSpaceVoxelization2Pass::Data ssVoxelPass2Data;
+		ssVoxelPass2Data.m_passRecordContext = &passRecordContext;
+		ssVoxelPass2Data.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+		ssVoxelPass2Data.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+		ssVoxelPass2Data.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+		ssVoxelPass2Data.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+		ssVoxelPass2Data.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+		ssVoxelPass2Data.m_depthImageHandle = depthImageViewHandle;
+		ssVoxelPass2Data.m_uvImageHandle = uvImageViewHandle;
+		ssVoxelPass2Data.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+		ssVoxelPass2Data.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+		ssVoxelPass2Data.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+		ssVoxelPass2Data.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+		ssVoxelPass2Data.m_brickPointerImageHandle = brickPointerImageViewHandle;
+		ssVoxelPass2Data.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
+		ssVoxelPass2Data.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
+		ssVoxelPass2Data.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+
+		ScreenSpaceVoxelization2Pass::addToGraph(graph, ssVoxelPass2Data);
 
 		// copy allocated brick count to readback buffer
 		ReadBackCopyPass::Data readBackCopyPassData;
