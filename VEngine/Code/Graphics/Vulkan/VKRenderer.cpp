@@ -64,6 +64,7 @@
 #include "DeferredObjectDeleter.h"
 #include "Graphics/imgui/imgui.h"
 #include "Graphics/ViewRenderList.h"
+#include "Utility/AxisAlignedBoundingBox.h"
 
 extern uint32_t g_debugVoxelCascadeIndex;
 extern uint32_t g_giVoxelDebugMode;
@@ -992,78 +993,113 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			InitBrickPoolPass::addToGraph(graph, initBrickPoolPassData);
 		}
 
-		ClearBricksPass::Data clearBricksPassData;
-		clearBricksPassData.m_passRecordContext = &passRecordContext;
-		clearBricksPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
-		clearBricksPassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
-		clearBricksPassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
-		clearBricksPassData.m_freeBricksBufferHandle = freeBricksBufferViewHandle;
+		const glm::vec3 camPos = commonData.m_cameraPosition;
+		const glm::vec3 prevCamPos = commonData.m_prevInvViewMatrix[3];
+		const glm::ivec3 cameraCoord = glm::ivec3(round(camPos / RendererConsts::BRICK_SIZE));
+		const glm::ivec3 prevCameraCoord = glm::ivec3(round(prevCamPos / RendererConsts::BRICK_SIZE));
 
-		ClearBricksPass::addToGraph(graph, clearBricksPassData);
+		glm::ivec3 prevAabbMin = prevCameraCoord - (glm::ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2);
+		glm::ivec3 prevAabbMax = prevAabbMin + glm::ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH);
 
-		ImageDescription markImageDesc = {};
-		markImageDesc.m_name = "Brick Mark Image";
-		markImageDesc.m_concurrent = false;
-		markImageDesc.m_clear = true;
-		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[0] = 0;
-		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[1] = 0;
-		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[2] = 0;
-		markImageDesc.m_clearValue.m_imageClearValue.color.uint32[3] = 0;
-		markImageDesc.m_width = RendererConsts::BRICK_VOLUME_WIDTH;
-		markImageDesc.m_height = RendererConsts::BRICK_VOLUME_HEIGHT;
-		markImageDesc.m_depth = RendererConsts::BRICK_VOLUME_DEPTH;
-		markImageDesc.m_layers = 1;
-		markImageDesc.m_levels = 1;
-		markImageDesc.m_samples = 1;
-		markImageDesc.m_imageType = VK_IMAGE_TYPE_3D;
-		markImageDesc.m_format = VK_FORMAT_R8_UINT;
+		glm::ivec3 curAabbMin = cameraCoord - (glm::ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2);
+		glm::ivec3 curAabbMax = curAabbMin + glm::ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH);
 
-		ImageViewHandle markImageHandle = graph.createImageView({ markImageDesc.m_name, graph.createImage(markImageDesc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+		AxisAlignedBoundingBox aabbs[3];
+		size_t aabbCount = 0;
+
+		for (size_t i = 0; i < 3; ++i)
+		{
+			int diff = cameraCoord[i] - prevCameraCoord[i];
+			if (diff != 0)
+			{
+				glm::ivec3 minCorner = curAabbMin;
+				glm::ivec3 maxCorner = curAabbMax;
+				if (diff > 0)
+				{
+					minCorner[i] = prevAabbMax[i];
+				}
+				else
+				{
+					maxCorner[i] = prevAabbMin[i];
+				}
+				aabbs[aabbCount++] = { glm::vec3(minCorner) * RendererConsts::BRICK_SIZE, glm::vec3(maxCorner) * RendererConsts::BRICK_SIZE };
+			}
+		}
+
+		if (aabbCount)
+		{
+			ClearBricksPass::Data clearBricksPassData;
+			clearBricksPassData.m_passRecordContext = &passRecordContext;
+			clearBricksPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
+			clearBricksPassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
+			clearBricksPassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
+			clearBricksPassData.m_freeBricksBufferHandle = freeBricksBufferViewHandle;
+
+			ClearBricksPass::addToGraph(graph, clearBricksPassData);
+
+			ImageDescription markImageDesc = {};
+			markImageDesc.m_name = "Brick Mark Image";
+			markImageDesc.m_concurrent = false;
+			markImageDesc.m_clear = true;
+			markImageDesc.m_clearValue.m_imageClearValue.color.uint32[0] = 0;
+			markImageDesc.m_clearValue.m_imageClearValue.color.uint32[1] = 0;
+			markImageDesc.m_clearValue.m_imageClearValue.color.uint32[2] = 0;
+			markImageDesc.m_clearValue.m_imageClearValue.color.uint32[3] = 0;
+			markImageDesc.m_width = RendererConsts::BRICK_VOLUME_WIDTH;
+			markImageDesc.m_height = RendererConsts::BRICK_VOLUME_HEIGHT;
+			markImageDesc.m_depth = RendererConsts::BRICK_VOLUME_DEPTH;
+			markImageDesc.m_layers = 1;
+			markImageDesc.m_levels = 1;
+			markImageDesc.m_samples = 1;
+			markImageDesc.m_imageType = VK_IMAGE_TYPE_3D;
+			markImageDesc.m_format = VK_FORMAT_R8_UINT;
+
+			ImageViewHandle markImageHandle = graph.createImageView({ markImageDesc.m_name, graph.createImage(markImageDesc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
 
 
-		// mark
-		VoxelizationMarkPass::Data voxelizeMarkPassData;
-		voxelizeMarkPassData.m_passRecordContext = &passRecordContext;
-		voxelizeMarkPassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-		voxelizeMarkPassData.m_instanceData = renderData.m_allInstanceData;
-		voxelizeMarkPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		voxelizeMarkPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		voxelizeMarkPassData.m_markImageHandle = markImageHandle;
+			// mark
+			VoxelizationMarkPass::Data voxelizeMarkPassData;
+			voxelizeMarkPassData.m_passRecordContext = &passRecordContext;
+			voxelizeMarkPassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
+			voxelizeMarkPassData.m_instanceData = renderData.m_allInstanceData;
+			voxelizeMarkPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+			voxelizeMarkPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+			voxelizeMarkPassData.m_markImageHandle = markImageHandle;
 
-		VoxelizationMarkPass::addToGraph(graph, voxelizeMarkPassData);
-
-
-		// allocate
-		VoxelizationAllocatePass::Data voxelizeAllocatePassData;
-		voxelizeAllocatePassData.m_passRecordContext = &passRecordContext;
-		voxelizeAllocatePassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
-		voxelizeAllocatePassData.m_freeBricksBufferHandle = freeBricksBufferViewHandle;
-		voxelizeAllocatePassData.m_markImageHandle = markImageHandle;
-
-		VoxelizationAllocatePass::addToGraph(graph, voxelizeAllocatePassData);
+			VoxelizationMarkPass::addToGraph(graph, voxelizeMarkPassData);
 
 
-		// fill
-		VoxelizationFillPass::Data voxelizationFillPassData;
-		voxelizationFillPassData.m_passRecordContext = &passRecordContext;
-		voxelizationFillPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-		voxelizationFillPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-		voxelizationFillPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		voxelizationFillPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		voxelizationFillPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
-		voxelizationFillPassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
-		voxelizationFillPassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
-		voxelizationFillPassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-		voxelizationFillPassData.m_instanceData = renderData.m_allInstanceData;
-		voxelizationFillPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		voxelizationFillPassData.m_shadowImageViewHandle = shadowImageViewHandle;
-		voxelizationFillPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
-		voxelizationFillPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-		voxelizationFillPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
-		voxelizationFillPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+			// allocate
+			VoxelizationAllocatePass::Data voxelizeAllocatePassData;
+			voxelizeAllocatePassData.m_passRecordContext = &passRecordContext;
+			voxelizeAllocatePassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
+			voxelizeAllocatePassData.m_freeBricksBufferHandle = freeBricksBufferViewHandle;
+			voxelizeAllocatePassData.m_markImageHandle = markImageHandle;
 
-		VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
+			VoxelizationAllocatePass::addToGraph(graph, voxelizeAllocatePassData);
 
+
+			// fill
+			VoxelizationFillPass::Data voxelizationFillPassData;
+			voxelizationFillPassData.m_passRecordContext = &passRecordContext;
+			voxelizationFillPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+			voxelizationFillPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+			voxelizationFillPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+			voxelizationFillPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
+			voxelizationFillPassData.m_brickPointerImageHandle = brickPointerImageViewHandle;
+			voxelizationFillPassData.m_binVisBricksBufferHandle = binVisBricksBufferViewHandle;
+			voxelizationFillPassData.m_colorBricksBufferHandle = colorBricksBufferViewHandle;
+			voxelizationFillPassData.m_instanceDataCount = renderData.m_allInstanceDataCount;
+			voxelizationFillPassData.m_instanceData = renderData.m_allInstanceData;
+			voxelizationFillPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+			voxelizationFillPassData.m_shadowImageViewHandle = shadowImageViewHandle;
+			voxelizationFillPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
+			voxelizationFillPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+			voxelizationFillPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
+			voxelizationFillPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+
+			VoxelizationFillPass::addToGraph(graph, voxelizationFillPassData);
+		}
 
 		// copy allocated brick count to readback buffer
 		ReadBackCopyPass::Data readBackCopyPassData;
@@ -1096,7 +1132,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	clearVoxelsPassData.m_clearImageHandle = voxelSceneOpacityImageViewHandle;
 	clearVoxelsPassData.m_clearMode = ClearVoxelsPass::Data::VOXEL_SCENE;
 
-	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
+	//ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
 
 	ClearVoxelsPass::Data clearVolumePassData;
@@ -1124,7 +1160,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelizationPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
 	voxelizationPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 
-	VoxelizationPass::addToGraph(graph, voxelizationPassData);
+	//VoxelizationPass::addToGraph(graph, voxelizationPassData);
 
 
 	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;

@@ -10,11 +10,14 @@
 #include "Graphics/RenderSystem.h"
 
 extern uint32_t g_dirLightEntity;
+static constexpr size_t FRAME_TIME_ARRAY_SIZE = 64;
 
 VEngine::Editor::Editor(Engine *engine)
 	:m_engine(engine),
-	m_detailsWindow(std::make_unique<EntityDetailsWindow>(engine))
+	m_detailsWindow(std::make_unique<EntityDetailsWindow>(engine)),
+	m_frametimes(std::make_unique<float[]>(FRAME_TIME_ARRAY_SIZE))
 {
+	memset(m_frametimes.get(), 0, sizeof(float) * FRAME_TIME_ARRAY_SIZE);
 	auto &registry = m_engine->getEntityRegistry();
 	m_editorCameraEntity = registry.create();
 	registry.assign<TransformationComponent>(m_editorCameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
@@ -91,10 +94,17 @@ void VEngine::Editor::update()
 
 	ImGui::End();
 
+	memmove(m_frametimes.get(), m_frametimes.get() + 1, (FRAME_TIME_ARRAY_SIZE - 1) * sizeof(float));
+	m_frametimes[FRAME_TIME_ARRAY_SIZE - 1] = 1000.0f / ImGui::GetIO().Framerate;
+
 	if (m_showProfilerWindow)
 	{
 		ImGui::Begin("Profiler");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		char overlay[32];
+		sprintf_s(overlay, "%10.10f ms", m_frametimes[FRAME_TIME_ARRAY_SIZE - 1]);
+		ImGui::PlotLines("Frametime", m_frametimes.get(), FRAME_TIME_ARRAY_SIZE, 0, overlay, 0.0f, 25.0f, ImVec2(0, 80));
 
 		ImGui::Separator();
 		{

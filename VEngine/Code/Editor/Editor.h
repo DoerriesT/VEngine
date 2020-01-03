@@ -18,6 +18,7 @@ namespace VEngine
 	private:
 		Engine *m_engine;
 		std::unique_ptr<EntityDetailsWindow> m_detailsWindow;
+		std::unique_ptr<float[]> m_frametimes;
 		uint32_t m_editorCameraEntity;
 		bool m_showProfilerWindow = false;
 		bool m_showMemoryWindow = false;
