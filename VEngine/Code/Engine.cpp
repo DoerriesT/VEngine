@@ -120,7 +120,8 @@ void VEngine::Engine::start()
 			uint32_t draws = 0;
 			uint32_t totalDraws = 1;
 			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
-			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", 64 * 64 * 32 * 3, draws, float(draws) / (64 * 64 * 32 * 3) * 100.0f);
+			const uint32_t totalProbes = RendererConsts::IRRADIANCE_VOLUME_WIDTH * RendererConsts::IRRADIANCE_VOLUME_HEIGHT * RendererConsts::IRRADIANCE_VOLUME_DEPTH * RendererConsts::IRRADIANCE_VOLUME_CASCADES;
+			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", totalProbes, draws, float(draws) / totalProbes * 100.0f);
 			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
 		}
 		
