@@ -9,8 +9,10 @@
 
 #if !OUTPUT_DEPTH
 #define WORK_GROUP_SIZE (8)
+#define PAYLOAD_TYPE vec3
 #else
 #define WORK_GROUP_SIZE (16)
+#define PAYLOAD_TYPE float
 #endif
 
 layout(set = RAY_IMAGE_SET, binding = RAY_IMAGE_BINDING) uniform sampler2D uRayImage;
@@ -40,6 +42,8 @@ layout(constant_id = GRID_DEPTH_CONST_ID) const uint cGridDepth = 64;
 layout(constant_id = GRID_BASE_SCALE_CONST_ID) const float cGridBaseScale = 2.0;
 layout(constant_id = CASCADES_CONST_ID) const uint cCascades = 3;
 layout(constant_id = PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
+
+shared PAYLOAD_TYPE sRays[IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT];
 
 layout (local_size_x = WORK_GROUP_SIZE, local_size_y = WORK_GROUP_SIZE, local_size_z = 1) in;
 
@@ -158,6 +162,14 @@ const float epsilon = 1e-6;
 
 void main() 
 {
+	const uint threadID = gl_LocalInvocationID.y * WORK_GROUP_SIZE + gl_LocalInvocationID.x;
+	for (uint i = threadID; i < IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT; i += (WORK_GROUP_SIZE * WORK_GROUP_SIZE))
+	{
+		sRays[i] = PAYLOAD_TYPE(texelFetch(uRayImage, ivec2(i, gl_WorkGroupID.x), 0));
+	}
+	
+	barrier();
+	
 	const ivec3 gridSize = ivec3(cGridWidth, cGridHeight, cGridDepth);
 	
 	// get cell index and cascade index
@@ -186,14 +198,14 @@ void main()
 		const float weight = max(dot(rayDir, texelDir), 0.0);
 		if (weight >= epsilon)
 		{
-			vec4 rayResult = texelFetch(uRayImage, ivec2(i, gl_WorkGroupID.x), 0);
+			vec3 rayResult = sRays[i];
 			result += vec4(rayResult.rgb * weight, weight);
 		}
 #else
 		const float weight = pow(max(dot(rayDir, texelDir), 0.0), 50.0);
 		if (weight >= epsilon)
 		{
-			float dist = texelFetch(uRayImage, ivec2(i, gl_WorkGroupID.x), 0).x;
+			float dist = sRays[i];
 			result += vec4(dist * weight, dist * dist * weight, 0.0, weight);
 		}
 #endif
