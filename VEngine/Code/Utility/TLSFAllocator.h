@@ -59,6 +59,7 @@ namespace VEngine
 		uint32_t m_allocationCount;
 		uint32_t m_freeSize;
 		uint32_t m_usedSize;
+		uint32_t m_requiredDebugSpanCount;
 		DynamicObjectPool<Span> m_spanPool;
 
 		// returns indices of the list holding memory blocks that lie in the same size class as requestedSize.

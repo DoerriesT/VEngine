@@ -11,6 +11,7 @@ VEngine::TLSFAllocator::TLSFAllocator(uint32_t memorySize, uint32_t pageSize)
 	m_allocationCount(),
 	m_freeSize(memorySize),
 	m_usedSize(),
+	m_requiredDebugSpanCount(1),
 	m_spanPool(256)
 {
 	memset(m_secondLevelBitsets, 0, sizeof(m_secondLevelBitsets));
@@ -108,6 +109,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 		// add begin span to free list
 		mappingInsert(beginSpan->m_size, firstLevelIndex, secondLevelIndex);
 		addSpanToFreeList(beginSpan, firstLevelIndex, secondLevelIndex);
+		++m_requiredDebugSpanCount;
 	}
 
 	// split span at end?
@@ -133,6 +135,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 		// add end span to free list
 		mappingInsert(endSpan->m_size, firstLevelIndex, secondLevelIndex);
 		addSpanToFreeList(endSpan, firstLevelIndex, secondLevelIndex);
+		++m_requiredDebugSpanCount;
 	}
 
 	++m_allocationCount;
@@ -147,6 +150,8 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 
 	m_freeSize -= freeSpan->m_size;
 	m_usedSize += freeSpan->m_usedSize;
+	m_requiredDebugSpanCount += freeSpan->m_usedOffset > freeSpan->m_offset ? 1 : 0;
+	m_requiredDebugSpanCount += (freeSpan->m_offset + freeSpan->m_size) > (freeSpan->m_usedOffset + freeSpan->m_usedSize) ? 1 : 0;
 
 #ifdef _DEBUG
 	checkIntegrity();
@@ -163,6 +168,8 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 
 	m_freeSize += span->m_size;
 	m_usedSize -= span->m_usedSize;
+	m_requiredDebugSpanCount -= span->m_usedOffset > span->m_offset ? 1 : 0;
+	m_requiredDebugSpanCount -= (span->m_offset + span->m_size) > (span->m_usedOffset + span->m_usedSize) ? 1 : 0;
 
 	// is next physical span also free? -> merge
 	{
@@ -184,6 +191,7 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 			}
 
 			m_spanPool.free(nextPhysical);
+			--m_requiredDebugSpanCount;
 		}
 	}
 
@@ -209,6 +217,7 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 			m_spanPool.free(span);
 
 			span = previousPhysical;
+			--m_requiredDebugSpanCount;
 		}
 	}
 
@@ -236,13 +245,17 @@ void VEngine::TLSFAllocator::getDebugInfo(size_t *count, TLSFSpanDebugInfo *info
 {
 	if (!info)
 	{
-		*count = m_spanPool.getAllocationCount();
+		*count = m_requiredDebugSpanCount;
 	}
 	else
 	{
+		assert(*count >= m_requiredDebugSpanCount);
+		uint32_t free = 0;
+		uint32_t used = 0;
+		uint32_t wasted = 0;
 		Span *span = m_firstPhysicalSpan;
 		size_t i = 0;
-		while(span && i < *count)
+		while (span && i < *count)
 		{
 			// span is free
 			if (span->m_usedSize == 0 && i < *count)
@@ -251,16 +264,18 @@ void VEngine::TLSFAllocator::getDebugInfo(size_t *count, TLSFSpanDebugInfo *info
 				spanInfo.m_offset = span->m_offset;
 				spanInfo.m_size = span->m_size;
 				spanInfo.m_state = TLSFSpanDebugInfo::State::FREE;
+				free += spanInfo.m_size;
 			}
 			else
 			{
 				// wasted size at start of suballocation
-				if (span->m_usedOffset > span->m_offset && i < *count)
+				if (span->m_usedOffset > span->m_offset &&i < *count)
 				{
 					TLSFSpanDebugInfo &spanInfo = info[i++];
 					spanInfo.m_offset = span->m_offset;
 					spanInfo.m_size = span->m_usedOffset - span->m_offset;
 					spanInfo.m_state = TLSFSpanDebugInfo::State::WASTED;
+					wasted += spanInfo.m_size;
 				}
 
 				// used space of suballocation
@@ -270,6 +285,7 @@ void VEngine::TLSFAllocator::getDebugInfo(size_t *count, TLSFSpanDebugInfo *info
 					spanInfo.m_offset = span->m_usedOffset;
 					spanInfo.m_size = span->m_usedSize;
 					spanInfo.m_state = TLSFSpanDebugInfo::State::USED;
+					used += spanInfo.m_size;
 				}
 
 				// wasted space at end of suballocation
@@ -279,11 +295,17 @@ void VEngine::TLSFAllocator::getDebugInfo(size_t *count, TLSFSpanDebugInfo *info
 					spanInfo.m_offset = span->m_usedOffset + span->m_usedSize;
 					spanInfo.m_size = span->m_offset + span->m_size - span->m_usedOffset - span->m_usedSize;
 					spanInfo.m_state = TLSFSpanDebugInfo::State::WASTED;
+					wasted += spanInfo.m_size;
 				}
 			}
 
 			span = span->m_nextPhysical;
 		}
+		assert(span == nullptr);
+		assert(free == m_freeSize);
+		assert(used == m_usedSize);
+		assert(wasted == (m_memorySize - m_freeSize - m_usedSize));
+		assert((free + used + wasted) == m_memorySize);
 	}
 }
 
@@ -435,11 +457,21 @@ void VEngine::TLSFAllocator::checkIntegrity()
 {
 	Span *span = m_firstPhysicalSpan;
 	uint32_t currentOffset = 0;
+	uint32_t free = 0;
+	uint32_t used = 0;
+	uint32_t wasted = 0;
 	while (span)
 	{
 		assert(span->m_offset == currentOffset);
 		currentOffset += span->m_size;
+		free += span->m_usedSize == 0 ? span->m_size : 0;
+		used += span->m_usedSize;
+		wasted += span->m_usedSize == 0 ? 0 : span->m_size - span->m_usedSize;
 		span = span->m_nextPhysical;
 	}
 	assert(currentOffset == m_memorySize);
+	assert(free == m_freeSize);
+	assert(used == m_usedSize);
+	assert(wasted == (m_memorySize - m_freeSize - m_usedSize));
+	assert((free + used + wasted) == m_memorySize);
 }
