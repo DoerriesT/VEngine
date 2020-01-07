@@ -2,7 +2,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c geometry_vert.vert -o geometry_vert.s
 glslc --target-env=vulkan1.1 -O -Werror -c geometry_frag.frag -o geometry_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DALPHA_MASK_ENABLED=1 geometry_frag.frag -o geometry_alpha_mask_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c lighting_comp.comp -o lighting_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 lighting_comp.comp -o lighting_SSAO_ENABLED_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c shadows_vert.vert -o shadows_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DALPHA_MASK_ENABLED=1 shadows_vert.vert -o shadows_alpha_mask_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c shadows_frag.frag -o shadows_frag.spv
@@ -60,5 +59,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c initBrickPool_comp.comp -o initBrickP
 glslc --target-env=vulkan1.1 -O -Werror -c brickDebug_comp.comp -o brickDebug_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching2_comp.comp -o irradianceVolumeRayMarching2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization2_comp.comp -o screenSpaceVoxelization2_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuse_comp.comp -o indirectDiffuse_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp.comp -o indirectDiffuse_SSAO_ENABLED_comp.spv
 
 pause

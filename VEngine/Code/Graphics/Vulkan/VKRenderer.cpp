@@ -53,6 +53,7 @@
 #include "Pass/BrickDebugPass.h"
 #include "Pass/IrradianceVolumeRayMarching2Pass.h"
 #include "Pass/ScreenSpaceVoxelization2Pass.h"
+#include "Pass/IndirectDiffusePass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -498,6 +499,41 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// create graph managed resources
+
+	ImageViewHandle albedoImageViewHandle;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Albedo Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+		albedoImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle normalImageViewHandle;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Normals Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle2 = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
@@ -959,26 +995,39 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// light gbuffer
-	LightingPass::Data lightingPassData2;
-	lightingPassData2.m_passRecordContext = &passRecordContext;
-	lightingPassData2.m_ssao = g_ssaoEnabled;
-	lightingPassData2.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	lightingPassData2.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	lightingPassData2.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	lightingPassData2.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
-	lightingPassData2.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-	lightingPassData2.m_depthImageHandle = depthImageViewHandle;
-	lightingPassData2.m_uvImageHandle = uvImageViewHandle;
-	lightingPassData2.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-	lightingPassData2.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-	lightingPassData2.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-	lightingPassData2.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	lightingPassData2.m_occlusionImageHandle = gtaoImageViewHandle;
-	lightingPassData2.m_resultImageHandle = lightImageViewHandle;
-	lightingPassData2.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
-	lightingPassData2.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+	LightingPass::Data lightingPassData;
+	lightingPassData.m_passRecordContext = &passRecordContext;
+	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer.getBuffer(), 0, m_renderResources->m_materialBuffer.getSize() };
+	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	lightingPassData.m_depthImageHandle = depthImageViewHandle;
+	lightingPassData.m_uvImageHandle = uvImageViewHandle;
+	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	lightingPassData.m_resultImageHandle = lightImageViewHandle;
+	lightingPassData.m_albedoImageHandle = albedoImageViewHandle;
+	lightingPassData.m_normalImageHandle = normalImageViewHandle;
 
-	LightingPass::addToGraph(graph, lightingPassData2);
+	LightingPass::addToGraph(graph, lightingPassData);
+
+
+	// indirect diffuse
+	IndirectDiffusePass::Data indirectDiffusePassData;
+	indirectDiffusePassData.m_passRecordContext = &passRecordContext;
+	indirectDiffusePassData.m_ssao = g_ssaoEnabled;
+	indirectDiffusePassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
+	indirectDiffusePassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+	indirectDiffusePassData.m_depthImageHandle = depthImageViewHandle;
+	indirectDiffusePassData.m_albedoImageHandle = albedoImageViewHandle;
+	indirectDiffusePassData.m_normalImageHandle = normalImageViewHandle;
+	indirectDiffusePassData.m_occlusionImageHandle = gtaoImageViewHandle;
+	indirectDiffusePassData.m_resultImageHandle = lightImageViewHandle;
+
+	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
 
 
 	// brick voxels

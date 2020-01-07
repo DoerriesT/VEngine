@@ -10,13 +10,10 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_ssao;
 			VkDescriptorBufferInfo m_directionalLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightDataBufferInfo;
 			VkDescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
-			ImageViewHandle m_irradianceVolumeImageHandle;
-			ImageViewHandle m_irradianceVolumeDepthImageHandle;
 			BufferViewHandle m_pointLightBitMaskBufferHandle;
 			ImageViewHandle m_depthImageHandle;
 			ImageViewHandle m_uvImageHandle;
@@ -24,8 +21,9 @@ namespace VEngine
 			ImageViewHandle m_ddxyRotMaterialIdImageHandle;
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
-			ImageViewHandle m_occlusionImageHandle;
 			ImageViewHandle m_resultImageHandle;
+			ImageViewHandle m_albedoImageHandle;
+			ImageViewHandle m_normalImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
