@@ -72,18 +72,15 @@ vec2 texCoordFromDir(vec3 dir, ivec3 probeCoord, int cascade, int probeSideLengt
 
 vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpaceNormal, const vec3 worldSpaceViewDir, const int cascade)
 {
-	const float gridScale = cGridBaseScale / (1 << cascade);
-	vec3 pointGridCoord = worldSpacePos * gridScale;
-	ivec3 baseCoord = ivec3(floor(pointGridCoord));
-	
 	vec4 sum = vec4(0.0);
 	for (int i = 0; i < 8; ++i)
 	{
-		ivec3 probeGridCoord = baseCoord + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
-		vec3 trilinear =  1.0 - abs(vec3(probeGridCoord) - pointGridCoord);
+		vec3 pointGridCoord = worldSpacePos * (cGridBaseScale / (1 << cascade));
+		vec3 probeGridCoord = floor(pointGridCoord) + (ivec3(i, i >> 1, i >> 2) & ivec3(1));
+		vec3 trilinear =  1.0 - abs(probeGridCoord - pointGridCoord);
 		float weight = 1.0;
 		
-		const vec3 trueDirToProbe = vec3(probeGridCoord) - pointGridCoord;
+		const vec3 trueDirToProbe = probeGridCoord - pointGridCoord;
 		const bool probeInPoint = dot(trueDirToProbe, trueDirToProbe) < 1e-6;
 		
 		// smooth backface test
@@ -92,12 +89,12 @@ vec3 sampleIrradianceVolumeCascade(const vec3 worldSpacePos, const vec3 worldSpa
 		}
 		
 		const vec3 gridSize = vec3(cGridWidth, cGridHeight, cGridDepth);
-		const ivec3 wrappedProbeGridCoord = ivec3(fract((probeGridCoord) / vec3(gridSize)) * gridSize);
+		const ivec3 wrappedProbeGridCoord = ivec3(fract(probeGridCoord / vec3(gridSize)) * gridSize);
 		
 		// moment visibility test
 		if (!probeInPoint)
 		{
-			vec3 worldSpaceProbePos = vec3(probeGridCoord) / gridScale;
+			vec3 worldSpaceProbePos = probeGridCoord * (cGridBaseScale * (1 << cascade));
 			vec3 biasedProbeToPoint = worldSpacePos - worldSpaceProbePos + (worldSpaceNormal + 3.0 * worldSpaceViewDir) * 0.3;
 			vec3 dir = normalize(biasedProbeToPoint);
 			vec2 texCoord = texCoordFromDir(dir, wrappedProbeGridCoord, int(cascade), int(cDepthProbeSideLength));
@@ -156,13 +153,12 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 	{
 		// calculate coordinate in world space fixed coordinate system (scaled to voxel size)
 		vec3 gridPos = worldSpacePos * currentGridScale;
-		ivec3 coord = ivec3(floor(gridPos));
-		ivec3 offset = ivec3(round(camPos * currentGridScale) - (gridSize / 2));
+		vec3 offset = round(camPos * currentGridScale) - (gridSize / 2);
 
 		// if coordinate is inside grid, we found the correct cascade
-		if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset - 1)))
+		if (all(greaterThanEqual(gridPos, offset)) && all(lessThan(gridPos, gridSize + offset)))
 		{
-			const float falloffStart = 0.5;
+			const float falloffStart = 0.25;
 			vec3 smoothOffset = camPos * currentGridScale - (gridSize / 2) - 0.5;
 			vec3 relativeCoord = clamp(abs(((gridPos - smoothOffset) / vec3(gridSize)) * 2.0 - 1.0), 0.0, 1.0);
 			float minDistToBorder = 1.0 - max(relativeCoord.x, max(relativeCoord.y, relativeCoord.z));
@@ -172,18 +168,21 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 		currentGridScale *= 0.5;
 	}
 	
-	vec3 irradiance = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex);
-	if (cascadeWeight < 1.0)
+	if (cascadeIndex < cCascades)
 	{
-		vec3 irradiance2 = vec3(0.18);
-		if ((cascadeIndex + 1) < cCascades)
+		vec3 irradiance = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex);
+		if (cascadeWeight < 1.0)
 		{
-			irradiance2 = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex + 1);
+			vec3 irradiance2 = vec3(0.18);
+			if ((cascadeIndex + 1) < cCascades)
+			{
+				irradiance2 = sampleIrradianceVolumeCascade(worldSpacePos, worldSpaceNormal, worldSpaceViewDir, cascadeIndex + 1);
+			}
+			irradiance = mix(irradiance2, irradiance, cascadeWeight);
 		}
-		irradiance = mix(irradiance2, irradiance, cascadeWeight);
+		return irradiance;
 	}
-	
-	return irradiance;
+	return vec3(0.18);
 }
 
 vec3 accurateSRGBToLinear(in vec3 sRGBCol)
@@ -206,21 +205,19 @@ void main()
 	{
 		return;
 	}
-	
-	const vec3 albedo = accurateSRGBToLinear(texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb);
-	const vec3 N = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0).xyz;
-#if SSAO_ENABLED
-	const float visibility = texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
-#else 
-	const float visibility = 1.0;
-#endif // SSAO_ENABLED
 
 	// view space position
 	const vec4 clipSpacePosition = vec4(vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight)  * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition4 = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
 	const vec3 viewSpacePos = viewSpacePosition4.xyz / viewSpacePosition4.w;
+	const vec3 N = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0).xyz;
 	
-	const vec3 irradiance = sampleIrradianceVolume(viewSpacePos, N) * albedo * visibility * (1.0 / PI);
+	vec3 irradiance = sampleIrradianceVolume(viewSpacePos, N) * (1.0 / PI);
+	irradiance *= accurateSRGBToLinear(texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb);
+#if SSAO_ENABLED
+	irradiance *=  texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+#endif // SSAO_ENABLED
+	
 	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(irradiance + lit, 1.0));
 }

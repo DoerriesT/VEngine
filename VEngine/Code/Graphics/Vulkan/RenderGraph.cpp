@@ -502,7 +502,7 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 					{
 						// set image barrier values
 						imageBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
-						imageBarrier.dstAccessMask = firstUsageStateInfo.m_accessMask;
+						imageBarrier.dstAccessMask = 0;// firstUsageStateInfo.m_accessMask;
 						imageBarrier.oldLayout = prevUsageInfo.m_stateInfo.m_layout;
 						imageBarrier.newLayout = firstUsageStateInfo.m_layout;
 						imageBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
@@ -514,10 +514,10 @@ void VEngine::RenderGraph::createSynchronization(ResourceViewHandle finalResourc
 					else
 					{
 						// set buffer barrier values
-						bufferBarrier.srcAccessMask = imageBarrier.srcAccessMask;
-						bufferBarrier.dstAccessMask = imageBarrier.dstAccessMask;
-						bufferBarrier.srcQueueFamilyIndex = imageBarrier.srcQueueFamilyIndex;
-						bufferBarrier.dstQueueFamilyIndex = imageBarrier.dstQueueFamilyIndex;
+						bufferBarrier.srcAccessMask = prevUsageInfo.m_stateInfo.m_writeAccess ? prevUsageInfo.m_stateInfo.m_accessMask : 0;
+						bufferBarrier.dstAccessMask = 0;// firstUsageStateInfo.m_accessMask;
+						bufferBarrier.srcQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(prevUsageInfo.m_queue);
+						bufferBarrier.dstQueueFamilyIndex = resDesc.m_concurrent ? VK_QUEUE_FAMILY_IGNORED : getQueueFamilyIndex(firstUsageQueue);
 
 						m_externalReleaseBufferBarriers[queueIdx].push_back(bufferBarrier);
 					}
