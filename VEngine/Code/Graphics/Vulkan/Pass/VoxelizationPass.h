@@ -24,6 +24,7 @@ namespace VEngine
 			ImageViewHandle m_voxelSceneImageHandle;
 			ImageViewHandle m_voxelSceneOpacityImageHandle;
 			ImageViewHandle m_shadowImageViewHandle;
+			ImageViewHandle m_irradianceVolumeImageHandles[3];
 			VkDescriptorBufferInfo m_lightDataBufferInfo;
 			VkDescriptorBufferInfo m_shadowMatricesBufferInfo;
 		};

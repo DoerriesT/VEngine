@@ -36,6 +36,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_vert.vert -o voxelDebug_ve
 glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_frag.frag -o voxelDebug_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_vert.vert -o irradianceVolumeDebug_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_frag.frag -o irradianceVolumeDebug_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DAMBIENT_CUBE=1 irradianceVolumeDebug_frag.frag -o irradianceVolumeDebug_AMBIENT_CUBE_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug2_comp.comp -o voxelDebug2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c fillLightingQueues_comp.comp -o fillLightingQueues_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c updateQueueProbability_comp.comp -o updateQueueProbability_comp.spv
@@ -61,5 +62,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching2_comp.com
 glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization2_comp.comp -o screenSpaceVoxelization2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuse_comp.comp -o indirectDiffuse_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp.comp -o indirectDiffuse_SSAO_ENABLED_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuseAC_comp.comp -o indirectDiffuseAC_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuseAC_comp.comp -o indirectDiffuseAC_SSAO_ENABLED_comp.spv
 
 pause

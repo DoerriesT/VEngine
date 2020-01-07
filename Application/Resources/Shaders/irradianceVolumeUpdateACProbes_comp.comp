@@ -125,9 +125,9 @@ void main()
 		result[i] = vec4(0.0);
 	}
 	
-	for (uint i = 0; i < 64; ++i)
+	for (uint i = 0; i < IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT; ++i)
 	{
-		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), 64.0));
+		const vec3 rayDir = normalize(randomOrientation() * sphericalFibonacci(float(i), IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT));
 		const vec4 rayResult = texelFetch(uRayImage, ivec2(i, gl_GlobalInvocationID.x), 0);
 		float weight = 0.0;
 

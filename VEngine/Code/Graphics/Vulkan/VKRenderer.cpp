@@ -54,6 +54,7 @@
 #include "Pass/IrradianceVolumeRayMarching2Pass.h"
 #include "Pass/ScreenSpaceVoxelization2Pass.h"
 #include "Pass/IndirectDiffusePass.h"
+#include "Pass/IndirectDiffuseACPass.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -414,7 +415,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		freeBricksBufferViewHandle = graph.createBufferView({ desc.m_name, bufferHandle, 0, desc.m_size });
 	}
 
-	/*ImageViewHandle irradianceVolumeImageViewHandles[3];
+	ImageViewHandle irradianceVolumeImageViewHandles[3];
 	{
 		ImageDescription desc = {};
 		desc.m_concurrent = false;
@@ -439,7 +440,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_name = "Irradiance Volume Z-Axis Image";
 		imageHandle = graph.importImage(desc, m_renderResources->m_irradianceVolumeZAxisImage.getImage(), &m_renderResources->m_irradianceVolumeZAxisImageQueue, &m_renderResources->m_irradianceVolumeZAxisImageResourceState);
 		irradianceVolumeImageViewHandles[2] = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
-	}*/
+	}
 
 	ImageViewHandle irradianceVolumeAgeImageViewHandle;
 	{
@@ -1027,7 +1028,23 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectDiffusePassData.m_occlusionImageHandle = gtaoImageViewHandle;
 	indirectDiffusePassData.m_resultImageHandle = lightImageViewHandle;
 
-	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
+	//IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
+
+
+	// indirect diffuse AC
+	IndirectDiffuseACPass::Data indirectDiffuseACPassData;
+	indirectDiffuseACPassData.m_passRecordContext = &passRecordContext;
+	indirectDiffuseACPassData.m_ssao = g_ssaoEnabled;
+	indirectDiffuseACPassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	indirectDiffuseACPassData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	indirectDiffuseACPassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
+	indirectDiffuseACPassData.m_depthImageHandle = depthImageViewHandle;
+	indirectDiffuseACPassData.m_albedoImageHandle = albedoImageViewHandle;
+	indirectDiffuseACPassData.m_normalImageHandle = normalImageViewHandle;
+	indirectDiffuseACPassData.m_occlusionImageHandle = gtaoImageViewHandle;
+	indirectDiffuseACPassData.m_resultImageHandle = lightImageViewHandle;
+
+	IndirectDiffuseACPass::addToGraph(graph, indirectDiffuseACPassData);
 
 
 	// brick voxels
@@ -1076,7 +1093,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 			}
 		}
 
-		if (aabbCount)
+		//if (aabbCount)
 		{
 			ClearBricksPass::Data clearBricksPassData;
 			clearBricksPassData.m_passRecordContext = &passRecordContext;
@@ -1169,7 +1186,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		ssVoxelPass2Data.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
 		ssVoxelPass2Data.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
 
-		ScreenSpaceVoxelization2Pass::addToGraph(graph, ssVoxelPass2Data);
+		//ScreenSpaceVoxelization2Pass::addToGraph(graph, ssVoxelPass2Data);
 
 		// copy allocated brick count to readback buffer
 		ReadBackCopyPass::Data readBackCopyPassData;
@@ -1202,7 +1219,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	clearVoxelsPassData.m_clearImageHandle = voxelSceneOpacityImageViewHandle;
 	clearVoxelsPassData.m_clearMode = ClearVoxelsPass::Data::VOXEL_SCENE;
 
-	//ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
+	ClearVoxelsPass::addToGraph(graph, clearVoxelsPassData);
 
 
 	ClearVoxelsPass::Data clearVolumePassData;
@@ -1229,6 +1246,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	voxelizationPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	voxelizationPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
 	voxelizationPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	voxelizationPassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	voxelizationPassData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	voxelizationPassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 
 	//VoxelizationPass::addToGraph(graph, voxelizationPassData);
 
@@ -1248,10 +1268,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssVoxelPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	ssVoxelPassData.m_voxelSceneImageHandle = voxelSceneImageViewHandle;
 	ssVoxelPassData.m_voxelSceneOpacityImageHandle = voxelSceneOpacityImageViewHandle;
-	//ssVoxelPassData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
-	//ssVoxelPassData.m_irradianceVolumeDepthImageHandle = irradianceVolumeDepthImageViewHandle;
+	ssVoxelPassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	ssVoxelPassData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	ssVoxelPassData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 
-	//ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
+	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 
 
 	UpdateQueueProbabilityPass::Data updateQueueProbabilityPassData;
@@ -1332,7 +1353,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IrradianceVolumeUpdateProbesPass::addToGraph(graph, irradianceVolumeUpdateProbesPassData);
 
 
-	/*IrradianceVolumeUpdateACProbesPass::Data irradianceVolumeUpdateACProbesPassData;
+	IrradianceVolumeUpdateACProbesPass::Data irradianceVolumeUpdateACProbesPassData;
 	irradianceVolumeUpdateACProbesPassData.m_passRecordContext = &passRecordContext;
 	irradianceVolumeUpdateACProbesPassData.m_ageImageHandle = irradianceVolumeAgeImageViewHandle;
 	irradianceVolumeUpdateACProbesPassData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
@@ -1341,7 +1362,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	irradianceVolumeUpdateACProbesPassData.m_rayMarchingResultImageHandle = rayMarchingResultImageViewHandle;
 	irradianceVolumeUpdateACProbesPassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
 
-	IrradianceVolumeUpdateACProbesPass::addToGraph(graph, irradianceVolumeUpdateACProbesPassData);*/
+	IrradianceVolumeUpdateACProbesPass::addToGraph(graph, irradianceVolumeUpdateACProbesPassData);
 
 
 	VoxelDebugPass::Data voxelDebugData;
@@ -1374,9 +1395,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IrradianceVolumeDebugPass::Data irradianceVolumeDebugData;
 	irradianceVolumeDebugData.m_passRecordContext = &passRecordContext;
 	irradianceVolumeDebugData.m_cascadeIndex = g_debugVoxelCascadeIndex;
-	irradianceVolumeDebugData.m_showAge = g_giVoxelDebugMode == 4;
+	irradianceVolumeDebugData.m_mode = g_giVoxelDebugMode == 4 ? IrradianceVolumeDebugPass::Data::PROBE_AGE : IrradianceVolumeDebugPass::Data::AMBIENT_CUBE;
 	irradianceVolumeDebugData.m_irradianceVolumeImageHandle = irradianceVolumeImageViewHandle;
 	irradianceVolumeDebugData.m_irradianceVolumeAgeImageHandle = irradianceVolumeAgeImageViewHandle;
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[0] = irradianceVolumeImageViewHandles[0];
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[1] = irradianceVolumeImageViewHandles[1];
+	irradianceVolumeDebugData.m_irradianceVolumeImageHandles[2] = irradianceVolumeImageViewHandles[2];
 	irradianceVolumeDebugData.m_colorImageHandle = lightImageViewHandle;
 	irradianceVolumeDebugData.m_depthImageHandle = depthImageViewHandle;
 

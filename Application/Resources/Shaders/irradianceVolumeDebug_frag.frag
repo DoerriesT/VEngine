@@ -2,13 +2,21 @@
 
 #include "irradianceVolumeDebug_bindings.h"
 
+#ifndef AMBIENT_CUBE
+#define AMBIENT_CUBE 0
+#endif // AMBIENT_CUBE
+
 layout(constant_id = IRRADIANCE_VOLUME_WIDTH_CONST_ID) const uint cGridWidth = 64;
 layout(constant_id = IRRADIANCE_VOLUME_HEIGHT_CONST_ID) const uint cGridHeight = 32;
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_CONST_ID) const uint cGridDepth = 64;
 layout(constant_id = IRRADIANCE_VOLUME_CASCADES_CONST_ID) const uint cVolumeCascades = 3;
 layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cProbeSideLength = 8;
 
+#if AMBIENT_CUBE
+layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler3D uIrradianceVolumeImages[3];
+#else
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
+#endif // AMBIENT_CUBE
 layout(set = AGE_IMAGE_SET, binding = AGE_IMAGE_BINDING) uniform sampler3D uAgeImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -21,19 +29,21 @@ layout(location = 1) in vec3 vNormal;
 
 layout(location = 0) out vec4 oColor;
 
-//vec3 sampleAmbientCube(vec3 N, vec3 tc)
-//{
-//	vec3 nSquared = N * N;
-//	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
-//	tc = tc.xzy;
-//	tc.z *= 0.5;
-//	vec3 tcz = tc.zzz + isNegative;
-//	tcz = tcz * (1.0 / cVolumeCascades) + float(uPushConsts.cascadeIndex) / cVolumeCascades;
-//	
-//	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
-//			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
-//			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
-//}
+#if AMBIENT_CUBE
+vec3 sampleAmbientCube(vec3 N, vec3 tc)
+{
+	vec3 nSquared = N * N;
+	vec3 isNegative = mix(vec3(0.0), vec3(0.5), lessThan(N, vec3(0.0)));
+	tc = tc.xzy;
+	tc.z *= 0.5;
+	vec3 tcz = tc.zzz + isNegative;
+	tcz = tcz * (1.0 / cVolumeCascades) + float(uPushConsts.cascadeIndex) / cVolumeCascades;
+	
+	return nSquared.x * textureLod(uIrradianceVolumeImages[0], vec3(tc.xy, tcz.x), 0).rgb +
+			nSquared.y * textureLod(uIrradianceVolumeImages[1], vec3(tc.xy, tcz.y), 0).rgb +
+			nSquared.z * textureLod(uIrradianceVolumeImages[2], vec3(tc.xy, tcz.z), 0).rgb;
+}
+#endif // AMBIENT_CUBE
 
 float signNotZero(in float k) 
 {
@@ -75,9 +85,12 @@ void main()
 	}
 	else
 	{
+#if !AMBIENT_CUBE
 		vec2 texcoord = texCoordFromDir(normalize(vNormal), ivec3(vCoord * ivec3(cGridWidth, cGridHeight, cGridDepth)), int(uPushConsts.cascadeIndex));
 		oColor = vec4(textureLod(uIrradianceVolumeImage, texcoord, 0).rgb, 1.0);
-		//oColor = vec4(sampleAmbientCube(normalize(vNormal), vCoord), 1.0);
+#else
+		oColor = vec4(sampleAmbientCube(normalize(vNormal), vCoord), 1.0);
+#endif // AMBIENT_CUBE
 	}
 }
 

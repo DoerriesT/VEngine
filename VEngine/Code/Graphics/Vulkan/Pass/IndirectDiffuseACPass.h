@@ -5,24 +5,18 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace IrradianceVolumeDebugPass
+	namespace IndirectDiffuseACPass
 	{
 		struct Data
 		{
-			enum Mode
-			{
-				OCTAHEDRON,
-				AMBIENT_CUBE,
-				PROBE_AGE
-			};
 			PassRecordContext *m_passRecordContext;
-			uint32_t m_cascadeIndex;
-			Mode m_mode;
-			ImageViewHandle m_irradianceVolumeImageHandle;
-			ImageViewHandle m_irradianceVolumeAgeImageHandle;
+			bool m_ssao;
 			ImageViewHandle m_irradianceVolumeImageHandles[3];
-			ImageViewHandle m_colorImageHandle;
 			ImageViewHandle m_depthImageHandle;
+			ImageViewHandle m_albedoImageHandle;
+			ImageViewHandle m_normalImageHandle;
+			ImageViewHandle m_occlusionImageHandle;
+			ImageViewHandle m_resultImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
