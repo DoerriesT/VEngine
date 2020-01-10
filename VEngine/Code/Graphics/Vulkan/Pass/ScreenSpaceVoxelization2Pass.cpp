@@ -5,6 +5,8 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -37,20 +39,20 @@ void VEngine::ScreenSpaceVoxelization2Pass::addToGraph(RenderGraph &graph, const
 			SpecEntry specEntries[]
 			{
 				SpecEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_passRecordContext->m_commonRenderData->m_directionalLightCount),
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
-				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
-				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
-				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
-				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
+				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (SparseVoxelBricksModule::BRICK_SIZE / float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE))),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::COLOR_BRICK_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;

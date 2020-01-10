@@ -4,6 +4,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -23,10 +24,10 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(BRICK_GRID_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_GRID_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_GRID_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
-				SpecEntry(BRICK_SCALE_CONST_ID, 1.0f / RendererConsts::BRICK_SIZE),
+				SpecEntry(BRICK_GRID_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_GRID_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_GRID_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
+				SpecEntry(BRICK_SCALE_CONST_ID, 1.0f / SparseVoxelBricksModule::BRICK_SIZE),
 			};
 			ComputePipelineDesc pipelineDesc;
 			pipelineDesc.setComputeShader("Resources/Shaders/voxelizationMark_comp.spv");
@@ -54,7 +55,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 			const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
-			float curVoxelScale = 1.0f / RendererConsts::BRICK_SIZE;
+			float curVoxelScale = 1.0f / SparseVoxelBricksModule::BRICK_SIZE;
 
 			for (uint32_t j = 0; j < data.m_instanceDataCount; ++j)
 			{
@@ -66,7 +67,7 @@ void VEngine::VoxelizationMarkPass::addToGraph(RenderGraph &graph, const Data &d
 				pushConsts.indexCount = subMeshInfo.m_indexCount;
 				pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 				pushConsts.transformIndex = instanceData.m_transformIndex;
-				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2.0f);
+				pushConsts.gridOffset = round(camPos * curVoxelScale) - glm::floor(glm::vec3(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH) / 2.0f);
 
 				vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

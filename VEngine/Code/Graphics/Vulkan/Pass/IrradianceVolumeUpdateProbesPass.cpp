@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 namespace
 {
@@ -27,12 +28,12 @@ void VEngine::IrradianceVolumeUpdateProbesPass::addToGraph(RenderGraph &graph, c
 		{
 			SpecEntry specEntries[]
 			{
-				SpecEntry(GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
-				SpecEntry(CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(PROBE_SIDE_LENGTH_CONST_ID, data.m_depth ? RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH : RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
+				SpecEntry(GRID_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(GRID_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(GRID_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(PROBE_SIDE_LENGTH_CONST_ID, data.m_depth ? DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH : DiffuseGIProbesModule::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;

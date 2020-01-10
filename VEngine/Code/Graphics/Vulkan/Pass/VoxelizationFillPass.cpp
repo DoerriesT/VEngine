@@ -10,6 +10,8 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/DeferredObjectDeleter.h"
 #include "Utility/Utility.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -33,7 +35,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 
 	graph.addPass("Voxelization Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
-			const uint32_t voxelGridResolution = glm::max(glm::max(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT), RendererConsts::BRICK_VOLUME_DEPTH) * RendererConsts::BINARY_VIS_BRICK_SIZE;
+			const uint32_t voxelGridResolution = glm::max(glm::max(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT), SparseVoxelBricksModule::BRICK_VOLUME_DEPTH) * SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE;
 
 			// begin renderpass
 			VkRenderPass renderPass;
@@ -77,36 +79,36 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			SpecEntry fragmentShaderSpecEntries[]
 			{
 				SpecEntry(DIRECTIONAL_LIGHT_COUNT_CONST_ID, data.m_passRecordContext->m_commonRenderData->m_directionalLightCount),
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
-				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
-				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
-				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
-				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
+				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (SparseVoxelBricksModule::BRICK_SIZE / float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE))),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::COLOR_BRICK_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(IRRADIANCE_VOLUME_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH),
 			};
 
 			SpecEntry geomShaderSpecEntries[]
 			{
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
-				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
-				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
+				SpecEntry(INV_VOXEL_BRICK_SIZE_CONST_ID, 1.0f / SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (SparseVoxelBricksModule::BRICK_SIZE / float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE))),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::COLOR_BRICK_SIZE),
 			};
 
 			SpecEntry vertShaderSpecEntries[]
 			{
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / float(RendererConsts::BINARY_VIS_BRICK_SIZE))),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (SparseVoxelBricksModule::BRICK_SIZE / float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE))),
 			};
 
 			VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -174,7 +176,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 			const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
-			float curVoxelScale = 1.0f / RendererConsts::BRICK_SIZE;
+			float curVoxelScale = 1.0f / SparseVoxelBricksModule::BRICK_SIZE;
 
 			for (uint32_t j = 0; j < data.m_instanceDataCount; ++j)
 			{
@@ -183,7 +185,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 
 				PushConsts pushConsts;
 				//pushConsts.superSamplingFactor = superSamplingFactor;
-				pushConsts.gridOffset = (round(camPos * curVoxelScale) - glm::floor(glm::vec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH) / 2.0f)) * float(RendererConsts::BINARY_VIS_BRICK_SIZE);
+				pushConsts.gridOffset = (round(camPos * curVoxelScale) - glm::floor(glm::vec3(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH) / 2.0f)) * float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE);
 				pushConsts.invGridResolution = 1.0f / voxelGridResolution;
 				pushConsts.transformIndex = instanceData.m_transformIndex;
 				pushConsts.materialIndex = instanceData.m_materialIndex;

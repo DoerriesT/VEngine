@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -16,8 +17,8 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	const glm::vec3 camPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 	const glm::vec3 prevCamPos = data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3];
-	const glm::ivec3 cameraCoord = ivec3(round(camPos / RendererConsts::BRICK_SIZE));
-	const glm::ivec3 prevCameraCoord = ivec3(round(prevCamPos / RendererConsts::BRICK_SIZE));
+	const glm::ivec3 cameraCoord = ivec3(round(camPos / SparseVoxelBricksModule::BRICK_SIZE));
+	const glm::ivec3 prevCameraCoord = ivec3(round(prevCamPos / SparseVoxelBricksModule::BRICK_SIZE));
 	const glm::ivec3 diff = cameraCoord - prevCameraCoord;
 
 	if (diff == glm::ivec3(0))
@@ -38,9 +39,9 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -68,12 +69,12 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 			PushConsts pushConsts;
-			pushConsts.cameraCoord = ivec4(round(data.m_passRecordContext->m_commonRenderData->m_cameraPosition / RendererConsts::BRICK_SIZE));
-			pushConsts.diff = pushConsts.cameraCoord - ivec4(round(data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3] / RendererConsts::BRICK_SIZE));
+			pushConsts.cameraCoord = ivec4(round(data.m_passRecordContext->m_commonRenderData->m_cameraPosition / SparseVoxelBricksModule::BRICK_SIZE));
+			pushConsts.diff = pushConsts.cameraCoord - ivec4(round(data.m_passRecordContext->m_commonRenderData->m_prevInvViewMatrix[3] / SparseVoxelBricksModule::BRICK_SIZE));
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::BRICK_VOLUME_WIDTH + 7) / 8, (RendererConsts::BRICK_VOLUME_HEIGHT + 7) / 8, RendererConsts::BRICK_VOLUME_DEPTH);
+			vkCmdDispatch(cmdBuf, (SparseVoxelBricksModule::BRICK_VOLUME_WIDTH + 7) / 8, (SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT + 7) / 8, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH);
 
 		}, true);
 }

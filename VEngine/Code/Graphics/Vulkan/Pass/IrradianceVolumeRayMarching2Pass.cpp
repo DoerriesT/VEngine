@@ -5,6 +5,8 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -29,20 +31,20 @@ void VEngine::IrradianceVolumeRayMarching2Pass::addToGraph(RenderGraph &graph, c
 		{
 			SpecEntry specEntries[]
 			{
-				SpecEntry(GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
-				SpecEntry(CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
-				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH * RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT * RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH * RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (RendererConsts::BRICK_SIZE / RendererConsts::BINARY_VIS_BRICK_SIZE)),
-				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, RendererConsts::BINARY_VIS_BRICK_SIZE),
-				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, RendererConsts::COLOR_BRICK_SIZE),
+				SpecEntry(GRID_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(GRID_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(GRID_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
+				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH * SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT * SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH * SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(VOXEL_SCALE_CONST_ID, 1.0f / (SparseVoxelBricksModule::BRICK_SIZE / SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE)),
+				SpecEntry(BIN_VIS_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE),
+				SpecEntry(COLOR_BRICK_SIZE_CONST_ID, SparseVoxelBricksModule::COLOR_BRICK_SIZE),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -73,13 +75,13 @@ void VEngine::IrradianceVolumeRayMarching2Pass::addToGraph(RenderGraph &graph, c
 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-			const ivec3 gridSize = ivec3(RendererConsts::BRICK_VOLUME_WIDTH, RendererConsts::BRICK_VOLUME_HEIGHT, RendererConsts::BRICK_VOLUME_DEPTH);
-			const float voxelScale = 1.0f / RendererConsts::BRICK_SIZE;
+			const ivec3 gridSize = ivec3(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH);
+			const float voxelScale = 1.0f / SparseVoxelBricksModule::BRICK_SIZE;
 
 			PushConsts pushConsts;
 			pushConsts.cameraPosition = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 			pushConsts.time = data.m_passRecordContext->m_commonRenderData->m_time;
-			pushConsts.voxelGridOffset = (ivec3(round(vec3(data.m_passRecordContext->m_commonRenderData->m_cameraPosition) * voxelScale)) - (gridSize / 2)) * int32_t(RendererConsts::BINARY_VIS_BRICK_SIZE);
+			pushConsts.voxelGridOffset = (ivec3(round(vec3(data.m_passRecordContext->m_commonRenderData->m_cameraPosition) * voxelScale)) - (gridSize / 2)) * int32_t(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE);
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

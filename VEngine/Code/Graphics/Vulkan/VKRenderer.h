@@ -26,6 +26,8 @@ namespace VEngine
 	struct SubMesh;
 	struct BVHNode;
 	struct Triangle;
+	class DiffuseGIProbesModule;
+	class SparseVoxelBricksModule;
 
 	class VKRenderer
 	{
@@ -58,6 +60,8 @@ namespace VEngine
 		std::unique_ptr<VKMeshManager> m_meshManager;
 		std::unique_ptr<VKSwapChain> m_swapChain;
 		std::unique_ptr<RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
+		std::unique_ptr<DiffuseGIProbesModule> m_diffuseGIProbesModule;
+		std::unique_ptr<SparseVoxelBricksModule> m_sparseVoxelBricksModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 

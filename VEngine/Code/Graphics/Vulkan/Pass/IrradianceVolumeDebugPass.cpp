@@ -10,6 +10,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/DeferredObjectDeleter.h"
 #include "Utility/Utility.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 namespace
 {
@@ -23,9 +24,6 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 	{
 		{ResourceViewHandle(data.m_irradianceVolumeImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_irradianceVolumeAgeImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
-		{ ResourceViewHandle(data.m_irradianceVolumeImageHandles[0]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
-		{ ResourceViewHandle(data.m_irradianceVolumeImageHandles[1]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
-		{ ResourceViewHandle(data.m_irradianceVolumeImageHandles[2]), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 		{ResourceViewHandle(data.m_colorImageHandle), ResourceState::WRITE_ATTACHMENT},
 	};
@@ -88,25 +86,25 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 			// create pipeline description
 			SpecEntry vertexShaderSpecEntries[]
 			{
-				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
 			};
 
 			SpecEntry fragmentShaderSpecEntries[]
 			{
-				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
+				SpecEntry(IRRADIANCE_VOLUME_CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(IRRADIANCE_VOLUME_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(IRRADIANCE_VOLUME_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(IRRADIANCE_VOLUME_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH),
 			};
 
 			VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
 			GraphicsPipelineDesc pipelineDesc;
 			pipelineDesc.setVertexShader("Resources/Shaders/irradianceVolumeDebug_vert.spv", sizeof(vertexShaderSpecEntries) / sizeof(vertexShaderSpecEntries[0]), vertexShaderSpecEntries);
-			pipelineDesc.setFragmentShader(data.m_mode == Data::AMBIENT_CUBE ?"Resources/Shaders/irradianceVolumeDebug_AMBIENT_CUBE_frag.spv" : "Resources/Shaders/irradianceVolumeDebug_frag.spv", sizeof(fragmentShaderSpecEntries) / sizeof(fragmentShaderSpecEntries[0]), fragmentShaderSpecEntries);
+			pipelineDesc.setFragmentShader("Resources/Shaders/irradianceVolumeDebug_frag.spv", sizeof(fragmentShaderSpecEntries) / sizeof(fragmentShaderSpecEntries[0]), fragmentShaderSpecEntries);
 			pipelineDesc.setVertexBindingDescription({ 0, sizeof(float) * 3, VK_VERTEX_INPUT_RATE_VERTEX });
 			pipelineDesc.setVertexAttributeDescription({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 });
 			pipelineDesc.setPolygonModeCullMode(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -125,17 +123,7 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 
 				VkSampler linearSamplerRepeat = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX];
 
-				if (data.m_mode == Data::AMBIENT_CUBE)
-				{
-					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[0], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 0);
-					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[1], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 1);
-					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandles[2], ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING, 2);
-				}
-				else
-				{
-					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING);
-				}
-				
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeAgeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), AGE_IMAGE_BINDING);
 
 				writer.commit();
@@ -168,14 +156,14 @@ void VEngine::IrradianceVolumeDebugPass::addToGraph(RenderGraph &graph, const Da
 
 			PushConsts pushConsts;
 			pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-			pushConsts.scale = RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE * static_cast<float>(1 << data.m_cascadeIndex);
+			pushConsts.scale = DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE * static_cast<float>(1 << data.m_cascadeIndex);
 			pushConsts.cameraPosition = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 			pushConsts.cascadeIndex = data.m_cascadeIndex;
-			pushConsts.showAge = data.m_mode == Data::PROBE_AGE ? 1 : 0;
+			pushConsts.showAge = data.m_showAge ? 1 : 0;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDrawIndexed(cmdBuf, 240, RendererConsts::IRRADIANCE_VOLUME_WIDTH *RendererConsts::IRRADIANCE_VOLUME_HEIGHT *RendererConsts::IRRADIANCE_VOLUME_DEPTH, 0, 0, 0);
+			vkCmdDrawIndexed(cmdBuf, 240, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH * DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT * DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH, 0, 0, 0);
 
 			vkCmdEndRenderPass(cmdBuf);
 		});

@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/SparseVoxelBricksModule.h"
 
 namespace
 {
@@ -26,9 +27,9 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, RendererConsts::BRICK_VOLUME_WIDTH),
-				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, RendererConsts::BRICK_VOLUME_HEIGHT),
-				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, RendererConsts::BRICK_VOLUME_DEPTH),
+				SpecEntry(BRICK_VOLUME_WIDTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_WIDTH),
+				SpecEntry(BRICK_VOLUME_HEIGHT_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT),
+				SpecEntry(BRICK_VOLUME_DEPTH_CONST_ID, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -54,7 +55,7 @@ void VEngine::VoxelizationAllocatePass::addToGraph(RenderGraph &graph, const Dat
 
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::BRICK_VOLUME_WIDTH + 7) / 8, (RendererConsts::BRICK_VOLUME_HEIGHT + 7) / 8, RendererConsts::BRICK_VOLUME_DEPTH);
+			vkCmdDispatch(cmdBuf, (SparseVoxelBricksModule::BRICK_VOLUME_WIDTH + 7) / 8, (SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT + 7) / 8, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH);
 
 		}, true);
 }

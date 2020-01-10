@@ -22,26 +22,6 @@ namespace VEngine
 		constexpr uint32_t SAMPLER_LINEAR_REPEAT_IDX = 1;
 		constexpr uint32_t SAMPLER_POINT_CLAMP_IDX = 2;
 		constexpr uint32_t SAMPLER_POINT_REPEAT_IDX = 3;
-		constexpr uint32_t VOXEL_SCENE_CASCADES = 3;
-		constexpr uint32_t VOXEL_SCENE_WIDTH = 128;
-		constexpr uint32_t VOXEL_SCENE_HEIGHT = 64;
-		constexpr uint32_t VOXEL_SCENE_DEPTH = 128;
-		constexpr float VOXEL_SCENE_BASE_SIZE = 0.25f;
-		constexpr uint32_t IRRADIANCE_VOLUME_CASCADES = 3;
-		constexpr uint32_t IRRADIANCE_VOLUME_WIDTH = 32;
-		constexpr uint32_t IRRADIANCE_VOLUME_HEIGHT = 16;
-		constexpr uint32_t IRRADIANCE_VOLUME_DEPTH = 32;
-		constexpr float IRRADIANCE_VOLUME_BASE_SIZE = 1.0f;
-		constexpr uint32_t IRRADIANCE_VOLUME_QUEUE_CAPACITY = 1024;
-		constexpr uint32_t IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH = 8;
-		constexpr uint32_t IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH = 16;
-		constexpr uint32_t BRICK_VOLUME_WIDTH = 128;
-		constexpr uint32_t BRICK_VOLUME_HEIGHT = 64;
-		constexpr uint32_t BRICK_VOLUME_DEPTH = 128;
-		constexpr float BRICK_SIZE = 1.0f;
-		constexpr uint32_t BINARY_VIS_BRICK_SIZE = 16;
-		constexpr uint32_t COLOR_BRICK_SIZE = 4;
 		constexpr float Z_BIN_DEPTH = 1.0f;
-		constexpr uint32_t IRRADIANCE_VOLUME_RAY_MARCHING_RAY_COUNT = 256;
 	}
 }

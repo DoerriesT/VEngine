@@ -12,6 +12,7 @@
 #include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Editor/Editor.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 uint32_t g_debugVoxelCascadeIndex = 0;
 uint32_t g_giVoxelDebugMode = 0;
@@ -120,7 +121,7 @@ void VEngine::Engine::start()
 			uint32_t draws = 0;
 			uint32_t totalDraws = 1;
 			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
-			const uint32_t totalProbes = RendererConsts::IRRADIANCE_VOLUME_WIDTH * RendererConsts::IRRADIANCE_VOLUME_HEIGHT * RendererConsts::IRRADIANCE_VOLUME_DEPTH * RendererConsts::IRRADIANCE_VOLUME_CASCADES;
+			const uint32_t totalProbes = DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH * DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT * DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH * DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES;
 			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", totalProbes, draws, float(draws) / totalProbes * 100.0f);
 			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
 		}

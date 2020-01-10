@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 namespace
 {
@@ -44,7 +45,7 @@ void VEngine::UpdateQueueProbabilityPass::addToGraph(RenderGraph &graph, const D
 
 			SpecEntry specEntries[]
 			{
-				SpecEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY),
+				SpecEntry(QUEUE_CAPACITY_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_QUEUE_CAPACITY),
 			};
 
 			ComputePipelineDesc pipelineDesc;

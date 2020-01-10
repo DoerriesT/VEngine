@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/VKDescriptorSetCache.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 namespace
 {
@@ -52,12 +53,12 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 			// create pipeline description
 			SpecEntry specEntries[]
 			{
-				SpecEntry(GRID_WIDTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_WIDTH),
-				SpecEntry(GRID_HEIGHT_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_HEIGHT),
-				SpecEntry(GRID_DEPTH_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / RendererConsts::IRRADIANCE_VOLUME_BASE_SIZE),
-				SpecEntry(CASCADES_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_CASCADES),
-				SpecEntry(QUEUE_CAPACITY_CONST_ID, RendererConsts::IRRADIANCE_VOLUME_QUEUE_CAPACITY),
+				SpecEntry(GRID_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
+				SpecEntry(GRID_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
+				SpecEntry(GRID_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
+				SpecEntry(GRID_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
+				SpecEntry(QUEUE_CAPACITY_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_QUEUE_CAPACITY),
 			};
 
 			ComputePipelineDesc pipelineDesc;
@@ -95,6 +96,6 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDispatch(cmdBuf, (RendererConsts::IRRADIANCE_VOLUME_WIDTH + 7) / 8, (RendererConsts::IRRADIANCE_VOLUME_HEIGHT + 7) / 8, RendererConsts::IRRADIANCE_VOLUME_DEPTH);
+			vkCmdDispatch(cmdBuf, (DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH + 7) / 8, (DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT + 7) / 8, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH);
 		}, true);
 }
