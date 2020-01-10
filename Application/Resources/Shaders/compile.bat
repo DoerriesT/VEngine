@@ -30,24 +30,13 @@ glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCreateDrawArgs_comp.c
 glslc --target-env=vulkan1.1 -O -Werror -c depthPyramid_comp.comp -o depthPyramid_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingHiZ_comp.comp -o occlusionCullingHiZ_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c buildIndexBuffer_comp.comp -o buildIndexBuffer_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization_comp.comp -o screenSpaceVoxelization_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c clearVoxels_comp.comp -o clearVoxels_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_vert.vert -o voxelDebug_vert.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug_frag.frag -o voxelDebug_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_vert.vert -o irradianceVolumeDebug_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeDebug_frag.frag -o irradianceVolumeDebug_frag.spv
-glslc --target-env=vulkan1.1 -O -Werror -c -DAMBIENT_CUBE=1 irradianceVolumeDebug_frag.frag -o irradianceVolumeDebug_AMBIENT_CUBE_frag.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelDebug2_comp.comp -o voxelDebug2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c fillLightingQueues_comp.comp -o fillLightingQueues_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c updateQueueProbability_comp.comp -o updateQueueProbability_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c lightIrradianceVolume_comp.comp -o lightIrradianceVolume_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelization_vert.vert -o voxelization_vert.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelization_geom.geom -o voxelization_geom.spv
-glslc --target-env=vulkan1.1 -O -Werror -c voxelization_frag.frag -o voxelization_frag.spv
-glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching_comp.comp -o irradianceVolumeRayMarching_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeUpdateProbes_comp.comp -o irradianceVolumeUpdateProbes_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DOUTPUT_DEPTH=1 irradianceVolumeUpdateProbes_comp.comp -o irradianceVolumeUpdateProbes_OUTPUT_DEPTH_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeUpdateACProbes_comp.comp -o irradianceVolumeUpdateACProbes_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c rayTraceTest_comp.comp -o rayTraceTest_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c sharpen_ffx_cas_comp.comp -o sharpen_ffx_cas_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c voxelizationMark_comp.comp -o voxelizationMark_comp.spv
@@ -62,7 +51,5 @@ glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching2_comp.com
 glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization2_comp.comp -o screenSpaceVoxelization2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuse_comp.comp -o indirectDiffuse_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp.comp -o indirectDiffuse_SSAO_ENABLED_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuseAC_comp.comp -o indirectDiffuseAC_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuseAC_comp.comp -o indirectDiffuseAC_SSAO_ENABLED_comp.spv
 
 pause
