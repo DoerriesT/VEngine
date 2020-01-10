@@ -28,6 +28,7 @@ namespace VEngine
 	struct Triangle;
 	class DiffuseGIProbesModule;
 	class SparseVoxelBricksModule;
+	class GTAOModule;
 
 	class VKRenderer
 	{
@@ -62,6 +63,7 @@ namespace VEngine
 		std::unique_ptr<RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
 		std::unique_ptr<DiffuseGIProbesModule> m_diffuseGIProbesModule;
 		std::unique_ptr<SparseVoxelBricksModule> m_sparseVoxelBricksModule;
+		std::unique_ptr<GTAOModule> m_gtaoModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 

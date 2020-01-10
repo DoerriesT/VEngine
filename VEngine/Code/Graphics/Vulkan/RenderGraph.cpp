@@ -1181,6 +1181,16 @@ VEngine::RenderGraph::~RenderGraph()
 
 void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution)
 {
+#ifdef _DEBUG
+	for (uint32_t i = 0; i < passResourceUsageCount; ++i)
+	{
+		// catches most false api usages
+		assert(passResourceUsages[i].m_viewHandle);
+		// not a very good test, but if the handle has a higher value than the number of views, something must be off
+		assert(size_t(passResourceUsages[i].m_viewHandle) <= m_viewDescriptions.size());
+	}
+#endif // _DEBUG
+
 	const uint16_t passIndex = static_cast<uint16_t>(m_passSubresources.size());
 
 	m_passNames.push_back(name);

@@ -10,8 +10,9 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			ImageViewHandle m_voxelSceneOpacityImageHandle;
-			ImageViewHandle m_voxelSceneImageHandle;
+			ImageViewHandle m_brickPtrImageHandle;
+			BufferViewHandle m_binVisBricksBufferHandle;
+			BufferViewHandle m_colorBricksBufferHandle;
 			ImageViewHandle m_rayMarchingResultImageHandle;
 			ImageViewHandle m_rayMarchingResultDistanceImageHandle;
 			BufferViewHandle m_queueBufferHandle;

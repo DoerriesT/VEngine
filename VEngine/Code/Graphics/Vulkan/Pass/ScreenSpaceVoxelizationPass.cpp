@@ -1,4 +1,4 @@
-#include "ScreenSpaceVoxelization2Pass.h"
+#include "ScreenSpaceVoxelizationPass.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
@@ -14,7 +14,7 @@ namespace
 #include "../../../../../Application/Resources/Shaders/screenSpaceVoxelization2_bindings.h"
 }
 
-void VEngine::ScreenSpaceVoxelization2Pass::addToGraph(RenderGraph &graph, const Data &data)
+void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{

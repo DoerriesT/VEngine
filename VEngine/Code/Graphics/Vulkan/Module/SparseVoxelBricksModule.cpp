@@ -4,7 +4,7 @@
 #include "Graphics/Vulkan/Pass/VoxelizationMarkPass.h"
 #include "Graphics/Vulkan/Pass/VoxelizationAllocatePass.h"
 #include "Graphics/Vulkan/Pass/VoxelizationFillPass.h"
-#include "Graphics/Vulkan/Pass/ScreenSpaceVoxelization2Pass.h"
+#include "Graphics/Vulkan/Pass/ScreenSpaceVoxelizationPass.h"
 #include "Graphics/Vulkan/Pass/BrickDebugPass.h"
 #include "Graphics/Vulkan/Pass/ReadBackCopyPass.h"
 #include <glm/vec3.hpp>
@@ -347,25 +347,25 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 
 	}
 
-	ScreenSpaceVoxelization2Pass::Data ssVoxelPass2Data;
-	ssVoxelPass2Data.m_passRecordContext = data.m_passRecordContext;
-	ssVoxelPass2Data.m_directionalLightDataBufferInfo = data.m_directionalLightDataBufferInfo;
-	ssVoxelPass2Data.m_pointLightDataBufferInfo = data.m_pointLightDataBufferInfo;
-	ssVoxelPass2Data.m_pointLightZBinsBufferInfo = data.m_pointLightZBinsBufferInfo;
-	ssVoxelPass2Data.m_materialDataBufferInfo = { renderResources.m_materialBuffer.getBuffer(), 0, renderResources.m_materialBuffer.getSize() };
-	ssVoxelPass2Data.m_pointLightBitMaskBufferHandle = data.m_pointLightBitMaskBufferViewHandle;
-	ssVoxelPass2Data.m_depthImageHandle = data.m_depthImageViewHandle;
-	ssVoxelPass2Data.m_uvImageHandle = data.m_uvImageViewHandle;
-	ssVoxelPass2Data.m_ddxyLengthImageHandle = data.m_ddxyLengthImageViewHandle;
-	ssVoxelPass2Data.m_ddxyRotMaterialIdImageHandle = data.m_ddxyRotMaterialIdImageViewHandle;
-	ssVoxelPass2Data.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
-	ssVoxelPass2Data.m_deferredShadowImageViewHandle = data.m_deferredShadowsImageViewHandle;
-	ssVoxelPass2Data.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
-	ssVoxelPass2Data.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
-	ssVoxelPass2Data.m_irradianceVolumeImageHandle = data.m_irradianceVolumeImageViewHandle;
-	ssVoxelPass2Data.m_irradianceVolumeDepthImageHandle = data.m_irradianceVolumeDepthImageViewHandle;
+	ScreenSpaceVoxelizationPass::Data ssVoxelPassData;
+	ssVoxelPassData.m_passRecordContext = data.m_passRecordContext;
+	ssVoxelPassData.m_directionalLightDataBufferInfo = data.m_directionalLightDataBufferInfo;
+	ssVoxelPassData.m_pointLightDataBufferInfo = data.m_pointLightDataBufferInfo;
+	ssVoxelPassData.m_pointLightZBinsBufferInfo = data.m_pointLightZBinsBufferInfo;
+	ssVoxelPassData.m_materialDataBufferInfo = { renderResources.m_materialBuffer.getBuffer(), 0, renderResources.m_materialBuffer.getSize() };
+	ssVoxelPassData.m_pointLightBitMaskBufferHandle = data.m_pointLightBitMaskBufferViewHandle;
+	ssVoxelPassData.m_depthImageHandle = data.m_depthImageViewHandle;
+	ssVoxelPassData.m_uvImageHandle = data.m_uvImageViewHandle;
+	ssVoxelPassData.m_ddxyLengthImageHandle = data.m_ddxyLengthImageViewHandle;
+	ssVoxelPassData.m_ddxyRotMaterialIdImageHandle = data.m_ddxyRotMaterialIdImageViewHandle;
+	ssVoxelPassData.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
+	ssVoxelPassData.m_deferredShadowImageViewHandle = data.m_deferredShadowsImageViewHandle;
+	ssVoxelPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
+	ssVoxelPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+	ssVoxelPassData.m_irradianceVolumeImageHandle = data.m_irradianceVolumeImageViewHandle;
+	ssVoxelPassData.m_irradianceVolumeDepthImageHandle = data.m_irradianceVolumeDepthImageViewHandle;
 
-	ScreenSpaceVoxelization2Pass::addToGraph(graph, ssVoxelPass2Data);
+	ScreenSpaceVoxelizationPass::addToGraph(graph, ssVoxelPassData);
 }
 
 void VEngine::SparseVoxelBricksModule::addDebugVisualizationToGraph(RenderGraph &graph, const DebugVisualizationData &data)

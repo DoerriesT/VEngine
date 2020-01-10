@@ -31,7 +31,7 @@ void VEngine::IndirectDiffusePass::addToGraph(RenderGraph &graph, const Data &da
 	};
 	const uint32_t usageCount = data.m_ssao ? sizeof(passUsages) / sizeof(passUsages[0]) : sizeof(passUsages) / sizeof(passUsages[0]) - 1;
 
-	graph.addPass("Indirect Diffuse", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Indirect Diffuse", QueueType::GRAPHICS, usageCount, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;

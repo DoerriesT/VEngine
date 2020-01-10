@@ -1,9 +1,8 @@
 #include "DiffuseGIProbesModule.h"
 #include "Graphics/Vulkan/Pass/ClearVoxelsPass.h"
-#include "Graphics/Vulkan/Pass/IrradianceVolumeRayMarching2Pass.h"
 #include "Graphics/Vulkan/Pass/UpdateQueueProbabilityPass.h"
 #include "Graphics/Vulkan/Pass/FillLightingQueuesPass.h"
-#include "Graphics/Vulkan/Pass/IrradianceVolumeRayMarching2Pass.h"
+#include "Graphics/Vulkan/Pass/IrradianceVolumeRayMarchingPass.h"
 #include "Graphics/Vulkan/Pass/IrradianceVolumeUpdateProbesPass.h"
 #include "Graphics/Vulkan/Pass/IndirectDiffusePass.h"
 #include "Graphics/Vulkan/Pass/IrradianceVolumeDebugPass.h"
@@ -323,17 +322,17 @@ void VEngine::DiffuseGIProbesModule::addProbeUpdateToGraph(RenderGraph &graph, c
 
 
 	// ray marching
-	IrradianceVolumeRayMarching2Pass::Data irradianceVolumeRayMarching2PassData;
-	irradianceVolumeRayMarching2PassData.m_passRecordContext = data.m_passRecordContext;
-	irradianceVolumeRayMarching2PassData.m_brickPtrImageHandle = data.m_brickPointerImageViewHandle;
-	irradianceVolumeRayMarching2PassData.m_binVisBricksBufferHandle = data.m_binVisBricksBufferViewHandle;
-	irradianceVolumeRayMarching2PassData.m_colorBricksBufferHandle = data.m_colorBricksBufferViewHandle;
-	irradianceVolumeRayMarching2PassData.m_rayMarchingResultImageHandle = rayMarchingResultImageViewHandle;
-	irradianceVolumeRayMarching2PassData.m_rayMarchingResultDistanceImageHandle = rayMarchingResultDistanceImageViewHandle;
-	irradianceVolumeRayMarching2PassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
-	irradianceVolumeRayMarching2PassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
+	IrradianceVolumeRayMarchingPass::Data irradianceVolumeRayMarchingPassData;
+	irradianceVolumeRayMarchingPassData.m_passRecordContext = data.m_passRecordContext;
+	irradianceVolumeRayMarchingPassData.m_brickPtrImageHandle = data.m_brickPointerImageViewHandle;
+	irradianceVolumeRayMarchingPassData.m_binVisBricksBufferHandle = data.m_binVisBricksBufferViewHandle;
+	irradianceVolumeRayMarchingPassData.m_colorBricksBufferHandle = data.m_colorBricksBufferViewHandle;
+	irradianceVolumeRayMarchingPassData.m_rayMarchingResultImageHandle = rayMarchingResultImageViewHandle;
+	irradianceVolumeRayMarchingPassData.m_rayMarchingResultDistanceImageHandle = rayMarchingResultDistanceImageViewHandle;
+	irradianceVolumeRayMarchingPassData.m_queueBufferHandle = lightingQueueBufferViewHandle;
+	irradianceVolumeRayMarchingPassData.m_indirectBufferHandle = indirectIrradianceVolumeBufferViewHandle;
 
-	IrradianceVolumeRayMarching2Pass::addToGraph(graph, irradianceVolumeRayMarching2PassData);
+	IrradianceVolumeRayMarchingPass::addToGraph(graph, irradianceVolumeRayMarchingPassData);
 
 
 	// update probe depth

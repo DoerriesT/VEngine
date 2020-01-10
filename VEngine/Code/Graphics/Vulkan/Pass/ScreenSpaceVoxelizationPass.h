@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace ScreenSpaceVoxelization2Pass
+	namespace ScreenSpaceVoxelizationPass
 	{
 		struct Data
 		{
