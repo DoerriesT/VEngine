@@ -287,7 +287,7 @@ void VEngine::DiffuseGIProbesModule::addProbeUpdateToGraph(RenderGraph &graph, c
 		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 		rayMarchingResultImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 
-		desc.m_format = VK_FORMAT_R16G16_SFLOAT;
+		desc.m_format = VK_FORMAT_R16_SFLOAT;
 		rayMarchingResultDistanceImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
