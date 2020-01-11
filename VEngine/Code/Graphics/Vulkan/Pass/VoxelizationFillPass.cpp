@@ -33,7 +33,9 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 		{ ResourceViewHandle(data.m_irradianceVolumeDepthImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
 	};
 
-	graph.addPass("Voxelization Fill", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	const uint32_t usageCount = data.m_lighting ? sizeof(passUsages) / sizeof(passUsages[0]) : 2;
+
+	graph.addPass("Voxelization Fill", QueueType::GRAPHICS, usageCount, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			const uint32_t voxelGridResolution = glm::max(glm::max(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT), SparseVoxelBricksModule::BRICK_VOLUME_DEPTH) * SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE;
 
@@ -114,9 +116,9 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
 			GraphicsPipelineDesc pipelineDesc;
-			pipelineDesc.setVertexShader("Resources/Shaders/voxelizationFill_vert.spv", sizeof(vertShaderSpecEntries) / sizeof(vertShaderSpecEntries[0]), vertShaderSpecEntries);
-			pipelineDesc.setGeometryShader("Resources/Shaders/voxelizationFill_geom.spv", sizeof(geomShaderSpecEntries) / sizeof(geomShaderSpecEntries[0]), geomShaderSpecEntries);
-			pipelineDesc.setFragmentShader("Resources/Shaders/voxelizationFill_frag.spv", sizeof(fragmentShaderSpecEntries) / sizeof(fragmentShaderSpecEntries[0]), fragmentShaderSpecEntries);
+			pipelineDesc.setVertexShader(data.m_lighting ? "Resources/Shaders/voxelizationFill_LIGHTING_ENABLED_vert.spv" : "Resources/Shaders/voxelizationFill_vert.spv", sizeof(vertShaderSpecEntries) / sizeof(vertShaderSpecEntries[0]), vertShaderSpecEntries);
+			pipelineDesc.setGeometryShader(data.m_lighting ? "Resources/Shaders/voxelizationFill_LIGHTING_ENABLED_geom.spv" : "Resources/Shaders/voxelizationFill_geom.spv", sizeof(geomShaderSpecEntries) / sizeof(geomShaderSpecEntries[0]), geomShaderSpecEntries);
+			pipelineDesc.setFragmentShader(data.m_lighting ? "Resources/Shaders/voxelizationFill_LIGHTING_ENABLED_frag.spv" : "Resources/Shaders/voxelizationFill_frag.spv", sizeof(fragmentShaderSpecEntries) / sizeof(fragmentShaderSpecEntries[0]), fragmentShaderSpecEntries);
 			pipelineDesc.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
 			pipelineDesc.finalize();
 
@@ -133,21 +135,27 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) }, VERTEX_NORMALS_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) }, VERTEX_TEXCOORDS_BINDING);
-				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
-				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), BRICK_PTR_IMAGE_BINDING);
 				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_shadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER), SHADOW_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_lightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);
-				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeDepthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING);
+				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
+				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
+
+				if (data.m_lighting)
+				{
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) }, VERTEX_NORMALS_BINDING);
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) }, VERTEX_TEXCOORDS_BINDING);
+
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
+
+					writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_shadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER), SHADOW_IMAGE_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_lightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_IMAGE_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_irradianceVolumeDepthImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, linearSamplerRepeat), IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING);
+				}
 
 				writer.commit();
 			}
@@ -155,7 +163,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_pipeline);
 
 			VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, 2, descriptorSets, 0, nullptr);
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineData.m_layout, 0, data.m_lighting ? 2 : 1, descriptorSets, 0, nullptr);
 
 			VkViewport viewport;
 			viewport.x = 0.0f;
@@ -184,7 +192,6 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
 				PushConsts pushConsts;
-				//pushConsts.superSamplingFactor = superSamplingFactor;
 				pushConsts.gridOffset = (round(camPos * curVoxelScale) - glm::floor(glm::vec3(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH, SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH) / 2.0f)) * float(SparseVoxelBricksModule::BINARY_VIS_BRICK_SIZE);
 				pushConsts.invGridResolution = 1.0f / voxelGridResolution;
 				pushConsts.transformIndex = instanceData.m_transformIndex;

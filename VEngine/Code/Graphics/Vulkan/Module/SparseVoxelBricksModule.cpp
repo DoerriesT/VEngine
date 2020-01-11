@@ -327,6 +327,7 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 		// fill
 		VoxelizationFillPass::Data voxelizationFillPassData;
 		voxelizationFillPassData.m_passRecordContext = data.m_passRecordContext;
+		voxelizationFillPassData.m_lighting = false;
 		voxelizationFillPassData.m_instanceDataBufferInfo = {};// TODO: instanceDataBufferInfo is currently unused;
 		voxelizationFillPassData.m_materialDataBufferInfo = { renderResources.m_materialBuffer.getBuffer(), 0, renderResources.m_materialBuffer.getSize() };
 		voxelizationFillPassData.m_transformDataBufferInfo = data.m_transformDataBufferInfo;

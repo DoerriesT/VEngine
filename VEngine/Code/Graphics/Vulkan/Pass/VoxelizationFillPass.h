@@ -12,6 +12,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_lighting;
 			uint32_t m_instanceDataCount;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
@@ -21,6 +22,7 @@ namespace VEngine
 			VkDescriptorBufferInfo m_subMeshInfoBufferInfo;
 			ImageViewHandle m_brickPointerImageHandle;
 			BufferViewHandle m_binVisBricksBufferHandle;
+			// everything below is ignored if m_lighting is true
 			BufferViewHandle m_colorBricksBufferHandle;
 			ImageViewHandle m_shadowImageViewHandle;
 			VkDescriptorBufferInfo m_lightDataBufferInfo;

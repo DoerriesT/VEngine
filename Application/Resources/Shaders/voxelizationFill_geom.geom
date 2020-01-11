@@ -2,6 +2,10 @@
 
 #include "voxelizationFill_bindings.h"
 
+#ifndef LIGHTING_ENABLED
+#define LIGHTING_ENABLED 0
+#endif // LIGHTING_ENABLED
+
 #define L     0.7071067811865475244008443621048490392848359376884740	//sqrt(2)/2
 #define L_SQR 0.5
 
@@ -18,9 +22,11 @@ layout(constant_id = BIN_VIS_BRICK_SIZE_CONST_ID) const uint cBinVisBrickSize = 
 layout(constant_id = COLOR_BRICK_SIZE_CONST_ID) const uint cColorBrickSize = 4;
 
 
+#if LIGHTING_ENABLED
 layout(location = 0) in vec2 vTexCoord[];
 layout(location = 1) in vec3 vNormal[];
 layout(location = 2) flat in uint vMaterialIndex[];
+#endif // LIGHTING_ENABLED
 
 
 // OUT voxels extents snapped to voxel grid (post swizzle)
@@ -57,10 +63,12 @@ layout(location = 23) flat out float vNzInvG;
 
 layout(location = 24) flat out int vZG;
 
-layout(location = 25) out vec2 vTexCoordG;
-layout(location = 26) out vec3 vNormalG;
-layout(location = 27) out vec3 vVoxelPosG;
+layout(location = 25) out vec3 vVoxelPosG;
+#if LIGHTING_ENABLED
+layout(location = 26) out vec2 vTexCoordG;
+layout(location = 27) out vec3 vNormalG;
 layout(location = 28) flat out uint vMaterialIndexG;
+#endif // LIGHTING_ENABLED
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -208,15 +216,19 @@ void main()
 	vec3 b1 = v1_prime;
 	vec3 b2 = v2_prime;
 	computeBaryCoords(b0, b1, b2, v0.xy, v1.xy, v2.xy);
-	
+
+#if LIGHTING_ENABLED
 	vMaterialIndexG = vMaterialIndex[0];
+#endif // #if LIGHTING_ENABLED
 
 	gl_Position = vec4(v0_prime,1);
 	gl_Position.xyz *= uPushConsts.invGridResolution;
 	gl_Position.xy = gl_Position.xy * 2.0 - 1.0;
 	vVoxelPosG = v0_prime;
+#if LIGHTING_ENABLED
 	vNormalG = b0.x * vNormal[0] + b0.y * vNormal[1] + b0.z * vNormal[2];
 	vTexCoordG = b0.x * vTexCoord[0] + b0.y * vTexCoord[1] + b0.z * vTexCoord[2];
+#endif // #if LIGHTING_ENABLED
 
 	EmitVertex();
 
@@ -224,8 +236,10 @@ void main()
 	gl_Position.xyz *= uPushConsts.invGridResolution;
 	gl_Position.xy = gl_Position.xy * 2.0 - 1.0;
 	vVoxelPosG = v1_prime;
+#if LIGHTING_ENABLED
 	vNormalG = b1.x * vNormal[0] + b1.y * vNormal[1] + b1.z * vNormal[2];
 	vTexCoordG = b1.x * vTexCoord[0] + b1.y * vTexCoord[1] + b1.z * vTexCoord[2];
+#endif // #if LIGHTING_ENABLED
 
 	EmitVertex();
 
@@ -233,8 +247,10 @@ void main()
 	gl_Position.xyz *= uPushConsts.invGridResolution;
 	gl_Position.xy = gl_Position.xy * 2.0 - 1.0;
 	vVoxelPosG = v2_prime;
+#if LIGHTING_ENABLED
 	vNormalG = b2.x * vNormal[0] + b2.y * vNormal[1] + b2.z * vNormal[2];
 	vTexCoordG = b2.x * vTexCoord[0] + b2.y * vTexCoord[1] + b2.z * vTexCoord[2];
+#endif // #if LIGHTING_ENABLED
 
 	EmitVertex();
 

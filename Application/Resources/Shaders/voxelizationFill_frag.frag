@@ -1,11 +1,17 @@
 #version 450
 
+#ifndef LIGHTING_ENABLED
+#define LIGHTING_ENABLED 0
+#endif // LIGHTING_ENABLED
+
+#if LIGHTING_ENABLED
 #extension GL_EXT_nonuniform_qualifier : enable
-#extension GL_KHR_shader_subgroup_ballot : enable
-#extension GL_KHR_shader_subgroup_arithmetic : enable
+#endif // #if LIGHTING_ENABLED
 
 #include "voxelizationFill_bindings.h"
 #include "common.h"
+
+
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
 layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
@@ -25,6 +31,8 @@ layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const u
 
 layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
 layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
+
+#if LIGHTING_ENABLED
 layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
 layout(set = IRRADIANCE_VOLUME_DEPTH_IMAGE_SET, binding = IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeDepthImage;
@@ -49,6 +57,7 @@ layout(set = SHADOW_SAMPLER_SET, binding = SHADOW_SAMPLER_BINDING) uniform sampl
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
 layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
+#endif // #if LIGHTING_ENABLED
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -93,11 +102,15 @@ layout(location = 23) flat in float vNzInv;
 
 layout(location = 24) flat in int vZ;
 
-layout(location = 25) in vec2 vTexCoord;
-layout(location = 26) in vec3 vNormal;
-layout(location = 27) in vec3 vVoxelPos;
+layout(location = 25) in vec3 vVoxelPos;
+#if LIGHTING_ENABLED
+layout(location = 26) in vec2 vTexCoord;
+layout(location = 27) in vec3 vNormal;
 layout(location = 28) flat in uint vMaterialIndex;
+#endif // LIGHTING_ENABLED
 
+
+#if LIGHTING_ENABLED
 float signNotZero(in float k) 
 {
     return k >= 0.0 ? 1.0 : -1.0;
@@ -238,6 +251,7 @@ vec3 sampleIrradianceVolume(const vec3 worldSpacePos, const vec3 worldSpaceNorma
 		return vec3(0.18);
 	}
 }
+#endif // LIGHTING_ENABLED
 
 void writeVoxels(ivec3 coord, uint val, vec3 color)
 {
@@ -267,12 +281,14 @@ void writeVoxels(ivec3 coord, uint val, vec3 color)
 		uint payload = (1u << bitIdx);
 		imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
 		
+#if LIGHTING_ENABLED
 		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
 		const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
 		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
 		
 		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
 		imageStore(uColorImageBuffer, colorIdx, vec4(mix(color, prevColor, 0.98), 1.0));
+#endif // LIGHTING_ENABLED
 	}
 }
 
@@ -284,7 +300,7 @@ void main()
 		return;
 	}
 	
-	
+#if LIGHTING_ENABLED
 	const MaterialData materialData = uMaterialData[vMaterialIndex];
 	
 	vec3 albedo = vec3(0.0);
@@ -345,6 +361,7 @@ void main()
 		const float NdotL = max(dot(N, L), 0.0);
 		result += (1.0 - shadow) * albedo * (1.0 / PI) * NdotL * lightData.color.rgb;
 	}
+#endif // LIGHTING_ENABLED
 
 	ivec3 p = ivec3(floor(vVoxelPos));	//voxel coordinate (swizzled)
 	int   zMin,      zMax;			//voxel Z-range
@@ -392,7 +409,11 @@ void main()
 				
 				ivec3 origCoord = (vZ == 0) ? p.yzx : (vZ == 1) ? p.zxy : p.xyz;	//this actually slightly outperforms unswizzle
 
+#if LIGHTING_ENABLED
 				writeVoxels(origCoord, 1, result);	//figure 17/18 line 20
+#else
+				writeVoxels(origCoord, 1, vec3(0.0));	//figure 17/18 line 20
+#endif // LIGHTING_ENABLED
 			}
 		}
 		//z-loop
