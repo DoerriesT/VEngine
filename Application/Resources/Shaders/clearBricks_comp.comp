@@ -20,6 +20,8 @@ layout(push_constant) uniform PUSH_CONSTS
 layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;
 layout(constant_id = BRICK_VOLUME_HEIGHT_CONST_ID) const uint cBrickVolumeHeight = 64;
 layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth = 128;
+layout(constant_id = BIN_VIS_BRICK_SIZE_CONST_ID) const uint cBinVisBrickSize = 16;
+layout(constant_id = COLOR_BRICK_SIZE_CONST_ID) const uint cColorBrickSize = 4;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -45,11 +47,16 @@ void main()
 				--ptr;
 				
 				// clear brick
-				for (int i = 0; i < 64; ++i)
+				const int binVisDataPerBrick = int(cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
+				for (int i = 0; i < binVisDataPerBrick; ++i)
 				{
-					imageStore(uBinVisImageBuffer, (i * 2) + int(ptr) * 128, uvec4(0));
-					imageStore(uBinVisImageBuffer, (i * 2 + 1) + int(ptr) * 128, uvec4(0));
-					imageStore(uColorImageBuffer, i + int(ptr) * 64, vec4(0.0));
+					imageStore(uBinVisImageBuffer, i + int(ptr) * binVisDataPerBrick, uvec4(0));
+				}
+				
+				const int colorDataPerBrick = int(cColorBrickSize * cColorBrickSize * cColorBrickSize);
+				for (int i = 0; i < colorDataPerBrick; ++i)
+				{
+					imageStore(uColorImageBuffer, i + int(ptr) * colorDataPerBrick, vec4(0.0));
 				}
 				
 				uint offset = atomicAdd(uNextFreeBrick, -1) - 1;
