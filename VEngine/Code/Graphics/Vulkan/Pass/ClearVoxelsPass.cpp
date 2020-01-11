@@ -48,7 +48,7 @@ void VEngine::IrradianceVolumeClearProbesPass::addToGraph(RenderGraph &graph, co
 				SpecEntry(VOXEL_GRID_WIDTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH),
 				SpecEntry(VOXEL_GRID_HEIGHT_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT),
 				SpecEntry(VOXEL_GRID_DEPTH_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH),
-				SpecEntry(VOXEL_BASE_SCALE_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
+				SpecEntry(VOXEL_BASE_SCALE_CONST_ID, 1.0f / DiffuseGIProbesModule::IRRADIANCE_VOLUME_BASE_SIZE),
 				SpecEntry(VOXEL_CASCADES_CONST_ID, DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES),
 			};
 
