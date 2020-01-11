@@ -230,7 +230,7 @@ vec3 sampleIrradianceVolume(const vec3 worldSpacePos, const vec3 worldSpaceNorma
 		ivec3 offset = ivec3(round(camPos * currentGridScale) - (gridSize / 2));
 
 		// if coordinate is inside grid, we found the correct cascade
-		if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset - 1)))
+		if (all(greaterThanEqual(coord, offset)) && all(lessThan(coord, gridSize + offset - 1.0)))
 		{
 			const float falloffStart = 0.2;
 			vec3 smoothOffset = camPos * currentGridScale - (gridSize / 2) - 0.5;
