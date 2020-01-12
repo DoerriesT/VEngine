@@ -97,6 +97,14 @@ void VEngine::Engine::start()
 		ImGui::SliderFloat("CAS Sharpness", &casSharpness, 0.0f, 1.0f);
 		g_CASSharpness = casSharpness;
 
+		bool bloomEnabled = g_bloomEnabled;
+		ImGui::Checkbox("Bloom", &bloomEnabled);
+		g_bloomEnabled = bloomEnabled;
+
+		float bloomStrength = g_bloomStrength;
+		ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 0.1f);
+		g_bloomStrength = bloomStrength;
+
 		ImGui::NewLine();
 		ImGui::Text("Allocated Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
 		

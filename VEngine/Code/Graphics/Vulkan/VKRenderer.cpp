@@ -34,6 +34,7 @@
 #include "Module/GTAOModule.h"
 #include "Module/SparseVoxelBricksModule.h"
 #include "Module/DiffuseGIProbesModule.h"
+#include "Module/BloomModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
 #include "VKMaterialManager.h"
@@ -881,14 +882,33 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	ImageViewHandle currentOutput = lightImageViewHandle;
+
+
+	// bloom
+	ImageViewHandle bloomImageViewHandle = 0;
+	BloomModule::OutputData bloomModuleOutData;
+	BloomModule::InputData bloomModuleInData;
+	bloomModuleInData.m_passRecordContext = &passRecordContext;
+	bloomModuleInData.m_colorImageViewHandle = currentOutput;
+
+	if (g_bloomEnabled)
+	{
+		BloomModule::addToGraph(graph, bloomModuleInData, bloomModuleOutData);
+		bloomImageViewHandle = bloomModuleOutData.m_bloomImageViewHandle;
+	}
+
+
 	ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainImageViewHandle;
 
 	// tonemap
 	VKTonemapPass::Data tonemapPassData;
 	tonemapPassData.m_passRecordContext = &passRecordContext;
+	tonemapPassData.m_bloomEnabled = g_bloomEnabled;
+	tonemapPassData.m_bloomStrength = g_bloomStrength;
 	tonemapPassData.m_applyLinearToGamma = g_FXAAEnabled || !g_CASEnabled;
 	tonemapPassData.m_srcImageHandle = currentOutput;
 	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
+	tonemapPassData.m_bloomImageViewHandle = bloomImageViewHandle;
 	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
 	VKTonemapPass::addToGraph(graph, tonemapPassData);

@@ -411,6 +411,15 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\GTAOModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Module\BloomModule.h">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -705,6 +714,15 @@
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Module\GTAOModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\BloomModule.cpp">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClCompile>
   </ItemGroup>

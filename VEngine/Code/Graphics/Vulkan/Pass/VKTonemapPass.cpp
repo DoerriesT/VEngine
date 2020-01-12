@@ -22,9 +22,12 @@ void VEngine::VKTonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 		{ResourceViewHandle(data.m_avgLuminanceBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_srcImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_dstImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_bloomImageViewHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 	};
 
-	graph.addPass("Tonemap", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	uint32_t usageCount = data.m_bloomEnabled ? sizeof(passUsages) / sizeof(passUsages[0]) : sizeof(passUsages) / sizeof(passUsages[0]) - 1;
+
+	graph.addPass("Tonemap", QueueType::GRAPHICS, usageCount, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 	{
 		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
@@ -45,6 +48,10 @@ void VEngine::VKTonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_dstImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_srcImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), SOURCE_IMAGE_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_avgLuminanceBufferHandle), LUMINANCE_VALUES_BINDING);
+			if (data.m_bloomEnabled)
+			{
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_bloomImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX]), BLOOM_IMAGE_BINDING);
+			}
 
 			writer.commit();
 		}
@@ -55,6 +62,8 @@ void VEngine::VKTonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 		PushConsts pushConsts;
 		pushConsts.luminanceIndex = static_cast<uint32_t>(data.m_passRecordContext->m_commonRenderData->m_curResIdx);
 		pushConsts.applyLinearToGamma = data.m_applyLinearToGamma;
+		pushConsts.bloomEnabled = data.m_bloomEnabled;
+		pushConsts.bloomStrength = data.m_bloomStrength;
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		VKUtility::dispatchComputeHelper(cmdBuf, width, height, 1, 8, 8, 1);

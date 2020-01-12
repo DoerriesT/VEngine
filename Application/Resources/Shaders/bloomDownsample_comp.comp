@@ -1,0 +1,56 @@
+#version 450
+
+#include "bloomDownsample_bindings.h"
+
+#define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, r11f_g11f_b10f) uniform writeonly image2D uResultImage;
+layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+vec4 addTap(vec3 tap, float weight, bool lumaWeighted)
+{
+	weight *= lumaWeighted ? 1.0 / (1.0 + dot(tap, LUMA_RGB_TUPLE)) : 1.0;
+	return vec4(weight * tap, weight);
+}
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x < uPushConsts.width && gl_GlobalInvocationID.y < uPushConsts.height)
+	{
+		const vec2 texelSize = uPushConsts.texelSize;
+		const vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
+		
+		vec4 sum = vec4(0.0);
+		
+		const bool doWeightedAverage = (uPushConsts.doWeightedAverage != 0);
+		
+		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( 0.0,         -texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		
+		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		
+		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord,                                          0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+		
+		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		
+		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( 0.0,          texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		
+		sum.rgb /= sum.a;
+		
+		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(sum.rgb, 1.0));
+	}
+}

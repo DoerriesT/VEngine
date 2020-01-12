@@ -54,5 +54,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c irradianceVolumeRayMarching2_comp.com
 glslc --target-env=vulkan1.1 -O -Werror -c screenSpaceVoxelization2_comp.comp -o screenSpaceVoxelization2_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuse_comp.comp -o indirectDiffuse_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp.comp -o indirectDiffuse_SSAO_ENABLED_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c bloomDownsample_comp.comp -o bloomDownsample_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c bloomUpsample_comp.comp -o bloomUpsample_comp.spv
 
 pause

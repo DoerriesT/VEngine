@@ -11,8 +11,11 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			bool m_applyLinearToGamma;
+			bool m_bloomEnabled;
+			float m_bloomStrength;
 			ImageViewHandle m_srcImageHandle;
 			ImageViewHandle m_dstImageHandle;
+			ImageViewHandle m_bloomImageViewHandle;
 			BufferViewHandle m_avgLuminanceBufferHandle;
 		};
 

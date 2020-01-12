@@ -4,6 +4,7 @@
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uTonemapResultImage;
 layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
+layout(set = BLOOM_IMAGE_SET, binding = BLOOM_IMAGE_BINDING) uniform sampler2D uBloomImage;
 
 layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LUMINANCE_VALUES
 {
@@ -245,6 +246,12 @@ vec3 applyHuePreservingShoulder(vec3 col)
 void main() 
 {
 	vec3 color = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
+	
+	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(imageSize(uTonemapResultImage).xy);
+	if (uPushConsts.bloomEnabled != 0)
+	{
+		color += textureLod(uBloomImage, texCoord, 0.0).rgb * uPushConsts.bloomStrength;
+	}
 	
 	float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
 	//float EV100 = computeEV100(16.0, 0.01, 100);
