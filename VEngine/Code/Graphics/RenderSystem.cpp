@@ -36,6 +36,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 	m_transformData.clear();
 	m_subMeshInstanceData.clear();
 	m_shadowMatrices.clear();
+	m_shadowDepthNormalBiases.clear();
 
 	m_lightData.m_directionalLightData.clear();
 	m_lightData.m_pointLightData.clear();
@@ -172,19 +173,29 @@ void VEngine::RenderSystem::update(float timeDelta)
 					if (directionalLightComponent.m_shadows)
 					{
 						glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
+						glm::vec2 depthNormalBiases[DirectionalLightComponent::MAX_CASCADES];
+
+						for (uint32_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
+						{
+							depthNormalBiases[i].x = directionalLightComponent.m_depthBias[i];
+							depthNormalBiases[i].y = directionalLightComponent.m_normalOffsetBias[i];
+						}
 
 						calculateCascadeViewProjectionMatrices(direction,
 							directionalLightComponent.m_maxShadowDistance,
 							directionalLightComponent.m_splitLambda,
 							2048.0f,
 							directionalLightComponent.m_cascadeCount,
-							shadowMatrices);
+							shadowMatrices,
+							depthNormalBiases);
 
 						m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
+						m_shadowDepthNormalBiases.reserve(m_shadowDepthNormalBiases.size() + directionalLightComponent.m_cascadeCount);
 
 						for (size_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
 						{
 							m_shadowMatrices.push_back(shadowMatrices[i]);
+							m_shadowDepthNormalBiases.push_back(depthNormalBiases[i]);
 
 							// extract view frustum plane equations from matrix
 							{
@@ -392,6 +403,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_transformData = m_transformData.data();
 		renderData.m_shadowMatrixCount = static_cast<uint32_t>(m_shadowMatrices.size());
 		renderData.m_shadowMatrices = m_shadowMatrices.data();
+		renderData.m_shadowDepthNormalBiases = m_shadowDepthNormalBiases.data();
 		renderData.m_subMeshInstanceDataCount = static_cast<uint32_t>(m_subMeshInstanceData.size());
 		renderData.m_subMeshInstanceData = m_subMeshInstanceData.data();
 		renderData.m_drawCallKeys = drawCallKeys.data();
@@ -518,15 +530,17 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 	}
 }
 
-void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices)
+void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, 
+	float maxShadowDistance, 
+	float splitLambda, 
+	float shadowTextureSize, 
+	size_t cascadeCount, 
+	glm::mat4 *viewProjectionMatrices, 
+	glm::vec2 *depthNormalBiases)
 {
-	const float aspectRatio = m_commonRenderData.m_width * (1.0f / m_commonRenderData.m_height);
-	const float tanFovX = glm::tan(0.5f * m_commonRenderData.m_fovy * aspectRatio);
-	const float tanFovY = glm::tan(0.5f * m_commonRenderData.m_fovy);
-	constexpr size_t maxShadowCascades = 8;
-	float splits[maxShadowCascades];
+	float splits[DirectionalLightComponent::MAX_CASCADES];
 
-	assert(cascadeCount <= maxShadowCascades);
+	assert(cascadeCount <= DirectionalLightComponent::MAX_CASCADES);
 
 	// compute split distances
 	const float nearPlane = m_commonRenderData.m_nearPlane;
@@ -542,11 +556,6 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		splits[i] = splitLambda * (log - uniform) + uniform;
 	}
 
-	const glm::vec3 &camPos = m_commonRenderData.m_cameraPosition;
-	const glm::vec3 &camDir = m_commonRenderData.m_cameraDirection;
-	const glm::vec3 camRight = glm::vec3(m_commonRenderData.m_viewMatrix[0][0], m_commonRenderData.m_viewMatrix[1][0], m_commonRenderData.m_viewMatrix[2][0]);
-	const glm::vec3 camUp = glm::vec3(m_commonRenderData.m_viewMatrix[0][1], m_commonRenderData.m_viewMatrix[1][1], m_commonRenderData.m_viewMatrix[2][1]);
-
 	const glm::mat4 vulkanCorrection =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f },
@@ -555,27 +564,17 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		{ 0.0f, 0.0f, 0.5f, 1.0f }
 	};
 
+	const float aspectRatio = m_commonRenderData.m_width * (1.0f / m_commonRenderData.m_height);
 	float previousSplit = nearPlane;
 	for (size_t i = 0; i < cascadeCount; ++i)
 	{
-		// calculate split center and split bounding sphere radius
-		const float splitCenterDistance = previousSplit + (splits[i] - previousSplit) * 0.5f;
-		const glm::vec3 center = camPos + camDir * splitCenterDistance;
-		const glm::vec3 cornerPoint = camPos + (camRight * tanFovX + camUp * tanFovY + camDir) * splits[i];
-		const float radius = glm::distance(center, cornerPoint);
-
-		const glm::vec3 cornerPoint1 = camPos + (-camRight * tanFovX + -camUp * tanFovY + camDir) * previousSplit;
-		const glm::vec3 center1 = (cornerPoint + cornerPoint1) * 0.5f;
-		const float radius1 = glm::distance(cornerPoint, cornerPoint1) * 0.5f;
-
 		// https://lxjk.github.io/2017/04/15/Calculate-Minimal-Bounding-Sphere-of-Frustum.html
 		const float n = previousSplit;
 		const float f = splits[i];
-		float aspect = m_commonRenderData.m_width / static_cast<float>(m_commonRenderData.m_height);
-		const float k = glm::sqrt(1.0f + aspect * aspect) * glm::tan(m_commonRenderData.m_fovy * 0.5f);
+		const float k = glm::sqrt(1.0f + aspectRatio * aspectRatio) * glm::tan(m_commonRenderData.m_fovy * 0.5f);
 		
-		glm::vec3 center2;
-		float radius2;
+		glm::vec3 center;
+		float radius;
 		const float k2 = k * k;
 		const float fnSum = f + n;
 		const float fnDiff = f - n;
@@ -583,16 +582,16 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		const float fnDiff2 = fnDiff * fnDiff;
 		if (k2 >= fnDiff / fnSum)
 		{
-			center2 = glm::vec3(0.0f, 0.0f, -f);
-			radius2 = f * k;
+			center = glm::vec3(0.0f, 0.0f, -f);
+			radius = f * k;
 		}
 		else
 		{
-			center2 = glm::vec3(0.0f, 0.0f, -0.5f * fnSum * (1.0f + k2));
-			radius2 = 0.5f * sqrt(fnDiff2 + 2 * (f * f + n * n) * k2 + fnSum2 * k2 * k2);
+			center = glm::vec3(0.0f, 0.0f, -0.5f * fnSum * (1.0f + k2));
+			radius = 0.5f * sqrt(fnDiff2 + 2 * (f * f + n * n) * k2 + fnSum2 * k2 * k2);
 		}
-		glm::vec4 tmp = m_commonRenderData.m_invViewMatrix * glm::vec4(center2, 1.0f);
-		center2 = glm::vec3(tmp / tmp.w);
+		glm::vec4 tmp = m_commonRenderData.m_invViewMatrix * glm::vec4(center, 1.0f);
+		center = glm::vec3(tmp / tmp.w);
 
 		glm::vec3 upDir(0.0f, 1.0f, 0.0f);
 
@@ -602,13 +601,20 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 			upDir = glm::vec3(1.0f, 1.0f, 0.0f);
 		}
 
-		glm::mat4 lightView = glm::lookAt(center2 + lightDir * 150.0f, center2, upDir);
+		glm::mat4 lightView = glm::lookAt(center + lightDir * 150.0f, center, upDir);
 
 		// snap to shadow map texel to avoid shimmering
-		lightView[3].x -= fmodf(lightView[3].x, (radius2 / static_cast<float>(shadowTextureSize)) * 2.0f);
-		lightView[3].y -= fmodf(lightView[3].y, (radius2 / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].x -= fmodf(lightView[3].x, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].y -= fmodf(lightView[3].y, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
 
-		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius2, radius2, -radius2, radius2, 00.0f, 300.0f) * lightView;
+		constexpr float depthRange = 300.0f;
+
+		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
+
+		// depthNormalBiases[i] holds the depth/normal offset biases in texel units
+		const float unitsPerTexel = radius * 2.0f / shadowTextureSize;
+		depthNormalBiases[i].x = unitsPerTexel * -depthNormalBiases[i].x / depthRange;
+		depthNormalBiases[i].y = unitsPerTexel * depthNormalBiases[i].y;
 
 		previousSplit = splits[i];
 	}

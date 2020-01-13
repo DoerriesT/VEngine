@@ -79,6 +79,22 @@ void VEngine::EntityDetailsWindow::draw(uint32_t entity, uint32_t editorCameraEn
 		{
 			dlc->m_splitLambda = glm::clamp(dlc->m_splitLambda, 0.0f, 1.0f);
 		}
+		for (uint32_t i = 0; i < dlc->m_cascadeCount; ++i)
+		{
+			char cascadeLabel[] = "Cascade X";
+			cascadeLabel[sizeof(cascadeLabel) - 2] = '0' + i;
+			ImGui::Text(cascadeLabel);
+			ImGui::PushID(&dlc->m_depthBias[i]);
+			if (ImGui::DragFloat("Depth Bias", &dlc->m_depthBias[i], 0.05f, 0.0f, 20.0f))
+			{
+				dlc->m_depthBias[i] = glm::clamp(dlc->m_depthBias[i], 0.0f, 20.0f);
+			}
+			if (ImGui::DragFloat("Normal Offset Bias", &dlc->m_normalOffsetBias[i], 0.05f, 0.0f, 20.0f))
+			{
+				dlc->m_normalOffsetBias[i] = glm::clamp(dlc->m_normalOffsetBias[i], 0.0f, 20.0f);
+			}
+			ImGui::PopID();
+		}
 	}
 
 	// point light

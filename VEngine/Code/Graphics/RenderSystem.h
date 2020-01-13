@@ -47,6 +47,7 @@ namespace VEngine
 		CommonRenderData m_commonRenderData;
 		std::vector<glm::mat4> m_transformData;
 		std::vector<glm::mat4> m_shadowMatrices;
+		std::vector<glm::vec2> m_shadowDepthNormalBiases;
 		std::vector<SubMeshInstanceData> m_subMeshInstanceData;
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
@@ -54,6 +55,6 @@ namespace VEngine
 		BVH m_bvh;
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
-		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices);
+		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices, glm::vec2 *depthNormalBiases);
 	};
 }

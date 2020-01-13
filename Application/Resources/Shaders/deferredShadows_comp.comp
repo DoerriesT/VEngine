@@ -4,6 +4,7 @@
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
 layout(set = SHADOW_IMAGE_SET, binding = SHADOW_IMAGE_BINDING) uniform texture2DArray uShadowImage;
 layout(set = SHADOW_SAMPLER_SET, binding = SHADOW_SAMPLER_BINDING) uniform sampler uShadowSampler;
 layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
@@ -16,6 +17,11 @@ layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDIN
 layout(set = SHADOW_MATRICES_SET, binding = SHADOW_MATRICES_BINDING) readonly buffer SHADOW_MATRICES
 {
 	mat4 uShadowMatrices[];
+};
+
+layout(set = SHADOW_BIAS_BUFFER_SET, binding = SHADOW_BIAS_BUFFER_BINDING) readonly buffer SHADOW_BIAS_BUFFER
+{
+	vec2 uDepthNormalBias[];
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -84,6 +90,26 @@ float penumbra(float noise, vec4 shadowCoord, int samplesCount, uint layer)
 	}
 }
 
+float signNotZero(in float k) 
+{
+    return k >= 0.0 ? 1.0 : -1.0;
+}
+
+vec2 signNotZero(in vec2 v) 
+{
+    return vec2( signNotZero(v.x), signNotZero(v.y) );
+}
+
+vec3 decodeNormal(in vec2 enc) 
+{
+    vec3 v = vec3(enc.x, enc.y, 1.0 - abs(enc.x) - abs(enc.y));
+    if (v.z < 0) 
+	{
+        v.xy = (1.0 - abs(v.yx)) * signNotZero(v.xy);
+    }
+    return normalize(v);
+}
+
 void main() 
 {
 	if (gl_GlobalInvocationID.x >= cWidth || gl_GlobalInvocationID.y >=  cHeight)
@@ -96,6 +122,11 @@ void main()
 		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
 		return;
 	}
+	
+	const uvec2 encodedTBN = texelFetch(uTangentSpaceImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
+	const vec4 viewSpaceNormal = vec4(decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0), 0.0);
+	const vec3 N = (uPushConsts.invViewMatrix * viewSpaceNormal).xyz;
+	
 	const vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * vec2(cTexelWidth, cTexelHeight);
 	vec4 worldSpacePos = uPushConsts.invViewProjectionMatrix * vec4(texCoord * 2.0 - 1.0, depth, 1.0);
 	worldSpacePos *= 1.0 / worldSpacePos.w;
@@ -107,26 +138,35 @@ void main()
 		const uint shadowDataOffsetCount = uDirectionalLightData[lightIdx].shadowDataOffsetCount;
 		const uint offset = shadowDataOffsetCount >> 16;
 		const uint end = (shadowDataOffsetCount & 0xFFFF) + offset;
+		uint layerIdx = offset;
+		vec4 shadowCoord;
+		
+		const float NdotL = dot(viewSpaceNormal.xyz, uDirectionalLightData[lightIdx].direction.xyz);
+		
+		if (NdotL <= 0.0)
+		{
+			shadow[lightIdx] = 1.0;
+			continue;
+		}
+		
+		const float scaleWeight = 1.0 - max(NdotL, 0.0);
 	
 		// find cascade and evaluate shadow
-		for (uint i = offset; i < end; ++i)
+		for (; layerIdx < end; ++layerIdx)
 		{
-			vec4 shadowCoord = uShadowMatrices[i] * worldSpacePos;
+			const float normalOffsetScale = uDepthNormalBias[layerIdx].y * scaleWeight;
+			shadowCoord = uShadowMatrices[layerIdx] * vec4(worldSpacePos.xyz + N * normalOffsetScale, 1.0);
+			if (all(lessThan(abs(shadowCoord.xy), vec2(1.0))))
+			{
+				break;
+			}
+		}
+		
+		if (layerIdx < end)
+		{
 			shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5;
-			const float border = 7.0 * (1.0 / 2048.0);
-			if (shadowCoord.x < (0.0 + border) || shadowCoord.x > (1.0 - border) || shadowCoord.y < (0.0 + border) || shadowCoord.y > (1.0 - border))
-			{
-				continue;
-			}
-			shadowCoord.z -= 0.0001;
-			const float noise = interleavedGradientNoise(vec2(gl_GlobalInvocationID.xy) + 0.5);
-			const float filterScale = penumbra(noise, shadowCoord, 16, i);
-			for (uint j = 0; j < 16; ++j)
-			{
-				const vec2 coord = filterScale * border * vogelDiskSample(j, 16, noise) + shadowCoord.xy;
-				shadow[lightIdx] += texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), vec4(coord, i, shadowCoord.z)).x * (1.0 / 16.0);
-			}
-			break;
+			shadowCoord.z += uDepthNormalBias[layerIdx].x;
+			shadow[lightIdx] = texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), vec4(shadowCoord.xy, layerIdx, shadowCoord.z)).x;
 		}
 	}
 	

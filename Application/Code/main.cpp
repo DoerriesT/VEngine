@@ -83,7 +83,15 @@ public:
 
 		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
-		entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
+		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
+		dlc.m_depthBias[0] = 5.0f;
+		dlc.m_depthBias[1] = 5.0f;
+		dlc.m_depthBias[2] = 5.0f;
+		dlc.m_depthBias[3] = 5.0f;
+		dlc.m_normalOffsetBias[0] = 2.0f;
+		dlc.m_normalOffsetBias[1] = 2.0f;
+		dlc.m_normalOffsetBias[2] = 2.0f;
+		dlc.m_normalOffsetBias[3] = 2.0f;
 		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
 
 		std::default_random_engine e;

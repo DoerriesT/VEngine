@@ -12,5 +12,7 @@ namespace VEngine
 		uint32_t m_cascadeCount;
 		float m_maxShadowDistance;
 		float m_splitLambda;
+		float m_depthBias[MAX_CASCADES];
+		float m_normalOffsetBias[MAX_CASCADES];
 	};
 }

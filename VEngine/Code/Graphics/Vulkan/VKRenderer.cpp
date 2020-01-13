@@ -334,6 +334,17 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		}
 	}
 
+	// shadow texel sized write
+	VkDescriptorBufferInfo shadowBiasBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::vec2), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowBiasBufferInfo.range, shadowBiasBufferInfo.offset, shadowBiasBufferInfo.buffer, bufferPtr);
+		if (renderData.m_shadowMatrixCount)
+		{
+			memcpy(bufferPtr, renderData.m_shadowDepthNormalBiases, renderData.m_shadowMatrixCount * sizeof(glm::vec2));
+		}
+	}
+
 	// instance data write
 	std::vector<SubMeshInstanceData> sortedInstanceData(renderData.m_subMeshInstanceDataCount);
 	VkDescriptorBufferInfo instanceDataBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), size_t(1)) };
@@ -663,9 +674,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
 	deferredShadowsPassData.m_resultImageViewHandle = deferredShadowsImageViewHandle;
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
+	deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	deferredShadowsPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	deferredShadowsPassData.m_shadowBiasBufferInfo = shadowBiasBufferInfo;
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 

@@ -76,6 +76,7 @@ namespace VEngine
 		glm::mat4 *m_transformData;
 		uint32_t m_shadowMatrixCount;
 		glm::mat4 *m_shadowMatrices;
+		glm::vec2 *m_shadowDepthNormalBiases;
 		uint32_t m_subMeshInstanceDataCount;
 		SubMeshInstanceData *m_subMeshInstanceData;
 		uint32_t m_allInstanceDataCount;
