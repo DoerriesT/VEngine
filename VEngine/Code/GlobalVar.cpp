@@ -17,7 +17,7 @@ namespace VEngine
 	GlobalVar<bool> g_CASEnabled = true;
 	GlobalVar<float> g_CASSharpness = 0.5f;
 	GlobalVar<bool> g_bloomEnabled = true;
-	GlobalVar<float> g_bloomStrength = 0.01f;
+	GlobalVar<float> g_bloomStrength = 0.04f;
 	GlobalVar<unsigned int> g_ssaoEnabled = 0;
 	GlobalVar<float> g_gtaoRadius = 2.0f;
 	GlobalVar<unsigned int> g_gtaoSteps = 4;
