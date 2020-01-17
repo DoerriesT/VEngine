@@ -40,6 +40,6 @@
 
 struct PushConsts
 {
-	mat4 invJitteredProjectionMatrix;
+	vec4 unprojectParams;
 	uint pointLightCount;
 };

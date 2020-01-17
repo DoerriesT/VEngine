@@ -216,9 +216,9 @@ void main()
 	}
 	
 	// view space position
-	const vec4 clipSpacePosition = vec4(vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight)  * 2.0 - 1.0, depth, 1.0);
-	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
-	viewSpacePosition /= viewSpacePosition.w;
+	const vec2 clipSpacePosition = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight) * 2.0 - 1.0;
+	vec4 viewSpacePosition = vec4(uPushConsts.unprojectParams.xy * clipSpacePosition, -1.0, uPushConsts.unprojectParams.z * depth + uPushConsts.unprojectParams.w);
+	viewSpacePosition.xyz /= viewSpacePosition.w;
 	
 	lightingParams.V = -normalize(viewSpacePosition.xyz);
 	lightingParams.viewSpacePosition = viewSpacePosition.xyz;

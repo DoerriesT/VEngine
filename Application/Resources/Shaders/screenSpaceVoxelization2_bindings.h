@@ -56,7 +56,7 @@
 
 struct PushConsts
 {
-	mat4 invJitteredProjectionMatrix;
+	vec4 unprojectParams;
 	vec4 invViewMatrixRow0;
 	vec4 invViewMatrixRow1;
 	vec4 invViewMatrixRow2;

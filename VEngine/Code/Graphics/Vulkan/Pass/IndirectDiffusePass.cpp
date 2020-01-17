@@ -87,9 +87,10 @@ void VEngine::IndirectDiffusePass::addToGraph(RenderGraph &graph, const Data &da
 			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
 			mat4 transposedInvViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_invViewMatrix);
+			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 
 			PushConsts pushConsts;
-			pushConsts.invJitteredProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 			pushConsts.invViewMatrixRow0 = transposedInvViewMatrix[0];
 			pushConsts.invViewMatrixRow1 = transposedInvViewMatrix[1];
 			pushConsts.invViewMatrixRow2 = transposedInvViewMatrix[2];

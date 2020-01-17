@@ -327,9 +327,9 @@ void main()
 	lightingParams.roughness = 0.5;
 	
 	// view space position
-	const vec4 clipSpacePosition = vec4(vec2(texCoord) * 2.0 - 1.0, depth, 1.0);
-	vec4 viewSpacePosition = uPushConsts.invJitteredProjectionMatrix * clipSpacePosition;
-	viewSpacePosition /= viewSpacePosition.w;
+	const vec2 clipSpacePosition = texCoord * 2.0 - 1.0;
+	vec4 viewSpacePosition = vec4(uPushConsts.unprojectParams.xy * clipSpacePosition, -1.0, uPushConsts.unprojectParams.z * depth + uPushConsts.unprojectParams.w);
+	viewSpacePosition.xyz /= viewSpacePosition.w;
 	
 	lightingParams.V = -normalize(viewSpacePosition.xyz);
 	lightingParams.viewSpacePosition = viewSpacePosition.xyz;

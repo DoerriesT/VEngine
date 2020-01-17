@@ -127,8 +127,9 @@ void main()
 	const vec4 viewSpaceNormal = vec4(decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0), 0.0);
 	const vec3 N = (uPushConsts.invViewMatrix * viewSpaceNormal).xyz;
 	
-	const vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * vec2(cTexelWidth, cTexelHeight);
-	vec4 worldSpacePos = uPushConsts.invViewProjectionMatrix * vec4(texCoord * 2.0 - 1.0, depth, 1.0);
+	const vec2 clipSpacePosition = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight) * 2.0 - 1.0;
+	vec4 viewSpacePosition = vec4(uPushConsts.unprojectParams.xy * clipSpacePosition, -1.0, uPushConsts.unprojectParams.z * depth + uPushConsts.unprojectParams.w);
+	vec4 worldSpacePos = uPushConsts.invViewMatrix * viewSpacePosition;
 	worldSpacePos *= 1.0 / worldSpacePos.w;
 	
 	vec4 shadow = vec4(0.0);
