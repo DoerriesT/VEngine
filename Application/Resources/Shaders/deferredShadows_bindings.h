@@ -1,5 +1,3 @@
-#include "common.h"
-
 #define RESULT_IMAGE_SET 0
 #define RESULT_IMAGE_BINDING 0
 #define DEPTH_IMAGE_SET 0
@@ -10,16 +8,14 @@
 #define SHADOW_SAMPLER_BINDING 3
 #define POINT_SAMPLER_SET 0
 #define POINT_SAMPLER_BINDING 4
-#define DIRECTIONAL_LIGHT_DATA_SET 0
-#define DIRECTIONAL_LIGHT_DATA_BINDING 5
 #define SHADOW_MATRICES_SET 0
-#define SHADOW_MATRICES_BINDING 6
+#define SHADOW_MATRICES_BINDING 5
 #define TANGENT_SPACE_IMAGE_SET 0
-#define TANGENT_SPACE_IMAGE_BINDING 7
+#define TANGENT_SPACE_IMAGE_BINDING 6
 #define SHADOW_BIAS_BUFFER_SET 0
-#define SHADOW_BIAS_BUFFER_BINDING 8
+#define SHADOW_BIAS_BUFFER_BINDING 7
 
-#define DIRECTIONAL_LIGHT_COUNT_CONST_ID 0
+#define CASCADE_COUNT_CONST_ID 0
 #define WIDTH_CONST_ID 1
 #define HEIGHT_CONST_ID 2
 #define TEXEL_WIDTH_CONST_ID 3
@@ -29,4 +25,7 @@ struct PushConsts
 {
 	mat4 invViewMatrix;
 	vec4 unprojectParams;
+	vec3 direction;
+	int cascadeDataOffset;
+	int cascadeCount;
 };

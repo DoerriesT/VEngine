@@ -21,7 +21,7 @@ layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImag
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
 layout(set = DDXY_ROT_MATERIAL_ID_IMAGE_SET, binding = DDXY_ROT_MATERIAL_ID_IMAGE_BINDING) uniform usampler2D uDdxyRotMaterialIdImage;
 layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
-layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2D uDeferredShadowImage;
+layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2DArray uDeferredShadowImage;
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -226,16 +226,12 @@ void main()
 	vec3 result = vec3(0.0);
 	
 	// directional lights
+	for (uint i = 0; i < cDirectionalLightCount; ++i)
 	{
-		// deferred shadows
-		const uint deferredShadowCount = min(4, cDirectionalLightCount);
-		const vec4 deferredShadowValues = texelFetch(uDeferredShadowImage, ivec2(gl_GlobalInvocationID.xy), 0);
-		for (uint i = 0; i < deferredShadowCount; ++i)
-		{
-			const DirectionalLightData directionalLightData = uDirectionalLightData[i];
-			const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
-			result += contribution * (1.0 - deferredShadowValues[i]);
-		}
+		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
+		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+		// TODO: dont assume that every directional light has a shadow mask
+		result += contribution * (1.0 - texelFetch(uDeferredShadowImage, ivec3(gl_GlobalInvocationID.xy, i), 0).x);
 	}
 	
 	// point lights

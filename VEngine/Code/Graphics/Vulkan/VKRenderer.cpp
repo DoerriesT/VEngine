@@ -264,6 +264,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
+	ImageHandle deferredShadowsImageHandle;
+	ImageViewHandle deferredShadowsImageViewHandle;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Deferred Shadows Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = static_cast<uint32_t>(lightData.m_directionalLightData.size());
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8_UNORM;
+
+		deferredShadowsImageHandle = graph.createImage(desc);
+		deferredShadowsImageViewHandle = graph.createImageView({ desc.m_name, deferredShadowsImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, desc.m_layers }, VK_IMAGE_VIEW_TYPE_2D_ARRAY });
+	}
+
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle2 = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
@@ -276,7 +295,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	BufferViewHandle pointLightBitMaskBufferViewHandle = VKResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLightData.size()));
@@ -672,11 +691,12 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// deferred shadows
 	DeferredShadowsPass::Data deferredShadowsPassData;
 	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
-	deferredShadowsPassData.m_resultImageViewHandle = deferredShadowsImageViewHandle;
+	deferredShadowsPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightData.size());
+	deferredShadowsPassData.m_lightData = lightData.m_directionalLightData.data();
+	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
 	deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
-	deferredShadowsPassData.m_lightDataBufferInfo = directionalLightDataBufferInfo;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	deferredShadowsPassData.m_shadowBiasBufferInfo = shadowBiasBufferInfo;
 
