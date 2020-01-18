@@ -53,7 +53,7 @@ float avgBlockersDepthToPenumbra(float zShadowMapView, float avgBlockersDepth)
 	return clamp(4000.0 * penumbra, 0.0, 1.0);
 }
 
-float penumbra(float noise, vec4 shadowCoord, int samplesCount, uint layer)
+float penumbra(float noise, vec3 shadowCoord, int samplesCount, float layer)
 {
 	float avgBlockersDepth = 0.0;
 	float blockersCount = 0.0;
@@ -139,18 +139,26 @@ void main()
 	
 	vec4 tc = vec4(-1.0);
 	const int cascadeDataOffset = uPushConsts.cascadeDataOffset;
-	
+	const float border = 7.0 * (1.0 / float(textureSize(sampler2DArrayShadow(uShadowImage, uShadowSampler), 0).x));
 	for (int i = uPushConsts.cascadeCount - 1; i >= 0; --i)
 	{
 		const float normalOffsetScale = uDepthNormalBias[cascadeDataOffset + i].y * scaleWeight;
 		const vec4 shadowCoord = vec4((uShadowMatrices[cascadeDataOffset + i] * vec4(worldSpacePos.xyz + N * normalOffsetScale, 1.0)).xyz, cascadeDataOffset + i);
-		const bool valid = all(lessThan(abs(shadowCoord.xy), vec2(1.0)));
+		const bool valid = all(lessThan(abs(shadowCoord.xy), vec2(1.0 - border * 2.0)));
 		tc = valid ? shadowCoord : tc;
 	}
 	
 	tc.xy = tc.xy * 0.5 + 0.5;
 	tc.z += uDepthNormalBias[int(tc.w)].x;
-	const float shadow = tc.w != -1.0 ? texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), tc.xywz).x : 0.0;
+	//const float shadow = tc.w != -1.0 ? texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), tc.xywz).x : 0.0;
+	float shadow = 0.0;
+	const float noise = interleavedGradientNoise(vec2(gl_GlobalInvocationID.xy) + 0.5) * 2.0 * 3.1415;
+	const float filterScale = penumbra(noise, tc.xyz, 16, tc.w);
+	for (uint j = 0; j < 16; ++j)
+	{
+		const vec2 coord = filterScale * border * vogelDiskSample(j, 16, noise) + tc.xy;
+		shadow += texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), vec4(coord, tc.wz)).x * (1.0 / 16.0);
+	}
 	
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(shadow));
 }
