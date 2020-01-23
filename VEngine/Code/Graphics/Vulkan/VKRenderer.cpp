@@ -883,7 +883,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 		ImageDescription desc{};
 		desc.m_name = "Swapchain Image";
-		desc.m_concurrent = true;
+		desc.m_concurrent = false;
 		desc.m_width = m_width;
 		desc.m_height = m_height;
 		desc.m_format = m_swapChain->getImageFormat();
