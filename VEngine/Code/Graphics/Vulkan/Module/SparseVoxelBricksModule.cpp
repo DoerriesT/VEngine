@@ -15,8 +15,6 @@
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKBuffer.h"
 
-static constexpr uint32_t brickCount = 1024 * 64;
-
 VEngine::SparseVoxelBricksModule::SparseVoxelBricksModule()
 {
 	// brick pointer image
@@ -54,7 +52,7 @@ VEngine::SparseVoxelBricksModule::SparseVoxelBricksModule()
 	// free bricks list
 	{
 		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = sizeof(uint32_t) * (brickCount + 1);
+		bufferCreateInfo.size = sizeof(uint32_t) * (BRICK_CACHE_WIDTH * BRICK_CACHE_HEIGHT * BRICK_CACHE_DEPTH + 1);
 		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -72,40 +70,52 @@ VEngine::SparseVoxelBricksModule::SparseVoxelBricksModule()
 
 	// bin vis bricks
 	{
-		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = sizeof(uint32_t) * (BINARY_VIS_BRICK_SIZE * BINARY_VIS_BRICK_SIZE * BINARY_VIS_BRICK_SIZE / 32) * brickCount;
-		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-		bufferCreateInfo.queueFamilyIndexCount = 3;
-		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+		imageCreateInfo.format = VK_FORMAT_R32_UINT;
+		imageCreateInfo.extent.width = BRICK_CACHE_WIDTH * BINARY_VIS_BRICK_SIZE / 4;
+		imageCreateInfo.extent.height = BRICK_CACHE_HEIGHT * 2 * BINARY_VIS_BRICK_SIZE / 4;
+		imageCreateInfo.extent.depth = BRICK_CACHE_DEPTH * BINARY_VIS_BRICK_SIZE / 4;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_binVisBricksBuffer, m_binVisBricksBufferAllocHandle) != VK_SUCCESS)
+		if (g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_binVisBricksImage, m_binVisBricksImageAllocHandle) != VK_SUCCESS)
 		{
-			Utility::fatalExit("Failed to create buffer!", EXIT_FAILURE);
+			Utility::fatalExit("Failed to create image!", EXIT_FAILURE);
 		}
 	}
 
 
 	// color bricks
 	{
-		VkBufferCreateInfo bufferCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferCreateInfo.size = sizeof(uint32_t) * 2 * (COLOR_BRICK_SIZE * COLOR_BRICK_SIZE * COLOR_BRICK_SIZE) * brickCount;
-		bufferCreateInfo.size = bufferCreateInfo.size < 32 ? 32 : bufferCreateInfo.size;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-		bufferCreateInfo.queueFamilyIndexCount = 3;
-		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = BRICK_CACHE_WIDTH * COLOR_BRICK_SIZE;
+		imageCreateInfo.extent.height = BRICK_CACHE_HEIGHT * COLOR_BRICK_SIZE;
+		imageCreateInfo.extent.depth = BRICK_CACHE_DEPTH * COLOR_BRICK_SIZE;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		if (g_context.m_allocator.createBuffer(allocCreateInfo, bufferCreateInfo, m_colorBricksBuffer, m_colorBricksBufferAllocHandle) != VK_SUCCESS)
+		if (g_context.m_allocator.createImage(allocCreateInfo, imageCreateInfo, m_colorBricksImage, m_colorBricksImageAllocHandle) != VK_SUCCESS)
 		{
-			Utility::fatalExit("Failed to create buffer!", EXIT_FAILURE);
+			Utility::fatalExit("Failed to create image!", EXIT_FAILURE);
 		}
 	}
 
@@ -135,9 +145,10 @@ VEngine::SparseVoxelBricksModule::SparseVoxelBricksModule()
 VEngine::SparseVoxelBricksModule::~SparseVoxelBricksModule()
 {
 	g_context.m_allocator.destroyImage(m_brickPointerImage, m_brickPointerImageAllocHandle);
+	g_context.m_allocator.destroyImage(m_binVisBricksImage, m_binVisBricksImageAllocHandle);
+	g_context.m_allocator.destroyImage(m_colorBricksImage, m_colorBricksImageAllocHandle);
 	g_context.m_allocator.destroyBuffer(m_freeBricksBuffer, m_freeBricksBufferAllocHandle);
-	g_context.m_allocator.destroyBuffer(m_binVisBricksBuffer, m_binVisBricksBufferAllocHandle);
-	g_context.m_allocator.destroyBuffer(m_colorBricksBuffer, m_colorBricksBufferAllocHandle);
+	
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
@@ -182,6 +193,40 @@ void VEngine::SparseVoxelBricksModule::updateResourceHandles(RenderGraph &graph)
 		m_brickPointerImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
 	}
 
+	// binary visibility bricks image
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Bin Vis Bricks Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = BRICK_CACHE_WIDTH * BINARY_VIS_BRICK_SIZE / 4;
+		desc.m_height = BRICK_CACHE_HEIGHT * 2 * BINARY_VIS_BRICK_SIZE / 4;
+		desc.m_depth = BRICK_CACHE_DEPTH * BINARY_VIS_BRICK_SIZE / 4;
+		desc.m_format = VK_FORMAT_R32_UINT;
+		desc.m_imageType = VK_IMAGE_TYPE_3D;
+
+		ImageHandle imageHandle = graph.importImage(desc, m_binVisBricksImage, &m_binVisBricksImageQueue, &m_binVisBricksImageResourceState);
+		m_binVisBricksImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+	}
+
+	// color bricks image 
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Color Bricks Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = BRICK_CACHE_WIDTH * COLOR_BRICK_SIZE;
+		desc.m_height = BRICK_CACHE_HEIGHT * COLOR_BRICK_SIZE;
+		desc.m_depth = BRICK_CACHE_DEPTH * COLOR_BRICK_SIZE;
+		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		desc.m_imageType = VK_IMAGE_TYPE_3D;
+
+		ImageHandle imageHandle = graph.importImage(desc, m_colorBricksImage, &m_colorBricksImageQueue, &m_colorBricksImageResourceState);
+		m_colorBricksImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_IMAGE_VIEW_TYPE_3D });
+	}
+
 	// free bricks buffer
 	{
 		BufferDescription desc = {};
@@ -189,36 +234,10 @@ void VEngine::SparseVoxelBricksModule::updateResourceHandles(RenderGraph &graph)
 		desc.m_concurrent = true;
 		desc.m_clear = false;
 		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * (brickCount + 1);
+		desc.m_size = sizeof(uint32_t) * (BRICK_CACHE_WIDTH * BRICK_CACHE_HEIGHT * BRICK_CACHE_DEPTH + 1);
 
 		BufferHandle bufferHandle = graph.importBuffer(desc, m_freeBricksBuffer, 0, &m_freeBricksBufferQueue, &m_freeBricksBufferResourceState);
 		m_freeBricksBufferViewHandle = graph.createBufferView({ desc.m_name, bufferHandle, 0, desc.m_size });
-	}
-
-	// binary visibility bricks buffer
-	{
-		BufferDescription desc = {};
-		desc.m_name = "Bin Vis Bricks Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * (BINARY_VIS_BRICK_SIZE * BINARY_VIS_BRICK_SIZE * BINARY_VIS_BRICK_SIZE / 32) * brickCount;
-
-		BufferHandle bufferHandle = graph.importBuffer(desc, m_binVisBricksBuffer, 0, &m_binVisBricksBufferQueue, &m_binVisBricksBufferResourceState);
-		m_binVisBricksBufferViewHandle = graph.createBufferView({ desc.m_name, bufferHandle, 0, desc.m_size, VK_FORMAT_R32_UINT });
-	}
-
-	// color bricks buffer
-	{
-		BufferDescription desc = {};
-		desc.m_name = "Color Bricks Buffer";
-		desc.m_concurrent = true;
-		desc.m_clear = false;
-		desc.m_clearValue.m_bufferClearValue = 0;
-		desc.m_size = sizeof(uint32_t) * 2 * (COLOR_BRICK_SIZE * COLOR_BRICK_SIZE * COLOR_BRICK_SIZE) * brickCount;
-
-		BufferHandle bufferHandle = graph.importBuffer(desc, m_colorBricksBuffer, 0, &m_colorBricksBufferQueue, &m_colorBricksBufferResourceState);
-		m_colorBricksBufferViewHandle = graph.createBufferView({ desc.m_name, bufferHandle, 0, desc.m_size, VK_FORMAT_R16G16B16A16_SFLOAT });
 	}
 }
 
@@ -232,8 +251,8 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 		InitBrickPoolPass::Data initBrickPoolPassData;
 		initBrickPoolPassData.m_passRecordContext = data.m_passRecordContext;
 		initBrickPoolPassData.m_freeBricksBufferHandle = m_freeBricksBufferViewHandle;
-		initBrickPoolPassData.m_binVisBricksBufferHandle = m_binVisBricksBufferViewHandle;
-		initBrickPoolPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+		initBrickPoolPassData.m_binVisBricksImageHandle = m_binVisBricksImageViewHandle;
+		initBrickPoolPassData.m_colorBricksImageHandle = m_colorBricksImageViewHandle;
 
 		InitBrickPoolPass::addToGraph(graph, initBrickPoolPassData);
 	}
@@ -276,8 +295,8 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 		ClearBricksPass::Data clearBricksPassData;
 		clearBricksPassData.m_passRecordContext = data.m_passRecordContext;
 		clearBricksPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
-		clearBricksPassData.m_binVisBricksBufferHandle = m_binVisBricksBufferViewHandle;
-		clearBricksPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+		clearBricksPassData.m_binVisBricksImageHandle = m_binVisBricksImageViewHandle;
+		clearBricksPassData.m_colorBricksImageHandle = m_colorBricksImageViewHandle;
 		clearBricksPassData.m_freeBricksBufferHandle = m_freeBricksBufferViewHandle;
 
 		ClearBricksPass::addToGraph(graph, clearBricksPassData);
@@ -333,8 +352,8 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 		voxelizationFillPassData.m_transformDataBufferInfo = data.m_transformDataBufferInfo;
 		voxelizationFillPassData.m_subMeshInfoBufferInfo = { renderResources.m_subMeshDataInfoBuffer.getBuffer(), 0, renderResources.m_subMeshDataInfoBuffer.getSize() };
 		voxelizationFillPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
-		voxelizationFillPassData.m_binVisBricksBufferHandle = m_binVisBricksBufferViewHandle;
-		voxelizationFillPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+		voxelizationFillPassData.m_binVisBricksImageHandle = m_binVisBricksImageViewHandle;
+		voxelizationFillPassData.m_colorBricksImageHandle = m_colorBricksImageViewHandle;
 		voxelizationFillPassData.m_instanceDataCount = data.m_instanceDataCount;
 		voxelizationFillPassData.m_instanceData = data.m_instanceData;
 		voxelizationFillPassData.m_subMeshInfo = data.m_subMeshInfo;
@@ -362,7 +381,7 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 	ssVoxelPassData.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
 	ssVoxelPassData.m_deferredShadowImageViewHandle = data.m_deferredShadowsImageViewHandle;
 	ssVoxelPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
-	ssVoxelPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+	ssVoxelPassData.m_colorBricksImageHandle = m_colorBricksImageViewHandle;
 	ssVoxelPassData.m_irradianceVolumeImageHandle = data.m_irradianceVolumeImageViewHandle;
 	ssVoxelPassData.m_irradianceVolumeDepthImageHandle = data.m_irradianceVolumeDepthImageViewHandle;
 
@@ -375,8 +394,8 @@ void VEngine::SparseVoxelBricksModule::addDebugVisualizationToGraph(RenderGraph 
 	brickDebugPassData.m_passRecordContext = data.m_passRecordContext;
 	brickDebugPassData.m_brickPtrImageHandle = m_brickPointerImageViewHandle;
 	brickDebugPassData.m_colorImageHandle = data.m_colorImageViewHandle;
-	brickDebugPassData.m_binVisBricksBufferHandle = m_binVisBricksBufferViewHandle;
-	brickDebugPassData.m_colorBricksBufferHandle = m_colorBricksBufferViewHandle;
+	brickDebugPassData.m_binVisBricksImageHandle = m_binVisBricksImageViewHandle;
+	brickDebugPassData.m_colorBricksImageHandle = m_colorBricksImageViewHandle;
 
 	BrickDebugPass::addToGraph(graph, brickDebugPassData);
 }
@@ -397,14 +416,14 @@ VEngine::ImageViewHandle VEngine::SparseVoxelBricksModule::getBrickPointerImageV
 	return m_brickPointerImageViewHandle;
 }
 
-VEngine::BufferViewHandle VEngine::SparseVoxelBricksModule::getBinVisBufferViewHandle()
+VEngine::ImageViewHandle VEngine::SparseVoxelBricksModule::getBinVisImageViewHandle()
 {
-	return m_binVisBricksBufferViewHandle;
+	return m_binVisBricksImageViewHandle;
 }
 
-VEngine::BufferViewHandle VEngine::SparseVoxelBricksModule::getColorBufferViewHandle()
+VEngine::ImageViewHandle VEngine::SparseVoxelBricksModule::getColorImageViewHandle()
 {
-	return m_colorBricksBufferViewHandle;
+	return m_colorBricksImageViewHandle;
 }
 
 uint32_t VEngine::SparseVoxelBricksModule::getAllocatedBrickCount() const

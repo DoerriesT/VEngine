@@ -19,8 +19,8 @@ void VEngine::IrradianceVolumeRayMarchingPass::addToGraph(RenderGraph &graph, co
 	ResourceUsageDescription passUsages[]
 	{
 		{ResourceViewHandle(data.m_brickPtrImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
-		{ ResourceViewHandle(data.m_binVisBricksBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER },
-		{ ResourceViewHandle(data.m_colorBricksBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER },
+		{ ResourceViewHandle(data.m_binVisBricksImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
+		{ ResourceViewHandle(data.m_colorBricksImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_rayMarchingResultImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_rayMarchingResultDistanceImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
 		{ ResourceViewHandle(data.m_queueBufferHandle), ResourceState::READ_STORAGE_BUFFER_COMPUTE_SHADER },
@@ -59,13 +59,14 @@ void VEngine::IrradianceVolumeRayMarchingPass::addToGraph(RenderGraph &graph, co
 
 			// update descriptor sets
 			{
+				VkSampler pointSamplerRepeat = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX];
 				VkSampler pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPtrImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]), BRICK_PTR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_binVisBricksImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerRepeat), BIN_VIS_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_colorBricksImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerRepeat), COLOR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPtrImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerRepeat), BRICK_PTR_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_rayMarchingResultImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_rayMarchingResultDistanceImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), DISTANCE_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_queueBufferHandle), QUEUE_BUFFER_BINDING);

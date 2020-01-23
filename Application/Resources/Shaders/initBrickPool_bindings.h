@@ -3,7 +3,7 @@
 
 struct PushConsts
 {
-	uint count;
-	uint offset;
+	uvec4 volumeSize;
+	uvec4 offset;
 	uint clearNextFree;
 };

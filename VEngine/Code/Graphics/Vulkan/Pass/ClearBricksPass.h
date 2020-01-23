@@ -11,8 +11,8 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			ImageViewHandle m_brickPointerImageHandle;
-			BufferViewHandle m_binVisBricksBufferHandle;
-			BufferViewHandle m_colorBricksBufferHandle;
+			ImageViewHandle m_binVisBricksImageHandle;
+			ImageViewHandle m_colorBricksImageHandle;
 			BufferViewHandle m_freeBricksBufferHandle;
 		};
 

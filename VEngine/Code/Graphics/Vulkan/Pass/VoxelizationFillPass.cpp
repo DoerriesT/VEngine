@@ -26,8 +26,8 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 		//{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
 		//{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
 		{ResourceViewHandle(data.m_brickPointerImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
-		{ResourceViewHandle(data.m_binVisBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_FRAGMENT_SHADER},
-		{ResourceViewHandle(data.m_colorBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_FRAGMENT_SHADER},
+		{ResourceViewHandle(data.m_binVisBricksImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
+		{ResourceViewHandle(data.m_colorBricksImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER},
 		{ResourceViewHandle(data.m_shadowImageViewHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER},
 		{ ResourceViewHandle(data.m_irradianceVolumeImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
 		{ ResourceViewHandle(data.m_irradianceVolumeDepthImageHandle), ResourceState::READ_TEXTURE_FRAGMENT_SHADER },
@@ -137,7 +137,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER, pointSamplerClamp), BRICK_PTR_IMAGE_BINDING);
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_binVisBricksImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), BIN_VIS_IMAGE_BINDING);
 				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 				//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
 
@@ -148,7 +148,7 @@ void VEngine::VoxelizationFillPass::addToGraph(RenderGraph &graph, const Data &d
 
 					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING);
 
-					writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_colorBricksImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_FRAGMENT_SHADER), COLOR_IMAGE_BINDING);
 					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_shadowImageViewHandle, ResourceState::READ_TEXTURE_FRAGMENT_SHADER), SHADOW_IMAGE_BINDING);
 					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
 					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_lightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING);

@@ -24,8 +24,8 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			ImageViewHandle m_depthPyramidImageViewHandle;
 			ImageViewHandle m_brickPointerImageViewHandle;
-			BufferViewHandle m_binVisBricksBufferViewHandle;
-			BufferViewHandle m_colorBricksBufferViewHandle;
+			ImageViewHandle m_binVisBricksImageViewHandle;
+			ImageViewHandle m_colorBricksImageViewHandle;
 		};
 
 		struct DebugVisualizationData

@@ -30,10 +30,10 @@ layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cP
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const uint cDepthProbeSideLength = 16;
 
 layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
-layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
+layout(set = BIN_VIS_IMAGE_SET, binding = BIN_VIS_IMAGE_BINDING, r32ui) uniform uimage3D uBinVisImage;
 
 #if LIGHTING_ENABLED
-layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
+layout(set = COLOR_IMAGE_SET, binding = COLOR_IMAGE_BINDING, rgba16f) uniform image3D uColorImage;
 layout(set = IRRADIANCE_VOLUME_IMAGE_SET, binding = IRRADIANCE_VOLUME_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeImage;
 layout(set = IRRADIANCE_VOLUME_DEPTH_IMAGE_SET, binding = IRRADIANCE_VOLUME_DEPTH_IMAGE_BINDING) uniform sampler2D uIrradianceVolumeDepthImage;
 
@@ -257,10 +257,8 @@ void writeVoxels(ivec3 coord, uint val, vec3 color)
 {
 	coord += ivec3(floor(uPushConsts.gridOffset.xyz));
 	vec3 localCoord = floor(fract(coord / float(cBinVisBrickSize)) * cBinVisBrickSize);
-	vec3 cubeCoord = localCoord * 0.25;
-	float cubesPerBrick = cBinVisBrickSize * 0.25;
-	ivec3 localCubeCoord = ivec3(fract(cubeCoord / cubesPerBrick) * cubesPerBrick);
-	uint cubeIdx = localCubeCoord.x + localCubeCoord.z * 4 + localCubeCoord.y * 16;
+	uvec3 cubeCoord = uvec3(localCoord * 0.25);
+	uint cubeIdx = cubeCoord.x + cubeCoord.z * 4 + cubeCoord.y * 16;
 	ivec3 bitCoord = ivec3(fract(localCoord * 0.25) * 4.0);
 	uint bitIdx = bitCoord.x + bitCoord.z * 4 + bitCoord.y * 16;
 	bool upper = bitIdx > 31;
@@ -274,20 +272,19 @@ void writeVoxels(ivec3 coord, uint val, vec3 color)
 	
 	if (brickPtr != 0)
 	{
-		--brickPtr;
+		const ivec3 brickAddress = ivec3((brickPtr >> 16) & 0xFF, (brickPtr >> 8) & 0xFF, (brickPtr) & 0xFF);
 		
-		const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-		const int binVisIdx = int(brickPtr * binVisBrickMemSize + cubeIdx * 2 + (upper ? 1 : 0));
+		const int cubesPerBrick = int(cBinVisBrickSize) / 4;
+		ivec3 binVisAddress = brickAddress * ivec3(cubesPerBrick, cubesPerBrick * 2, cubesPerBrick) + ivec3(cubeCoord.x, cubeCoord.y * 2 + (upper ? 1 : 0), cubeCoord.z);
 		uint payload = (1u << bitIdx);
-		imageAtomicOr(uBinVisImageBuffer, binVisIdx, payload);
+		imageAtomicOr(uBinVisImage, binVisAddress, payload);
 		
 #if LIGHTING_ENABLED
-		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
 		const ivec3 localColorCoord = ivec3(localCoord / float(cBinVisBrickSize) * cColorBrickSize);
-		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
+		ivec3 colorAddress = brickAddress * int(cColorBrickSize) + localColorCoord;
 		
-		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
-		imageStore(uColorImageBuffer, colorIdx, vec4(mix(color, prevColor, 0.98), 1.0));
+		vec3 prevColor = imageLoad(uColorImage, colorAddress).rgb;
+		imageStore(uColorImage, colorAddress, vec4(mix(color, prevColor, 0.98), 1.0));
 #endif // LIGHTING_ENABLED
 	}
 }

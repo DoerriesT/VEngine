@@ -17,6 +17,9 @@ namespace VEngine
 		static constexpr float BRICK_SIZE = 1.0f;
 		static constexpr uint32_t BINARY_VIS_BRICK_SIZE = 16;
 		static constexpr uint32_t COLOR_BRICK_SIZE = 4;
+		static constexpr uint32_t BRICK_CACHE_WIDTH = 64;
+		static constexpr uint32_t BRICK_CACHE_HEIGHT = 32;
+		static constexpr uint32_t BRICK_CACHE_DEPTH = 32;
 
 		struct Data
 		{
@@ -60,36 +63,37 @@ namespace VEngine
 		void addDebugVisualizationToGraph(RenderGraph &graph, const DebugVisualizationData &data);
 		void addAllocatedBrickCountReadBackCopyToGraph(RenderGraph &graph, PassRecordContext *passRecordContext);
 		ImageViewHandle getBrickPointerImageViewHandle();
-		BufferViewHandle getBinVisBufferViewHandle();
-		BufferViewHandle getColorBufferViewHandle();
+		ImageViewHandle getBinVisImageViewHandle();
+		ImageViewHandle getColorImageViewHandle();
 		uint32_t getAllocatedBrickCount() const;
 
 	private:
 		ImageViewHandle m_brickPointerImageViewHandle;
+		ImageViewHandle m_binVisBricksImageViewHandle;
+		ImageViewHandle m_colorBricksImageViewHandle;
 		BufferViewHandle m_freeBricksBufferViewHandle;
-		BufferViewHandle m_binVisBricksBufferViewHandle;
-		BufferViewHandle m_colorBricksBufferViewHandle;
 
 		VkImage m_brickPointerImage;
+		VkImage m_binVisBricksImage;
+		VkImage m_colorBricksImage;
 		VkBuffer m_freeBricksBuffer;
-		VkBuffer m_binVisBricksBuffer;
-		VkBuffer m_colorBricksBuffer;
+		
 		VkBuffer m_brickPoolStatsReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT];
 
 		VKAllocationHandle m_brickPointerImageAllocHandle = nullptr;
+		VKAllocationHandle m_binVisBricksImageAllocHandle = nullptr;
+		VKAllocationHandle m_colorBricksImageAllocHandle = nullptr;
 		VKAllocationHandle m_freeBricksBufferAllocHandle = nullptr;
-		VKAllocationHandle m_binVisBricksBufferAllocHandle = nullptr;
-		VKAllocationHandle m_colorBricksBufferAllocHandle = nullptr;
 		VKAllocationHandle m_brickPoolStatsReadBackBufferAllocHandles[RendererConsts::FRAMES_IN_FLIGHT];
 
 		VkQueue m_brickPointerImageQueue = RenderGraph::undefinedQueue;
 		ResourceState m_brickPointerImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_binVisBricksImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_binVisBricksImageResourceState = ResourceState::UNDEFINED;
+		VkQueue m_colorBricksImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_colorBricksImageResourceState = ResourceState::UNDEFINED;
 		VkQueue m_freeBricksBufferQueue = RenderGraph::undefinedQueue;
 		ResourceState m_freeBricksBufferResourceState = ResourceState::UNDEFINED;
-		VkQueue m_binVisBricksBufferQueue = RenderGraph::undefinedQueue;
-		ResourceState m_binVisBricksBufferResourceState = ResourceState::UNDEFINED;
-		VkQueue m_colorBricksBufferQueue = RenderGraph::undefinedQueue;
-		ResourceState m_colorBricksBufferResourceState = ResourceState::UNDEFINED;
 
 		uint32_t m_allocatedBrickCount;
 	};

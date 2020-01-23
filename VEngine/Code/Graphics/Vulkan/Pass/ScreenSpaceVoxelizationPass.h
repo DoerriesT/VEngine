@@ -22,7 +22,7 @@ namespace VEngine
 			ImageViewHandle m_tangentSpaceImageHandle;
 			ImageViewHandle m_deferredShadowImageViewHandle;
 			ImageViewHandle m_brickPointerImageHandle;
-			BufferViewHandle m_colorBricksBufferHandle;
+			ImageViewHandle m_colorBricksImageHandle;
 			ImageViewHandle m_irradianceVolumeImageHandle;
 			ImageViewHandle m_irradianceVolumeDepthImageHandle;
 		};

@@ -799,8 +799,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	diffuseGIProbesModuleData.m_passRecordContext = &passRecordContext;
 	diffuseGIProbesModuleData.m_depthPyramidImageViewHandle = depthPyramidImageViewHandle;
 	diffuseGIProbesModuleData.m_brickPointerImageViewHandle = m_sparseVoxelBricksModule->getBrickPointerImageViewHandle();
-	diffuseGIProbesModuleData.m_binVisBricksBufferViewHandle = m_sparseVoxelBricksModule->getBinVisBufferViewHandle();
-	diffuseGIProbesModuleData.m_colorBricksBufferViewHandle = m_sparseVoxelBricksModule->getColorBufferViewHandle();
+	diffuseGIProbesModuleData.m_binVisBricksImageViewHandle = m_sparseVoxelBricksModule->getBinVisImageViewHandle();
+	diffuseGIProbesModuleData.m_colorBricksImageViewHandle = m_sparseVoxelBricksModule->getColorImageViewHandle();
 
 	m_diffuseGIProbesModule->addProbeUpdateToGraph(graph, diffuseGIProbesModuleData);
 

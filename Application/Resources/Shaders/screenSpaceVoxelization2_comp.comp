@@ -25,7 +25,7 @@ layout(constant_id = IRRADIANCE_VOLUME_PROBE_SIDE_LENGTH_CONST_ID) const uint cP
 layout(constant_id = IRRADIANCE_VOLUME_DEPTH_PROBE_SIDE_LENGTH_CONST_ID) const uint cDepthProbeSideLength = 16;
 
 layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
-layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
+layout(set = COLOR_IMAGE_SET, binding = COLOR_IMAGE_BINDING, rgba16f) uniform image3D uColorImage;
 layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
 layout(set = UV_IMAGE_SET, binding = UV_IMAGE_BINDING) uniform sampler2D uUVImage;
 layout(set = DDXY_LENGTH_IMAGE_SET, binding = DDXY_LENGTH_IMAGE_BINDING) uniform sampler2D uDdxyLengthImage;
@@ -402,13 +402,12 @@ void main()
 	
 	if (brickPtr != 0)
 	{
-		--brickPtr;
+		const ivec3 brickAddress = ivec3((brickPtr >> 16) & 0xFF, (brickPtr >> 8) & 0xFF, (brickPtr) & 0xFF);
 		
-		const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
 		const ivec3 localColorCoord = ivec3(floor(fract(coord / float(cBinVisBrickSize)) * cColorBrickSize));
-		const int colorIdx = int(brickPtr * colorBrickMemSize + localColorCoord.x + localColorCoord.z * cColorBrickSize + localColorCoord.y * cColorBrickSize * cColorBrickSize);
+		ivec3 colorAddress = brickAddress * int(cColorBrickSize) + localColorCoord;
 		
-		vec3 prevColor = imageLoad(uColorImageBuffer, colorIdx).rgb;
-		imageStore(uColorImageBuffer, colorIdx, vec4(mix(result, prevColor, 0.93), 1.0));
+		vec3 prevColor = imageLoad(uColorImage, colorAddress).rgb;
+		imageStore(uColorImage, colorAddress, vec4(mix(result, prevColor, 0.98), 1.0));
 	}
 }

@@ -29,12 +29,12 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 	ResourceUsageDescription passUsages[]
 	{
 		 { ResourceViewHandle(data.m_brickPointerImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
-		 { ResourceViewHandle(data.m_binVisBricksBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
-		 { ResourceViewHandle(data.m_colorBricksBufferHandle), ResourceState::WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
+		 { ResourceViewHandle(data.m_binVisBricksImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
+		 { ResourceViewHandle(data.m_colorBricksImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER },
 		 { ResourceViewHandle(data.m_freeBricksBufferHandle), ResourceState::READ_WRITE_STORAGE_BUFFER_COMPUTE_SHADER },
 	};
 
-	graph.addPass("Clear Bricks", QueueType::GRAPHICS, 1, passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Clear Bricks", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			// create pipeline description
 			SpecEntry specEntries[]
@@ -61,8 +61,8 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_brickPointerImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER), BRICK_PTR_IMAGE_BINDING);
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_binVisBricksBufferHandle), BIN_VIS_IMAGE_BUFFER_BINDING);
-				writer.writeBufferView(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, registry.getBufferView(data.m_colorBricksBufferHandle), COLOR_IMAGE_BUFFER_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_binVisBricksImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), BIN_VIS_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_colorBricksImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), COLOR_IMAGE_BINDING);
 				writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_freeBricksBufferHandle), FREE_BRICKS_BUFFER_BINDING);
 
 				writer.commit();
@@ -76,7 +76,10 @@ void VEngine::ClearBricksPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			vkCmdDispatch(cmdBuf, (SparseVoxelBricksModule::BRICK_VOLUME_WIDTH + 7) / 8, (SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT + 7) / 8, SparseVoxelBricksModule::BRICK_VOLUME_DEPTH);
+			vkCmdDispatch(cmdBuf, 
+				(SparseVoxelBricksModule::BRICK_VOLUME_WIDTH + 3) / 4, 
+				(SparseVoxelBricksModule::BRICK_VOLUME_HEIGHT + 3) / 4, 
+				(SparseVoxelBricksModule::BRICK_VOLUME_DEPTH + 3) / 4);
 
 		}, true);
 }

@@ -4,8 +4,8 @@
 #include "common.h"
 
 layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING) uniform usampler3D uBrickPtrImage;
-layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING) uniform usamplerBuffer uBinVisImageBuffer;
-layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING) uniform samplerBuffer uColorImageBuffer;
+layout(set = BIN_VIS_IMAGE_SET, binding = BIN_VIS_IMAGE_BINDING) uniform usampler3D uBinVisImage;
+layout(set = COLOR_IMAGE_SET, binding = COLOR_IMAGE_BINDING) uniform sampler3D uColorImage;
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
 layout(set = DISTANCE_IMAGE_SET, binding = DISTANCE_IMAGE_BINDING, r16f) uniform image2D uDistanceImage;
 
@@ -159,16 +159,16 @@ bool raymarch(const vec3 origin, const vec3 dir, out vec3 color, out float dist)
 		uvec2 binVis = uvec2(0);
 		if (brickPtr != 0)
 		{
+			const ivec3 brickAddress = ivec3((brickPtr >> 16) & 0xFF, (brickPtr >> 8) & 0xFF, (brickPtr) & 0xFF);
+			
 			const float cubesPerBrick = cBinVisBrickSize * 0.25;
-			const uint cubesPerBrickUI = cBinVisBrickSize / 4;
+			const int cubesPerBrickI = int(cBinVisBrickSize) / 4;
 			const ivec3 cubeCoord = ivec3(fract(gridCoord / float(cBinVisBrickSize)) * cubesPerBrick);
-			const uint cubeIdx = cubeCoord.x + cubeCoord.z * cubesPerBrickUI + cubeCoord.y * (cubesPerBrickUI * cubesPerBrickUI);
 			
-			const uint binVisBrickMemSize = (cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-			const int address = int((brickPtr - 1) * binVisBrickMemSize + cubeIdx * 2);
+			const ivec3 cubeAddress = brickAddress * cubesPerBrickI + cubeCoord;
 			
-			binVis[0] = texelFetch(uBinVisImageBuffer, address + 0).x;
-			binVis[1] = texelFetch(uBinVisImageBuffer, address + 1).x;
+			binVis[0] = texelFetch(uBinVisImage, ivec3(cubeAddress.x, cubeAddress.y * 2 + 0, cubeAddress.z), 0).x;
+			binVis[1] = texelFetch(uBinVisImage, ivec3(cubeAddress.x, cubeAddress.y * 2 + 1, cubeAddress.z), 0).x;
 		}
 		
 		bool hit = false;
@@ -213,10 +213,10 @@ bool raymarch(const vec3 origin, const vec3 dir, out vec3 color, out float dist)
 		
 		if (hit)
 		{
-			ivec3 localCoord = ivec3(fract(gridCoord / float(cBinVisBrickSize)) * cColorBrickSize);
-			const uint colorBrickMemSize = (cColorBrickSize * cColorBrickSize * cColorBrickSize);
-			const uint colorIdx = localCoord.x + localCoord.z * cColorBrickSize + localCoord.y * cColorBrickSize * cColorBrickSize;
-			color = texelFetch(uColorImageBuffer, int((brickPtr - 1) * colorBrickMemSize + colorIdx)).rgb;
+			const ivec3 brickAddress = ivec3((brickPtr >> 16) & 0xFF, (brickPtr >> 8) & 0xFF, (brickPtr) & 0xFF);
+			const ivec3 localCoord = ivec3(fract(gridCoord / float(cBinVisBrickSize)) * cColorBrickSize);
+			const ivec3 colorAddress = brickAddress * int(cColorBrickSize) + localCoord;
+			color = texelFetch(uColorImage, colorAddress, 0).rgb;
 			dist = distance(p0, gridCoord + 0.5) / cVoxelScale;
 			return true;
 		}

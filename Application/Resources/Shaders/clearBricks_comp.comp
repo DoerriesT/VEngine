@@ -3,8 +3,8 @@
 #include "clearBricks_bindings.h"
 
 layout(set = BRICK_PTR_IMAGE_SET, binding = BRICK_PTR_IMAGE_BINDING, r32ui) uniform uimage3D uBrickPtrImage;
-layout(set = BIN_VIS_IMAGE_BUFFER_SET, binding = BIN_VIS_IMAGE_BUFFER_BINDING, r32ui) uniform uimageBuffer uBinVisImageBuffer;
-layout(set = COLOR_IMAGE_BUFFER_SET, binding = COLOR_IMAGE_BUFFER_BINDING, rgba16f) uniform imageBuffer uColorImageBuffer;
+layout(set = BIN_VIS_IMAGE_SET, binding = BIN_VIS_IMAGE_BINDING, r32ui) uniform uimage3D uBinVisImage;
+layout(set = COLOR_IMAGE_SET, binding = COLOR_IMAGE_BINDING, rgba16f) uniform image3D uColorImage;
 
 layout(set = FREE_BRICKS_BUFFER_SET, binding = FREE_BRICKS_BUFFER_BINDING) buffer FREE_BRICKS_BUFFER 
 {
@@ -23,17 +23,18 @@ layout(constant_id = BRICK_VOLUME_DEPTH_CONST_ID) const uint cBrickVolumeDepth =
 layout(constant_id = BIN_VIS_BRICK_SIZE_CONST_ID) const uint cBinVisBrickSize = 16;
 layout(constant_id = COLOR_BRICK_SIZE_CONST_ID) const uint cColorBrickSize = 4;
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 void main() 
 {
 	const ivec3 gridSize = ivec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth);
+	ivec3 coord = ivec3(gl_GlobalInvocationID.xyz);
 	
 	// early exit if this invocation is outside the grid
-	if (gl_GlobalInvocationID.x < gridSize.x && gl_GlobalInvocationID.y < gridSize.y && gl_GlobalInvocationID.z < gridSize.z)
+	if (all(lessThan(coord, gridSize)))
 	{		
 		// is the voxel outside the grid after applying camera movement?
-		ivec3 coord = ivec3(gl_GlobalInvocationID.xyz) + uPushConsts.diff;
+		coord += uPushConsts.diff;
 		if (any(lessThan(coord, ivec3(0))) || any(greaterThanEqual(coord, gridSize)))
 		{
 			// move coordinate to world space fixed coordinate system (toroidal addressing)
@@ -44,19 +45,31 @@ void main()
 			uint ptr = imageLoad(uBrickPtrImage, coord).x;
 			if (ptr != 0)
 			{
-				--ptr;
+				const ivec3 brickAddress = ivec3((ptr >> 16) & 0xFF, (ptr >> 8) & 0xFF, (ptr) & 0xFF);
 				
 				// clear brick
-				const int binVisDataPerBrick = int(cBinVisBrickSize * cBinVisBrickSize * cBinVisBrickSize) / 32;
-				for (int i = 0; i < binVisDataPerBrick; ++i)
+				const int cubesPerBrick = int(cBinVisBrickSize) / 4;
+				for (int z = 0; z < cubesPerBrick; ++z)
 				{
-					imageStore(uBinVisImageBuffer, i + int(ptr) * binVisDataPerBrick, uvec4(0));
+					for (int y = 0; y < cubesPerBrick; ++y)
+					{
+						for (int x = 0; x < cubesPerBrick; ++x)
+						{
+							imageStore(uBinVisImage, brickAddress * ivec3(cubesPerBrick, cubesPerBrick * 2, cubesPerBrick) + ivec3(x, y * 2 + 0, z), uvec4(0));
+							imageStore(uBinVisImage, brickAddress * ivec3(cubesPerBrick, cubesPerBrick * 2, cubesPerBrick) + ivec3(x, y * 2 + 1, z), uvec4(0));
+						}
+					}
 				}
 				
-				const int colorDataPerBrick = int(cColorBrickSize * cColorBrickSize * cColorBrickSize);
-				for (int i = 0; i < colorDataPerBrick; ++i)
+				for (int z = 0; z < cColorBrickSize; ++z)
 				{
-					imageStore(uColorImageBuffer, i + int(ptr) * colorDataPerBrick, vec4(0.0));
+					for (int y = 0; y < cColorBrickSize; ++y)
+					{
+						for (int x = 0; x < cColorBrickSize; ++x)
+						{
+							imageStore(uColorImage, brickAddress * int(cColorBrickSize) + ivec3(x, y, z), vec4(0));
+						}
+					}
 				}
 				
 				uint offset = atomicAdd(uNextFreeBrick, -1) - 1;

@@ -21,9 +21,9 @@ namespace VEngine
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
 			VkDescriptorBufferInfo m_subMeshInfoBufferInfo;
 			ImageViewHandle m_brickPointerImageHandle;
-			BufferViewHandle m_binVisBricksBufferHandle;
+			ImageViewHandle m_binVisBricksImageHandle;
 			// everything below is ignored if m_lighting is true
-			BufferViewHandle m_colorBricksBufferHandle;
+			ImageViewHandle m_colorBricksImageHandle;
 			ImageViewHandle m_shadowImageViewHandle;
 			VkDescriptorBufferInfo m_lightDataBufferInfo;
 			VkDescriptorBufferInfo m_shadowMatricesBufferInfo;

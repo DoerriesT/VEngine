@@ -12,8 +12,8 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			ImageViewHandle m_brickPtrImageHandle;
 			ImageViewHandle m_colorImageHandle;
-			BufferViewHandle m_binVisBricksBufferHandle;
-			BufferViewHandle m_colorBricksBufferHandle;
+			ImageViewHandle m_binVisBricksImageHandle;
+			ImageViewHandle m_colorBricksImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
