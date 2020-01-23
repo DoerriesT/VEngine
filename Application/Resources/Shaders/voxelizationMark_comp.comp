@@ -235,7 +235,7 @@ void main()
 		swizzledUpperBound = domAxis == 0 ? swizzledUpperBound.zxy : domAxis == 1 ? swizzledUpperBound.yzx : swizzledUpperBound;
 		
 		ivec3 minVoxIndex = ivec3(clamp(floor(AABBmin), swizzledLowerBound, swizzledUpperBound));
-		ivec3 maxVoxIndex = ivec3(clamp( ceil(AABBmax), swizzledLowerBound, swizzledUpperBound));
+		ivec3 maxVoxIndex = ivec3(clamp( floor(AABBmax + 1.0), swizzledLowerBound, swizzledUpperBound));
 	
 		voxelizeTriPostSwizzle(v0, v1, v2, n, domAxis, minVoxIndex, maxVoxIndex);
 	}

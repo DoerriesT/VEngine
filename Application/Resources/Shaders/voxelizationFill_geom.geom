@@ -155,7 +155,7 @@ void main()
 	const vec3 gridSize = vec3(cBrickVolumeWidth, cBrickVolumeHeight, cBrickVolumeDepth) * cBinVisBrickSize;
 	const vec3 swizzledGridSize = vZG == 0 ? gridSize.zxy : vZG == 1 ? gridSize.yzx : gridSize;
 	vMinVoxIndexG = ivec3(clamp(floor(AABBmin), vec3(0.0), floor(swizzledGridSize)));
-	vMaxVoxIndexG = ivec3(clamp( ceil(AABBmax), vec3(0.0), floor(swizzledGridSize)));
+	vMaxVoxIndexG = ivec3(clamp( floor(AABBmax + 1.0), vec3(0.0), floor(swizzledGridSize)));
 
 	//Edges for swizzled vertices;
 	vec3 e0 = v1 - v0;	//figure 17/18 line 2
