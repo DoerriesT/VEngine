@@ -36,7 +36,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 	m_transformData.clear();
 	m_subMeshInstanceData.clear();
 	m_shadowMatrices.clear();
-	m_shadowDepthNormalBiases.clear();
+	m_shadowCascadeParams.clear();
 
 	m_lightData.m_directionalLightData.clear();
 	m_lightData.m_pointLightData.clear();
@@ -173,12 +173,12 @@ void VEngine::RenderSystem::update(float timeDelta)
 					if (directionalLightComponent.m_shadows)
 					{
 						glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
-						glm::vec2 depthNormalBiases[DirectionalLightComponent::MAX_CASCADES];
+						glm::vec4 cascadeParams[DirectionalLightComponent::MAX_CASCADES];
 
 						for (uint32_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
 						{
-							depthNormalBiases[i].x = directionalLightComponent.m_depthBias[i];
-							depthNormalBiases[i].y = directionalLightComponent.m_normalOffsetBias[i];
+							cascadeParams[i].x = directionalLightComponent.m_depthBias[i];
+							cascadeParams[i].y = directionalLightComponent.m_normalOffsetBias[i];
 						}
 
 						calculateCascadeViewProjectionMatrices(direction,
@@ -187,15 +187,15 @@ void VEngine::RenderSystem::update(float timeDelta)
 							2048.0f,
 							directionalLightComponent.m_cascadeCount,
 							shadowMatrices,
-							depthNormalBiases);
+							cascadeParams);
 
 						m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
-						m_shadowDepthNormalBiases.reserve(m_shadowDepthNormalBiases.size() + directionalLightComponent.m_cascadeCount);
+						m_shadowCascadeParams.reserve(m_shadowCascadeParams.size() + directionalLightComponent.m_cascadeCount);
 
 						for (size_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
 						{
 							m_shadowMatrices.push_back(shadowMatrices[i]);
-							m_shadowDepthNormalBiases.push_back(depthNormalBiases[i]);
+							m_shadowCascadeParams.push_back(cascadeParams[i]);
 
 							// extract view frustum plane equations from matrix
 							{
@@ -403,7 +403,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_transformData = m_transformData.data();
 		renderData.m_shadowMatrixCount = static_cast<uint32_t>(m_shadowMatrices.size());
 		renderData.m_shadowMatrices = m_shadowMatrices.data();
-		renderData.m_shadowDepthNormalBiases = m_shadowDepthNormalBiases.data();
+		renderData.m_shadowCascadeParams = m_shadowCascadeParams.data();
 		renderData.m_subMeshInstanceDataCount = static_cast<uint32_t>(m_subMeshInstanceData.size());
 		renderData.m_subMeshInstanceData = m_subMeshInstanceData.data();
 		renderData.m_drawCallKeys = drawCallKeys.data();
@@ -536,7 +536,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 	float shadowTextureSize, 
 	size_t cascadeCount, 
 	glm::mat4 *viewProjectionMatrices, 
-	glm::vec2 *depthNormalBiases)
+	glm::vec4 *cascadeParams)
 {
 	float splits[DirectionalLightComponent::MAX_CASCADES];
 
@@ -613,8 +613,9 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 
 		// depthNormalBiases[i] holds the depth/normal offset biases in texel units
 		const float unitsPerTexel = radius * 2.0f / shadowTextureSize;
-		depthNormalBiases[i].x = unitsPerTexel * -depthNormalBiases[i].x / depthRange;
-		depthNormalBiases[i].y = unitsPerTexel * depthNormalBiases[i].y;
+		cascadeParams[i].x = unitsPerTexel * -cascadeParams[i].x / depthRange;
+		cascadeParams[i].y = unitsPerTexel * cascadeParams[i].y;
+		cascadeParams[i].z = 1.0f / unitsPerTexel;
 
 		previousSplit = splits[i];
 	}

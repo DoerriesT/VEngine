@@ -14,9 +14,9 @@ layout(set = SHADOW_MATRICES_SET, binding = SHADOW_MATRICES_BINDING) readonly bu
 	mat4 uShadowMatrices[];
 };
 
-layout(set = SHADOW_BIAS_BUFFER_SET, binding = SHADOW_BIAS_BUFFER_BINDING) readonly buffer SHADOW_BIAS_BUFFER
+layout(set = CASCADE_PARAMS_BUFFER_SET, binding = CASCADE_PARAMS_BUFFER_BINDING) readonly buffer CASCADE_PARAMS_BUFFER
 {
-	vec2 uDepthNormalBias[];
+	vec4 uCascadeParams[]; // X: depth bias Y: normal bias Z: texelsPerMeter
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -139,24 +139,27 @@ void main()
 	
 	vec4 tc = vec4(-1.0);
 	const int cascadeDataOffset = uPushConsts.cascadeDataOffset;
-	const float border = 7.0 * (1.0 / float(textureSize(sampler2DArrayShadow(uShadowImage, uShadowSampler), 0).x));
+	const float maxFilterRadiusWorldSpace = 0.04;
+	const float texelSize = 1.0 / float(textureSize(sampler2DArrayShadow(uShadowImage, uShadowSampler), 0).x);
 	for (int i = uPushConsts.cascadeCount - 1; i >= 0; --i)
 	{
-		const float normalOffsetScale = uDepthNormalBias[cascadeDataOffset + i].y * scaleWeight;
+		const float normalOffsetScale = uCascadeParams[cascadeDataOffset + i].y * scaleWeight;
 		const vec4 shadowCoord = vec4((uShadowMatrices[cascadeDataOffset + i] * vec4(worldSpacePos.xyz + N * normalOffsetScale, 1.0)).xyz, cascadeDataOffset + i);
+		const float border = maxFilterRadiusWorldSpace * uCascadeParams[cascadeDataOffset + i].z * texelSize;
 		const bool valid = all(lessThan(abs(shadowCoord.xy), vec2(1.0 - border * 2.0)));
 		tc = valid ? shadowCoord : tc;
 	}
 	
 	tc.xy = tc.xy * 0.5 + 0.5;
-	tc.z += uDepthNormalBias[int(tc.w)].x;
+	tc.z += uCascadeParams[int(tc.w)].x;
 	//const float shadow = tc.w != -1.0 ? texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), tc.xywz).x : 0.0;
 	float shadow = 0.0;
 	const float noise = interleavedGradientNoise(vec2(gl_GlobalInvocationID.xy) + 0.5) * 2.0 * 3.1415;
 	const float filterScale = penumbra(noise, tc.xyz, 16, tc.w);
+	const float maxFilterRadiusTexelSpace = maxFilterRadiusWorldSpace * uCascadeParams[int(tc.w)].z * texelSize;
 	for (uint j = 0; j < 16; ++j)
 	{
-		const vec2 coord = filterScale * border * vogelDiskSample(j, 16, noise) + tc.xy;
+		const vec2 coord = filterScale * maxFilterRadiusTexelSpace * vogelDiskSample(j, 16, noise) + tc.xy;
 		shadow += texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), vec4(coord, tc.wz)).x * (1.0 / 16.0);
 	}
 	

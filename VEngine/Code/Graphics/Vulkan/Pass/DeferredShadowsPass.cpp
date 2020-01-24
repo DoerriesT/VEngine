@@ -69,7 +69,7 @@ void VEngine::DeferredShadowsPass::addToGraph(RenderGraph &graph, const Data &da
 					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_shadowSampler }, SHADOW_SAMPLER_BINDING);
 					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX] }, POINT_SAMPLER_BINDING);
 					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING);
-					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_shadowBiasBufferInfo, SHADOW_BIAS_BUFFER_BINDING);
+					writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING);
 
 					writer.commit();
 				}

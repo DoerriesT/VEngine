@@ -354,13 +354,13 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// shadow texel sized write
-	VkDescriptorBufferInfo shadowBiasBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::vec2), size_t(1)) };
+	VkDescriptorBufferInfo shadowCascadeParamsBufferInfo{ VK_NULL_HANDLE, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::vec4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowBiasBufferInfo.range, shadowBiasBufferInfo.offset, shadowBiasBufferInfo.buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowCascadeParamsBufferInfo.range, shadowCascadeParamsBufferInfo.offset, shadowCascadeParamsBufferInfo.buffer, bufferPtr);
 		if (renderData.m_shadowMatrixCount)
 		{
-			memcpy(bufferPtr, renderData.m_shadowDepthNormalBiases, renderData.m_shadowMatrixCount * sizeof(glm::vec2));
+			memcpy(bufferPtr, renderData.m_shadowCascadeParams, renderData.m_shadowMatrixCount * sizeof(glm::vec4));
 		}
 	}
 
@@ -698,7 +698,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	deferredShadowsPassData.m_shadowBiasBufferInfo = shadowBiasBufferInfo;
+	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 

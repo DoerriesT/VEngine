@@ -18,7 +18,7 @@ namespace VEngine
 			ImageViewHandle m_tangentSpaceImageViewHandle;
 			ImageViewHandle m_shadowImageViewHandle;
 			VkDescriptorBufferInfo m_shadowMatricesBufferInfo;
-			VkDescriptorBufferInfo m_shadowBiasBufferInfo;
+			VkDescriptorBufferInfo m_cascadeParamsBufferInfo;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);
