@@ -56,5 +56,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c indirectDiffuse_comp.comp -o indirect
 glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp.comp -o indirectDiffuse_SSAO_ENABLED_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c bloomDownsample_comp.comp -o bloomDownsample_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c bloomUpsample_comp.comp -o bloomUpsample_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c taa_comp.comp -o taa_comp.spv
 
 pause

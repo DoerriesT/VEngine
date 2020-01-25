@@ -420,6 +420,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\BloomModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -724,6 +727,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Module\BloomModule.cpp">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

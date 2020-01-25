@@ -31,6 +31,7 @@
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/IndirectDiffusePass.h"
+#include "Pass/TAAPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SparseVoxelBricksModule.h"
 #include "Module/DiffuseGIProbesModule.h"
@@ -896,20 +897,38 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// taa resolve
-	VKTAAResolvePass::Data taaResolvePassData;
-	taaResolvePassData.m_passRecordContext = &passRecordContext;
-	taaResolvePassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
-	taaResolvePassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
-	taaResolvePassData.m_depthImageHandle = depthImageViewHandle;
-	taaResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
-	taaResolvePassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
-	taaResolvePassData.m_lightImageHandle = lightImageViewHandle;
-	taaResolvePassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
+	//VKTAAResolvePass::Data taaResolvePassData;
+	//taaResolvePassData.m_passRecordContext = &passRecordContext;
+	//taaResolvePassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
+	//taaResolvePassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	//taaResolvePassData.m_depthImageHandle = depthImageViewHandle;
+	//taaResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
+	//taaResolvePassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
+	//taaResolvePassData.m_lightImageHandle = lightImageViewHandle;
+	//taaResolvePassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
+	//
+	//if (g_TAAEnabled)
+	//{
+	//	VKTAAResolvePass::addToGraph(graph, taaResolvePassData);
+	//
+	//	lightImageViewHandle = taaResolveImageViewHandle;
+	//}
 
+
+	TAAPass::Data taaPassData;
+	taaPassData.m_passRecordContext = &passRecordContext;
+	taaPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
+	taaPassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	taaPassData.m_depthImageHandle = depthImageViewHandle;
+	taaPassData.m_velocityImageHandle = velocityImageViewHandle;
+	taaPassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
+	taaPassData.m_lightImageHandle = lightImageViewHandle;
+	taaPassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
+	
 	if (g_TAAEnabled)
 	{
-		VKTAAResolvePass::addToGraph(graph, taaResolvePassData);
-
+		TAAPass::addToGraph(graph, taaPassData);
+	
 		lightImageViewHandle = taaResolveImageViewHandle;
 	}
 

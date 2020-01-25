@@ -205,6 +205,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h" />
@@ -317,6 +318,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp" />
