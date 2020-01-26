@@ -124,7 +124,7 @@ void main()
 	const float NdotL = dot(viewSpaceNormal.xyz, uPushConsts.direction.xyz);
 		
 	// skip backfacing fragments
-	if (NdotL <= 0.0)
+	if (NdotL <= -0.05)
 	{
 		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(1.0));
 		return;

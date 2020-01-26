@@ -27,12 +27,6 @@ VEngine::Window::Window(unsigned int width, unsigned int height, const std::stri
 
 	m_windowHandle = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
 
-	int w, h;
-	glfwGetFramebufferSize(m_windowHandle, &w, &h);
-	printf("%d %d\n", w, h);
-	glfwGetWindowSize(m_windowHandle, &w, &h);
-	printf("%d %d\n", w, h);
-
 	if (!m_windowHandle)
 	{
 		glfwTerminate();
