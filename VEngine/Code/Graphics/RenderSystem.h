@@ -20,7 +20,7 @@ namespace VEngine
 	class RenderSystem
 	{
 	public:
-		explicit RenderSystem(entt::registry &entityRegistry, void *windowHandle);
+		explicit RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height);
 		void update(float timeDelta);
 		TextureHandle createTexture(const char *filepath);
 		void destroyTexture(TextureHandle handle);
@@ -36,6 +36,7 @@ namespace VEngine
 		std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
+		void resize(uint32_t width, uint32_t height);
 
 	private:
 		entt::registry &m_entityRegistry;
@@ -53,6 +54,8 @@ namespace VEngine
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		BVH m_bvh;
+		uint32_t m_width;
+		uint32_t m_height;
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
 		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices, glm::vec4 *cascadeParams);

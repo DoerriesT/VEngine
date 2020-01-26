@@ -1,41 +1,53 @@
 #include "Window.h"
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "Utility/Utility.h"
 #include "Utility/ContainerUtility.h"
 #include "Input/IInputListener.h"
 
+void VEngine::windowSizeCallback(GLFWwindow *window, int width, int height);
 void VEngine::curserPosCallback(GLFWwindow *window, double xPos, double yPos);
+void VEngine::curserEnterCallback(GLFWwindow *window, int entered);
 void VEngine::scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
 void VEngine::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 void VEngine::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 void VEngine::charCallback(GLFWwindow *window, unsigned int codepoint);
+void VEngine::joystickCallback(int joystickId, int event);
 
 VEngine::Window::Window(unsigned int width, unsigned int height, const std::string &title)
 	:m_windowHandle(),
 	m_width(width),
 	m_height(height),
-	m_title(title)
+	m_title(title),
+	m_configurationChanged()
 {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	m_windowHandle = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+
+	int w, h;
+	glfwGetFramebufferSize(m_windowHandle, &w, &h);
+	printf("%d %d\n", w, h);
+	glfwGetWindowSize(m_windowHandle, &w, &h);
+	printf("%d %d\n", w, h);
 
 	if (!m_windowHandle)
 	{
 		glfwTerminate();
-		Utility::fatalExit("Failed to create GLFW window", -1);
+		Utility::fatalExit("Failed to create GLFW window", EXIT_FAILURE);
 		return;
 	}
 
+	glfwSetFramebufferSizeCallback(m_windowHandle, windowSizeCallback);
 	glfwSetCursorPosCallback(m_windowHandle, curserPosCallback);
+	glfwSetCursorEnterCallback(m_windowHandle, curserEnterCallback);
 	glfwSetScrollCallback(m_windowHandle, scrollCallback);
 	glfwSetMouseButtonCallback(m_windowHandle, mouseButtonCallback);
 	glfwSetKeyCallback(m_windowHandle, keyCallback);
 	glfwSetCharCallback(m_windowHandle, charCallback);
+	glfwSetJoystickCallback(joystickCallback);
 
 	glfwSetWindowUserPointer(m_windowHandle, this);
 }
@@ -46,8 +58,9 @@ VEngine::Window::~Window()
 	glfwTerminate();
 }
 
-void VEngine::Window::pollEvents() const
+void VEngine::Window::pollEvents()
 {
+	m_configurationChanged = false;
 	glfwPollEvents();
 }
 
@@ -69,6 +82,11 @@ unsigned int VEngine::Window::getHeight() const
 bool VEngine::Window::shouldClose() const
 {
 	return glfwWindowShouldClose(m_windowHandle);
+}
+
+bool VEngine::Window::configurationChanged() const
+{
+	return m_configurationChanged;
 }
 
 void VEngine::Window::grabMouse(bool grabMouse)
@@ -101,6 +119,14 @@ void VEngine::Window::removeInputListener(IInputListener *listener)
 
 // callback functions
 
+void VEngine::windowSizeCallback(GLFWwindow *window, int width, int height)
+{
+	Window *windowFramework = static_cast<Window *>(glfwGetWindowUserPointer(window));
+	windowFramework->m_width = width;
+	windowFramework->m_height = height;
+	windowFramework->m_configurationChanged = true;
+}
+
 void VEngine::curserPosCallback(GLFWwindow *window, double xPos, double yPos)
 {
 	Window *windowFramework = static_cast<Window *>(glfwGetWindowUserPointer(window));
@@ -108,6 +134,10 @@ void VEngine::curserPosCallback(GLFWwindow *window, double xPos, double yPos)
 	{
 		listener->onMouseMove(xPos, yPos);
 	}
+}
+
+void VEngine::curserEnterCallback(GLFWwindow *window, int entered)
+{
 }
 
 void VEngine::scrollCallback(GLFWwindow *window, double xOffset, double yOffset)
@@ -143,5 +173,17 @@ void VEngine::charCallback(GLFWwindow *window, unsigned int codepoint)
 	for (IInputListener *listener : windowFramework->m_inputListeners)
 	{
 		listener->onChar(codepoint);
+	}
+}
+
+void VEngine::joystickCallback(int joystickId, int event)
+{
+	if (event == GLFW_CONNECTED)
+	{
+
+	}
+	else if (event == GLFW_DISCONNECTED)
+	{
+
 	}
 }

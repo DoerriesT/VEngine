@@ -2,6 +2,11 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 
+VEngine::VKImage::VKImage()
+{
+	memset(this, 0, sizeof(*this));
+}
+
 void VEngine::VKImage::create(const VkImageCreateInfo & imageCreateInfo, const VKAllocationCreateInfo & allocCreateInfo)
 {
 	m_imageType = imageCreateInfo.imageType;

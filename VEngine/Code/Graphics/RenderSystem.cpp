@@ -14,12 +14,14 @@
 #include "Mesh.h"
 #include "ViewRenderList.h"
 
-VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle)
+VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height)
 	:m_entityRegistry(entityRegistry),
 	m_cameraEntity(entt::null),
 	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS)),
 	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES)),
-	m_boundingSpheres(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES))
+	m_boundingSpheres(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES)),
+	m_width(width),
+	m_height(height)
 {
 	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
@@ -27,7 +29,7 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 		m_haltonY[i] = Utility::halton(i + 1, 3) * 2.0f - 1.0f;
 	}
 
-	m_renderer = std::make_unique<VKRenderer>(g_windowWidth, g_windowHeight, windowHandle);
+	m_renderer = std::make_unique<VKRenderer>(m_width, m_height, windowHandle);
 	memset(&m_commonRenderData, 0, sizeof(m_commonRenderData));
 }
 
@@ -103,8 +105,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 			glm::mat4 viewMatrix = cameraComponent.m_viewMatrix;
 			glm::mat4 projectionMatrix = cameraComponent.m_projectionMatrix;
 			glm::mat4 jitterMatrix = g_TAAEnabled ?
-				glm::translate(glm::vec3(m_haltonX[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowWidth,
-					m_haltonY[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / g_windowHeight,
+				glm::translate(glm::vec3(m_haltonX[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / m_width,
+					m_haltonY[m_commonRenderData.m_frame % RendererConsts::MAX_TAA_HALTON_SAMPLES] / m_height,
 					0.0f))
 				: glm::mat4();
 
@@ -134,8 +136,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 			m_commonRenderData.m_invJitteredViewProjectionMatrix = glm::inverse(m_commonRenderData.m_jitteredViewProjectionMatrix);
 			m_commonRenderData.m_cameraPosition = glm::vec4(transformationComponent.m_position, 1.0f);
 			m_commonRenderData.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
-			m_commonRenderData.m_width = g_windowWidth;
-			m_commonRenderData.m_height = g_windowHeight;
+			m_commonRenderData.m_width = m_width;
+			m_commonRenderData.m_height = m_height;
 			m_commonRenderData.m_curResIdx = m_commonRenderData.m_frame % RendererConsts::FRAMES_IN_FLIGHT;
 			m_commonRenderData.m_prevResIdx = (m_commonRenderData.m_frame + RendererConsts::FRAMES_IN_FLIGHT - 1) % RendererConsts::FRAMES_IN_FLIGHT;
 			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
@@ -520,6 +522,13 @@ void VEngine::RenderSystem::getTimingInfo(size_t *count, const PassTimingInfo **
 void VEngine::RenderSystem::getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const
 {
 	m_renderer->getOcclusionCullingStats(draws, totalDraws);
+}
+
+void VEngine::RenderSystem::resize(uint32_t width, uint32_t height)
+{
+	m_width = width;
+	m_height = height;
+	m_renderer->resize(width, height);
 }
 
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)

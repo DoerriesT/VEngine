@@ -49,6 +49,7 @@ namespace VEngine
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 		void setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles);
+		void resize(uint32_t width, uint32_t height);
 
 	private:
 		std::unique_ptr<VKRenderResources> m_renderResources;

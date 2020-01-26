@@ -8,6 +8,7 @@ namespace VEngine
 	class VKBuffer
 	{
 	public:
+		VKBuffer();
 		void create(const VkBufferCreateInfo &bufferCreateInfo, const VKAllocationCreateInfo &allocCreateInfo);
 		void destroy();
 		VkBuffer getBuffer() const;

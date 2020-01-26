@@ -8,6 +8,7 @@ namespace VEngine
 	class VKImage
 	{
 	public:
+		VKImage();
 		void create(const VkImageCreateInfo &imageCreateInfo, const VKAllocationCreateInfo &allocCreateInfo);
 		void destroy();
 		VkImage getImage() const;

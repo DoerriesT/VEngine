@@ -98,6 +98,10 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData)
 {
+	if (m_width == 0 || m_height == 0)
+	{
+		return;
+	}
 	auto &graph = *m_frameGraphs[commonData.m_curResIdx];
 
 	// reset per frame resources
@@ -1110,4 +1114,21 @@ void VEngine::VKRenderer::getOcclusionCullingStats(uint32_t &draws, uint32_t &to
 void VEngine::VKRenderer::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles)
 {
 	m_renderResources->setBVH(nodeCount, nodes, triangleCount, triangles);
+}
+
+void VEngine::VKRenderer::resize(uint32_t width, uint32_t height)
+{
+	vkDeviceWaitIdle(g_context.m_device);
+	m_width = width;
+	m_height = height;
+	if (m_width > 0 && m_height > 0)
+	{
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			m_frameGraphs[i]->reset();
+		}
+		m_swapChain->recreate(width, height);
+		m_renderResources->resize(width, height);
+		m_gtaoModule->resize(width, height);
+	}
 }

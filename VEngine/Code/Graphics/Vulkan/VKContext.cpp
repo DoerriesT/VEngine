@@ -71,7 +71,7 @@ namespace VEngine
 
 					if (!found)
 					{
-						Utility::fatalExit(("Requested extension not present! " + std::string(requestedExtension)).c_str(), -1);
+						Utility::fatalExit(("Requested extension not present! " + std::string(requestedExtension)).c_str(), EXIT_FAILURE);
 					}
 				}
 			}
@@ -85,7 +85,7 @@ namespace VEngine
 
 			if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
 			{
-				Utility::fatalExit("Failed to create instance!", -1);
+				Utility::fatalExit("Failed to create instance!", EXIT_FAILURE);
 			}
 		}
 
@@ -104,7 +104,7 @@ namespace VEngine
 
 			if (vkCreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugUtilsMessenger) != VK_SUCCESS)
 			{
-				Utility::fatalExit("Failed to set up debug callback!", -1);
+				Utility::fatalExit("Failed to set up debug callback!", EXIT_FAILURE);
 			}
 		}
 
@@ -112,13 +112,11 @@ namespace VEngine
 		{
 			if (glfwCreateWindowSurface(m_instance, windowHandle, nullptr, &m_surface) != VK_SUCCESS)
 			{
-				Utility::fatalExit("Failed to create window surface!", -1);
+				Utility::fatalExit("Failed to create window surface!", EXIT_FAILURE);
 			}
 		}
 
 		const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME };
-
-		VKSwapChainSupportDetails swapChainSupportDetails;
 
 		// pick physical device
 		{
@@ -127,7 +125,7 @@ namespace VEngine
 
 			if (physicalDeviceCount == 0)
 			{
-				Utility::fatalExit("Failed to find GPUs with Vulkan support!", -1);
+				Utility::fatalExit("Failed to find GPUs with Vulkan support!", EXIT_FAILURE);
 			}
 
 			std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
@@ -228,30 +226,13 @@ namespace VEngine
 				bool swapChainAdequate = false;
 				if (extensionsSupported)
 				{
-					VKSwapChainSupportDetails details;
-
-					vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_surface, &details.m_capabilities);
-
 					uint32_t formatCount;
 					vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface, &formatCount, nullptr);
-
-					if (formatCount != 0)
-					{
-						details.m_formats.resize(static_cast<size_t>(formatCount));
-						vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface, &formatCount, details.m_formats.data());
-					}
 
 					uint32_t presentModeCount;
 					vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface, &presentModeCount, nullptr);
 
-					if (presentModeCount != 0)
-					{
-						details.m_presentModes.resize(static_cast<size_t>(presentModeCount));
-						vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface, &presentModeCount, details.m_presentModes.data());
-					}
-
-					swapChainSupportDetails = details;
-					swapChainAdequate = !swapChainSupportDetails.m_formats.empty() && !swapChainSupportDetails.m_presentModes.empty();
+					swapChainAdequate = formatCount != 0 && presentModeCount != 0;
 				}
 
 				VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
@@ -288,7 +269,6 @@ namespace VEngine
 						static_cast<bool>(graphicsFamilyPresentable),
 						static_cast<bool>(computeFamilyPresentable)
 					};
-					m_swapChainSupportDetails = swapChainSupportDetails;
 					vkGetPhysicalDeviceProperties(physicalDevice, &m_properties);
 					m_features = supportedFeatures;
 					break;
@@ -297,7 +277,7 @@ namespace VEngine
 
 			if (m_physicalDevice == VK_NULL_HANDLE)
 			{
-				Utility::fatalExit("Failed to find a suitable GPU!", -1);
+				Utility::fatalExit("Failed to find a suitable GPU!", EXIT_FAILURE);
 			}
 		}
 
@@ -343,7 +323,7 @@ namespace VEngine
 
 			if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 			{
-				Utility::fatalExit("Failed to create logical device!", -1);
+				Utility::fatalExit("Failed to create logical device!", EXIT_FAILURE);
 			}
 
 			vkGetDeviceQueue(m_device, m_queueFamilyIndices.m_graphicsFamily, 0, &m_graphicsQueue);
@@ -382,27 +362,7 @@ namespace VEngine
 
 			if (vkCreateCommandPool(m_device, &graphicsPoolInfo, nullptr, &m_graphicsCommandPool) != VK_SUCCESS)
 			{
-				Utility::fatalExit("Failed to create graphics command pool!", -1);
-			}
-
-			VkCommandPoolCreateInfo computePoolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-			computePoolInfo.queueFamilyIndex = m_queueFamilyIndices.m_computeFamily;
-
-			if (vkCreateCommandPool(m_device, &computePoolInfo, nullptr, &m_computeCommandPool) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create compute command pool!", -1);
-			}
-		}
-
-		// create semaphores
-		{
-			VkSemaphoreCreateInfo semaphoreInfo{};
-			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS
-				|| vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS)
-			{
-				Utility::fatalExit("Failed to create semaphores!", -1);
+				Utility::fatalExit("Failed to create graphics command pool!", EXIT_FAILURE);
 			}
 		}
 
@@ -427,9 +387,9 @@ namespace VEngine
 
 		if (g_vulkanDebugCallBackEnabled)
 		{
-			if (auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT"))
+			if (auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugUtilsMessengerEXT"))
 			{
-				func(m_instance, m_debugCallback, nullptr);
+				func(m_instance, m_debugUtilsMessenger, nullptr);
 			}
 		}
 

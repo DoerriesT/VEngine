@@ -2,6 +2,11 @@
 #include "VKContext.h"
 #include "Utility/Utility.h"
 
+VEngine::VKBuffer::VKBuffer()
+{
+	memset(this, 0, sizeof(*this));
+}
+
 void VEngine::VKBuffer::create(const VkBufferCreateInfo &bufferCreateInfo, const VKAllocationCreateInfo &allocCreateInfo)
 {
 	m_size = bufferCreateInfo.size;

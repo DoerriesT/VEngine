@@ -2,7 +2,6 @@
 #include "Engine.h"
 #include "Components/TransformationComponent.h"
 #include "Components/CameraComponent.h"
-#include "GlobalVar.h"
 #include "EntityDetailsWindow.h"
 #include "Graphics/imgui/imgui.h"
 #include "Gui/MemoryAllocatorPlot.h"
@@ -12,16 +11,18 @@
 extern uint32_t g_dirLightEntity;
 static constexpr size_t FRAME_TIME_ARRAY_SIZE = 64;
 
-VEngine::Editor::Editor(Engine *engine)
+VEngine::Editor::Editor(Engine *engine, uint32_t editorWindowWidth, uint32_t editorWindowHeight)
 	:m_engine(engine),
 	m_detailsWindow(std::make_unique<EntityDetailsWindow>(engine)),
-	m_frametimes(std::make_unique<float[]>(FRAME_TIME_ARRAY_SIZE))
+	m_frametimes(std::make_unique<float[]>(FRAME_TIME_ARRAY_SIZE)),
+	m_width(editorWindowWidth),
+	m_height(editorWindowHeight)
 {
 	memset(m_frametimes.get(), 0, sizeof(float) * FRAME_TIME_ARRAY_SIZE);
 	auto &registry = m_engine->getEntityRegistry();
 	m_editorCameraEntity = registry.create();
 	registry.assign<TransformationComponent>(m_editorCameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
-	registry.assign<CameraComponent>(m_editorCameraEntity, CameraComponent::ControllerType::FPS, g_windowWidth / (float)g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
+	registry.assign<CameraComponent>(m_editorCameraEntity, CameraComponent::ControllerType::FPS, (m_width > 0 && m_height > 0) ? m_width / (float)m_height : 1.0f, glm::radians(60.0f), 0.1f, 300.0f);
 }
 
 VEngine::Editor::~Editor()
@@ -199,4 +200,12 @@ void VEngine::Editor::update(float timeDelta)
 uint32_t VEngine::Editor::getEditorCameraEntity() const
 {
 	return m_editorCameraEntity;
+}
+
+void VEngine::Editor::resize(uint32_t editorWindowWidth, uint32_t editorWindowHeight)
+{
+	m_width = editorWindowWidth;
+	m_height = editorWindowHeight;
+	auto &registry = m_engine->getEntityRegistry();
+	registry.get<CameraComponent>(m_editorCameraEntity).m_aspectRatio = (m_width > 0 && m_height > 0) ? m_width / (float)m_height : 1.0f;
 }

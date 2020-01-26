@@ -2,8 +2,8 @@
 
 namespace VEngine
 {
-	GlobalVar<unsigned int> g_windowWidth = 1600;
-	GlobalVar<unsigned int> g_windowHeight = 900;
+	//GlobalVar<unsigned int> g_windowWidth = 1600;
+	//GlobalVar<unsigned int> g_windowHeight = 900;
 	GlobalVar<bool> g_TAAEnabled = true;
 	GlobalVar<float> g_TAABicubicSharpness = 0.5f;
 	GlobalVar<float> g_TAATemporalContrastThreshold = 0.15f;

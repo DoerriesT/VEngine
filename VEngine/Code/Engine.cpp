@@ -32,7 +32,9 @@ VEngine::Engine::~Engine()
 void VEngine::Engine::start()
 {
 	m_entityRegistry = std::make_unique<entt::registry>();
-	m_window = std::make_unique<Window>(g_windowWidth, g_windowHeight, m_windowTitle);
+	m_window = std::make_unique<Window>(1600, 900, m_windowTitle);
+	uint32_t width = m_window->getWidth();
+	uint32_t height = m_window->getHeight();
 	m_userInput = std::make_unique<UserInput>();
 	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->grabMouse(grab); });
 
@@ -55,7 +57,7 @@ void VEngine::Engine::start()
 		ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
 	}
 
-	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle());
+	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
 
 	m_window->addInputListener(m_userInput.get());
 
@@ -64,7 +66,7 @@ void VEngine::Engine::start()
 	Timer timer;
 	uint64_t previousTickCount = timer.getElapsedTicks();
 	uint64_t frameCount = 0;
-	Editor editor(this);
+	Editor editor(this, width, height);
 	
 	m_renderSystem->setCameraEntity(editor.getEditorCameraEntity());
 
@@ -74,6 +76,13 @@ void VEngine::Engine::start()
 		float timeDelta = static_cast<float>(timer.getTimeDelta());
 
 		m_window->pollEvents();
+		if (m_window->configurationChanged())
+		{
+			width = m_window->getWidth();
+			height = m_window->getHeight();
+			m_renderSystem->resize(width, height);
+			editor.resize(width, height);
+		}
 
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();

@@ -8,13 +8,6 @@ struct GLFWwindow;
 
 namespace VEngine
 {
-	struct VKSwapChainSupportDetails
-	{
-		VkSurfaceCapabilitiesKHR m_capabilities;
-		std::vector<VkSurfaceFormatKHR> m_formats;
-		std::vector<VkPresentModeKHR> m_presentModes;
-	};
-
 	struct VKQueueFamilyIndices
 	{
 		uint32_t m_graphicsFamily;
@@ -37,12 +30,7 @@ namespace VEngine
 		VkQueue m_computeQueue;
 		VkQueue m_transferQueue;
 		VkCommandPool m_graphicsCommandPool;
-		VkCommandPool m_computeCommandPool;
 		VkSurfaceKHR m_surface;
-		VkDebugReportCallbackEXT m_debugCallback;
-		VkSemaphore m_imageAvailableSemaphore;
-		VkSemaphore m_renderFinishedSemaphore;
-		VKSwapChainSupportDetails m_swapChainSupportDetails;
 		VKQueueFamilyIndices m_queueFamilyIndices;
 		VKMemoryAllocator m_allocator;
 		SyncPrimitivePool m_syncPrimitivePool;
