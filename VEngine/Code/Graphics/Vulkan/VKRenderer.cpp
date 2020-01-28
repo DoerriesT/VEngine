@@ -432,7 +432,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	HiZPyramidPass::Data hiZMinPyramidPassData;
 	hiZMinPyramidPassData.m_passRecordContext = &passRecordContext;
 	hiZMinPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-	hiZMinPyramidPassData.m_maxReduction = true;
+	hiZMinPyramidPassData.m_maxReduction = false;
 	hiZMinPyramidPassData.m_copyFirstLevel = false;
 	hiZMinPyramidPassData.m_forceExecution = true;
 
@@ -762,7 +762,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	HiZPyramidPass::Data hiZMaxPyramidPassData;
 	hiZMaxPyramidPassData.m_passRecordContext = &passRecordContext;
 	hiZMaxPyramidPassData.m_inputImageViewHandle = depthImageViewHandle;
-	hiZMaxPyramidPassData.m_maxReduction = false;
+	hiZMaxPyramidPassData.m_maxReduction = true;
 	hiZMaxPyramidPassData.m_copyFirstLevel = true;
 	hiZMaxPyramidPassData.m_forceExecution = false;
 

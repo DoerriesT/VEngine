@@ -82,7 +82,7 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 			data.m_passRecordContext->m_deferredObjectDeleter->add(framebuffer);
 
 			VkClearValue clearValues[5];
-			clearValues[0].depthStencil = { 1.0f, 0 };
+			clearValues[0].depthStencil = { 0.0f, 0 };
 
 			VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 			renderPassBeginInfo.renderPass = renderPass;
@@ -109,7 +109,7 @@ void VEngine::VKGeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		pipelineDesc.setVertexShader("Resources/Shaders/geometry_vert.spv");
 		pipelineDesc.setFragmentShader(data.m_alphaMasked ? "Resources/Shaders/geometry_alpha_mask_frag.spv" : "Resources/Shaders/geometry_frag.spv");
 		pipelineDesc.setPolygonModeCullMode(VK_POLYGON_MODE_FILL, data.m_alphaMasked ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-		pipelineDesc.setDepthTest(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+		pipelineDesc.setDepthTest(true, true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 		pipelineDesc.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
 		pipelineDesc.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
 		pipelineDesc.finalize();

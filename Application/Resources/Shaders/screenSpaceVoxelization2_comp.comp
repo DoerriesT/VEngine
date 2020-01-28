@@ -292,7 +292,7 @@ void main()
 	
 	const float depth = texelFetch(uDepthImage, pixelCoord, 0).x;
 	
-	if (depth == 1.0)
+	if (depth == 0.0)
 	{
 		return;
 	}

@@ -61,7 +61,7 @@ vec3 intersectDepthPlane(vec3 p, vec3 d, float t)
 
 vec3 hiZTrace(vec3 p, vec3 v)
 {
-	if (v.z <= 0.0001)
+	if (v.z >= -0.0001)
 	{
 		return vec3(-1.0);
 	}
@@ -81,8 +81,8 @@ vec3 hiZTrace(vec3 p, vec3 v)
 	vec3 ray = p;
 	
 	vec3 d = v /= v.z;
-	
-	vec3 o = intersectDepthPlane(p, d, -p.z);
+	d = -d;
+	vec3 o = intersectDepthPlane(p, d, -(1.0 - p.z));
 	
 	
 	vec2 rayCell = getCell(ray.xy, hiZSize);
@@ -98,7 +98,7 @@ vec3 hiZTrace(vec3 p, vec3 v)
 		
 		const vec2 oldCellIdx = getCell(ray.xy, cellCount);
 		
-		vec3 tmpRay = intersectDepthPlane(o, d, max(ray.z, minZ));
+		vec3 tmpRay = intersectDepthPlane(o, d, 1.0 - min(ray.z, minZ));
 		const vec2 newCellIdx = getCell(tmpRay.xy, cellCount);
 		
 		if (crossedCellBoundary(oldCellIdx, newCellIdx))
@@ -128,7 +128,7 @@ void main()
 	}
 	
 	const float depth = texelFetch(uHiZPyramid, ivec2(gl_GlobalInvocationID.xy), 0).x;
-	if (depth == 1.0)
+	if (depth == 0.0)
 	{
 		return;
 	}
