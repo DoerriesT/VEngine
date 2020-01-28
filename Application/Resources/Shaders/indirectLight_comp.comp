@@ -1,0 +1,75 @@
+#version 450
+
+#include "indirectLight_bindings.h"
+
+layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
+layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
+layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
+layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+layout(set = ALBEDO_IMAGE_SET, binding = ALBEDO_IMAGE_BINDING) uniform sampler2D uAlbedoImage;
+layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
+layout(set = INDIRECT_DIFFUSE_IMAGE_SET, binding = INDIRECT_DIFFUSE_IMAGE_BINDING) uniform sampler2D uIndirectDiffuseImage;
+layout(set = INDIRECT_SPECULAR_IMAGE_SET, binding = INDIRECT_SPECULAR_IMAGE_BINDING) uniform sampler2D uIndirectSpecularImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec3 accurateSRGBToLinear(in vec3 sRGBCol)
+{
+	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
+	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
+	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
+	return linearRGB;
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x >= cWidth || gl_GlobalInvocationID.y >= cHeight)
+	{
+		return;
+	}
+	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	
+	if (depth == 0.0)
+	{
+		return;
+	}
+
+	// view space position
+	const vec2 clipSpacePosition = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight) * 2.0 - 1.0;
+	vec4 viewSpacePosition4 = vec4(uPushConsts.unprojectParams.xy * clipSpacePosition, -1.0, uPushConsts.unprojectParams.z * depth + uPushConsts.unprojectParams.w);
+	const vec3 viewSpacePos = viewSpacePosition4.xyz / viewSpacePosition4.w;
+	const vec3 V = -normalize(viewSpacePos);
+	vec4 tmp = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	const vec3 N = tmp.xyz;
+	const float roughness = tmp.w;
+	
+	tmp = texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	const float metalness = tmp.w;
+	const vec3 albedo = accurateSRGBToLinear(tmp.rgb);
+	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
+	vec3 diffuse = texelFetch(uIndirectDiffuseImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb * albedo;
+	vec3 specular = vec3(0.001);//texelFetch(uIndirectSpecularImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
+	
+	vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+	vec3 kD = 1.0 - kS;
+	kD *= 1.0 - metalness;
+	// kS = 1.0 - kD;
+	
+	vec3 result = kD * diffuse + kS * specular;
+	
+	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result + lit, 1.0));
+}

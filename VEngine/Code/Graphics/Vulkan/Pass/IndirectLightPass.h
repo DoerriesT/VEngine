@@ -5,18 +5,16 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace IndirectDiffusePass
+	namespace IndirectLightPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_ssao;
-			ImageViewHandle m_irradianceVolumeImageHandle;
-			ImageViewHandle m_irradianceVolumeDepthImageHandle;
 			ImageViewHandle m_depthImageHandle;
-			//ImageViewHandle m_albedoImageHandle;
+			ImageViewHandle m_albedoImageHandle;
 			ImageViewHandle m_normalImageHandle;
-			ImageViewHandle m_occlusionImageHandle;
+			ImageViewHandle m_indirectDiffuseImageHandle;
+			//ImageViewHandle m_indirectSpecularImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};
 

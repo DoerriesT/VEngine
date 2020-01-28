@@ -213,11 +213,11 @@ void main()
 	const vec3 N = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0).xyz;
 	
 	vec3 irradiance = sampleIrradianceVolume(viewSpacePos, N) * (1.0 / PI);
-	irradiance *= accurateSRGBToLinear(texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb);
+	//irradiance *= accurateSRGBToLinear(texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb);
 #if SSAO_ENABLED
 	irradiance *=  texelFetch(uOcclusionImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
 #endif // SSAO_ENABLED
 	
-	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
-	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(irradiance + lit, 1.0));
+	//const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(irradiance, 1.0));
 }

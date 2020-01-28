@@ -31,6 +31,7 @@
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/IndirectDiffusePass.h"
+#include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SparseVoxelBricksModule.h"
@@ -288,6 +289,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		deferredShadowsImageViewHandle = graph.createImageView({ desc.m_name, deferredShadowsImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, desc.m_layers }, VK_IMAGE_VIEW_TYPE_2D_ARRAY });
 	}
 
+	ImageViewHandle indirectDiffuseImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle2 = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
@@ -745,12 +747,24 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectDiffusePassData.m_irradianceVolumeImageHandle = m_diffuseGIProbesModule->getIrradianceVolumeImageViewHandle();
 	indirectDiffusePassData.m_irradianceVolumeDepthImageHandle = m_diffuseGIProbesModule->getIrradianceVolumeDepthImageViewHandle();
 	indirectDiffusePassData.m_depthImageHandle = depthImageViewHandle;
-	indirectDiffusePassData.m_albedoImageHandle = albedoImageViewHandle;
+	//indirectDiffusePassData.m_albedoImageHandle = albedoImageViewHandle;
 	indirectDiffusePassData.m_normalImageHandle = normalImageViewHandle;
 	indirectDiffusePassData.m_occlusionImageHandle = m_gtaoModule->getAOResultImageViewHandle();
-	indirectDiffusePassData.m_resultImageHandle = lightImageViewHandle;
+	indirectDiffusePassData.m_resultImageHandle = indirectDiffuseImageViewHandle;
 
 	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
+
+
+	// apply indirect light
+	IndirectLightPass::Data indirectLightPassData;
+	indirectLightPassData.m_passRecordContext = &passRecordContext;
+	indirectLightPassData.m_depthImageHandle = depthImageViewHandle;
+	indirectLightPassData.m_albedoImageHandle = albedoImageViewHandle;
+	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
+	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
+	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
+
+	IndirectLightPass::addToGraph(graph, indirectLightPassData);
 
 
 	// update voxel representation of scene
