@@ -8,4 +8,5 @@ struct PushConsts
 	ivec2 prevMipSize;
 	uint width;
 	uint height;
+	uint copyOnly;
 };

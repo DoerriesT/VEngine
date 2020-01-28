@@ -26,7 +26,7 @@
 #include "Pass/OcclusionCullingPass.h"
 #include "Pass/OcclusionCullingCreateDrawArgsPass.h"
 #include "Pass/OcclusionCullingHiZPass.h"
-#include "Pass/DepthPyramidPass.h"
+#include "Pass/HiZPyramidPass.h"
 #include "Pass/BuildIndexBufferPass.h"
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
@@ -423,33 +423,19 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//
 	//OcclusionCullingPass::addToGraph(graph, occlusionCullingPassData);
 
-	// depth pyramid
-	ImageViewHandle depthPyramidImageViewHandle = 0;
-	{
-		auto getMipLevelCount = [](uint32_t w, uint32_t h)
-		{
-			uint32_t result = 1;
-			while (w > 1 || h > 1)
-			{
-				result++;
-				w /= 2;
-				h /= 2;
-			}
-			return result;
-		};
-		const uint32_t levels = getMipLevelCount(m_width / 2, m_height / 2);
+	// Hi-Z furthest depth pyramid
+	HiZPyramidPass::OutData hiZMinPyramidPassOutData;
+	HiZPyramidPass::Data hiZMinPyramidPassData;
+	hiZMinPyramidPassData.m_passRecordContext = &passRecordContext;
+	hiZMinPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
+	hiZMinPyramidPassData.m_maxReduction = false;
+	hiZMinPyramidPassData.m_copyFirstLevel = false;
+	hiZMinPyramidPassData.m_forceExecution = true;
 
-		ImageHandle depthPyramidImageHandle = VKResourceDefinitions::createDepthPyramidImageHandle(graph, m_width / 2, m_height / 2, levels);
+	HiZPyramidPass::addToGraph(graph, hiZMinPyramidPassData, hiZMinPyramidPassOutData);
 
-		DepthPyramidPass::Data depthPyramidPassData;
-		depthPyramidPassData.m_passRecordContext = &passRecordContext;
-		depthPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-		depthPyramidPassData.m_resultImageHandle = depthPyramidImageHandle;
+	ImageViewHandle depthPyramidImageViewHandle = hiZMinPyramidPassOutData.m_resultImageViewHandle;
 
-		DepthPyramidPass::addToGraph(graph, depthPyramidPassData);
-
-		depthPyramidImageViewHandle = graph.createImageView({ "Depth Pyramid Image View", depthPyramidImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, 1 } });
-	}
 	//
 	//// HiZ Culling
 	//OcclusionCullingHiZPass::Data occlusionCullingHiZData;

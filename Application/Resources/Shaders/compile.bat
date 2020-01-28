@@ -27,7 +27,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCopyToDepth_frag.frag
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCulling_vert.vert -o occlusionCulling_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCulling_frag.frag -o occlusionCulling_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingCreateDrawArgs_comp.comp -o occlusionCullingCreateDrawArgs_comp.spv
-glslc --target-env=vulkan1.1 -O -Werror -c depthPyramid_comp.comp -o depthPyramid_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c occlusionCullingHiZ_comp.comp -o occlusionCullingHiZ_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c buildIndexBuffer_comp.comp -o buildIndexBuffer_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c clearVoxels_comp.comp -o clearVoxels_comp.spv
@@ -57,5 +56,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c -DSSAO_ENABLED=1 indirectDiffuse_comp
 glslc --target-env=vulkan1.1 -O -Werror -c bloomDownsample_comp.comp -o bloomDownsample_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c bloomUpsample_comp.comp -o bloomUpsample_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c taa_comp.comp -o taa_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DREDUCE=min hiZPyramid_comp.comp -o hiZPyramid_MIN_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DREDUCE=max hiZPyramid_comp.comp -o hiZPyramid_MAX_comp.spv
 
 pause

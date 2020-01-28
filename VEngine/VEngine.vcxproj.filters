@@ -330,9 +330,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
@@ -421,6 +418,9 @@
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -641,9 +641,6 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPyramidPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
@@ -729,6 +726,9 @@
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

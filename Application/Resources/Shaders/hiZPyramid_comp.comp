@@ -1,6 +1,10 @@
 #version 450
 
-#include "depthPyramid_bindings.h"
+#include "hiZPyramid_bindings.h"
+
+#ifndef REDUCE
+#define REDUCE min
+#endif // REDUCE
 
 layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, r32f) uniform writeonly image2D uResultImage;
@@ -17,6 +21,12 @@ void main()
 {
 	if (gl_GlobalInvocationID.x < uPushConsts.width && gl_GlobalInvocationID.y < uPushConsts.height)
 	{
+		if (uPushConsts.copyOnly != 0)
+		{
+			float depth = texelFetch(uInputImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+			imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(depth, 0.0, 0.0, 0.0));
+			return;
+		}
 		// get integer pixel coordinates
 		ivec2 coords = ivec2(gl_GlobalInvocationID.xy) * 2;
 		
@@ -27,7 +37,7 @@ void main()
 		depths[2] = texelFetch(uInputImage, coords + ivec2(0, 1), 0).x;
 		depths[3] = texelFetch(uInputImage, coords + ivec2(1, 1), 0).x;
 		
-		float minDepth = min(min(depths[0], depths[1]), min(depths[2], depths[3]));
+		float reducedDepth = REDUCE(REDUCE(depths[0], depths[1]), REDUCE(depths[2], depths[3]));
 		
 		const ivec2 prevMipSize = uPushConsts.prevMipSize;
 		
@@ -38,23 +48,23 @@ void main()
 		{
 			extra[0] = texelFetch(uInputImage, coords + ivec2(2, 0), 0).x;
 			extra[1] = texelFetch(uInputImage, coords + ivec2(2, 1), 0).x;
-			minDepth = min(minDepth, min(extra[0], extra[1]));
+			reducedDepth = REDUCE(reducedDepth, REDUCE(extra[0], extra[1]));
 		}
 		
 		if (((prevMipSize.y & 1) == 1) && (coords.y == (prevMipSize.y - 3)))
 		{
 			extra[0] = texelFetch(uInputImage, coords + ivec2(0, 2), 0).x;
 			extra[1] = texelFetch(uInputImage, coords + ivec2(1, 2), 0).x;
-			minDepth = min(minDepth, min(extra[0], extra[1]));
+			reducedDepth = REDUCE(reducedDepth, REDUCE(extra[0], extra[1]));
 		}
 		
 		// extreme case: if both edges are odd, fetch the bottom-right corner
 		if (((prevMipSize.x & 1) == 1) && ((prevMipSize.y & 1) == 1)
 			&& (coords.x == (prevMipSize.x - 3)) && (coords.y == (prevMipSize.y - 3)))
 		{
-			minDepth = min(minDepth, texelFetch(uInputImage, coords + ivec2(2, 2), 0).x);
+			reducedDepth = REDUCE(reducedDepth, texelFetch(uInputImage, coords + ivec2(2, 2), 0).x);
 		}
 		
-		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(minDepth));
+		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(reducedDepth));
 	}
 }
