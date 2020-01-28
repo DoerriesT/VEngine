@@ -59,5 +59,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c taa_comp.comp -o taa_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DREDUCE=min hiZPyramid_comp.comp -o hiZPyramid_MIN_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c -DREDUCE=max hiZPyramid_comp.comp -o hiZPyramid_MAX_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c indirectLight_comp.comp -o indirectLight_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c ssr_comp.comp -o ssr_comp.spv
 
 pause

@@ -31,6 +31,7 @@
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/IndirectDiffusePass.h"
+#include "Pass/SSRPass.h"
 #include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
 #include "Module/GTAOModule.h"
@@ -290,6 +291,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	ImageViewHandle indirectDiffuseImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	ImageViewHandle indirectSpecularImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle2 = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle uvImageViewHandle = VKResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
@@ -430,7 +432,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	HiZPyramidPass::Data hiZMinPyramidPassData;
 	hiZMinPyramidPassData.m_passRecordContext = &passRecordContext;
 	hiZMinPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-	hiZMinPyramidPassData.m_maxReduction = false;
+	hiZMinPyramidPassData.m_maxReduction = true;
 	hiZMinPyramidPassData.m_copyFirstLevel = false;
 	hiZMinPyramidPassData.m_forceExecution = true;
 
@@ -755,6 +757,29 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
 
 
+	// Hi-Z closest depth pyramid
+	HiZPyramidPass::OutData hiZMaxPyramidPassOutData;
+	HiZPyramidPass::Data hiZMaxPyramidPassData;
+	hiZMaxPyramidPassData.m_passRecordContext = &passRecordContext;
+	hiZMaxPyramidPassData.m_inputImageViewHandle = depthImageViewHandle;
+	hiZMaxPyramidPassData.m_maxReduction = false;
+	hiZMaxPyramidPassData.m_copyFirstLevel = true;
+	hiZMaxPyramidPassData.m_forceExecution = false;
+
+	HiZPyramidPass::addToGraph(graph, hiZMaxPyramidPassData, hiZMaxPyramidPassOutData);
+
+
+	// screen space reflections
+	SSRPass::Data ssrPassData;
+	ssrPassData.m_passRecordContext = &passRecordContext;
+	ssrPassData.m_hiZPyramidImageHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	ssrPassData.m_normalImageHandle = normalImageViewHandle;
+	ssrPassData.m_prevColorImageHandle = albedoImageViewHandle;
+	ssrPassData.m_resultImageHandle = indirectSpecularImageViewHandle;
+
+	SSRPass::addToGraph(graph, ssrPassData);
+
+
 	// apply indirect light
 	IndirectLightPass::Data indirectLightPassData;
 	indirectLightPassData.m_passRecordContext = &passRecordContext;
@@ -762,6 +787,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectLightPassData.m_albedoImageHandle = albedoImageViewHandle;
 	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
 	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
+	indirectLightPassData.m_indirectSpecularImageHandle = indirectSpecularImageViewHandle;
 	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
 
 	IndirectLightPass::addToGraph(graph, indirectLightPassData);
@@ -928,11 +954,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	taaPassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
 	taaPassData.m_lightImageHandle = lightImageViewHandle;
 	taaPassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
-	
+
 	if (g_TAAEnabled)
 	{
 		TAAPass::addToGraph(graph, taaPassData);
-	
+
 		lightImageViewHandle = taaResolveImageViewHandle;
 	}
 
@@ -999,7 +1025,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	{
 		SharpenFfxCasPass::addToGraph(graph, sharpenFfxCasPassData);
 	}
-	
+
 
 
 	//// mesh cluster visualization

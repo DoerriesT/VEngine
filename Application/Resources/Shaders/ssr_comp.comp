@@ -1,0 +1,157 @@
+#version 450
+
+#include "ssr_bindings.h"
+
+layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
+layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
+layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
+layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
+layout(set = HIZ_PYRAMID_IMAGE_SET, binding = HIZ_PYRAMID_IMAGE_BINDING) uniform sampler2D uHiZPyramid;
+layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
+layout(set = PREV_COLOR_IMAGE_SET, binding = PREV_COLOR_IMAGE_BINDING) uniform sampler2D uPrevColorImage;
+layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+vec2 getCell(vec2 ray, vec2 cellCount)
+{
+	return floor(ray.xy * cellCount);
+}
+
+vec2 getCellCount(float level)
+{
+	return vec2(textureSize(uHiZPyramid, int(level)).xy);
+}
+
+vec3 intersectCellBoundary(vec3 pos, vec3 dir, vec2 cellIdx, vec2 cellCount, vec2 crossStep, vec2 crossOffset)
+{
+	vec2 cell = cellIdx + crossStep;
+	cell /= cellCount;
+	cell += crossOffset;
+	
+	vec2 delta = cell - pos.xy;
+	delta /= dir.xy;
+	
+	float t = min(delta.x, delta.y);
+	
+	return pos + dir * t;
+}
+
+bool crossedCellBoundary(vec2 cellIdx0, vec2 cellIdx1)
+{
+	return (int(cellIdx0.x) != int(cellIdx1.x)) || (int(cellIdx0.y) != int(cellIdx1.y));
+}
+
+float getMinimumDepthPlane(vec2 ray, float level, vec2 cellCount)
+{
+	return texelFetch(uHiZPyramid, ivec2(ray.xy * cellCount), int(level)).x;
+}
+
+vec3 intersectDepthPlane(vec3 p, vec3 d, float t)
+{
+	return p + d * t;
+}
+
+vec3 hiZTrace(vec3 p, vec3 v)
+{
+	if (v.z <= 0.0001)
+	{
+		return vec3(-1.0);
+	}
+	float level = 0.0;
+	float iterations = 0.0;
+	
+	vec2 crossStep = vec2(v.x >= 0.0 ? 1.0 : -1.0, v.y >= 0.0 ? 1.0 : -1.0);
+	vec2 crossOffset = crossStep * 0.00001;
+	crossStep = clamp(crossStep, vec2(0.0), vec2(1.0));
+	
+	vec2 hiZSize = getCellCount(level);
+	
+	p.xy = floor(p.xy * hiZSize) / hiZSize + 0.25 / hiZSize;
+	
+	vec3 ray = p;
+	
+	vec3 d = v /= v.z;
+	
+	vec3 o = intersectDepthPlane(p, d, -p.z);
+	
+	
+	vec2 rayCell = getCell(ray.xy, hiZSize);
+	ray = intersectCellBoundary(o, d, rayCell, hiZSize, crossStep, crossOffset);
+	
+	while(level >= 0.0 && iterations < 512.0)
+	{
+		const vec2 cellCount = getCellCount(level);
+		float minZ = getMinimumDepthPlane(ray.xy, level, cellCount);
+		
+		
+		const vec2 oldCellIdx = getCell(ray.xy, cellCount);
+		
+		vec3 tmpRay = intersectDepthPlane(o, d, max(ray.z, minZ));
+		const vec2 newCellIdx = getCell(tmpRay.xy, cellCount);
+		
+		if (crossedCellBoundary(oldCellIdx, newCellIdx))
+		{
+			tmpRay = intersectCellBoundary(o, d, oldCellIdx, cellCount, crossStep, crossOffset);
+			level = min(uPushConsts.hiZMaxLevel, level + 2.0);
+		}
+		
+		ray = tmpRay;
+		
+		if (ray.x < 0.0 || ray.y < 0.0 || ray.x > 1.0 || ray.y > 1.0)
+		{
+			return vec3(-1.0);
+		}
+		
+		--level;
+		++iterations;
+	}
+	return ray;
+}
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x >= cWidth || gl_GlobalInvocationID.y >= cHeight)
+	{
+		return;
+	}
+	
+	const float depth = texelFetch(uHiZPyramid, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	if (depth == 1.0)
+	{
+		return;
+	}
+	
+	const vec2 clipSpacePosition = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight) * 2.0 - 1.0;
+	vec4 viewSpacePosition = vec4(uPushConsts.unprojectParams.xy * clipSpacePosition, -1.0, uPushConsts.unprojectParams.z * depth + uPushConsts.unprojectParams.w);
+	viewSpacePosition.xyz /= viewSpacePosition.w;
+	
+	const vec3 P = viewSpacePosition.xyz;
+	const vec3 V = -normalize(viewSpacePosition.xyz);
+	const vec3 N = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0).xyz;
+	const vec3 R = reflect(-V, N);
+	
+	vec3 pSS = vec3(vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight), depth);
+	vec4 reflectSS = uPushConsts.projectionMatrix * vec4(P + R, 1.0);
+	reflectSS.xyz /= reflectSS.w;
+	reflectSS.xy = reflectSS.xy * 0.5 + 0.5;
+	vec3 vSS = reflectSS.xyz - pSS;
+	
+	vec3 rayHit = hiZTrace(pSS, vSS);
+	
+	vec3 result = vec3(10.0);
+	if (rayHit.x > 0.0 && rayHit.y > 0.0 && rayHit.x < 1.0 && rayHit.y < 1.0 && rayHit.z > 0.0 && rayHit.z < 1.0)
+	{
+		vec2 velocity = vec2(0.0);//textureLod(uVelocityImage, rayHit.xy, 0.0).xy;
+	
+		result = textureLod(uPrevColorImage, rayHit.xy, 0.0).rgb * 100.0;
+	}
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), ivec4(result, 1.0));
+}

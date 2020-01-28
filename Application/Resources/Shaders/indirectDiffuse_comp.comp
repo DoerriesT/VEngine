@@ -201,7 +201,7 @@ void main()
 	}
 	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
 	
-	if (depth == 0.0)
+	if (depth == 1.0)
 	{
 		return;
 	}
