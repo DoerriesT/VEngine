@@ -22,7 +22,7 @@
             "normalTexture": "Resources/Textures/Sponza/lion_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.9,
             "roughnessTexture": ""
         },
         {
@@ -46,7 +46,7 @@
             "normalTexture": "Resources/Textures/Sponza/background_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.9,
             "roughnessTexture": ""
         },
         {
@@ -70,7 +70,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": ""
         },
         {
@@ -94,7 +94,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.3,
             "roughnessTexture": ""
         },
         {
@@ -118,7 +118,7 @@
             "normalTexture": "Resources/Textures/Sponza/arch_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/arch_r.dds"
         },
         {
@@ -142,7 +142,7 @@
             "normalTexture": "Resources/Textures/Sponza/bricks_a_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/bricks_a_r.dds"
         },
         {
@@ -166,7 +166,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/ceiling_a_r.dds"
         },
         {
@@ -190,7 +190,7 @@
             "normalTexture": "Resources/Textures/Sponza/chain_texture_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.7,
             "roughnessTexture": ""
         },
         {
@@ -214,7 +214,7 @@
             "normalTexture": "Resources/Textures/Sponza/column_a_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/column_a_r.dds"
         },
         {
@@ -238,7 +238,7 @@
             "normalTexture": "Resources/Textures/Sponza/column_b_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/column_b_r.dds"
         },
         {
@@ -262,7 +262,7 @@
             "normalTexture": "Resources/Textures/Sponza/column_c_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/column_c_r.dds"
         },
         {
@@ -286,7 +286,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/details_r.dds"
         },
         {
@@ -310,7 +310,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
         },
         {
@@ -334,7 +334,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": ""
         },
         {
@@ -358,7 +358,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
         },
         {
@@ -382,7 +382,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": "Resources/Textures/Sponza/fabric_r.dds"
         },
         {
@@ -406,7 +406,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": ""
         },
         {
@@ -430,7 +430,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 1.0,
             "roughnessTexture": ""
         },
         {
@@ -454,7 +454,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/flagpole_r.dds"
         },
         {
@@ -478,7 +478,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/floor_a_r.dds"
         },
         {
@@ -502,7 +502,7 @@
             "normalTexture": "Resources/Textures/Sponza/thorn_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/thorn_r.dds"
         },
         {
@@ -526,7 +526,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": ""
         },
         {
@@ -550,7 +550,7 @@
             "normalTexture": "Resources/Textures/Sponza/vase_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.9,
             "roughnessTexture": ""
         },
         {
@@ -574,7 +574,7 @@
             "normalTexture": "",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.7,
             "roughnessTexture": ""
         },
         {
@@ -598,7 +598,7 @@
             "normalTexture": "Resources/Textures/Sponza/vase_round_n.dds",
             "occlusionTexture": "",
             "opacity": 1.0,
-            "roughness": 0.0,
+            "roughness": 0.5,
             "roughnessTexture": "Resources/Textures/Sponza/vase_round_r.dds"
         }
     ]

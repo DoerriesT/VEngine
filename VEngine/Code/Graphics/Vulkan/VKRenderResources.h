@@ -18,6 +18,7 @@ namespace VEngine
 	{
 		// images
 		VKImage m_depthImages[RendererConsts::FRAMES_IN_FLIGHT];
+		VKImage m_lightImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
 
@@ -57,6 +58,8 @@ namespace VEngine
 		// rendergraph external info
 		VkQueue m_depthImageQueue[RendererConsts::FRAMES_IN_FLIGHT];
 		ResourceState m_depthImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
+		VkQueue m_lightImageQueue[RendererConsts::FRAMES_IN_FLIGHT];
+		ResourceState m_lightImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_taaHistoryTextureQueue[RendererConsts::FRAMES_IN_FLIGHT];
 		ResourceState m_taaHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_avgLuminanceBufferQueue = RenderGraph::undefinedQueue;

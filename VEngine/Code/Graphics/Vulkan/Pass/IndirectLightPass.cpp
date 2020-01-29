@@ -57,9 +57,9 @@ void VEngine::IndirectLightPass::addToGraph(RenderGraph &graph, const Data &data
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER, pointSamplerClamp), RESULT_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
-				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), ALBEDO_IMAGE_BINDING);
-				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), NORMAL_IMAGE_BINDING);
-				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_indirectDiffuseImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), INDIRECT_DIFFUSE_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), ALBEDO_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), NORMAL_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_indirectDiffuseImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), INDIRECT_DIFFUSE_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_indirectSpecularImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), INDIRECT_SPECULAR_IMAGE_BINDING);
 
 				writer.commit();

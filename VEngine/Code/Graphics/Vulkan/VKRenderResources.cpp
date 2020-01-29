@@ -634,6 +634,8 @@ void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 	{
 		m_depthImageQueue[i] = RenderGraph::undefinedQueue;
 		m_depthImageResourceState[i] = ResourceState::UNDEFINED;
+		m_lightImageQueue[i] = RenderGraph::undefinedQueue;
+		m_lightImageResourceState[i] = ResourceState::UNDEFINED;
 		m_taaHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
 		m_taaHistoryTextureResourceState[i] = ResourceState::UNDEFINED;
 		m_swapChainImageAvailableSemaphores[i] = g_context.m_syncPrimitivePool.acquireSemaphore();
@@ -666,6 +668,35 @@ void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 				m_depthImages[i].destroy();
 			}
 			m_depthImages[i].create(imageCreateInfo, allocCreateInfo);
+		}
+	}
+
+	// light images
+	{
+		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		imageCreateInfo.extent.width = width;
+		imageCreateInfo.extent.height = height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VKAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+		{
+			if (m_lightImages[i].isValid())
+			{
+				m_lightImages[i].destroy();
+			}
+			m_lightImages[i].create(imageCreateInfo, allocCreateInfo);
 		}
 	}
 

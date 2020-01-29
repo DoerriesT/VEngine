@@ -13,7 +13,7 @@ namespace VEngine
 			ImageViewHandle m_hiZPyramidImageHandle;
 			ImageViewHandle m_normalImageHandle;
 			ImageViewHandle m_prevColorImageHandle;
-			//ImageViewHandle m_velocityImageHandle;
+			ImageViewHandle m_velocityImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};
 

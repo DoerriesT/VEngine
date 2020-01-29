@@ -148,9 +148,9 @@ void main()
 	vec3 result = vec3(0.0);
 	if (rayHit.x > 0.0 && rayHit.y > 0.0 && rayHit.x < 1.0 && rayHit.y < 1.0 && rayHit.z > 0.0 && rayHit.z < 1.0)
 	{
-		vec2 velocity = vec2(0.0);//textureLod(uVelocityImage, rayHit.xy, 0.0).xy;
+		vec2 velocity = textureLod(uVelocityImage, rayHit.xy, 0.0).xy;
 	
-		result = textureLod(uPrevColorImage, rayHit.xy, 0.0).rgb * 100.0;
+		result = textureLod(uPrevColorImage, rayHit.xy - velocity, 0.0).rgb;
 	}
-	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), ivec4(result, 1.0));
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result, 1.0));
 }

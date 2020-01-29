@@ -192,6 +192,36 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		prevDepthImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 } });
 	}
 
+	ImageViewHandle lightImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Light Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_lightImages[commonData.m_curResIdx].getFormat();
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_curResIdx].getImage(), &m_renderResources->m_lightImageQueue[commonData.m_curResIdx], &m_renderResources->m_lightImageResourceState[commonData.m_curResIdx]);
+		lightImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle prevLightImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "Prev Light Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_format = m_renderResources->m_lightImages[commonData.m_prevResIdx].getFormat();
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_prevResIdx].getImage(), &m_renderResources->m_lightImageQueue[commonData.m_prevResIdx], &m_renderResources->m_lightImageResourceState[commonData.m_prevResIdx]);
+		prevLightImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
+	}
+
 	ImageViewHandle taaHistoryImageViewHandle = 0;
 	{
 		ImageDescription desc = {};
@@ -299,7 +329,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle ddxyRotMaterialIdImageViewHandle = VKResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle tangentSpaceImageViewHandle = VKResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle velocityImageViewHandle = VKResourceDefinitions::createVelocityImageViewHandle(graph, m_width, m_height);
-	ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	//ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
@@ -774,7 +804,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssrPassData.m_passRecordContext = &passRecordContext;
 	ssrPassData.m_hiZPyramidImageHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
 	ssrPassData.m_normalImageHandle = normalImageViewHandle;
-	ssrPassData.m_prevColorImageHandle = albedoImageViewHandle;
+	ssrPassData.m_prevColorImageHandle = prevLightImageViewHandle;
+	ssrPassData.m_velocityImageHandle = velocityImageViewHandle;
 	ssrPassData.m_resultImageHandle = indirectSpecularImageViewHandle;
 
 	SSRPass::addToGraph(graph, ssrPassData);

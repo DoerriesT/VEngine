@@ -22,7 +22,7 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 		{ResourceViewHandle(data.m_hiZPyramidImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_normalImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_prevColorImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
-		//{ResourceViewHandle(data.m_velocityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_velocityImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 	};
 
 	graph.addPass("SSR", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
@@ -58,7 +58,7 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_hiZPyramidImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), HIZ_PYRAMID_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), NORMAL_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_prevColorImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), PREV_COLOR_IMAGE_BINDING);
-				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
 
 				writer.commit();
 			}
