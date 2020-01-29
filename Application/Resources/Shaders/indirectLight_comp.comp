@@ -61,14 +61,14 @@ void main()
 	const vec3 albedo = accurateSRGBToLinear(tmp.rgb);
 	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
 	vec3 diffuse = texelFetch(uIndirectDiffuseImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb * albedo;
-	vec3 specular = texelFetch(uIndirectSpecularImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
+	vec4 specular = texelFetch(uIndirectSpecularImage, ivec2(gl_GlobalInvocationID.xy), 0).rgba;
 	
 	vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 	vec3 kD = 1.0 - kS;
 	kD *= 1.0 - metalness;
 	// kS = 1.0 - kD;
 	
-	vec3 result = kD * diffuse + kS * specular;
+	vec3 result = kD * diffuse + kS * specular.rgb * specular.a;
 	
 	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result + lit, 1.0));
