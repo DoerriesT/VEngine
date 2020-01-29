@@ -83,7 +83,7 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			PushConsts pushConsts;
 			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-			pushConsts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredProjectionMatrix;
+			pushConsts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix;
 			pushConsts.hiZMaxLevel = static_cast<float>(maxLevel);
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
