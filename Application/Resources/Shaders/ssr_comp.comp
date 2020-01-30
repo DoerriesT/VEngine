@@ -72,7 +72,7 @@ vec3 hiZTrace(vec3 p, vec3 v)
 	vec2 rayCell = getCell(ray.xy, hiZSize);
 	ray = intersectCellBoundary(ray, v, rayCell, hiZSize, crossStep, crossOffset);
 	
-	const float MAX_ITERATIONS = 128.0;
+	const float MAX_ITERATIONS = 1024.0;
 	float minZ = 0.0;
 	
 	while(level >= 0.0 && iterations < MAX_ITERATIONS)
@@ -147,7 +147,7 @@ void main()
 	vec3 rayHit = hiZTrace(pSS, vSS);
 	
 	vec4 result = vec4(0.0);
-	if (rayHit.x > 0.0 && rayHit.y > 0.0 && rayHit.x < 1.0 && rayHit.y < 1.0 && rayHit.z > 0.0 && rayHit.z < 1.0)
+	if (rayHit.x > 0.0 && rayHit.y > 0.0 && rayHit.x < 1.0 && rayHit.y < 1.0 && rayHit.z < 1.0)
 	{
 		vec2 velocity = textureLod(uVelocityImage, rayHit.xy, 0.0).xy;
 	
@@ -156,10 +156,10 @@ void main()
 		float cameraFacingReflectionAttenuation = 1.0 - smoothstep(0.25, 0.5, dot(V, R));
 		vec2 uvSamplingAttenuation = smoothstep(0.05, 0.1, rayHit.xy) * (1.0 - smoothstep(0.95, 1.0, rayHit.xy));
 		uvSamplingAttenuation.x *= uvSamplingAttenuation.y;
-		vec3 reflectionNormal = textureLod(uNormalImage, rayHit.xy, 0.0).xyz;
-		float directionBasedAttenuation = smoothstep(-0.17, 0.0, dot(reflectionNormal, -R));
+		//vec3 reflectionNormal = textureLod(uNormalImage, rayHit.xy, 0.0).xyz;
+		//float directionBasedAttenuation = smoothstep(-0.17, 0.0, dot(reflectionNormal, -R));
 	
-		result.a = max(cameraFacingReflectionAttenuation, 0.0) * max(uvSamplingAttenuation.x, 0.0) * max(directionBasedAttenuation, 0.0);
+		result.a = max(cameraFacingReflectionAttenuation, 0.0) * max(uvSamplingAttenuation.x, 0.0);// * max(directionBasedAttenuation, 0.0);
 	}
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
 }
