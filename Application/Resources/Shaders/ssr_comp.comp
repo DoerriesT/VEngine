@@ -54,10 +54,6 @@ float getMinimumDepthPlane(vec2 ray, float level, vec2 cellCount)
 
 vec3 hiZTrace(vec3 p, vec3 v)
 {
-	if (v.z >= -0.00001)
-	{
-		return vec3(-1.0);
-	}
 	float level = 0.0;
 	float iterations = 0.0;
 	vec3 vZ = v / v.z;
@@ -84,7 +80,7 @@ vec3 hiZTrace(vec3 p, vec3 v)
 		minZ = getMinimumDepthPlane(ray.xy, level, cellCount);
 		
 		vec3 tmpRay = ray;
-		//if (v.z < 0.0)
+		if (v.z < 0.0)
 		{
 			float minMinusRay = (1.0 - minZ) - (1.0 - ray.z);
 			tmpRay = minMinusRay > 0.0 ? ray + vZ * minMinusRay : tmpRay;
@@ -96,11 +92,11 @@ vec3 hiZTrace(vec3 p, vec3 v)
 				level = min(uPushConsts.hiZMaxLevel, level + 2.0);
 			}
 		}
-		//else if (ray.z > minZ)
-		//{
-		//	tmpRay = intersectCellBoundary(ray, v, oldCellIdx, cellCount, crossStep, crossOffset);
-		//	level = min(uPushConsts.hiZMaxLevel, level + 2.0);
-		//}
+		else if (ray.z > minZ)
+		{
+			tmpRay = intersectCellBoundary(ray, v, oldCellIdx, cellCount, crossStep, crossOffset);
+			level = min(uPushConsts.hiZMaxLevel, level + 2.0);
+		}
 		
 
 		ray = tmpRay;
@@ -153,13 +149,13 @@ void main()
 	
 		result.rgb = textureLod(uPrevColorImage, rayHit.xy - velocity, 0.0).rgb;
 		
-		float cameraFacingReflectionAttenuation = 1.0 - smoothstep(0.25, 0.5, dot(V, R));
+		//float cameraFacingReflectionAttenuation = 1.0 - smoothstep(0.25, 0.5, dot(V, R));
 		vec2 uvSamplingAttenuation = smoothstep(0.05, 0.1, rayHit.xy) * (1.0 - smoothstep(0.95, 1.0, rayHit.xy));
 		uvSamplingAttenuation.x *= uvSamplingAttenuation.y;
 		//vec3 reflectionNormal = textureLod(uNormalImage, rayHit.xy, 0.0).xyz;
 		//float directionBasedAttenuation = smoothstep(-0.17, 0.0, dot(reflectionNormal, -R));
 	
-		result.a = max(cameraFacingReflectionAttenuation, 0.0) * max(uvSamplingAttenuation.x, 0.0);// * max(directionBasedAttenuation, 0.0);
+		result.a = /*max(cameraFacingReflectionAttenuation, 0.0)*/ max(uvSamplingAttenuation.x, 0.0);// * max(directionBasedAttenuation, 0.0);
 	}
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
 }
