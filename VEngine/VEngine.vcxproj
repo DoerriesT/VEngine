@@ -186,7 +186,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.h" />
@@ -301,7 +303,9 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.cpp" />
