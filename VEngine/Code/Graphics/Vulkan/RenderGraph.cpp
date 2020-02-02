@@ -112,7 +112,7 @@ void VEngine::RenderGraph::createPasses(ResourceViewHandle finalResourceHandle, 
 						auto &refCount = subresourceRefCounts[m_passSubresourceIndices[i]];
 						if (refCount != 0 && --refCount == 0)
 						{
-							resourceStack.push(i);
+							resourceStack.push(m_passSubresourceIndices[i]);
 						}
 					}
 				}
