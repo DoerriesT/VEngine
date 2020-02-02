@@ -73,6 +73,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_renderResources->init(m_width, m_height);
 
 	m_fontAtlasTextureIndex = m_textureLoader->load("Resources/Textures/fontConsolas.dds");
+	m_blueNoiseTextureIndex = m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds");
 
 	updateTextureData();
 
@@ -802,6 +803,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// screen space reflections
 	SSRPass::Data ssrPassData;
 	ssrPassData.m_passRecordContext = &passRecordContext;
+	ssrPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	ssrPassData.m_hiZPyramidImageHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
 	ssrPassData.m_normalImageHandle = normalImageViewHandle;
 	ssrPassData.m_prevColorImageHandle = prevLightImageViewHandle;

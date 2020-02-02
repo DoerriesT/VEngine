@@ -1,17 +1,23 @@
 #version 450
 
 #include "ssr_bindings.h"
+#include "common.h"
 
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
 layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
 layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
-layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uResultImage;
+//layout(set = RAY_HIT_PDF_IMAGE_SET, binding = RAY_HIT_PDF_IMAGE_BINDING, rgba16f) uniform writeonly image2D uRayHitPdfImage;
+//layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING, r8) uniform writeonly image2D uMaskImage;
 layout(set = HIZ_PYRAMID_IMAGE_SET, binding = HIZ_PYRAMID_IMAGE_BINDING) uniform sampler2D uHiZPyramid;
 layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
 layout(set = PREV_COLOR_IMAGE_SET, binding = PREV_COLOR_IMAGE_BINDING) uniform sampler2D uPrevColorImage;
 layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityImage;
+
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -112,6 +118,43 @@ vec3 hiZTrace(vec3 p, vec3 v)
 	return iterations >= MAX_ITERATIONS || (minZ - ray.z) >= 0.0003 ? vec3(-1.0) : ray;
 }
 
+vec4 importanceSampleGGX(vec2 noise, float roughness)
+{
+	float m = roughness * roughness;
+	float m2 = m * m;
+	
+	float phi = 2.0 * PI * noise.x;
+	float cosTheta = sqrt((1.0 - noise.y) / (1.0 + (m2 - 1.0) * noise.y));
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+	
+	vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+	
+	float d = (cosTheta * m2 - cosTheta) * cosTheta + 1.0;
+	float D = m2 / (PI * d * d);
+	
+	float pdf = D * cosTheta;
+	return vec4(H, pdf);
+}
+
+mat3 getTangentBasis(vec3 tangentZ)
+{
+	vec3 upVector = abs(tangentZ.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 tangentX = normalize(cross(upVector, tangentZ));
+	vec3 tangentY = cross(tangentZ, tangentX);
+	return transpose(mat3(tangentX, tangentY, tangentZ));
+}
+
+vec3 tangentToWorld(vec3 v, vec3 tangentZ)
+{
+	return getTangentBasis(tangentZ) * v;
+}
+
+vec4 tangentToWorld(vec3 v, vec4 tangentZ)
+{
+	vec3 t2w = tangentToWorld(v, tangentZ.rgb);
+	return vec4(t2w, tangentZ.a);
+}
+
 void main() 
 {
 	if (gl_GlobalInvocationID.x >= cWidth || gl_GlobalInvocationID.y >= cHeight)
@@ -131,8 +174,17 @@ void main()
 	
 	const vec3 P = viewSpacePosition.xyz;
 	const vec3 V = -normalize(viewSpacePosition.xyz);
-	const vec3 N = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0).xyz;
-	const vec3 R = reflect(-V, N);
+	vec4 normalRoughness = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	const vec3 N = normalRoughness.xyz;
+	const float roughness = normalRoughness.w;
+	//const vec3 R = reflect(-V, N);
+	
+	vec2 noise = textureLod(sampler2D(uTextures[uPushConsts.noiseTexId], uSamplers[SAMPLER_POINT_REPEAT]), vec2(gl_GlobalInvocationID.xy + 0.5) * uPushConsts.noiseScale + uPushConsts.noiseJitter, 0.0).rg;
+	
+	vec4 microNormalPdf = importanceSampleGGX(noise, roughness);
+	vec3 H = tangentToWorld(microNormalPdf.xyz, N);
+	float pdf = microNormalPdf.w;
+	const vec3 R = reflect(-V, H.xyz);
 	
 	vec3 pSS = vec3(vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(cTexelWidth, cTexelHeight), depth);
 	vec4 reflectSS = uPushConsts.projectionMatrix * vec4(P + R, 1.0);
@@ -140,8 +192,14 @@ void main()
 	reflectSS.xy = reflectSS.xy * 0.5 + 0.5;
 	vec3 vSS = reflectSS.xyz - pSS;
 	
-	vec3 rayHit = hiZTrace(pSS, vSS);
+	vec4 rayHitPdf = vec4(hiZTrace(pSS, vSS), pdf);
+	//imageStore(uRayHitPdfImage, ivec2(gl_GlobalInvocationID.xy), rayHitPdf);
+	//
+	//vec2 uvSamplingAttenuation = smoothstep(0.05, 0.1, rayHit.xy) * (1.0 - smoothstep(0.95, 1.0, rayHit.xy));
+	//vec4 mask = vec4(max(uvSamplingAttenuation.x * uvSamplingAttenuation.y, 0.0));
+	//imageStore(uMaskImage, ivec2(gl_GlobalInvocationID.xy), mask);
 	
+	vec3 rayHit = rayHitPdf.xyz;
 	vec4 result = vec4(0.0);
 	if (rayHit.x > 0.0 && rayHit.y > 0.0 && rayHit.x < 1.0 && rayHit.y < 1.0 && rayHit.z < 1.0)
 	{

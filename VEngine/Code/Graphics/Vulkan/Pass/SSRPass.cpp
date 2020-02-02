@@ -7,15 +7,31 @@
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
+#include <random>
 
 namespace
 {
+	constexpr size_t numHaltonSamples = 1024;
+	float haltonX[numHaltonSamples];
+	float haltonY[numHaltonSamples];
+
 	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/ssr_bindings.h"
 }
 
 void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 {
+	static bool initialized = false;
+	if (!initialized)
+	{
+		initialized = true;
+		for (size_t i = 0; i < numHaltonSamples; ++i)
+		{
+			haltonX[i] = Utility::halton(i + 1, 2);
+			haltonY[i] = Utility::halton(i + 1, 3);
+		}
+	}
+
 	ResourceUsageDescription passUsages[]
 	{
 		{ResourceViewHandle(data.m_resultImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
@@ -65,7 +81,8 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
+			VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 2, descriptorSets, 0, nullptr);
 
 			uint32_t maxLevel = 1;
 			{
@@ -86,7 +103,11 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 			pushConsts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix;
 			// hiZMaxLevel needs to be clamped to some resolution dependent upper bound in order to avoid artifacts in the right screen corner
 			// TODO: figure out why the artifacts appear and find a better fix
-			pushConsts.hiZMaxLevel = static_cast<float>(glm::min(maxLevel, 7u)); 
+			pushConsts.hiZMaxLevel = static_cast<float>(glm::min(maxLevel, 7u));
+			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
+			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
+			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);
+			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

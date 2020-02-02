@@ -9,6 +9,11 @@
 #define VELOCITY_IMAGE_SET 0
 #define VELOCITY_IMAGE_BINDING 4
 
+#define TEXTURES_SET 1
+#define TEXTURES_BINDING 0
+#define SAMPLERS_SET 1
+#define SAMPLERS_BINDING 1
+
 
 #define WIDTH_CONST_ID 0
 #define HEIGHT_CONST_ID 1
@@ -19,5 +24,8 @@ struct PushConsts
 {
 	mat4 projectionMatrix;
 	vec4 unprojectParams;
+	vec2 noiseScale;
+	vec2 noiseJitter;
 	float hiZMaxLevel;
+	uint noiseTexId;
 };
