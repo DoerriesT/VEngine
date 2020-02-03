@@ -65,5 +65,6 @@ glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_vert.vert -o depthPrepas
 glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_frag.frag -o depthPrepass_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c forward_vert.vert -o forward_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c forward_frag.frag -o forward_frag.spv
+glslc --target-env=vulkan1.1 -O -Werror -c integrateBrdf_comp.comp -o integrateBrdf_comp.spv
 
 pause

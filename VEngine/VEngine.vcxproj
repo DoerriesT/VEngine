@@ -194,6 +194,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h" />
@@ -312,6 +313,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp" />

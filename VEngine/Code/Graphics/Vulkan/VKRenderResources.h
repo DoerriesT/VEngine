@@ -21,9 +21,11 @@ namespace VEngine
 		VKImage m_lightImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
+		VKImage m_integratedBrdfLUT;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
+		VkImageView m_integratedBrdfLUTView;
 
 		// buffers
 		VKBuffer m_lightProxyVertexBuffer;

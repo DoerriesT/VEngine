@@ -1177,6 +1177,10 @@ VEngine::RenderGraph::RenderGraph()
 VEngine::RenderGraph::~RenderGraph()
 {
 	reset();
+	for (size_t i = 0; i < 3; ++i)
+	{
+		vkDestroyQueryPool(g_context.m_device, m_queryPools[i], nullptr);
+	}
 }
 
 void VEngine::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution)

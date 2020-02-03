@@ -7,6 +7,7 @@
 #include "Graphics/LightData.h"
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
+#include "Pass/IntegrateBrdfPass.h"
 #include "Pass/VKGeometryPass.h"
 #include "Pass/VKShadowPass.h"
 #include "Pass/VKRasterTilingPass.h"
@@ -462,6 +463,30 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	passRecordContext.m_pipelineCache = m_pipelineCache.get();
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
 	passRecordContext.m_commonRenderData = &commonData;
+
+	if (commonData.m_frame == 0)
+	{
+		ImageViewHandle brdfLUTImageViewHandle = 0;
+		{
+			ImageDescription desc = {};
+			desc.m_name = "BRDF LUT Image";
+			desc.m_concurrent = false;
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = m_width;
+			desc.m_height = m_height;
+			desc.m_format = m_renderResources->m_integratedBrdfLUT.getFormat();
+
+			ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_integratedBrdfLUT.getImage());
+			brdfLUTImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
+		}
+
+		IntegrateBrdfPass::Data integrateBrdfPassData;
+		integrateBrdfPassData.m_passRecordContext = &passRecordContext;
+		integrateBrdfPassData.m_resultImageViewHandle = brdfLUTImageViewHandle;
+
+		IntegrateBrdfPass::addToGraph(graph, integrateBrdfPassData);
+	}
 
 	//// reproject previous depth buffer to create occlusion culling depth buffer
 	//OcclusionCullingReprojectionPass::Data occlusionCullingReprojData;
