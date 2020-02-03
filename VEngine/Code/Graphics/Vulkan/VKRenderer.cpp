@@ -32,6 +32,7 @@
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/IndirectDiffusePass.h"
 #include "Pass/SSRPass.h"
+#include "Pass/SSRResolvePass.h"
 #include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
 #include "Module/GTAOModule.h"
@@ -300,6 +301,41 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+	ImageViewHandle ssrRayHitPdfImageViewHandle;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "SSR RayHit/PDF Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+		ssrRayHitPdfImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
+	}
+
+
+	ImageViewHandle ssrMaskImageViewHandle;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "SSR Mask Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = 1;
+		desc.m_format = VK_FORMAT_R8_UNORM;
+
+		ssrMaskImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
 	}
 
 	ImageHandle deferredShadowsImageHandle;
@@ -806,11 +842,23 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssrPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	ssrPassData.m_hiZPyramidImageHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
 	ssrPassData.m_normalImageHandle = normalImageViewHandle;
-	ssrPassData.m_prevColorImageHandle = prevLightImageViewHandle;
-	ssrPassData.m_velocityImageHandle = velocityImageViewHandle;
-	ssrPassData.m_resultImageHandle = indirectSpecularImageViewHandle;
+	ssrPassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
+	ssrPassData.m_maskImageHandle = ssrMaskImageViewHandle;
 
 	SSRPass::addToGraph(graph, ssrPassData);
+
+
+	SSRResolvePass::Data ssrResolvePassData;
+	ssrResolvePassData.m_passRecordContext = &passRecordContext;
+	ssrResolvePassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
+	ssrResolvePassData.m_maskImageHandle = ssrMaskImageViewHandle;
+	ssrResolvePassData.m_depthImageHandle = depthImageViewHandle;
+	ssrResolvePassData.m_normalImageHandle = normalImageViewHandle;
+	ssrResolvePassData.m_prevColorImageHandle = prevLightImageViewHandle;
+	ssrResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
+	ssrResolvePassData.m_resultImageHandle = indirectSpecularImageViewHandle;
+
+	SSRResolvePass::addToGraph(graph, ssrResolvePassData);
 
 
 	// apply indirect light
