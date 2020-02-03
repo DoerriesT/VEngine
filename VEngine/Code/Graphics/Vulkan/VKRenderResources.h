@@ -21,11 +21,10 @@ namespace VEngine
 		VKImage m_lightImages[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT];
 		VKImage m_imGuiFontsTexture;
-		VKImage m_integratedBrdfLUT;
+		VKImage m_brdfLUT;
 
 		// views
 		VkImageView m_imGuiFontsTextureView;
-		VkImageView m_integratedBrdfLUTView;
 
 		// buffers
 		VKBuffer m_lightProxyVertexBuffer;
@@ -66,6 +65,8 @@ namespace VEngine
 		ResourceState m_taaHistoryTextureResourceState[RendererConsts::FRAMES_IN_FLIGHT];
 		VkQueue m_avgLuminanceBufferQueue = RenderGraph::undefinedQueue;
 		ResourceState m_avgLuminanceBufferResourceState = ResourceState::UNDEFINED;
+		VkQueue m_brdfLutImageQueue = RenderGraph::undefinedQueue;
+		ResourceState m_brdfLutImageResourceState = ResourceState::UNDEFINED;
 
 		VkDescriptorSetLayout m_textureDescriptorSetLayout;
 		VkDescriptorSetLayout m_computeTextureDescriptorSetLayout;

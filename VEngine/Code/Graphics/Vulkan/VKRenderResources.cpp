@@ -43,19 +43,7 @@ void VEngine::VKRenderResources::init(uint32_t width, uint32_t height)
 		VKAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.m_requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		m_integratedBrdfLUT.create(imageCreateInfo, allocCreateInfo);
-
-		// create view
-		VkImageViewCreateInfo viewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewCreateInfo.image = m_integratedBrdfLUT.getImage();
-		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewCreateInfo.format = imageCreateInfo.format;
-		viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		if (vkCreateImageView(g_context.m_device, &viewCreateInfo, nullptr, &m_integratedBrdfLUTView) != VK_SUCCESS)
-		{
-			Utility::fatalExit("Failed to create ImageView!", EXIT_FAILURE);
-		}
+		m_brdfLUT.create(imageCreateInfo, allocCreateInfo);
 	}
 
 	resize(width, height);

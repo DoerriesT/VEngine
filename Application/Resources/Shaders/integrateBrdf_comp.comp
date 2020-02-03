@@ -70,8 +70,8 @@ void main()
 		return;
 	}
 	
-	float roughness = gl_GlobalInvocationID.x * uPushConsts.texelWidth;
-	float NdotV = gl_GlobalInvocationID.y * uPushConsts.texelHeight;
+	float roughness = (gl_GlobalInvocationID.x + 0.5) * uPushConsts.texelWidth;
+	float NdotV = (gl_GlobalInvocationID.y + 0.5) * uPushConsts.texelHeight;
 	
 	vec3 V;
 	V.x = sqrt(1.0 - NdotV * NdotV); // sin

@@ -358,6 +358,21 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		deferredShadowsImageViewHandle = graph.createImageView({ desc.m_name, deferredShadowsImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, desc.m_layers }, VK_IMAGE_VIEW_TYPE_2D_ARRAY });
 	}
 
+	ImageViewHandle brdfLUTImageViewHandle = 0;
+	{
+		ImageDescription desc = {};
+		desc.m_name = "BRDF LUT Image";
+		desc.m_concurrent = false;
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 128;
+		desc.m_height = 128;
+		desc.m_format = m_renderResources->m_brdfLUT.getFormat();
+
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_brdfLUT.getImage(), &m_renderResources->m_brdfLutImageQueue, &m_renderResources->m_brdfLutImageResourceState);
+		brdfLUTImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
+	}
+
 	ImageViewHandle indirectDiffuseImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle indirectSpecularImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	ImageViewHandle finalImageViewHandle = VKResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
@@ -466,21 +481,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	if (commonData.m_frame == 0)
 	{
-		ImageViewHandle brdfLUTImageViewHandle = 0;
-		{
-			ImageDescription desc = {};
-			desc.m_name = "BRDF LUT Image";
-			desc.m_concurrent = false;
-			desc.m_clear = false;
-			desc.m_clearValue.m_imageClearValue = {};
-			desc.m_width = m_width;
-			desc.m_height = m_height;
-			desc.m_format = m_renderResources->m_integratedBrdfLUT.getFormat();
-
-			ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_integratedBrdfLUT.getImage());
-			brdfLUTImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
-		}
-
 		IntegrateBrdfPass::Data integrateBrdfPassData;
 		integrateBrdfPassData.m_passRecordContext = &passRecordContext;
 		integrateBrdfPassData.m_resultImageViewHandle = brdfLUTImageViewHandle;
