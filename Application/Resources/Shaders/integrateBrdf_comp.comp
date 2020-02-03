@@ -103,5 +103,5 @@ void main()
 		}
 	}
 	
-	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(A, B, 0.0, 0.0));
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(A, B, 0.0, 0.0) / numSamples);
 }
