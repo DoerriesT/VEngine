@@ -1,6 +1,7 @@
 #version 450
 
 #include "indirectLight_bindings.h"
+#include "srgb.h"
 
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
 layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
@@ -20,14 +21,6 @@ layout(push_constant) uniform PUSH_CONSTS
 };
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-vec3 accurateSRGBToLinear(in vec3 sRGBCol)
-{
-	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
-	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
-	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
-	return linearRGB;
-}
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
@@ -68,7 +61,7 @@ void main()
 	kD *= 1.0 - metalness;
 	// kS = 1.0 - kD;
 	
-	vec3 result = kD * diffuse + kS * specular.rgb * specular.a;
+	vec3 result = diffuse;//kD * diffuse + kS * specular.rgb * specular.a;
 	
 	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result + lit, 1.0));

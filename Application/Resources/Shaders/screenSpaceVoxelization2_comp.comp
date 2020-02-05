@@ -5,8 +5,8 @@
 #include "screenSpaceVoxelization2_bindings.h"
 
 #define DIFFUSE_ONLY 1
-#define SHADOW_FUNCTIONS 0
 #include "commonLighting.h"
+#include "srgb.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
 layout(constant_id = BRICK_VOLUME_WIDTH_CONST_ID) const uint cBrickVolumeWidth = 128;

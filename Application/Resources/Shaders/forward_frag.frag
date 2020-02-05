@@ -6,6 +6,8 @@
 
 #include "forward_bindings.h"
 #include "common.h"
+#include "commonLighting.h"
+#include "srgb.h"
 
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
@@ -56,9 +58,6 @@ layout(location = 3) flat in uint vMaterialIndex;
 layout(location = OUT_RESULT) out vec4 oResult;
 layout(location = OUT_NORMAL) out vec4 oNormal;
 layout(location = OUT_SPECULAR_ROUGHNESS) out vec4 oSpecularRoughness;
-
-#define SHADOW_FUNCTIONS 0
-#include "commonLighting.h"
 
 // based on http://www.thetenthplanet.de/archives/1180
 mat3 calculateTBN( vec3 N, vec3 p, vec2 uv )

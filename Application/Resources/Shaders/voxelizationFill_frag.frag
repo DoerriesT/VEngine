@@ -10,6 +10,7 @@
 
 #include "voxelizationFill_bindings.h"
 #include "common.h"
+#include "srgb.h"
 
 
 

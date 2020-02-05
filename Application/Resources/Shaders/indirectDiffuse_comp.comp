@@ -6,6 +6,7 @@
 
 #include "indirectDiffuse_bindings.h"
 #include "common.h"
+#include "srgb.h"
 
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
 layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
@@ -183,14 +184,6 @@ vec3 sampleIrradianceVolume(const vec3 viewSpacePos, const vec3 viewSpaceNormal)
 		return irradiance;
 	}
 	return vec3(0.18);
-}
-
-vec3 accurateSRGBToLinear(in vec3 sRGBCol)
-{
-	vec3 linearRGBLo = sRGBCol * (1.0 / 12.92);
-	vec3 linearRGBHi = pow((sRGBCol + vec3(0.055)) * vec3(1.0 / 1.055), vec3(2.4));
-	vec3 linearRGB = mix(linearRGBLo, linearRGBHi, vec3(greaterThan(sRGBCol, vec3(0.04045))));
-	return linearRGB;
 }
 
 void main() 
