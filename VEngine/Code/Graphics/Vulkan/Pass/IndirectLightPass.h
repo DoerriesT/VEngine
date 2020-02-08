@@ -15,6 +15,7 @@ namespace VEngine
 			ImageViewHandle m_normalImageHandle;
 			ImageViewHandle m_indirectDiffuseImageHandle;
 			ImageViewHandle m_indirectSpecularImageHandle;
+			ImageViewHandle m_brdfImageHandle;
 			ImageViewHandle m_resultImageHandle;
 		};
 

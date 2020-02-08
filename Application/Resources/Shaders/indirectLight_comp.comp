@@ -14,6 +14,7 @@ layout(set = ALBEDO_IMAGE_SET, binding = ALBEDO_IMAGE_BINDING) uniform sampler2D
 layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
 layout(set = INDIRECT_DIFFUSE_IMAGE_SET, binding = INDIRECT_DIFFUSE_IMAGE_BINDING) uniform sampler2D uIndirectDiffuseImage;
 layout(set = INDIRECT_SPECULAR_IMAGE_SET, binding = INDIRECT_SPECULAR_IMAGE_BINDING) uniform sampler2D uIndirectSpecularImage;
+layout(set = BRDF_LUT_IMAGE_SET, binding = BRDF_LUT_IMAGE_BINDING) uniform sampler2D uBrdfLutImage;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -55,13 +56,15 @@ void main()
 	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
 	vec3 diffuse = texelFetch(uIndirectDiffuseImage, ivec2(gl_GlobalInvocationID.xy), 0).rgb * albedo;
 	vec4 specular = texelFetch(uIndirectSpecularImage, ivec2(gl_GlobalInvocationID.xy), 0).rgba;
+	vec2 brdfLut = textureLod(uBrdfLutImage, vec2(roughness, max(dot(N, V), 0.0)), 0.0).xy;
+	specular.rgb *= F0 * brdfLut.x + brdfLut.y;
 	
 	vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 	vec3 kD = 1.0 - kS;
 	kD *= 1.0 - metalness;
 	// kS = 1.0 - kD;
 	
-	vec3 result = diffuse;//kD * diffuse + kS * specular.rgb * specular.a;
+	vec3 result = diffuse * kD + specular.rgb * specular.a;//kD * diffuse + kS * specular.rgb * specular.a;
 	
 	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result + lit, 1.0));

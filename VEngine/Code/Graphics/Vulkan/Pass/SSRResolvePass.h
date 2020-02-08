@@ -14,6 +14,7 @@ namespace VEngine
 			ImageViewHandle m_maskImageHandle;
 			ImageViewHandle m_depthImageHandle;
 			ImageViewHandle m_normalImageHandle;
+			ImageViewHandle m_albedoImageHandle;
 			ImageViewHandle m_prevColorImageHandle;
 			ImageViewHandle m_velocityImageHandle;
 			ImageViewHandle m_resultImageHandle;

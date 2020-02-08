@@ -879,6 +879,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ssrResolvePassData.m_maskImageHandle = ssrMaskImageViewHandle;
 	ssrResolvePassData.m_depthImageHandle = depthImageViewHandle;
 	ssrResolvePassData.m_normalImageHandle = normalImageViewHandle;
+	ssrResolvePassData.m_albedoImageHandle = albedoImageViewHandle;
 	ssrResolvePassData.m_prevColorImageHandle = prevLightImageViewHandle;
 	ssrResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
 	ssrResolvePassData.m_resultImageHandle = indirectSpecularImageViewHandle;
@@ -894,6 +895,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
 	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
 	indirectLightPassData.m_indirectSpecularImageHandle = indirectSpecularImageViewHandle;
+	indirectLightPassData.m_brdfImageHandle = brdfLUTImageViewHandle;
 	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
 
 	IndirectLightPass::addToGraph(graph, indirectLightPassData);
