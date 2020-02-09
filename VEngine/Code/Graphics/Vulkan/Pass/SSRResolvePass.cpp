@@ -10,15 +10,31 @@
 
 namespace
 {
+	constexpr size_t numHaltonSamples = 1024;
+	float haltonX[numHaltonSamples];
+	float haltonY[numHaltonSamples];
+
 	using namespace glm;
 #include "../../../../../Application/Resources/Shaders/ssrResolve_bindings.h"
 }
 
 void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 {
+	static bool initialized = false;
+	if (!initialized)
+	{
+		initialized = true;
+		for (size_t i = 0; i < numHaltonSamples; ++i)
+		{
+			haltonX[i] = Utility::halton(i + 1, 2);
+			haltonY[i] = Utility::halton(i + 1, 3);
+		}
+	}
+
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_resultImageHandle), ResourceState::READ_WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_resultImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
+		{ResourceViewHandle(data.m_resultMaskImageHandle), ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_rayHitPDFImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_maskImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER},
@@ -57,12 +73,13 @@ void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER, pointSamplerClamp), RESULT_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultMaskImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_MASK_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_rayHitPDFImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), RAY_HIT_PDF_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_maskImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), MASK_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), NORMAL_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), ALBEDO_IMAGE_BINDING);
+				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), ALBEDO_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_prevColorImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), PREV_COLOR_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
 
@@ -71,7 +88,8 @@ void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 
 			vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 
-			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
+			VkDescriptorSet descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
+			vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 2, descriptorSets, 0, nullptr);
 
 			uint32_t maxLevel = 1;
 			{
@@ -86,9 +104,15 @@ void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 			}
 
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+			const auto &projMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredProjectionMatrix;
 
 			PushConsts pushConsts;
 			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
+			pushConsts.depthProjectParams = glm::vec2(projMatrix[2][2], projMatrix[3][2]);
+			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
+			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
+			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
+			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

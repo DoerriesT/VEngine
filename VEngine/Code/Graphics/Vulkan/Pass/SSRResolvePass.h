@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			uint32_t m_noiseTextureHandle;
 			ImageViewHandle m_rayHitPDFImageHandle;
 			ImageViewHandle m_maskImageHandle;
 			ImageViewHandle m_depthImageHandle;
@@ -18,6 +19,7 @@ namespace VEngine
 			ImageViewHandle m_prevColorImageHandle;
 			ImageViewHandle m_velocityImageHandle;
 			ImageViewHandle m_resultImageHandle;
+			ImageViewHandle m_resultMaskImageHandle;
 		};
 
 		void addToGraph(RenderGraph &graph, const Data &data);

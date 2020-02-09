@@ -32,11 +32,10 @@
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/IndirectDiffusePass.h"
-#include "Pass/SSRPass.h"
-#include "Pass/SSRResolvePass.h"
 #include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
 #include "Module/GTAOModule.h"
+#include "Module/SSRModule.h"
 #include "Module/SparseVoxelBricksModule.h"
 #include "Module/DiffuseGIProbesModule.h"
 #include "Module/BloomModule.h"
@@ -85,6 +84,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	}
 
 	m_gtaoModule = std::make_unique<GTAOModule>(m_width, m_height);
+	m_ssrModule = std::make_unique<SSRModule>(m_width, m_height);
 	m_sparseVoxelBricksModule = std::make_unique<SparseVoxelBricksModule>();
 	m_diffuseGIProbesModule = std::make_unique<DiffuseGIProbesModule>();
 }
@@ -862,29 +862,17 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// screen space reflections
-	SSRPass::Data ssrPassData;
-	ssrPassData.m_passRecordContext = &passRecordContext;
-	ssrPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
-	ssrPassData.m_hiZPyramidImageHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
-	ssrPassData.m_normalImageHandle = normalImageViewHandle;
-	ssrPassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
-	ssrPassData.m_maskImageHandle = ssrMaskImageViewHandle;
+	SSRModule::Data ssrModuleData;
+	ssrModuleData.m_passRecordContext = &passRecordContext;
+	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
+	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
+	ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	ssrModuleData.m_albedoImageViewHandle = albedoImageViewHandle;
+	ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
+	ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
 
-	SSRPass::addToGraph(graph, ssrPassData);
-
-
-	SSRResolvePass::Data ssrResolvePassData;
-	ssrResolvePassData.m_passRecordContext = &passRecordContext;
-	ssrResolvePassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
-	ssrResolvePassData.m_maskImageHandle = ssrMaskImageViewHandle;
-	ssrResolvePassData.m_depthImageHandle = depthImageViewHandle;
-	ssrResolvePassData.m_normalImageHandle = normalImageViewHandle;
-	ssrResolvePassData.m_albedoImageHandle = albedoImageViewHandle;
-	ssrResolvePassData.m_prevColorImageHandle = prevLightImageViewHandle;
-	ssrResolvePassData.m_velocityImageHandle = velocityImageViewHandle;
-	ssrResolvePassData.m_resultImageHandle = indirectSpecularImageViewHandle;
-
-	SSRResolvePass::addToGraph(graph, ssrResolvePassData);
+	m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
 	// apply indirect light
@@ -894,7 +882,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectLightPassData.m_albedoImageHandle = albedoImageViewHandle;
 	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
 	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
-	indirectLightPassData.m_indirectSpecularImageHandle = indirectSpecularImageViewHandle;
+	indirectLightPassData.m_indirectSpecularImageHandle = m_ssrModule->getSSRResultImageViewHandle();//indirectSpecularImageViewHandle;
 	indirectLightPassData.m_brdfImageHandle = brdfLUTImageViewHandle;
 	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
 
@@ -1264,5 +1252,6 @@ void VEngine::VKRenderer::resize(uint32_t width, uint32_t height)
 		m_swapChain->recreate(width, height);
 		m_renderResources->resize(width, height);
 		m_gtaoModule->resize(width, height);
+		m_ssrModule->resize(width, height);
 	}
 }

@@ -1,0 +1,125 @@
+#version 450
+
+#include "ssrTemporalFilter_bindings.h"
+
+#define LOCAL_SIZE_X 8
+#define LOCAL_SIZE_Y 8
+
+#define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
+layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform sampler2D uHistoryImage;
+layout(set = COLOR_RAY_DEPTH_IMAGE_SET, binding = COLOR_RAY_DEPTH_IMAGE_BINDING) uniform sampler2D uColorRayDepthImage;
+layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform sampler2D uMaskImage;
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = 1) in;
+
+vec3 rgbToYcocg(vec3 color)
+{
+	return color;
+	vec3 result;
+	result.x = dot(color, vec3(  1, 2,  1 ) );
+	result.y = dot(color, vec3(  2, 0, -2 ) );
+	result.z = dot(color, vec3( -1, 2, -1 ) );
+	
+	return result;
+}
+
+vec3 ycocgToRgb(vec3 color )
+{
+	return color;
+	float y  = color.x * 0.25;
+	float co = color.y * 0.25;
+	float cg = color.z * 0.25;
+
+	vec3 result;
+	result.r = y + co - cg;
+	result.g = y + cg;
+	result.b = y - co - cg;
+
+	return result;
+}
+
+vec2 weightedLerpFactors(float weightA, float weightB, float blend)
+{
+	float blendA = (1.0 - blend) * weightA;
+	float blendB = blend * weightB;
+	float invBlend = 1.0 / (blendA + blendB);
+	blendA *= invBlend;
+	blendB *= invBlend;
+	return vec2(blendA, blendB);
+}
+
+vec3 clipAABB(vec3 point, vec3 aabbMin, vec3 aabbMax)
+{
+    //Clips towards AABB center for better perfomance
+    vec3 center   = 0.5 * (aabbMax + aabbMin);
+    vec3 halfSize = 0.5 * (aabbMax - aabbMin) + 1e-5;
+    //Relative position from the center
+    vec3 clip     = point - center;
+    //Normalize relative position
+    vec3 unit     = clip / halfSize;
+    vec3 absUnit  = abs(unit);
+    float maxUnit = max(absUnit.x, max(absUnit.y, absUnit.z));
+	
+	return (maxUnit > 1.0) ? clip * (1.0 / maxUnit) + center : point;
+}
+
+void main() 
+{
+	if (gl_GlobalInvocationID.x >= uPushConsts.width || gl_GlobalInvocationID.y >= uPushConsts.height)
+	{
+		return;
+	}
+	
+	vec2 texCoord = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(uPushConsts.texelWidth, uPushConsts.texelHeight);
+	vec4 colorRayDepth = texelFetch(uColorRayDepthImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	float rayDepth = colorRayDepth.w;
+	vec4 reprojectedCoord = uPushConsts.reprojectionMatrix * vec4(texCoord * 2.0 - 1.0, rayDepth, 1.0);
+	reprojectedCoord.xy /= reprojectedCoord.w;
+	
+	vec2 prevTexCoord = texCoord;//reprojectedCoord.xy * 0.5 + 0.5;
+	
+	vec3 currentColor = rgbToYcocg(colorRayDepth.rgb);
+	vec3 neighborhoodMin = currentColor;
+	vec3 neighborhoodMax = currentColor;
+	
+	for (int y = -1; y < 2; ++y)
+	{
+		for (int x = -1; x < 2; ++x)
+		{
+			if (x != 0 || y != 0)
+			{
+				vec3 tap = rgbToYcocg(texelFetch(uColorRayDepthImage, ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y), 0).rgb);
+				neighborhoodMin = min(tap, neighborhoodMin);
+				neighborhoodMax = max(tap, neighborhoodMax);
+			}
+		}
+	}
+	
+	const float wideningFactor = 4.0;
+	neighborhoodMin = max(neighborhoodMin * -wideningFactor, vec3(0.0));
+	neighborhoodMax = max(neighborhoodMax * wideningFactor, vec3(0.0));
+	
+	vec4 historyColorMask = textureLod(uHistoryImage, prevTexCoord, 0.0); 
+	historyColorMask.rgb = rgbToYcocg(historyColorMask.rgb);
+	historyColorMask.rgb = clipAABB(historyColorMask.rgb, neighborhoodMin, neighborhoodMax);
+	
+	vec2 domainSize = vec2(textureSize(uColorRayDepthImage, 0).xy);
+	float subpixelCorrection = abs(fract(max(abs(prevTexCoord.x) * domainSize.x, abs(prevTexCoord.y) * domainSize.y)) * 2.0 - 1.0);
+	
+	float alpha = mix(0.005, 0.3, subpixelCorrection);
+	alpha = prevTexCoord.x <= 0.0 || prevTexCoord.x >= 1.0 || prevTexCoord.y <= 0.0 || prevTexCoord.y >= 1.0 ? 1.0 : alpha;
+	
+	vec2 factors = weightedLerpFactors(1.0 / (dot(historyColorMask.rgb, LUMA_RGB_TUPLE) + 4.0), 1.0 / (dot(currentColor.rgb, LUMA_RGB_TUPLE) + 4.0), alpha);
+	
+	vec4 result = historyColorMask * factors.x + vec4(currentColor, texelFetch(uMaskImage, ivec2(gl_GlobalInvocationID.xy), 0).x) * factors.y;
+	result.rgb = ycocgToRgb(result.rgb);
+	
+	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
+}

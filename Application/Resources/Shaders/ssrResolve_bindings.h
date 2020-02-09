@@ -14,6 +14,13 @@
 #define VELOCITY_IMAGE_BINDING 6
 #define ALBEDO_IMAGE_SET 0
 #define ALBEDO_IMAGE_BINDING 7
+#define RESULT_MASK_IMAGE_SET 0
+#define RESULT_MASK_IMAGE_BINDING 8
+
+#define TEXTURES_SET 1
+#define TEXTURES_BINDING 0
+#define SAMPLERS_SET 1
+#define SAMPLERS_BINDING 1
 
 
 #define WIDTH_CONST_ID 0
@@ -24,4 +31,8 @@
 struct PushConsts
 {
 	vec4 unprojectParams;
+	vec2 depthProjectParams;
+	vec2 noiseScale;
+	vec2 noiseJitter;
+	uint noiseTexId;
 };

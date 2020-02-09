@@ -176,6 +176,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\DiffuseGIProbesModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\GTAOModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\SparseVoxelBricksModule.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Module\SSRModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\PassRecordContext.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h" />
@@ -211,6 +212,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h" />
@@ -296,6 +298,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Module\DiffuseGIProbesModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\GTAOModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\SparseVoxelBricksModule.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Module\SSRModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.cpp" />
@@ -330,6 +333,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp" />

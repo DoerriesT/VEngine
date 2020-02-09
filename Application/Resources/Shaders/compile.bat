@@ -61,6 +61,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c -DREDUCE=max hiZPyramid_comp.comp -o 
 glslc --target-env=vulkan1.1 -O -Werror -c indirectLight_comp.comp -o indirectLight_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c ssr_comp.comp -o ssr_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c ssrResolve_comp.comp -o ssrResolve_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c ssrTemporalFilter_comp.comp -o ssrTemporalFilter_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_vert.vert -o depthPrepass_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_frag.frag -o depthPrepass_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c forward_vert.vert -o forward_vert.spv

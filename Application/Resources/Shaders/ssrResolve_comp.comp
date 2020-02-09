@@ -11,6 +11,7 @@ layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uResultImage;
+layout(set = RESULT_MASK_IMAGE_SET, binding = RESULT_MASK_IMAGE_BINDING, r8) uniform writeonly image2D uResultMaskImage;
 layout(set = RAY_HIT_PDF_IMAGE_SET, binding = RAY_HIT_PDF_IMAGE_BINDING) uniform sampler2D uRayHitPdfImage;
 layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform sampler2D uMaskImage;
 layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
@@ -19,6 +20,9 @@ layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D u
 layout(set = PREV_COLOR_IMAGE_SET, binding = PREV_COLOR_IMAGE_BINDING) uniform sampler2D uPrevColorImage;
 layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityImage;
 
+layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
+layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
+
 layout(push_constant) uniform PUSH_CONSTS 
 {
 	PushConsts uPushConsts;
@@ -26,7 +30,7 @@ layout(push_constant) uniform PUSH_CONSTS
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-vec3 localBrdf(vec3 N, vec3 V, vec3 L, vec3 F0, float roughness)
+float localBrdf(vec3 N, vec3 V, vec3 L, vec3 F0, float roughness)
 {
 	roughness = max(roughness, 1e-5);
 	float a = roughness * roughness;
@@ -36,7 +40,7 @@ vec3 localBrdf(vec3 N, vec3 V, vec3 L, vec3 F0, float roughness)
 	float NdotL = max(dot(N, L), 0.0);
 	float VdotH = max(dot(V, H), 0.0);
 	float NdotH = max(dot(N, H), 0.0);
-	return D_GGX(NdotH, a2) * V_SmithGGXCorrelated(NdotV, NdotL, a2) * F_Schlick(F0, VdotH) * NdotL;
+	return D_GGX(NdotH, a2) * V_SmithGGXCorrelated(NdotV, NdotL, a2) /* F_Schlick(F0, VdotH) */ * NdotL;
 }
 
 ivec2 offsets[] = {ivec2(-1, -1), ivec2(2, -1), ivec2(-1, 2), ivec2(2, 2)};
@@ -51,6 +55,8 @@ void main()
 	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
 	if (depth == 0.0)
 	{
+		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
+		imageStore(uResultMaskImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
 		return;
 	}
 	
@@ -68,12 +74,22 @@ void main()
 	const vec3 albedo = accurateSRGBToLinear(albedoMetalness.rgb);
 	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
 	
+	vec2 noiseTexCoord = vec2(gl_GlobalInvocationID.xy + 0.5) * uPushConsts.noiseScale + uPushConsts.noiseJitter;
+	vec3 noise = textureLod(sampler2D(uTextures[uPushConsts.noiseTexId], uSamplers[SAMPLER_POINT_REPEAT]), noiseTexCoord, 0.0).xyz;
+	float cosNoise = cos(noise.z);
+	float sinNoise = sqrt(1.0 - cosNoise * cosNoise);
+	mat2 rndRotation = mat2(cosNoise, sinNoise, -sinNoise, cosNoise);
+	const int maxOffsetJitter = 3;
+	ivec2 offsetJitter = ivec2(rndRotation * (round((noise.xy * 2.0 - 1.0) * maxOffsetJitter)));
+	
+	
 	// process rays
-	vec3 totalWeight = vec3(0.0);
+	float totalWeight = 0.0;
 	vec4 result = vec4(0.0);
+	float avgRayDepth = 0.0;
 	for (int i = 0; i < 4; ++i)
 	{
-		ivec2 coord = offsets[i] + ivec2(gl_GlobalInvocationID.xy);
+		ivec2 coord = offsets[i] + ivec2(gl_GlobalInvocationID.xy) + offsetJitter;
 		vec4 rayHitPdf = texelFetch(uRayHitPdfImage, coord, 0);
 		float mask = texelFetch(uMaskImage, coord, 0).x;
 		
@@ -81,7 +97,7 @@ void main()
 		viewSpaceHitPos.xyz /= viewSpaceHitPos.w;
 		vec3 L = normalize(viewSpaceHitPos.xyz - P);
 		
-		vec3 weight = localBrdf(N, V, L, F0, roughness) / max(rayHitPdf.w, 1e-6);
+		float weight = localBrdf(N, V, L, F0, roughness) / max(rayHitPdf.w, 1e-6);
 		vec4 sampleColor = vec4(0.0, 0.0, 0.0, mask);
 		if (sampleColor.a > 0.0)
 		{
@@ -95,12 +111,20 @@ void main()
 			sampleColor.rgb = sampleColor.a > 0.0 ? textureLod(uPrevColorImage, rayHitPdf.xy, 0.0).rgb : vec3(0.0);
 		}
 		
-		result += vec4(sampleColor.rgb * weight, sampleColor.a);
+		result += sampleColor * weight;// vec4(sampleColor.rgb * weight, sampleColor.a);
 		totalWeight += weight;
+		avgRayDepth += rayHitPdf.z * weight;//viewSpaceHitPos.z;
 	}
 	
-	result.rgb *= 1.0 / max(totalWeight, vec3(1e-6));
-	result.a *= 0.25;
+	result *= 1.0 / max(totalWeight, float(1e-6));
+	avgRayDepth *= 1.0 / max(totalWeight, float(1e-6));
+	
+	// project to screen space depth
+	//avgRayDepth = (uPushConsts.depthProjectParams.x * avgRayDepth + uPushConsts.depthProjectParams.y) / -avgRayDepth;
+	
+	float resultMask = result.a;
+	result.a = avgRayDepth;
 	
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), result);
+	imageStore(uResultMaskImage, ivec2(gl_GlobalInvocationID.xy), vec4(resultMask, 0.0, 0.0, 0.0));
 }

@@ -126,6 +126,8 @@ void main()
 	const float depth = texelFetch(uHiZPyramid, ivec2(gl_GlobalInvocationID.xy), 0).x;
 	if (depth == 0.0)
 	{
+		imageStore(uRayHitPdfImage, ivec2(gl_GlobalInvocationID.xy), vec4(-1.0, -1.0, -1.0, 1.0));
+		imageStore(uMaskImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
 		return;
 	}
 	

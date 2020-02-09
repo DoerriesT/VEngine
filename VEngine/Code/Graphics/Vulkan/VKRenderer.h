@@ -29,6 +29,7 @@ namespace VEngine
 	class DiffuseGIProbesModule;
 	class SparseVoxelBricksModule;
 	class GTAOModule;
+	class SSRModule;
 
 	class VKRenderer
 	{
@@ -65,6 +66,7 @@ namespace VEngine
 		std::unique_ptr<DiffuseGIProbesModule> m_diffuseGIProbesModule;
 		std::unique_ptr<SparseVoxelBricksModule> m_sparseVoxelBricksModule;
 		std::unique_ptr<GTAOModule> m_gtaoModule;
+		std::unique_ptr<SSRModule> m_ssrModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 
