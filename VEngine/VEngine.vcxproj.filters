@@ -447,6 +447,9 @@
     <ClInclude Include="Code\Graphics\Vulkan\SwapChainVK.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\GenerateMipMapsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -778,6 +781,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\SwapChainVK.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GenerateMipMapsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

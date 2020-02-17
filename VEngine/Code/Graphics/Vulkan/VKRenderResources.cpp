@@ -656,10 +656,14 @@ void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 	{
 		m_depthImageQueue[i] = RenderGraph::undefinedQueue;
 		m_depthImageResourceState[i] = ResourceState::UNDEFINED;
-		m_lightImageQueue[i] = RenderGraph::undefinedQueue;
-		m_lightImageResourceState[i] = ResourceState::UNDEFINED;
 		m_taaHistoryTextureQueue[i] = RenderGraph::undefinedQueue;
 		m_taaHistoryTextureResourceState[i] = ResourceState::UNDEFINED;
+
+		for (size_t j = 0; j < 14; ++j)
+		{
+			m_lightImageQueue[i][j] = RenderGraph::undefinedQueue;
+			m_lightImageResourceState[i][j] = ResourceState::UNDEFINED;
+		}
 	}
 
 	// depth images
@@ -693,17 +697,19 @@ void VEngine::VKRenderResources::resize(uint32_t width, uint32_t height)
 
 	// light images
 	{
+		uint32_t mipCount = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(width, height)))));
+
 		VkImageCreateInfo imageCreateInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 		imageCreateInfo.extent.width = width;
 		imageCreateInfo.extent.height = height;
 		imageCreateInfo.extent.depth = 1;
-		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.mipLevels = mipCount;
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageCreateInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 

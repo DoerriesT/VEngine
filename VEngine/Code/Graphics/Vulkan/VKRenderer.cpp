@@ -34,6 +34,7 @@
 #include "Pass/IndirectDiffusePass.h"
 #include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
+#include "Pass/GenerateMipMapsPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/SparseVoxelBricksModule.h"
@@ -206,10 +207,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_height = m_height;
 		desc.m_format = m_renderResources->m_lightImages[commonData.m_curResIdx].getFormat();
 
-		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_curResIdx].getImage(), &m_renderResources->m_lightImageQueue[commonData.m_curResIdx], &m_renderResources->m_lightImageResourceState[commonData.m_curResIdx]);
+		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_curResIdx].getImage(), m_renderResources->m_lightImageQueue[commonData.m_curResIdx], m_renderResources->m_lightImageResourceState[commonData.m_curResIdx]);
 		lightImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
 	}
 
+	ImageHandle prevLightImageHandle = 0;
 	ImageViewHandle prevLightImageViewHandle = 0;
 	{
 		ImageDescription desc = {};
@@ -219,10 +221,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
+		desc.m_levels = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(desc.m_width, desc.m_height)))));
 		desc.m_format = m_renderResources->m_lightImages[commonData.m_prevResIdx].getFormat();
 
-		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_prevResIdx].getImage(), &m_renderResources->m_lightImageQueue[commonData.m_prevResIdx], &m_renderResources->m_lightImageResourceState[commonData.m_prevResIdx]);
-		prevLightImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, 1, 0, 1 } });
+		prevLightImageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_prevResIdx].getImage(), m_renderResources->m_lightImageQueue[commonData.m_prevResIdx], m_renderResources->m_lightImageResourceState[commonData.m_prevResIdx]);
+		prevLightImageViewHandle = graph.createImageView({ desc.m_name, prevLightImageHandle, { VK_IMAGE_ASPECT_COLOR_BIT , 0, desc.m_levels, 0, 1 } });
 	}
 
 	ImageViewHandle taaHistoryImageViewHandle = 0;
@@ -847,6 +850,17 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectDiffusePassData.m_resultImageHandle = indirectDiffuseImageViewHandle;
 
 	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
+
+
+	// generate mip pyramid of previous lighting image
+	GenerateMipMapsPass::Data generateMipMapsPassData;
+	generateMipMapsPassData.m_passRecordContext = &passRecordContext;
+	generateMipMapsPassData.m_width = m_width;
+	generateMipMapsPassData.m_height = m_height;
+	generateMipMapsPassData.m_mipCount = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(m_width, m_height)))));
+	generateMipMapsPassData.m_imageHandle = prevLightImageHandle;
+
+	GenerateMipMapsPass::addToGraph(graph, generateMipMapsPassData);
 
 
 	// Hi-Z closest depth pyramid
