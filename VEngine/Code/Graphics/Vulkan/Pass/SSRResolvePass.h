@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			float m_bias;
 			uint32_t m_noiseTextureHandle;
 			ImageViewHandle m_rayHitPDFImageHandle;
 			ImageViewHandle m_maskImageHandle;

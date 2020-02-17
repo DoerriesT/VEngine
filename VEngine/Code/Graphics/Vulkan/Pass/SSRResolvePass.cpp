@@ -7,6 +7,7 @@
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
+#include <glm/detail/func_trigonometric.hpp>
 
 namespace
 {
@@ -113,6 +114,8 @@ void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
 			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
 			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
+			pushConsts.diameterToScreen = 0.5f / tanf(glm::radians(data.m_passRecordContext->m_commonRenderData->m_fovy) * 0.5f) * glm::min(width, height);
+			pushConsts.bias = data.m_bias * 0.5f;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

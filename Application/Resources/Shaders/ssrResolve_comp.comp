@@ -43,6 +43,35 @@ float localBrdf(vec3 N, vec3 V, vec3 L, vec3 F0, float roughness)
 	return D_GGX(NdotH, a2) * V_SmithGGXCorrelated(NdotV, NdotL, a2) /* F_Schlick(F0, VdotH) */ * NdotL;
 }
 
+float ggxRoughnessToPhongSpecularExponent(float a)
+{
+	return 2.0 / (a * a) - 2.0;
+}
+
+float phongSpecularExponentToConeAngle(float s)
+{
+	return s <= 8192.0 ? acos(pow(0.244, 1.0 / (s + 1.0))) : 0.0;
+}
+
+float calculateMipLevel(float viewSpaceDepth, float hitDist, float roughness, float filterShrinkCompensation)
+{
+	if (roughness < 1e-5)
+	{
+		return 0.0;
+	}
+	float phongSpecExponent = ggxRoughnessToPhongSpecularExponent(roughness * roughness);
+	float coneAngle = phongSpecularExponentToConeAngle(phongSpecExponent) * 0.5;
+	
+	float diameter = tan(coneAngle) * hitDist * 2.0;
+	diameter *= filterShrinkCompensation;
+	float diameterPixels = uPushConsts.diameterToScreen * diameter / -viewSpaceDepth;
+	
+	float mipLevel = diameterPixels > 0.0 ? log2(diameterPixels) : 0.0;
+	mipLevel *= uPushConsts.bias;
+	
+	return mipLevel;
+}
+
 ivec2 offsets[] = {ivec2(-1, -1), ivec2(2, -1), ivec2(-1, 2), ivec2(2, 2)};
 
 void main() 
@@ -74,6 +103,8 @@ void main()
 	const vec3 albedo = accurateSRGBToLinear(albedoMetalness.rgb);
 	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
 	
+	const float filterShrinkCompensation = mix(clamp(max(dot(N, V), 0.0) * 2.0, 0.0, 1.0), 1.0, sqrt(max(roughness, 1e-7)));
+	
 	vec2 noiseTexCoord = vec2(gl_GlobalInvocationID.xy + 0.5) * uPushConsts.noiseScale + uPushConsts.noiseJitter;
 	vec3 noise = textureLod(sampler2D(uTextures[uPushConsts.noiseTexId], uSamplers[SAMPLER_POINT_REPEAT]), noiseTexCoord, 0.0).xyz;
 	float cosNoise = cos(noise.z);
@@ -95,7 +126,10 @@ void main()
 		
 		vec4 viewSpaceHitPos = vec4(uPushConsts.unprojectParams.xy * (rayHitPdf.xy * 2.0 - 1.0), -1.0, uPushConsts.unprojectParams.z * rayHitPdf.z + uPushConsts.unprojectParams.w);
 		viewSpaceHitPos.xyz /= viewSpaceHitPos.w;
-		vec3 L = normalize(viewSpaceHitPos.xyz - P);
+		vec3 L = (viewSpaceHitPos.xyz - P);
+		float hitDist = length(L);
+		hitDist = isnan(hitDist) ? 1e-7 : hitDist;
+		L *= 1.0 / hitDist;
 		
 		float weight = localBrdf(N, V, L, F0, roughness) / max(rayHitPdf.w, 1e-6);
 		vec4 sampleColor = vec4(0.0, 0.0, 0.0, mask);
@@ -108,7 +142,8 @@ void main()
 			// is the uv coord still valid?
 			sampleColor.a *= (rayHitPdf.x > 0.0 && rayHitPdf.y > 0.0 && rayHitPdf.x < 1.0 && rayHitPdf.y < 1.0) ? 1.0 : 0.0;
 			
-			sampleColor.rgb = sampleColor.a > 0.0 ? textureLod(uPrevColorImage, rayHitPdf.xy, 0.0).rgb : vec3(0.0);
+			float mipLevel = calculateMipLevel(P.z, hitDist, roughness, filterShrinkCompensation);
+			sampleColor.rgb = sampleColor.a > 0.0 ? textureLod(uPrevColorImage, rayHitPdf.xy, mipLevel).rgb : vec3(0.0);
 		}
 		
 		result += sampleColor * weight;// vec4(sampleColor.rgb * weight, sampleColor.a);

@@ -6,6 +6,8 @@
 #include "Graphics/Vulkan/Pass/SSRResolvePass.h"
 #include "Graphics/Vulkan/Pass/SSRTemporalFilterPass.h"
 
+extern float g_ssrBias;
+
 VEngine::SSRModule::SSRModule(uint32_t width, uint32_t height) :m_width(width),
 m_height(height)
 {
@@ -113,6 +115,7 @@ void VEngine::SSRModule::addToGraph(RenderGraph &graph, const Data &data)
 	// trace rays
 	SSRPass::Data ssrPassData;
 	ssrPassData.m_passRecordContext = data.m_passRecordContext;
+	ssrPassData.m_bias = g_ssrBias;
 	ssrPassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
 	ssrPassData.m_hiZPyramidImageHandle = data.m_hiZPyramidImageViewHandle;
 	ssrPassData.m_normalImageHandle = data.m_normalImageViewHandle;
@@ -125,6 +128,7 @@ void VEngine::SSRModule::addToGraph(RenderGraph &graph, const Data &data)
 	// resolve color
 	SSRResolvePass::Data ssrResolvePassData;
 	ssrResolvePassData.m_passRecordContext = data.m_passRecordContext;
+	ssrResolvePassData.m_bias = g_ssrBias;
 	ssrResolvePassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
 	ssrResolvePassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
 	ssrResolvePassData.m_maskImageHandle = ssrMaskImageViewHandle;

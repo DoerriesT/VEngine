@@ -35,4 +35,6 @@ struct PushConsts
 	vec2 noiseScale;
 	vec2 noiseJitter;
 	uint noiseTexId;
+	float diameterToScreen;
+	float bias;
 };

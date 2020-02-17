@@ -26,4 +26,5 @@ struct PushConsts
 	vec2 noiseJitter;
 	float hiZMaxLevel;
 	uint noiseTexId;
+	float bias;
 };

@@ -17,6 +17,7 @@
 uint32_t g_debugVoxelCascadeIndex = 0;
 uint32_t g_giVoxelDebugMode = 0;
 uint32_t g_allocatedBricks = 0;
+float g_ssrBias = 0.0f;
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
@@ -98,6 +99,8 @@ void VEngine::Engine::start()
 
 		// gui window
 		ImGui::Begin("VEngine");
+
+		ImGui::SliderFloat("SSR Bias", &g_ssrBias, 0.0f, 1.0f);
 
 		bool casEnabled = g_CASEnabled;
 		ImGui::Checkbox("CAS", &casEnabled);

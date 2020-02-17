@@ -106,6 +106,7 @@ void VEngine::SSRPass::addToGraph(RenderGraph &graph, const Data &data)
 			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
 			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
 			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
+			pushConsts.bias = data.m_bias;
 
 			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

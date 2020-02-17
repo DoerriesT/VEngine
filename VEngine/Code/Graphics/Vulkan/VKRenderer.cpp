@@ -205,6 +205,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
 		desc.m_height = m_height;
+		desc.m_levels = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(desc.m_width, desc.m_height)))));
 		desc.m_format = m_renderResources->m_lightImages[commonData.m_curResIdx].getFormat();
 
 		ImageHandle imageHandle = graph.importImage(desc, m_renderResources->m_lightImages[commonData.m_curResIdx].getImage(), m_renderResources->m_lightImageQueue[commonData.m_curResIdx], m_renderResources->m_lightImageResourceState[commonData.m_curResIdx]);
