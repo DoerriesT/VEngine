@@ -48,9 +48,6 @@
     <ClInclude Include="Code\Utility\Utility.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\VKSwapChain.h">
-      <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKUtility.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
@@ -447,13 +444,13 @@
     <ClInclude Include="Code\Graphics\Vulkan\Module\SSRModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\SwapChainVK.h">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
       <Filter>Code\Utility</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\VKSwapChain.cpp">
-      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKContext.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
@@ -778,6 +775,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Module\SSRModule.cpp">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\SwapChainVK.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

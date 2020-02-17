@@ -1,5 +1,5 @@
 #include "VKRenderer.h"
-#include "VKSwapChain.h"
+#include "SwapChainVK.h"
 #include "VKRenderResources.h"
 #include "Utility/Utility.h"
 #include "VKUtility.h"
@@ -68,7 +68,7 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 	m_textureLoader = std::make_unique<VKTextureLoader>(m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<VKMaterialManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
 	m_meshManager = std::make_unique<VKMeshManager>(m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
-	m_swapChain = std::make_unique<VKSwapChain>(width, height);
+	m_swapChain = std::make_unique<SwapChainVK>(g_context.m_physicalDevice, g_context.m_device, g_context.m_surface, width, height, g_context.m_graphicsQueue);
 	m_width = m_swapChain->getExtent().width;
 	m_height = m_swapChain->getExtent().height;
 	m_renderResources->init(m_width, m_height);
@@ -991,31 +991,18 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	m_sparseVoxelBricksModule->addAllocatedBrickCountReadBackCopyToGraph(graph, &passRecordContext);
 
 
-	VkSwapchainKHR swapChain = m_swapChain->get();
-
 	// get swapchain image
+	VkSemaphore swapChainAvailableSemaphore = VK_NULL_HANDLE;
 	ImageViewHandle swapchainImageViewHandle = 0;
 	{
-		VkResult result = vkAcquireNextImageKHR(g_context.m_device, swapChain, std::numeric_limits<uint64_t>::max(), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_curResIdx], VK_NULL_HANDLE, &m_swapChainImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		{
-			m_swapChain->recreate(m_width, m_height);
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-		{
-			Utility::fatalExit("Failed to acquire swap chain image!", -1);
-		}
-
+		m_swapChain->getCurrentImageIndex(commonData.m_frame, m_swapChainImageIndex, swapChainAvailableSemaphore);
+		
 		ImageDescription desc{};
 		desc.m_name = "Swapchain Image";
 		desc.m_concurrent = false;
 		desc.m_width = m_width;
 		desc.m_height = m_height;
 		desc.m_format = m_swapChain->getImageFormat();
-
-
 
 		auto imageHandle = graph.importImage(desc, m_swapChain->getImage(m_swapChainImageIndex));
 		swapchainImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 } });
@@ -1153,19 +1140,9 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 	uint32_t semaphoreCount;
 	VkSemaphore *semaphores;
-	graph.execute(ResourceViewHandle(swapchainImageViewHandle), m_renderResources->m_swapChainImageAvailableSemaphores[commonData.m_curResIdx], &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::GRAPHICS);
+	graph.execute(ResourceViewHandle(swapchainImageViewHandle), swapChainAvailableSemaphore, &semaphoreCount, &semaphores, ResourceState::PRESENT_IMAGE, QueueType::GRAPHICS);
 
-	VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
-	presentInfo.waitSemaphoreCount = semaphoreCount;
-	presentInfo.pWaitSemaphores = semaphores;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapChain;
-	presentInfo.pImageIndices = &m_swapChainImageIndex;
-
-	if (vkQueuePresentKHR(g_context.m_graphicsQueue, &presentInfo) != VK_SUCCESS)
-	{
-		Utility::fatalExit("Failed to present!", -1);
-	}
+	m_swapChain->present(semaphoreCount, semaphores);
 }
 
 VEngine::TextureHandle VEngine::VKRenderer::loadTexture(const char *filepath)

@@ -52,10 +52,6 @@ namespace VEngine
 		VkSampler m_samplers[4];
 		VkSampler m_shadowSampler;
 
-		// semaphores
-		VkSemaphore m_swapChainImageAvailableSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
-		VkSemaphore m_swapChainRenderFinishedSemaphores[RendererConsts::FRAMES_IN_FLIGHT];
-
 		// rendergraph external info
 		VkQueue m_depthImageQueue[RendererConsts::FRAMES_IN_FLIGHT];
 		ResourceState m_depthImageResourceState[RendererConsts::FRAMES_IN_FLIGHT];
