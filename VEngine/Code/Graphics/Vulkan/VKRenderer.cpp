@@ -817,6 +817,42 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 
+	// update voxel representation of scene
+	SparseVoxelBricksModule::Data sparseVoxelBricksModuleData;
+	sparseVoxelBricksModuleData.m_passRecordContext = &passRecordContext;
+	sparseVoxelBricksModuleData.m_instanceDataCount = renderData.m_allInstanceDataCount;
+	sparseVoxelBricksModuleData.m_instanceData = renderData.m_allInstanceData;
+	sparseVoxelBricksModuleData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	sparseVoxelBricksModuleData.m_transformDataBufferInfo = transformDataBufferInfo;
+	sparseVoxelBricksModuleData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	sparseVoxelBricksModuleData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	sparseVoxelBricksModuleData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	sparseVoxelBricksModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	sparseVoxelBricksModuleData.m_irradianceVolumeImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeImageViewHandle();
+	sparseVoxelBricksModuleData.m_irradianceVolumeDepthImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeDepthImageViewHandle();
+	sparseVoxelBricksModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	sparseVoxelBricksModuleData.m_uvImageViewHandle = uvImageViewHandle;
+	sparseVoxelBricksModuleData.m_ddxyLengthImageViewHandle = ddxyLengthImageViewHandle;
+	sparseVoxelBricksModuleData.m_ddxyRotMaterialIdImageViewHandle = ddxyRotMaterialIdImageViewHandle;
+	sparseVoxelBricksModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
+	sparseVoxelBricksModuleData.m_deferredShadowsImageViewHandle = deferredShadowsImageViewHandle;
+	sparseVoxelBricksModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
+	sparseVoxelBricksModuleData.m_pointLightBitMaskBufferViewHandle = pointLightBitMaskBufferViewHandle;
+
+	m_sparseVoxelBricksModule->addVoxelizationToGraph(graph, sparseVoxelBricksModuleData);
+
+
+	// update diffuse GI probes
+	DiffuseGIProbesModule::Data diffuseGIProbesModuleData;
+	diffuseGIProbesModuleData.m_passRecordContext = &passRecordContext;
+	diffuseGIProbesModuleData.m_depthPyramidImageViewHandle = depthPyramidImageViewHandle;
+	diffuseGIProbesModuleData.m_brickPointerImageViewHandle = m_sparseVoxelBricksModule->getBrickPointerImageViewHandle();
+	diffuseGIProbesModuleData.m_binVisBricksImageViewHandle = m_sparseVoxelBricksModule->getBinVisImageViewHandle();
+	diffuseGIProbesModuleData.m_colorBricksImageViewHandle = m_sparseVoxelBricksModule->getColorImageViewHandle();
+
+	m_diffuseGIProbesModule->addProbeUpdateToGraph(graph, diffuseGIProbesModuleData);
+
+
 	// light gbuffer
 	LightingPass::Data lightingPassData;
 	lightingPassData.m_passRecordContext = &passRecordContext;
@@ -904,47 +940,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IndirectLightPass::addToGraph(graph, indirectLightPassData);
 
 
-	// update voxel representation of scene
-	SparseVoxelBricksModule::Data sparseVoxelBricksModuleData;
-	sparseVoxelBricksModuleData.m_passRecordContext = &passRecordContext;
-	sparseVoxelBricksModuleData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-	sparseVoxelBricksModuleData.m_instanceData = renderData.m_allInstanceData;
-	sparseVoxelBricksModuleData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-	sparseVoxelBricksModuleData.m_transformDataBufferInfo = transformDataBufferInfo;
-	sparseVoxelBricksModuleData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	sparseVoxelBricksModuleData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	sparseVoxelBricksModuleData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	sparseVoxelBricksModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	sparseVoxelBricksModuleData.m_irradianceVolumeImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeImageViewHandle();
-	sparseVoxelBricksModuleData.m_irradianceVolumeDepthImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeDepthImageViewHandle();
-	sparseVoxelBricksModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	sparseVoxelBricksModuleData.m_uvImageViewHandle = uvImageViewHandle;
-	sparseVoxelBricksModuleData.m_ddxyLengthImageViewHandle = ddxyLengthImageViewHandle;
-	sparseVoxelBricksModuleData.m_ddxyRotMaterialIdImageViewHandle = ddxyRotMaterialIdImageViewHandle;
-	sparseVoxelBricksModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
-	sparseVoxelBricksModuleData.m_deferredShadowsImageViewHandle = deferredShadowsImageViewHandle;
-	sparseVoxelBricksModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
-	sparseVoxelBricksModuleData.m_pointLightBitMaskBufferViewHandle = pointLightBitMaskBufferViewHandle;
-
-	m_sparseVoxelBricksModule->addVoxelizationToGraph(graph, sparseVoxelBricksModuleData);
-
-
 	// voxel debug visualization
 	if (g_giVoxelDebugMode == 6)
 	{
 		m_sparseVoxelBricksModule->addDebugVisualizationToGraph(graph, { &passRecordContext, lightImageViewHandle });
 	}
-
-
-	// update diffuse GI probes
-	DiffuseGIProbesModule::Data diffuseGIProbesModuleData;
-	diffuseGIProbesModuleData.m_passRecordContext = &passRecordContext;
-	diffuseGIProbesModuleData.m_depthPyramidImageViewHandle = depthPyramidImageViewHandle;
-	diffuseGIProbesModuleData.m_brickPointerImageViewHandle = m_sparseVoxelBricksModule->getBrickPointerImageViewHandle();
-	diffuseGIProbesModuleData.m_binVisBricksImageViewHandle = m_sparseVoxelBricksModule->getBinVisImageViewHandle();
-	diffuseGIProbesModuleData.m_colorBricksImageViewHandle = m_sparseVoxelBricksModule->getColorImageViewHandle();
-
-	m_diffuseGIProbesModule->addProbeUpdateToGraph(graph, diffuseGIProbesModuleData);
 
 
 	// irradiance volume debug visualization
