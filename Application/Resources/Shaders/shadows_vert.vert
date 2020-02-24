@@ -55,16 +55,16 @@ layout(location = 1) flat out uint vAlbedoTextureIndex;
 
 void main() 
 {
-	uint instanceIndex = gl_VertexIndex >> 16;
-	SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
-	uint vertexIndex = (gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
+	//uint instanceIndex = gl_VertexIndex >> 16;
+	//SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
+	uint vertexIndex = gl_VertexIndex;//(gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
 	
 	const vec3 position = vec3(uPositions[vertexIndex * 3 + 0], uPositions[vertexIndex * 3 + 1], uPositions[vertexIndex * 3 + 2]);
-    gl_Position = uPushConsts.shadowMatrix * uTransformData[instanceData.transformIndex] * vec4(position, 1.0);
+    gl_Position = uPushConsts.shadowMatrix * uTransformData[uPushConsts.transformIndex] * vec4(position, 1.0);
 	
 	#if ALPHA_MASK_ENABLED
 	vTexCoord = vec2(uTexCoords[vertexIndex * 2 + 0], uTexCoords[vertexIndex * 2 + 1]);
-	vAlbedoTextureIndex = (uMaterialData[instanceData.materialIndex].albedoNormalTexture & 0xFFFF0000) >> 16;
+	vAlbedoTextureIndex = (uMaterialData[uPushConsts.materialIndex].albedoNormalTexture & 0xFFFF0000) >> 16;
 	#endif //ALPHA_MASK_ENABLED
 }
 

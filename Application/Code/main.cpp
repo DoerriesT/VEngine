@@ -100,26 +100,25 @@ public:
 		dlc.m_normalOffsetBias[3] = 2.0f;
 		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
 
-		std::default_random_engine e;
-		std::uniform_real_distribution<float> px(-14.0f, 14.0f);
-		std::uniform_real_distribution<float> py(0.0f, 10.0f);
-		std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
-		std::uniform_real_distribution<float> c(0.0f, 1.0f);
-
-		for (size_t i = 0; i < 0; ++i)
-		{
-			entt::entity lightEntity = entityRegistry.create();
-			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 100.0f, 1.0f);
-			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-		}
+		//std::default_random_engine e;
+		//std::uniform_real_distribution<float> px(-14.0f, 14.0f);
+		//std::uniform_real_distribution<float> py(0.0f, 10.0f);
+		//std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
+		//std::uniform_real_distribution<float> c(0.0f, 1.0f);
+		//
+		//for (size_t i = 0; i < 0; ++i)
+		//{
+		//	entt::entity lightEntity = entityRegistry.create();
+		//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
+		//	entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 100.0f, 1.0f);
+		//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
+		//}
 	}
 
 	void update(float timeDelta) override
 	{
 		ImGui::Begin("VEngine");
-
-		ImGui::NewLine();
+		
 		ImGui::Text("Allocated Voxel Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
 
 		ImGui::Checkbox("Force Voxelization", &g_forceVoxelization);
@@ -137,7 +136,7 @@ public:
 		g_debugVoxelCascadeIndex = cascadeIdx;
 
 		ImGui::NewLine();
-		ImGui::Text("Occlusion Culling");
+		ImGui::Text("Probe Occlusion Culling");
 		ImGui::Separator();
 		{
 			uint32_t draws = 0;

@@ -327,9 +327,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarching2Pass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>

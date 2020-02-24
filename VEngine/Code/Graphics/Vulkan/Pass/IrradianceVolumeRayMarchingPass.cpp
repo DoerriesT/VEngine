@@ -27,7 +27,7 @@ void VEngine::IrradianceVolumeRayMarchingPass::addToGraph(RenderGraph &graph, co
 		{ ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER },
 	};
 
-	graph.addPass("Irradiance Volume Ray Marching 2", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Irradiance Volume Ray Marching", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			SpecEntry specEntries[]
 			{

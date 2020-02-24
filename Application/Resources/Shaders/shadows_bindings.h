@@ -21,4 +21,6 @@
 struct PushConsts
 {
 	mat4 shadowMatrix;
+	uint transformIndex;
+	uint materialIndex;
 };

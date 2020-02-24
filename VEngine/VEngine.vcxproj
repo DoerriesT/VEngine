@@ -201,7 +201,6 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarching2Pass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\LightingPass.h" />

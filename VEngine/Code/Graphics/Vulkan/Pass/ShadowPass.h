@@ -5,9 +5,8 @@
 namespace VEngine
 {
 	struct PassRecordContext;
-	struct SubMeshData;
+	struct SubMeshInfo;
 	struct SubMeshInstanceData;
-	struct ShadowJob;
 
 	namespace ShadowPass
 	{
@@ -18,12 +17,16 @@ namespace VEngine
 			glm::mat4 m_shadowMatrix;
 			bool m_alphaMasked;
 			bool m_clear;
-			VkDescriptorBufferInfo m_instanceDataBufferInfo;
+			uint32_t m_instanceDataCount;
+			uint32_t m_instanceDataOffset;
+			const SubMeshInstanceData *m_instanceData;
+			const SubMeshInfo *m_subMeshInfo;
+			//VkDescriptorBufferInfo m_instanceDataBufferInfo;
 			VkDescriptorBufferInfo m_materialDataBufferInfo;
 			VkDescriptorBufferInfo m_transformDataBufferInfo;
-			VkDescriptorBufferInfo m_subMeshInfoBufferInfo;
-			BufferViewHandle m_indicesBufferHandle;
-			BufferViewHandle m_indirectBufferHandle;
+			//VkDescriptorBufferInfo m_subMeshInfoBufferInfo;
+			//BufferViewHandle m_indicesBufferHandle;
+			//BufferViewHandle m_indirectBufferHandle;
 			ImageViewHandle m_shadowImageHandle;
 		};
 

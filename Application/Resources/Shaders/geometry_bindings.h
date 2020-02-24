@@ -31,4 +31,6 @@ struct PushConsts
 	vec4 viewMatrixRow0;
 	vec4 viewMatrixRow1;
 	vec4 viewMatrixRow2;
+	uint transformIndex;
+	uint materialIndex;
 };

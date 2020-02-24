@@ -51,11 +51,11 @@ layout(location = 3) flat out uint vMaterialIndex;
 
 void main() 
 {
-	uint instanceIndex = gl_VertexIndex >> 16;
-	SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
-	uint vertexIndex = (gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
+	//uint instanceIndex = uPushConsts.instanceIndex;//gl_VertexIndex >> 16;
+	//SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
+	uint vertexIndex = gl_VertexIndex;//(gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
 	
-	const mat4 modelMatrix = uTransformData[instanceData.transformIndex];
+	const mat4 modelMatrix = uTransformData[uPushConsts.transformIndex];
 	const vec3 position = vec3(uPositions[vertexIndex * 3 + 0], uPositions[vertexIndex * 3 + 1], uPositions[vertexIndex * 3 + 2]);
     gl_Position = uPushConsts.jitteredViewProjectionMatrix * modelMatrix * vec4(position, 1.0);
 	const mat4 viewMatrix = transpose(mat4(uPushConsts.viewMatrixRow0, uPushConsts.viewMatrixRow1, uPushConsts.viewMatrixRow2, vec4(0.0, 0.0, 0.0, 1.0)));
@@ -63,6 +63,6 @@ void main()
 	vTexCoord = vec2(uTexCoords[vertexIndex * 2 + 0], uTexCoords[vertexIndex * 2 + 1]);
 	vNormal = mat3(modelViewMatrix) * vec3(uNormals[vertexIndex * 3 + 0], uNormals[vertexIndex * 3 + 1], uNormals[vertexIndex * 3 + 2]);
 	vWorldPos = (modelViewMatrix * vec4(position, 1.0)).xyz;
-	vMaterialIndex= instanceData.materialIndex;
+	vMaterialIndex = uPushConsts.materialIndex;
 }
 

@@ -24,7 +24,7 @@ void VEngine::IrradianceVolumeUpdateProbesPass::addToGraph(RenderGraph &graph, c
 		{ ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER },
 	};
 
-	graph.addPass("Irradiance Volume Update Probes", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass(data.m_depth ? "Irradiance Volume Update Probes (Depth)" : "Irradiance Volume Update Probes", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			SpecEntry specEntries[]
 			{

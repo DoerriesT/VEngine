@@ -21,8 +21,8 @@ void VEngine::GeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 {
 	ResourceUsageDescription passUsages[]
 	{
-		{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
-		{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
+		//{ResourceViewHandle(data.m_indicesBufferHandle), ResourceState::READ_INDEX_BUFFER},
+		//{ResourceViewHandle(data.m_indirectBufferHandle), ResourceState::READ_INDIRECT_BUFFER},
 		{ResourceViewHandle(data.m_depthImageHandle), ResourceState::WRITE_DEPTH_STENCIL},
 		{ResourceViewHandle(data.m_uvImageHandle), ResourceState::WRITE_ATTACHMENT},
 		{ResourceViewHandle(data.m_ddxyLengthImageHandle), ResourceState::WRITE_ATTACHMENT},
@@ -127,9 +127,9 @@ void VEngine::GeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) }, VERTEX_POSITIONS_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) }, VERTEX_NORMALS_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, { vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) }, VERTEX_TEXCOORDS_BINDING);
-			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
+			//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING);
-			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
+			//writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING);
 
 			if (data.m_alphaMasked)
 			{
@@ -159,19 +159,30 @@ void VEngine::GeometryPass::addToGraph(RenderGraph &graph, const Data &data)
 		vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
 		vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-		vkCmdBindIndexBuffer(cmdBuf, registry.getBuffer(data.m_indicesBufferHandle), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(cmdBuf, data.m_passRecordContext->m_renderResources->m_indexBuffer.getBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
 		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
 
-		PushConsts pushConsts;
-		pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-		pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
-		pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
-		pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
+		for (uint32_t i = 0; i < data.m_instanceDataCount; ++i)
+		{
+			const auto &instanceData = data.m_instanceData[i + data.m_instanceDataOffset];
 
-		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+			PushConsts pushConsts;
+			pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
+			pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
+			pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
+			pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
+			pushConsts.transformIndex = instanceData.m_transformIndex;
+			pushConsts.materialIndex = instanceData.m_materialIndex;
 
-		vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+			vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+			const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
+
+			vkCmdDrawIndexed(cmdBuf, subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+		}
+
+		//vkCmdDrawIndexedIndirect(cmdBuf, registry.getBuffer(data.m_indirectBufferHandle), 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 
 		vkCmdEndRenderPass(cmdBuf);
 	});
