@@ -64,7 +64,7 @@ void main()
 	kD *= 1.0 - metalness;
 	// kS = 1.0 - kD;
 	
-	vec3 result = diffuse * kD + specular.rgb * specular.a;//kD * diffuse + kS * specular.rgb * specular.a;
+	vec3 result = diffuse * kD;// + specular.rgb * specular.a;//kD * diffuse + kS * specular.rgb * specular.a;
 	
 	const vec3 lit = imageLoad(uResultImage, ivec2(gl_GlobalInvocationID.xy)).rgb;
 	imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(result + lit, 1.0));

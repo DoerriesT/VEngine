@@ -864,30 +864,30 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	GenerateMipMapsPass::addToGraph(graph, generateMipMapsPassData);
 
 
-	// Hi-Z closest depth pyramid
-	HiZPyramidPass::OutData hiZMaxPyramidPassOutData;
-	HiZPyramidPass::Data hiZMaxPyramidPassData;
-	hiZMaxPyramidPassData.m_passRecordContext = &passRecordContext;
-	hiZMaxPyramidPassData.m_inputImageViewHandle = depthImageViewHandle;
-	hiZMaxPyramidPassData.m_maxReduction = true;
-	hiZMaxPyramidPassData.m_copyFirstLevel = true;
-	hiZMaxPyramidPassData.m_forceExecution = false;
-
-	HiZPyramidPass::addToGraph(graph, hiZMaxPyramidPassData, hiZMaxPyramidPassOutData);
-
-
-	// screen space reflections
-	SSRModule::Data ssrModuleData;
-	ssrModuleData.m_passRecordContext = &passRecordContext;
-	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
-	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
-	ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
-	ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	ssrModuleData.m_albedoImageViewHandle = albedoImageViewHandle;
-	ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
-	ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
-
-	m_ssrModule->addToGraph(graph, ssrModuleData);
+	//// Hi-Z closest depth pyramid
+	//HiZPyramidPass::OutData hiZMaxPyramidPassOutData;
+	//HiZPyramidPass::Data hiZMaxPyramidPassData;
+	//hiZMaxPyramidPassData.m_passRecordContext = &passRecordContext;
+	//hiZMaxPyramidPassData.m_inputImageViewHandle = depthImageViewHandle;
+	//hiZMaxPyramidPassData.m_maxReduction = true;
+	//hiZMaxPyramidPassData.m_copyFirstLevel = true;
+	//hiZMaxPyramidPassData.m_forceExecution = false;
+	//
+	//HiZPyramidPass::addToGraph(graph, hiZMaxPyramidPassData, hiZMaxPyramidPassOutData);
+	//
+	//
+	//// screen space reflections
+	//SSRModule::Data ssrModuleData;
+	//ssrModuleData.m_passRecordContext = &passRecordContext;
+	//ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
+	//ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	//ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
+	//ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	//ssrModuleData.m_albedoImageViewHandle = albedoImageViewHandle;
+	//ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
+	//ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
+	//
+	//m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
 	// apply indirect light
@@ -897,7 +897,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	indirectLightPassData.m_albedoImageHandle = albedoImageViewHandle;
 	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
 	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
-	indirectLightPassData.m_indirectSpecularImageHandle = m_ssrModule->getSSRResultImageViewHandle();//indirectSpecularImageViewHandle;
+	indirectLightPassData.m_indirectSpecularImageHandle = indirectSpecularImageViewHandle;
 	indirectLightPassData.m_brdfImageHandle = brdfLUTImageViewHandle;
 	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
 
