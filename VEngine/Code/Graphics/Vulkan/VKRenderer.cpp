@@ -8,15 +8,14 @@
 #include "VKTextureLoader.h"
 #include "GlobalVar.h"
 #include "Pass/IntegrateBrdfPass.h"
-#include "Pass/VKGeometryPass.h"
-#include "Pass/VKShadowPass.h"
-#include "Pass/VKRasterTilingPass.h"
-#include "Pass/VKLuminanceHistogramPass.h"
-#include "Pass/VKLuminanceHistogramReduceAveragePass.h"
-#include "Pass/VKTonemapPass.h"
-#include "Pass/VKTAAResolvePass.h"
-#include "Pass/VKVelocityInitializationPass.h"
-#include "Pass/VKFXAAPass.h"
+#include "Pass/GeometryPass.h"
+#include "Pass/ShadowPass.h"
+#include "Pass/RasterTilingPass.h"
+#include "Pass/LuminanceHistogramPass.h"
+#include "Pass/LuminanceHistogramReduceAveragePass.h"
+#include "Pass/TonemapPass.h"
+#include "Pass/VelocityInitializationPass.h"
+#include "Pass/FXAAPass.h"
 #include "Pass/LightingPass.h"
 #include "Pass/DeferredShadowsPass.h"
 #include "Pass/ImGuiPass.h"
@@ -599,7 +598,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 		// draw opaque geometry to gbuffer
-		VKGeometryPass::Data opaqueGeometryPassData;
+		GeometryPass::Data opaqueGeometryPassData;
 		opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
 		opaqueGeometryPassData.m_alphaMasked = false;
 		opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
@@ -614,7 +613,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 		opaqueGeometryPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
 
-		VKGeometryPass::addToGraph(graph, opaqueGeometryPassData);
+		GeometryPass::addToGraph(graph, opaqueGeometryPassData);
 	}
 
 	// alpha masked geometry
@@ -643,7 +642,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 		// draw alpha masked geometry to gbuffer
-		VKGeometryPass::Data maskedGeometryPassData;
+		GeometryPass::Data maskedGeometryPassData;
 		maskedGeometryPassData.m_passRecordContext = &passRecordContext;
 		maskedGeometryPassData.m_alphaMasked = true;
 		maskedGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
@@ -658,16 +657,16 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		maskedGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 		maskedGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
 
-		VKGeometryPass::addToGraph(graph, maskedGeometryPassData);
+		GeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
 
 	// initialize velocity of static objects
-	VKVelocityInitializationPass::Data velocityInitializationPassData;
+	VelocityInitializationPass::Data velocityInitializationPassData;
 	velocityInitializationPassData.m_passRecordContext = &passRecordContext;
 	velocityInitializationPassData.m_depthImageHandle = depthImageViewHandle;
 	velocityInitializationPassData.m_velocityImageHandle = velocityImageViewHandle;
 
-	VKVelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
+	VelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
 
 	ImageViewHandle shadowImageViewHandle = 0;
 	{
@@ -716,7 +715,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 				BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
 
-				VKShadowPass::Data opaqueShadowPassData;
+				ShadowPass::Data opaqueShadowPassData;
 				opaqueShadowPassData.m_passRecordContext = &passRecordContext;
 				opaqueShadowPassData.m_shadowMapSize = 2048;
 				opaqueShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
@@ -730,7 +729,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				opaqueShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
 				opaqueShadowPassData.m_shadowImageHandle = shadowLayer;
 
-				VKShadowPass::addToGraph(graph, opaqueShadowPassData);
+				ShadowPass::addToGraph(graph, opaqueShadowPassData);
 			}
 
 
@@ -759,7 +758,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 				BuildIndexBufferPass::addToGraph(graph, buildIndexBufferPassData);
 
-				VKShadowPass::Data maskedShadowPassData;
+				ShadowPass::Data maskedShadowPassData;
 				maskedShadowPassData.m_passRecordContext = &passRecordContext;
 				maskedShadowPassData.m_shadowMapSize = 2048;
 				maskedShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
@@ -773,7 +772,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 				maskedShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
 				maskedShadowPassData.m_shadowImageHandle = shadowLayer;
 
-				VKShadowPass::addToGraph(graph, maskedShadowPassData);
+				ShadowPass::addToGraph(graph, maskedShadowPassData);
 			}
 		}
 	}
@@ -806,14 +805,14 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	}
 
 	// cull lights to tiles
-	VKRasterTilingPass::Data rasterTilingPassData;
+	RasterTilingPass::Data rasterTilingPassData;
 	rasterTilingPassData.m_passRecordContext = &passRecordContext;
 	rasterTilingPassData.m_lightData = &lightData;
 	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 
 	if (!lightData.m_pointLightData.empty())
 	{
-		VKRasterTilingPass::addToGraph(graph, rasterTilingPassData);
+		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
 
 
@@ -972,25 +971,25 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// calculate luminance histograms
-	VKLuminanceHistogramPass::Data luminanceHistogramPassData;
+	LuminanceHistogramPass::Data luminanceHistogramPassData;
 	luminanceHistogramPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramPassData.m_logMin = -10.0f;
 	luminanceHistogramPassData.m_logMax = 17.0f;
 	luminanceHistogramPassData.m_lightImageHandle = lightImageViewHandle;
 	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 
-	VKLuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
+	LuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
 
 
 	// calculate avg luminance
-	VKLuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
+	LuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
 	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramAvgPassData.m_logMin = -10.0f;
 	luminanceHistogramAvgPassData.m_logMax = 17.0f;
 	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
-	VKLuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
+	LuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
 
 	// copy luminance histogram to readback buffer
 	ReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;
@@ -1081,7 +1080,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainImageViewHandle;
 
 	// tonemap
-	VKTonemapPass::Data tonemapPassData;
+	TonemapPass::Data tonemapPassData;
 	tonemapPassData.m_passRecordContext = &passRecordContext;
 	tonemapPassData.m_bloomEnabled = g_bloomEnabled;
 	tonemapPassData.m_bloomStrength = g_bloomStrength;
@@ -1091,7 +1090,7 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	tonemapPassData.m_bloomImageViewHandle = bloomImageViewHandle;
 	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
-	VKTonemapPass::addToGraph(graph, tonemapPassData);
+	TonemapPass::addToGraph(graph, tonemapPassData);
 
 	currentOutput = tonemapTargetTextureHandle;
 
@@ -1099,14 +1098,14 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	ImageViewHandle fxaaTargetTextureHandle = g_CASEnabled ? finalImageViewHandle2 : swapchainImageViewHandle;
 
 	// FXAA
-	VKFXAAPass::Data fxaaPassData;
+	FXAAPass::Data fxaaPassData;
 	fxaaPassData.m_passRecordContext = &passRecordContext;
 	fxaaPassData.m_inputImageHandle = currentOutput;
 	fxaaPassData.m_resultImageHandle = fxaaTargetTextureHandle;
 
 	if (g_FXAAEnabled)
 	{
-		VKFXAAPass::addToGraph(graph, fxaaPassData);
+		FXAAPass::addToGraph(graph, fxaaPassData);
 		currentOutput = fxaaTargetTextureHandle;
 	}
 

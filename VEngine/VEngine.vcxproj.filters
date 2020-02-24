@@ -22,9 +22,6 @@
     <Filter Include="Code\Graphics\Camera">
       <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\Vulkan\Pass">
-      <UniqueIdentifier>{677f189a-427e-40e2-989a-49d1555ec275}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\Component">
       <UniqueIdentifier>{afa93efd-7cf8-40f5-84e3-eef527e09db9}</UniqueIdentifier>
     </Filter>
@@ -39,6 +36,9 @@
     </Filter>
     <Filter Include="Code\Editor">
       <UniqueIdentifier>{df1a4664-06a3-40aa-9f97-a2abfdeb2b26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\Vulkan\Pass">
+      <UniqueIdentifier>{8edcf285-d58c-49bf-822b-af9732ebd00f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -102,47 +102,14 @@
     <ClInclude Include="Code\Graphics\Vulkan\VKBuffer.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKShadowPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKMemoryAllocator.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="Code\Utility\ObjectPool.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTextPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\VKPipeline.h">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramReduceAveragePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
     <ClInclude Include="Code\Components\CameraComponent.h">
       <Filter>Code\Component</Filter>
@@ -207,50 +174,8 @@
     <ClInclude Include="Code\Utility\AxisAlignedBoundingBox.h">
       <Filter>Code\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\volk.h">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOSpatialFilterPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKGTAOTemporalFilterPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMClearPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMDepthReducePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMBoundsReducePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.h">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Module\VKSDSMModule.h">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\RenderGraph.h">
       <Filter>Code\Graphics\Vulkan</Filter>
@@ -291,9 +216,6 @@
     <ClInclude Include="Code\Graphics\imgui\imgui_impl_glfw.h">
       <Filter>Code\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\imgui\ImGuizmo.h">
       <Filter>Code\Graphics\imgui</Filter>
     </ClInclude>
@@ -305,45 +227,6 @@
     </ClInclude>
     <ClInclude Include="Code\Graphics\ViewRenderList.h">
       <Filter>Code\Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
     <ClInclude Include="Code\Level.h">
       <Filter>Code</Filter>
@@ -357,86 +240,17 @@
     <ClInclude Include="Code\Graphics\BVH.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\LightingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Module\DiffuseGIProbesModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Module\SparseVoxelBricksModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Module\GTAOModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Module\BloomModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.h">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Module\SSRModule.h">
       <Filter>Code\Graphics\Vulkan\Module</Filter>
@@ -444,10 +258,154 @@
     <ClInclude Include="Code\Graphics\Vulkan\SwapChainVK.h">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\FXAAPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\GenerateMipMapsPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\GeometryPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\GTAOPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\GTAOSpatialFilterPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\GTAOTemporalFilterPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ImGuiPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
     <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarching2Pass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LightingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReduceAveragePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\RasterTilingPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\ShadowPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\TAAPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\TonemapPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VelocityInitializationPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.h">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -494,44 +452,11 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKBuffer.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGeometryPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKShadowPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKMemoryAllocator.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKMemoryHeapDebugPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTextPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\VKPipeline.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKRasterTilingPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramReduceAveragePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTonemapPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKLuminanceHistogramDebugPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTAAResolvePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKVelocityInitializationPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\RenderSystem.cpp">
       <Filter>Code\Graphics</Filter>
@@ -560,50 +485,8 @@
     <ClCompile Include="Code\Graphics\Vulkan\VKMeshManager.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKPrepareIndirectBuffersPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\volk.c">
       <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKFXAAPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTransparencyWritePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOSpatialFilterPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKGTAOTemporalFilterPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMClearPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMShadowMatrixPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMDepthReducePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMBoundsReducePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKSDSMSplitsPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VKTriangleFilterPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\VKTriangleFilterModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\VKSDSMModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\RenderGraph.cpp">
       <Filter>Code\Graphics\Vulkan</Filter>
@@ -635,53 +518,11 @@
     <ClCompile Include="Code\Graphics\imgui\imgui_impl_glfw.cpp">
       <Filter>Code\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp">
       <Filter>Code\Graphics\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp">
       <Filter>Code\Gui</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Editor\EntityDetailsWindow.cpp">
       <Filter>Code\Editor</Filter>
@@ -692,22 +533,160 @@
     <ClCompile Include="Code\Graphics\BVH.cpp">
       <Filter>Code\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\RayTraceTestPass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Module\DiffuseGIProbesModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\SparseVoxelBricksModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\GTAOModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\BloomModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Module\SSRModule.cpp">
+      <Filter>Code\Graphics\Vulkan\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\SwapChainVK.cpp">
+      <Filter>Code\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\FXAAPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GenerateMipMapsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GeometryPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GTAOPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GTAOSpatialFilterPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\GTAOTemporalFilterPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ImGuiPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\InitBrickPoolPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeDebugPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeUpdateProbesPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LightingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\LuminanceHistogramReduceAveragePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\MeshClusterVisualizationPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCopyToDepthPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingCreateDrawArgsPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingHiZPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\OcclusionCullingReprojectionPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\RasterTilingPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ReadBackCopyPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\ShadowPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\SharpenFfxCasPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\TonemapPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\UpdateQueueProbabilityPass.cpp">
+      <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationAllocatePass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationFillPass.cpp">
@@ -716,73 +695,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VoxelizationMarkPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\LightingPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectDiffusePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\DiffuseGIProbesModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\SparseVoxelBricksModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\ScreenSpaceVoxelizationPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeRayMarchingPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\GTAOModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomDownsamplePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\BloomUpsamplePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\BloomModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\TAAPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\HiZPyramidPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IndirectLightPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\ForwardLightingPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRResolvePass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IntegrateBrdfPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\SSRTemporalFilterPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Module\SSRModule.cpp">
-      <Filter>Code\Graphics\Vulkan\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\SwapChainVK.cpp">
-      <Filter>Code\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\GenerateMipMapsPass.cpp">
-      <Filter>Code\Graphics\Vulkan\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.cpp">
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\VelocityInitializationPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClCompile>
   </ItemGroup>

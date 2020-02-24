@@ -1,7 +1,7 @@
 #include "GTAOModule.h"
-#include "Graphics/Vulkan/Pass/VKGTAOPass.h"
-#include "Graphics/Vulkan/Pass/VKGTAOSpatialFilterPass.h"
-#include "Graphics/Vulkan/Pass/VKGTAOTemporalFilterPass.h"
+#include "Graphics/Vulkan/Pass/GTAOPass.h"
+#include "Graphics/Vulkan/Pass/GTAOSpatialFilterPass.h"
+#include "Graphics/Vulkan/Pass/GTAOTemporalFilterPass.h"
 #include "Utility/Utility.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
@@ -77,33 +77,33 @@ void VEngine::GTAOModule::addToGraph(RenderGraph &graph, const Data &data)
 
 
 	// gtao
-	VKGTAOPass::Data gtaoPassData;
+	GTAOPass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassData.m_depthImageHandle = data.m_depthImageViewHandle;
 	gtaoPassData.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
-	VKGTAOPass::addToGraph(graph, gtaoPassData);
+	GTAOPass::addToGraph(graph, gtaoPassData);
 
 
 	// gtao spatial filter
-	VKGTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
+	GTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
 	gtaoPassSpatialFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageViewHandle;
 	gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageViewHandle;
 
-	VKGTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
+	GTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
 
 
 	// gtao temporal filter
-	VKGTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
+	GTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
 	gtaoPassTemporalFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_velocityImageHandle = data.m_velocityImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_resultImageHandle = m_gtaoImageViewHandle;
 
-	VKGTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
+	GTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
 }
 
 void VEngine::GTAOModule::resize(uint32_t width, uint32_t height)
