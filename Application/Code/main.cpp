@@ -19,8 +19,14 @@
 #include <Graphics/Camera/Camera.h>
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
+#include <Graphics/Vulkan/Module/DiffuseGIProbesModule.h>
 
 uint32_t g_dirLightEntity;
+uint32_t g_debugVoxelCascadeIndex = 0;
+uint32_t g_giVoxelDebugMode = 0;
+uint32_t g_allocatedBricks = 0;
+bool g_forceVoxelization = false;
+bool g_voxelizeOnDemand = false;
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -111,34 +117,62 @@ public:
 
 	void update(float timeDelta) override
 	{
-		auto &input = m_engine->getUserInput();
-		VEngine::g_TAAEnabled = input.isKeyPressed(InputKey::T);
-		VEngine::g_FXAAEnabled = input.isKeyPressed(InputKey::F);
-		VEngine::g_ssaoEnabled = input.isKeyPressed(InputKey::G);
+		ImGui::Begin("VEngine");
 
-		//auto &entityRegistry = m_engine->getEntityRegistry();
-		//
-		//auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
-		//auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
-		//VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
-		//
-		//auto viewMatrix = camera.getViewMatrix();
-		//auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
-		//
-		//auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
-		//
-		//auto &io = ImGui::GetIO();
-		//
-		//glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
-		//
-		//ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
-		//ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
-		//glm::vec3 position;
-		//glm::vec3 eulerAngles;
-		//glm::vec3 scale;
-		//ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
-		//
-		//tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+		ImGui::NewLine();
+		ImGui::Text("Allocated Voxel Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
+
+		ImGui::Checkbox("Force Voxelization", &g_forceVoxelization);
+		ImGui::Checkbox("Voxelize when required", &g_voxelizeOnDemand);
+
+		int debugMode = g_giVoxelDebugMode;
+		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
+		ImGui::RadioButton("Irradiance Volume", &debugMode, 1); ImGui::SameLine();
+		ImGui::RadioButton("Bricks", &debugMode, 2);
+		g_giVoxelDebugMode = debugMode;
+		int cascadeIdx = g_debugVoxelCascadeIndex;
+		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
+		ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
+		g_debugVoxelCascadeIndex = cascadeIdx;
+
+		ImGui::NewLine();
+		ImGui::Text("Occlusion Culling");
+		ImGui::Separator();
+		{
+			uint32_t draws = 0;
+			uint32_t totalDraws = 1;
+			m_engine->getRenderSystem().getOcclusionCullingStats(draws, totalDraws);
+			const uint32_t totalProbes = VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES;
+			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", totalProbes, draws, float(draws) / totalProbes * 100.0f);
+			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
+		}
+
+		ImGui::End();
+
+		auto &entityRegistry = m_engine->getEntityRegistry();
+		
+		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
+		auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
+		VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
+		
+		auto viewMatrix = camera.getViewMatrix();
+		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
+		
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
+		
+		auto &io = ImGui::GetIO();
+		
+		glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
+		
+		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
+		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
+		glm::vec3 position;
+		glm::vec3 eulerAngles;
+		glm::vec3 scale;
+		ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
+		
+		tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
 	};
 
 	void shutdown() override

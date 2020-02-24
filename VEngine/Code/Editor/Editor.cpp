@@ -66,25 +66,25 @@ void VEngine::Editor::update(float timeDelta)
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu("File"))
+		//if (ImGui::BeginMenu("File"))
+		//{
+		//	// ShowExampleMenuFile();
+		//	ImGui::EndMenu();
+		//}
+		//if (ImGui::BeginMenu("Edit"))
+		//{
+		//	if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
+		//	if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
+		//	ImGui::Separator();
+		//	if (ImGui::MenuItem("Cut", "CTRL+X")) {}
+		//	if (ImGui::MenuItem("Copy", "CTRL+C")) {}
+		//	if (ImGui::MenuItem("Paste", "CTRL+V")) {}
+		//	ImGui::EndMenu();
+		//}
+		if (ImGui::BeginMenu("Window"))
 		{
-			// ShowExampleMenuFile();
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Edit"))
-		{
-			if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-			if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
-			ImGui::Separator();
-			if (ImGui::MenuItem("Cut", "CTRL+X")) {}
-			if (ImGui::MenuItem("Copy", "CTRL+C")) {}
-			if (ImGui::MenuItem("Paste", "CTRL+V")) {}
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("View"))
-		{
-			ImGui::MenuItem("Entities", "", &m_showEntityWindow);
-			ImGui::MenuItem("Details", "", &m_showEntityDetailWindow);
+			//ImGui::MenuItem("Entities", "", &m_showEntityWindow);
+			//ImGui::MenuItem("Details", "", &m_showEntityDetailWindow);
 			ImGui::MenuItem("Profiler", "", &m_showProfilerWindow);
 			ImGui::MenuItem("Memory", "", &m_showMemoryWindow);
 			ImGui::MenuItem("Luminance Histogram", "", &m_showLuminanceHistogramWindow);

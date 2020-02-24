@@ -55,6 +55,8 @@
 extern uint32_t g_debugVoxelCascadeIndex;
 extern uint32_t g_giVoxelDebugMode;
 extern uint32_t g_allocatedBricks;
+extern bool g_forceVoxelization;
+extern bool g_voxelizeOnDemand;
 
 VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHandle)
 {
@@ -819,6 +821,8 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// update voxel representation of scene
 	SparseVoxelBricksModule::Data sparseVoxelBricksModuleData;
 	sparseVoxelBricksModuleData.m_passRecordContext = &passRecordContext;
+	sparseVoxelBricksModuleData.m_enableVoxelization = g_voxelizeOnDemand; // set to true to let system revoxelize when required
+	sparseVoxelBricksModuleData.m_forceVoxelization = commonData.m_frame == 0 || g_forceVoxelization; // forces voxelization no matter if required or not
 	sparseVoxelBricksModuleData.m_instanceDataCount = renderData.m_allInstanceDataCount;
 	sparseVoxelBricksModuleData.m_instanceData = renderData.m_allInstanceData;
 	sparseVoxelBricksModuleData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
@@ -940,19 +944,19 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 
 
 	// voxel debug visualization
-	if (g_giVoxelDebugMode == 6)
+	if (g_giVoxelDebugMode == 2)
 	{
 		m_sparseVoxelBricksModule->addDebugVisualizationToGraph(graph, { &passRecordContext, lightImageViewHandle });
 	}
 
 
 	// irradiance volume debug visualization
-	if (g_giVoxelDebugMode == 3 || g_giVoxelDebugMode == 4)
+	if (g_giVoxelDebugMode == 1)
 	{
 		DiffuseGIProbesModule::DebugVisualizationData data;
 		data.m_passRecordContext = &passRecordContext;
 		data.m_cascadeIndex = g_debugVoxelCascadeIndex;
-		data.m_showAge = g_giVoxelDebugMode == 4;
+		data.m_showAge = false;//g_giVoxelDebugMode == 4;
 		data.m_colorImageViewHandle = lightImageViewHandle;
 		data.m_depthImageViewHandle = depthImageViewHandle;
 

@@ -24,6 +24,8 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_enableVoxelization;
+			bool m_forceVoxelization;
 			uint32_t m_instanceDataCount;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;

@@ -110,7 +110,8 @@ namespace VEngine
 	template<typename T>
 	inline DynamicObjectPool<T>::DynamicObjectPool(size_t firstBlockCapacity)
 		:m_firstBlockCapacity(firstBlockCapacity),
-		m_allocationCount()
+		m_allocationCount(),
+		m_blocks()
 	{
 		assert(m_firstBlockCapacity > 1);
 	}

@@ -262,36 +262,11 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 	const glm::ivec3 cameraCoord = glm::ivec3(round(camPos / BRICK_SIZE));
 	const glm::ivec3 prevCameraCoord = glm::ivec3(round(prevCamPos / BRICK_SIZE));
 
-	glm::ivec3 prevAabbMin = prevCameraCoord - (glm::ivec3(BRICK_VOLUME_WIDTH, BRICK_VOLUME_HEIGHT, BRICK_VOLUME_DEPTH) / 2);
-	glm::ivec3 prevAabbMax = prevAabbMin + glm::ivec3(BRICK_VOLUME_WIDTH, BRICK_VOLUME_HEIGHT, BRICK_VOLUME_DEPTH);
+	bool couldRevoxelize = cameraCoord != prevCameraCoord;
 
-	glm::ivec3 curAabbMin = cameraCoord - (glm::ivec3(BRICK_VOLUME_WIDTH, BRICK_VOLUME_HEIGHT, BRICK_VOLUME_DEPTH) / 2);
-	glm::ivec3 curAabbMax = curAabbMin + glm::ivec3(BRICK_VOLUME_WIDTH, BRICK_VOLUME_HEIGHT, BRICK_VOLUME_DEPTH);
-
-	AxisAlignedBoundingBox aabbs[3];
-	size_t aabbCount = 0;
-
-	for (size_t i = 0; i < 3; ++i)
+	if (couldRevoxelize && data.m_enableVoxelization || data.m_forceVoxelization)
 	{
-		int diff = cameraCoord[i] - prevCameraCoord[i];
-		if (diff != 0)
-		{
-			glm::ivec3 minCorner = curAabbMin;
-			glm::ivec3 maxCorner = curAabbMax;
-			if (diff > 0)
-			{
-				minCorner[i] = prevAabbMax[i];
-			}
-			else
-			{
-				maxCorner[i] = prevAabbMin[i];
-			}
-			aabbs[aabbCount++] = { glm::vec3(minCorner) * BRICK_SIZE, glm::vec3(maxCorner) * BRICK_SIZE };
-		}
-	}
-
-	//if (aabbCount)
-	{
+		printf("VOX\n");
 		ClearBricksPass::Data clearBricksPassData;
 		clearBricksPassData.m_passRecordContext = data.m_passRecordContext;
 		clearBricksPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;

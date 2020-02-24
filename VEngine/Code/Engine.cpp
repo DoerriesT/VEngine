@@ -14,9 +14,6 @@
 #include "Editor/Editor.h"
 #include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
-uint32_t g_debugVoxelCascadeIndex = 0;
-uint32_t g_giVoxelDebugMode = 0;
-uint32_t g_allocatedBricks = 0;
 float g_ssrBias = 0.0f;
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
@@ -95,58 +92,6 @@ void VEngine::Engine::start()
 		editor.update(timeDelta);
 
 		//ImGui::ShowDemoWindow();
-
-
-		// gui window
-		ImGui::Begin("VEngine");
-
-		ImGui::SliderFloat("SSR Bias", &g_ssrBias, 0.0f, 1.0f);
-
-		bool casEnabled = g_CASEnabled;
-		ImGui::Checkbox("CAS", &casEnabled);
-		g_CASEnabled = casEnabled;
-		float casSharpness = g_CASSharpness;
-		ImGui::SliderFloat("CAS Sharpness", &casSharpness, 0.0f, 1.0f);
-		g_CASSharpness = casSharpness;
-
-		bool bloomEnabled = g_bloomEnabled;
-		ImGui::Checkbox("Bloom", &bloomEnabled);
-		g_bloomEnabled = bloomEnabled;
-
-		float bloomStrength = g_bloomStrength;
-		ImGui::SliderFloat("Bloom Strength", &bloomStrength, 0.0f, 0.1f);
-		g_bloomStrength = bloomStrength;
-
-		ImGui::NewLine();
-		ImGui::Text("Allocated Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
-		
-		int debugMode = g_giVoxelDebugMode;
-		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
-		ImGui::RadioButton("Voxel Scene Raster", &debugMode, 1); ImGui::SameLine();
-		ImGui::RadioButton("Voxel Scene Raycast", &debugMode, 2); ImGui::SameLine();
-		ImGui::RadioButton("Irradiance Volume", &debugMode, 3);
-		ImGui::RadioButton("Irradiance Volume Age", &debugMode, 4);
-		ImGui::RadioButton("Bricks", &debugMode, 6);
-		g_giVoxelDebugMode = debugMode;
-		int cascadeIdx = g_debugVoxelCascadeIndex;
-		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
-		ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
-		ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
-		g_debugVoxelCascadeIndex = cascadeIdx;
-		
-		ImGui::NewLine();
-		ImGui::Text("Occlusion Culling");
-		ImGui::Separator();
-		{
-			uint32_t draws = 0;
-			uint32_t totalDraws = 1;
-			m_renderSystem->getOcclusionCullingStats(draws, totalDraws);
-			const uint32_t totalProbes = DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH * DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT * DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH * DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES;
-			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", totalProbes, draws, float(draws) / totalProbes * 100.0f);
-			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
-		}
-		
-		ImGui::End();
 
 		ImGui::Render();
 		m_renderSystem->update(timeDelta);
