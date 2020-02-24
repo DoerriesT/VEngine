@@ -1,5 +1,5 @@
 #include "DiffuseGIProbesModule.h"
-#include "Graphics/Vulkan/Pass/ClearVoxelsPass.h"
+#include "Graphics/Vulkan/Pass/IrradianceVolumeClearProbesPass.h"
 #include "Graphics/Vulkan/Pass/UpdateQueueProbabilityPass.h"
 #include "Graphics/Vulkan/Pass/FillLightingQueuesPass.h"
 #include "Graphics/Vulkan/Pass/IrradianceVolumeRayMarchingPass.h"

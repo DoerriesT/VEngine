@@ -185,7 +185,7 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.h" />
-    <ClInclude Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.h" />
+    <ClInclude Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.h" />
     <ClInclude Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.h" />
@@ -307,7 +307,7 @@
     <ClCompile Include="Code\Graphics\Vulkan\Pass\BrickDebugPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\BuildIndexBufferPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearBricksPass.cpp" />
-    <ClCompile Include="Code\Graphics\Vulkan\Pass\ClearVoxelsPass.cpp" />
+    <ClCompile Include="Code\Graphics\Vulkan\Pass\IrradianceVolumeClearProbesPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\DepthPrepassPass.cpp" />
     <ClCompile Include="Code\Graphics\Vulkan\Pass\FillLightingQueuesPass.cpp" />

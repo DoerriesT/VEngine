@@ -1,4 +1,4 @@
-#include "ClearVoxelsPass.h"
+#include "IrradianceVolumeClearProbesPass.h"
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/VKRenderResources.h"
 #include "Graphics/Vulkan/VKPipelineCache.h"
