@@ -266,7 +266,6 @@ void VEngine::SparseVoxelBricksModule::addVoxelizationToGraph(RenderGraph &graph
 
 	if (couldRevoxelize && data.m_enableVoxelization || data.m_forceVoxelization)
 	{
-		printf("VOX\n");
 		ClearBricksPass::Data clearBricksPassData;
 		clearBricksPassData.m_passRecordContext = data.m_passRecordContext;
 		clearBricksPassData.m_brickPointerImageHandle = m_brickPointerImageViewHandle;
