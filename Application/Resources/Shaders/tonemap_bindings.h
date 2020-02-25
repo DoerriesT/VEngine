@@ -13,4 +13,8 @@ struct PushConsts
 	uint applyLinearToGamma;
 	uint bloomEnabled;
 	float bloomStrength;
+	float exposureCompensation;
+	float exposureMin;
+	float exposureMax;
+	uint fixExposureToMax;
 };

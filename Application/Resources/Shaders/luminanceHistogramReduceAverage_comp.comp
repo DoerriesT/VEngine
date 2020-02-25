@@ -73,11 +73,14 @@ void main()
 			}
 		}
 		
-		avgLuminance /= (upperBound - lowerBound);
+		avgLuminance /= max(upperBound - lowerBound, 1);
 		
 		float previousLum = uLuminanceValues[uPushConsts.previousResourceIndex];
+		
+		bool adaptUpwards = avgLuminance >= previousLum;
 	
 		// Adapt the luminance using Pattanaik's technique
-		uLuminanceValues[uPushConsts.currentResourceIndex] = previousLum + (avgLuminance - previousLum) * uPushConsts.precomputedTerm;
+		float precomputedTerm = adaptUpwards ? uPushConsts.precomputedTermUp : uPushConsts.precomputedTermDown;
+		uLuminanceValues[uPushConsts.currentResourceIndex] = previousLum + (avgLuminance - previousLum) * precomputedTerm;
 	}
 }

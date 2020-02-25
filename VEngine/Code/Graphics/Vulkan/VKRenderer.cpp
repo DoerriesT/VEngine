@@ -996,8 +996,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// calculate luminance histograms
 	LuminanceHistogramPass::Data luminanceHistogramPassData;
 	luminanceHistogramPassData.m_passRecordContext = &passRecordContext;
-	luminanceHistogramPassData.m_logMin = -10.0f;
-	luminanceHistogramPassData.m_logMax = 17.0f;
 	luminanceHistogramPassData.m_lightImageHandle = lightImageViewHandle;
 	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 
@@ -1007,12 +1005,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	// calculate avg luminance
 	LuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
 	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
-	luminanceHistogramAvgPassData.m_logMin = -10.0f;
-	luminanceHistogramAvgPassData.m_logMax = 17.0f;
 	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
 	LuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
+
 
 	// copy luminance histogram to readback buffer
 	ReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;

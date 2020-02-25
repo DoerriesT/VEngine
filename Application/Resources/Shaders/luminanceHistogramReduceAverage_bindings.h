@@ -7,7 +7,8 @@
 
 struct PushConsts
 {
-	float precomputedTerm;
+	float precomputedTermUp;
+	float precomputedTermDown;
 	float invScale;
 	float bias;
 	uint lowerBound;

@@ -249,8 +249,9 @@ void main()
 	float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
 	//float EV100 = computeEV100(16.0, 0.01, 100);
 	float EV100 = computeEV100FromAvgLuminance(avgLuminance);
-	EV100 -= 1.0;
-	color *= convertEV100ToExposure(EV100);
+	EV100 -= uPushConsts.exposureCompensation;
+	float exposure = clamp(convertEV100ToExposure(EV100), uPushConsts.exposureMin, uPushConsts.exposureMax);
+	color *= uPushConsts.fixExposureToMax != 0 ? uPushConsts.exposureMax : exposure;
 
 	color = applyHuePreservingShoulder(color);
 	//float exposureBias = 1.0;

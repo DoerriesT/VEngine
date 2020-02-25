@@ -25,7 +25,7 @@ namespace VEngine
 		uint32_t m_editorCameraEntity;
 		bool m_showProfilerWindow = false;
 		bool m_showMemoryWindow = false;
-		bool m_showLuminanceHistogramWindow = false;
+		bool m_showExposureWindow = false;
 		bool m_showEntityWindow = false;
 		bool m_showEntityDetailWindow = false;
 	};

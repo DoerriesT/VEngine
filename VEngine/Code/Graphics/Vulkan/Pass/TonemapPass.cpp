@@ -6,6 +6,7 @@
 #include "Graphics/Vulkan/VKContext.h"
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "GlobalVar.h"
 
 namespace
 {
@@ -71,6 +72,15 @@ void VEngine::TonemapPass::addToGraph(RenderGraph &graph, const Data &data)
 		pushConsts.applyLinearToGamma = data.m_applyLinearToGamma;
 		pushConsts.bloomEnabled = data.m_bloomEnabled;
 		pushConsts.bloomStrength = data.m_bloomStrength;
+		pushConsts.exposureCompensation = g_ExposureCompensation;
+		pushConsts.exposureMin = g_ExposureMin;
+		pushConsts.exposureMax = g_ExposureFixed ? g_ExposureFixedValue : g_ExposureMax;
+
+		pushConsts.exposureMax = glm::max(pushConsts.exposureMax, 1e-7f);
+		pushConsts.exposureMin = glm::clamp(pushConsts.exposureMin, 1e-7f, pushConsts.exposureMax);
+
+		pushConsts.fixExposureToMax = g_ExposureFixed ? 1 : 0;
+
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		VKUtility::dispatchComputeHelper(cmdBuf, width, height, 1, 8, 8, 1);

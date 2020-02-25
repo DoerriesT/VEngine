@@ -23,5 +23,16 @@ namespace VEngine
 	GlobalVar<unsigned int> g_gtaoSteps = 4;
 	GlobalVar<unsigned int> g_gtaoMaxRadiusPixels = 256;
 	GlobalConst<unsigned int> g_shadowAtlasSize = 4096;
+	GlobalVar<float> g_ExposureHistogramLogMin = -10.0f;
+	GlobalVar<float> g_ExposureHistogramLogMax = 5.0f;
+	GlobalVar<float> g_ExposureLowPercentage = 0.5f;
+	GlobalVar<float> g_ExposureHighPercentage = 0.9f;
+	GlobalVar<float> g_ExposureSpeedUp = 3.0f;
+	GlobalVar<float> g_ExposureSpeedDown = 1.0f;
+	GlobalVar<float> g_ExposureCompensation = 1.0f;
+	GlobalVar<float> g_ExposureMin = 0.01f;
+	GlobalVar<float> g_ExposureMax = 100.0f;
+	GlobalVar<bool> g_ExposureFixed = false;
+	GlobalVar<float> g_ExposureFixedValue = 2.0f;
 	GlobalConst<bool> g_vulkanDebugCallBackEnabled = true;
 }

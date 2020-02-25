@@ -108,5 +108,16 @@ namespace VEngine
 	extern GlobalVar<unsigned int> g_gtaoMaxRadiusPixels;
 	extern GlobalVar<unsigned int> g_windowHeight;
 	extern GlobalConst<unsigned int> g_shadowAtlasSize;
+	extern GlobalVar<float> g_ExposureHistogramLogMin;
+	extern GlobalVar<float> g_ExposureHistogramLogMax;
+	extern GlobalVar<float> g_ExposureLowPercentage;
+	extern GlobalVar<float> g_ExposureHighPercentage;
+	extern GlobalVar<float> g_ExposureSpeedUp;
+	extern GlobalVar<float> g_ExposureSpeedDown;
+	extern GlobalVar<float> g_ExposureCompensation;
+	extern GlobalVar<float> g_ExposureMin;
+	extern GlobalVar<float> g_ExposureMax;
+	extern GlobalVar<bool> g_ExposureFixed;
+	extern GlobalVar<float> g_ExposureFixedValue;
 	extern GlobalConst<bool> g_vulkanDebugCallBackEnabled;
 }

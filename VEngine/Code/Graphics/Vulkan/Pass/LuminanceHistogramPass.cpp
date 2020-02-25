@@ -8,6 +8,7 @@
 #include <glm/mat4x4.hpp>
 #include "Graphics/Vulkan/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "GlobalVar.h"
 
 namespace
 {
@@ -52,9 +53,14 @@ void VEngine::LuminanceHistogramPass::addToGraph(RenderGraph &graph, const Data 
 		vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_pipeline);
 		vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);
 
+		float logMin = g_ExposureHistogramLogMin;
+		float logMax = g_ExposureHistogramLogMax;
+		logMin = glm::min(logMin, logMax - 1e-7f); // ensure logMin is a little bit less than logMax
+
+
 		PushConsts pushConsts;
-		pushConsts.scale = 1.0f / (data.m_logMax - data.m_logMin);
-		pushConsts.bias = -data.m_logMin * pushConsts.scale;
+		pushConsts.scale = 1.0f / (logMax - logMin);
+		pushConsts.bias = -logMin * pushConsts.scale;
 
 		vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

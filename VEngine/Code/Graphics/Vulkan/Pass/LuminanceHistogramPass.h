@@ -10,8 +10,6 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			float m_logMin;
-			float m_logMax;
 			ImageViewHandle m_lightImageHandle;
 			BufferViewHandle m_luminanceHistogramBufferHandle;
 		};

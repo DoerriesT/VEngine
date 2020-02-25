@@ -7,6 +7,7 @@
 #include "Gui/MemoryAllocatorPlot.h"
 #include "Graphics/PassTimingInfo.h"
 #include "Graphics/RenderSystem.h"
+#include "GlobalVar.h"
 
 extern uint32_t g_dirLightEntity;
 static constexpr size_t FRAME_TIME_ARRAY_SIZE = 64;
@@ -87,7 +88,7 @@ void VEngine::Editor::update(float timeDelta)
 			//ImGui::MenuItem("Details", "", &m_showEntityDetailWindow);
 			ImGui::MenuItem("Profiler", "", &m_showProfilerWindow);
 			ImGui::MenuItem("Memory", "", &m_showMemoryWindow);
-			ImGui::MenuItem("Luminance Histogram", "", &m_showLuminanceHistogramWindow);
+			ImGui::MenuItem("Exposure Settings", "", &m_showExposureWindow);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -169,9 +170,45 @@ void VEngine::Editor::update(float timeDelta)
 		ImGui::End();
 	}
 
-	if (m_showLuminanceHistogramWindow)
+	if (m_showExposureWindow)
 	{
-		ImGui::Begin("Luminance Histogram");
+		ImGui::Begin("Exposure Settings");
+
+		float exposureHistogramLogMin = g_ExposureHistogramLogMin;
+		float exposureHistogramLogMax = g_ExposureHistogramLogMax;
+		float exposureLowPercentage = g_ExposureLowPercentage * 100.0f;
+		float exposureHighPercentage = g_ExposureHighPercentage * 100.0f;
+		float exposureSpeedUp = g_ExposureSpeedUp;
+		float exposureSpeedDown = g_ExposureSpeedDown;
+		float exposureCompensation = g_ExposureCompensation;
+		float exposureMin = g_ExposureMin;
+		float exposureMax = g_ExposureMax;
+		bool exposureFixed = g_ExposureFixed;
+		float exposureFixedValue = g_ExposureFixedValue;
+
+		ImGui::DragFloat("Histogram Log Min", &exposureHistogramLogMin, 0.05f, -14.0f, 17.0f);
+		ImGui::DragFloat("Histogram Log Max", &exposureHistogramLogMax, 0.05f, -14.0f, 17.0f);
+		ImGui::DragFloat("Low Percentage", &exposureLowPercentage, 0.5f, 0.0f, 100.0f);
+		ImGui::DragFloat("High Percentage", &exposureHighPercentage, 0.5f, 0.0f, 100.0f);
+		ImGui::DragFloat("Speed Up", &exposureSpeedUp, 0.05f, 0.01f, 10.0f);
+		ImGui::DragFloat("Speed Down", &exposureSpeedDown, 0.05f, 0.01f, 10.0f);
+		ImGui::DragFloat("Exposure Compensation", &exposureCompensation, 0.25f, -10.0f, 10.0f);
+		ImGui::DragFloat("Exposure Min", &exposureMin, 0.05f, 0.001f, 1000.0f);
+		ImGui::DragFloat("Exposure Max", &exposureMax, 0.05f, 0.001f, 1000.0f);
+		ImGui::Checkbox("Fixed Exposure", &exposureFixed);
+		ImGui::DragFloat("Fixed Exposure Value", &exposureFixedValue, 0.25f, 0.01f, 1000.0f);
+
+		g_ExposureHistogramLogMin = exposureHistogramLogMin;
+		g_ExposureHistogramLogMax = exposureHistogramLogMax;
+		g_ExposureLowPercentage = exposureLowPercentage * 0.01f;
+		g_ExposureHighPercentage = exposureHighPercentage * 0.01f;
+		g_ExposureSpeedUp = exposureSpeedUp;
+		g_ExposureSpeedDown = exposureSpeedDown;
+		g_ExposureCompensation = exposureCompensation;
+		g_ExposureMin = exposureMin;
+		g_ExposureMax = exposureMax;
+		g_ExposureFixed = exposureFixed;
+		g_ExposureFixedValue = exposureFixedValue;
 
 		const uint32_t *luminancHistogram = renderSystem.getLuminanceHistogram();
 		float(*histogramValuesGetter)(void *data, int idx) = [](void *data, int idx) -> float
