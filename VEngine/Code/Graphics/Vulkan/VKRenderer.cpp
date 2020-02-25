@@ -105,7 +105,8 @@ VEngine::VKRenderer::~VKRenderer()
 
 void VEngine::VKRenderer::render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData)
 {
-	if (m_width == 0 || m_height == 0)
+	auto swapChainRecreationExtent = m_swapChain->getRecreationExtent();
+	if (m_width == 0 || m_height == 0 || swapChainRecreationExtent.width == 0 || swapChainRecreationExtent.height == 0)
 	{
 		return;
 	}

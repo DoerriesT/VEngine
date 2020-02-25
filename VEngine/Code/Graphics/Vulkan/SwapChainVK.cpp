@@ -96,6 +96,14 @@ VkExtent2D VEngine::SwapChainVK::getExtent() const
 	return m_extent;
 }
 
+VkExtent2D VEngine::SwapChainVK::getRecreationExtent() const
+{
+	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilities);
+
+	return surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() ? surfaceCapabilities.currentExtent : surfaceCapabilities.minImageExtent;
+}
+
 VkFormat VEngine::SwapChainVK::getImageFormat() const
 {
 	return m_imageFormat;

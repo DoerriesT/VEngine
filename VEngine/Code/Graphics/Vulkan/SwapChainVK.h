@@ -17,6 +17,7 @@ namespace VEngine
 		void getCurrentImageIndex(uint32_t frameIndex, uint32_t &currentImageIndex, VkSemaphore &swapChainAvailableSemaphore);
 		void present(uint32_t waitSemaphoreCount, VkSemaphore *waitSemaphores);
 		VkExtent2D getExtent() const;
+		VkExtent2D getRecreationExtent() const;
 		VkFormat getImageFormat() const;
 		VkImage getImage(size_t index) const;
 		VkQueue getPresentQueue() const;

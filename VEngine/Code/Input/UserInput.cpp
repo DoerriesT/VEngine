@@ -34,7 +34,7 @@ glm::vec2 VEngine::UserInput::getScrollOffset() const
 bool VEngine::UserInput::isKeyPressed(InputKey key, bool ignoreRepeated) const
 {
 	size_t pos = static_cast<size_t>(key);
-	return m_pressedKeys[pos] && (!ignoreRepeated || !m_repeatedKeys[pos]);
+	return pos < m_repeatedKeys.size() && pos < m_repeatedKeys.size() && m_pressedKeys[pos] && (!ignoreRepeated || !m_repeatedKeys[pos]);
 }
 
 bool VEngine::UserInput::isMouseButtonPressed(InputMouse mouseButton) const
@@ -89,17 +89,28 @@ void VEngine::UserInput::onKey(InputKey key, InputAction action)
 		listener->onKey(key, action);
 	}
 
+	const auto keyIndex = static_cast<size_t>(key);
+
 	switch (action)
 	{
 	case InputAction::RELEASE:
-		m_pressedKeys.set(static_cast<size_t>(key), false);
-		m_repeatedKeys.set(static_cast<size_t>(key), false);
+		if (keyIndex < m_pressedKeys.size() && keyIndex < m_repeatedKeys.size())
+		{
+			m_pressedKeys.set(static_cast<size_t>(key), false);
+			m_repeatedKeys.set(static_cast<size_t>(key), false);
+		}
 		break;
 	case InputAction::PRESS:
-		m_pressedKeys.set(static_cast<size_t>(key), true);
+		if (keyIndex < m_pressedKeys.size())
+		{
+			m_pressedKeys.set(static_cast<size_t>(key), true);
+		}
 		break;
 	case InputAction::REPEAT:
-		m_repeatedKeys.set(static_cast<size_t>(key), true);
+		if (keyIndex < m_repeatedKeys.size())
+		{
+			m_repeatedKeys.set(static_cast<size_t>(key), true);
+		}
 		break;
 	default:
 		break;
