@@ -912,15 +912,15 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
 
 
-	// generate mip pyramid of previous lighting image
-	GenerateMipMapsPass::Data generateMipMapsPassData;
-	generateMipMapsPassData.m_passRecordContext = &passRecordContext;
-	generateMipMapsPassData.m_width = m_width;
-	generateMipMapsPassData.m_height = m_height;
-	generateMipMapsPassData.m_mipCount = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(m_width, m_height)))));
-	generateMipMapsPassData.m_imageHandle = prevLightImageHandle;
-
-	GenerateMipMapsPass::addToGraph(graph, generateMipMapsPassData);
+	//// generate mip pyramid of previous lighting image
+	//GenerateMipMapsPass::Data generateMipMapsPassData;
+	//generateMipMapsPassData.m_passRecordContext = &passRecordContext;
+	//generateMipMapsPassData.m_width = m_width;
+	//generateMipMapsPassData.m_height = m_height;
+	//generateMipMapsPassData.m_mipCount = 1 + static_cast<uint32_t>(glm::floor(glm::log2(float(glm::max(m_width, m_height)))));
+	//generateMipMapsPassData.m_imageHandle = prevLightImageHandle;
+	//
+	//GenerateMipMapsPass::addToGraph(graph, generateMipMapsPassData);
 
 
 	//// Hi-Z closest depth pyramid
