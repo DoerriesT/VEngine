@@ -24,7 +24,7 @@ float V_SmithGGXCorrelated(float NdotV, float NdotL, float a2)
 	float lambdaGGXV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
 	float lambdaGGXL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
 	
-	return 0.5 / (lambdaGGXV + lambdaGGXL + 1e-5); // avoids artifacs on some normal mapped surfaces
+	return 0.5 / (lambdaGGXV + lambdaGGXL);
 }
 
 // https://google.github.io/filament/Filament.html#materialsystem/specularbrdf/fresnel(specularf)
