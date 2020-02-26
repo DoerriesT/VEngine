@@ -34,5 +34,5 @@ namespace VEngine
 	GlobalVar<float> g_ExposureMax = 100.0f;
 	GlobalVar<bool> g_ExposureFixed = false;
 	GlobalVar<float> g_ExposureFixedValue = 2.0f;
-	GlobalConst<bool> g_vulkanDebugCallBackEnabled = true;
+	GlobalConst<bool> g_vulkanDebugCallBackEnabled = false;
 }
