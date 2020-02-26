@@ -48,45 +48,6 @@ public:
 		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
 
-		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
-		entt::entity giHouseEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(giHouseEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		entityRegistry.assign<VEngine::MeshComponent>(giHouseEntity, scene.m_meshInstances["Resources/Models/gihouse"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(giHouseEntity);
-
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
-		entt::entity quadEntity = entityRegistry.create();
-		auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		quadTc.m_scale = 60.0f;
-		entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);*/
-		
-
-		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
-		entt::entity exteriorEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
-
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
-		entt::entity interiorEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		entityRegistry.assign<VEngine::MeshComponent>(interiorEntity, scene.m_meshInstances["Resources/Models/bistro_i"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(interiorEntity);
-
-		scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
-		entt::entity quadEntity = entityRegistry.create();
-		auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		quadTc.m_scale = 60.0f;
-		entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);*/
-
-		//scene.load(m_engine->getRenderSystem(), "Resources/Models/mori_knob");
-		//entt::entity knobEntity = entityRegistry.create();
-		//entityRegistry.assign<VEngine::TransformationComponent>(knobEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
-		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
-
 		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
 		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
@@ -99,20 +60,6 @@ public:
 		dlc.m_normalOffsetBias[2] = 2.0f;
 		dlc.m_normalOffsetBias[3] = 2.0f;
 		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
-
-		//std::default_random_engine e;
-		//std::uniform_real_distribution<float> px(-14.0f, 14.0f);
-		//std::uniform_real_distribution<float> py(0.0f, 10.0f);
-		//std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
-		//std::uniform_real_distribution<float> c(0.0f, 1.0f);
-		//
-		//for (size_t i = 0; i < 0; ++i)
-		//{
-		//	entt::entity lightEntity = entityRegistry.create();
-		//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-		//	entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 100.0f, 1.0f);
-		//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-		//}
 	}
 
 	void update(float timeDelta) override
