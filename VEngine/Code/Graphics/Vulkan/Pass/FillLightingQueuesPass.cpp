@@ -24,7 +24,7 @@ void VEngine::FillLightingQueuesPass::addToGraph(RenderGraph &graph, const Data 
 		{ ResourceViewHandle(data.m_hizImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 	};
 
-	graph.addPass("Fill Lighting Queues", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Fill Lighting Queue", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			vkCmdFillBuffer(cmdBuf, data.m_culledBufferInfo.buffer, 0, 4, 0);
 			VkMemoryBarrier barrier{ VK_STRUCTURE_TYPE_MEMORY_BARRIER };

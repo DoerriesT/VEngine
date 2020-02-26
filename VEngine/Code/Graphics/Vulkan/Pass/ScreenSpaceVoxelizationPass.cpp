@@ -31,7 +31,7 @@ void VEngine::ScreenSpaceVoxelizationPass::addToGraph(RenderGraph &graph, const 
 		{ ResourceViewHandle(data.m_irradianceVolumeDepthImageHandle), ResourceState::READ_TEXTURE_COMPUTE_SHADER },
 	};
 
-	graph.addPass("Screen Space Voxelization 2", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
+	graph.addPass("Screen Space Voxelization", QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](VkCommandBuffer cmdBuf, const Registry &registry)
 		{
 			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
