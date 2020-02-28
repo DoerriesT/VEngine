@@ -222,7 +222,7 @@ void main()
 	lightingParams.V = -normalize(viewSpacePosition.xyz);
 	lightingParams.viewSpacePosition = viewSpacePosition.xyz;
 	
-	vec3 result = vec3(0.0);
+	vec3 result = 1.0 * lightingParams.albedo;
 	
 	// directional lights
 	for (uint i = 0; i < cDirectionalLightCount; ++i)

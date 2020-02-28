@@ -26,8 +26,6 @@ namespace VEngine
 	struct SubMesh;
 	struct BVHNode;
 	struct Triangle;
-	class DiffuseGIProbesModule;
-	class SparseVoxelBricksModule;
 	class GTAOModule;
 	class SSRModule;
 
@@ -63,8 +61,6 @@ namespace VEngine
 		std::unique_ptr<VKMeshManager> m_meshManager;
 		std::unique_ptr<SwapChainVK> m_swapChain;
 		std::unique_ptr<RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
-		std::unique_ptr<DiffuseGIProbesModule> m_diffuseGIProbesModule;
-		std::unique_ptr<SparseVoxelBricksModule> m_sparseVoxelBricksModule;
 		std::unique_ptr<GTAOModule> m_gtaoModule;
 		std::unique_ptr<SSRModule> m_ssrModule;
 

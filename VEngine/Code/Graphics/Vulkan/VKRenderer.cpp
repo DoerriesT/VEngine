@@ -30,14 +30,10 @@
 #include "Pass/BuildIndexBufferPass.h"
 #include "Pass/RayTraceTestPass.h"
 #include "Pass/SharpenFfxCasPass.h"
-#include "Pass/IndirectDiffusePass.h"
-#include "Pass/IndirectLightPass.h"
 #include "Pass/TAAPass.h"
 #include "Pass/GenerateMipMapsPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
-#include "Module/SparseVoxelBricksModule.h"
-#include "Module/DiffuseGIProbesModule.h"
 #include "Module/BloomModule.h"
 #include "VKPipelineCache.h"
 #include "VKDescriptorSetCache.h"
@@ -87,8 +83,6 @@ VEngine::VKRenderer::VKRenderer(uint32_t width, uint32_t height, void *windowHan
 
 	m_gtaoModule = std::make_unique<GTAOModule>(m_width, m_height);
 	m_ssrModule = std::make_unique<SSRModule>(m_width, m_height);
-	m_sparseVoxelBricksModule = std::make_unique<SparseVoxelBricksModule>();
-	m_diffuseGIProbesModule = std::make_unique<DiffuseGIProbesModule>();
 }
 
 VEngine::VKRenderer::~VKRenderer()
@@ -155,18 +149,11 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//	g_context.m_allocator.unmapMemory(buffer.getAllocation());
 	//}
 
-	m_sparseVoxelBricksModule->readBackAllocatedBrickCount(commonData.m_curResIdx);
-	g_allocatedBricks = m_sparseVoxelBricksModule->getAllocatedBrickCount();
-	m_diffuseGIProbesModule->readBackCulledProbesCount(commonData.m_curResIdx);
-	m_opaqueDraws = m_diffuseGIProbesModule->getCulledProbeCount();
-
 	// get timing data
 	graph.getTimingInfo(&m_passTimingCount, &m_passTimingData);
 
 
 	// import resources into graph
-	m_sparseVoxelBricksModule->updateResourceHandles(graph);
-	m_diffuseGIProbesModule->updateResourceHandles(graph);
 
 	ImageViewHandle depthImageViewHandle = 0;
 	{
@@ -837,45 +824,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
 
-
-	// update voxel representation of scene
-	SparseVoxelBricksModule::Data sparseVoxelBricksModuleData;
-	sparseVoxelBricksModuleData.m_passRecordContext = &passRecordContext;
-	sparseVoxelBricksModuleData.m_enableVoxelization = g_voxelizeOnDemand; // set to true to let system revoxelize when required
-	sparseVoxelBricksModuleData.m_forceVoxelization = commonData.m_frame == 0 || g_forceVoxelization; // forces voxelization no matter if required or not
-	sparseVoxelBricksModuleData.m_instanceDataCount = renderData.m_allInstanceDataCount;
-	sparseVoxelBricksModuleData.m_instanceData = renderData.m_allInstanceData;
-	sparseVoxelBricksModuleData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-	sparseVoxelBricksModuleData.m_transformDataBufferInfo = transformDataBufferInfo;
-	sparseVoxelBricksModuleData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	sparseVoxelBricksModuleData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	sparseVoxelBricksModuleData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	sparseVoxelBricksModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	sparseVoxelBricksModuleData.m_irradianceVolumeImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeImageViewHandle();
-	sparseVoxelBricksModuleData.m_irradianceVolumeDepthImageViewHandle = m_diffuseGIProbesModule->getIrradianceVolumeDepthImageViewHandle();
-	sparseVoxelBricksModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	sparseVoxelBricksModuleData.m_uvImageViewHandle = uvImageViewHandle;
-	sparseVoxelBricksModuleData.m_ddxyLengthImageViewHandle = ddxyLengthImageViewHandle;
-	sparseVoxelBricksModuleData.m_ddxyRotMaterialIdImageViewHandle = ddxyRotMaterialIdImageViewHandle;
-	sparseVoxelBricksModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
-	sparseVoxelBricksModuleData.m_deferredShadowsImageViewHandle = deferredShadowsImageViewHandle;
-	sparseVoxelBricksModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
-	sparseVoxelBricksModuleData.m_pointLightBitMaskBufferViewHandle = pointLightBitMaskBufferViewHandle;
-
-	m_sparseVoxelBricksModule->addVoxelizationToGraph(graph, sparseVoxelBricksModuleData);
-
-
-	// update diffuse GI probes
-	DiffuseGIProbesModule::Data diffuseGIProbesModuleData;
-	diffuseGIProbesModuleData.m_passRecordContext = &passRecordContext;
-	diffuseGIProbesModuleData.m_depthPyramidImageViewHandle = depthPyramidImageViewHandle;
-	diffuseGIProbesModuleData.m_brickPointerImageViewHandle = m_sparseVoxelBricksModule->getBrickPointerImageViewHandle();
-	diffuseGIProbesModuleData.m_binVisBricksImageViewHandle = m_sparseVoxelBricksModule->getBinVisImageViewHandle();
-	diffuseGIProbesModuleData.m_colorBricksImageViewHandle = m_sparseVoxelBricksModule->getColorImageViewHandle();
-
-	m_diffuseGIProbesModule->addProbeUpdateToGraph(graph, diffuseGIProbesModuleData);
-
-
 	// light gbuffer
 	LightingPass::Data lightingPassData;
 	lightingPassData.m_passRecordContext = &passRecordContext;
@@ -895,21 +843,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	lightingPassData.m_normalImageHandle = normalImageViewHandle;
 
 	LightingPass::addToGraph(graph, lightingPassData);
-
-
-	// indirect diffuse
-	IndirectDiffusePass::Data indirectDiffusePassData;
-	indirectDiffusePassData.m_passRecordContext = &passRecordContext;
-	indirectDiffusePassData.m_ssao = g_ssaoEnabled;
-	indirectDiffusePassData.m_irradianceVolumeImageHandle = m_diffuseGIProbesModule->getIrradianceVolumeImageViewHandle();
-	indirectDiffusePassData.m_irradianceVolumeDepthImageHandle = m_diffuseGIProbesModule->getIrradianceVolumeDepthImageViewHandle();
-	indirectDiffusePassData.m_depthImageHandle = depthImageViewHandle;
-	//indirectDiffusePassData.m_albedoImageHandle = albedoImageViewHandle;
-	indirectDiffusePassData.m_normalImageHandle = normalImageViewHandle;
-	indirectDiffusePassData.m_occlusionImageHandle = m_gtaoModule->getAOResultImageViewHandle();
-	indirectDiffusePassData.m_resultImageHandle = indirectDiffuseImageViewHandle;
-
-	IndirectDiffusePass::addToGraph(graph, indirectDiffusePassData);
 
 
 	//// generate mip pyramid of previous lighting image
@@ -949,41 +882,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	//m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
-	// apply indirect light
-	IndirectLightPass::Data indirectLightPassData;
-	indirectLightPassData.m_passRecordContext = &passRecordContext;
-	indirectLightPassData.m_depthImageHandle = depthImageViewHandle;
-	indirectLightPassData.m_albedoImageHandle = albedoImageViewHandle;
-	indirectLightPassData.m_normalImageHandle = normalImageViewHandle;
-	indirectLightPassData.m_indirectDiffuseImageHandle = indirectDiffuseImageViewHandle;
-	indirectLightPassData.m_indirectSpecularImageHandle = indirectSpecularImageViewHandle;
-	indirectLightPassData.m_brdfImageHandle = brdfLUTImageViewHandle;
-	indirectLightPassData.m_resultImageHandle = lightImageViewHandle;
-
-	IndirectLightPass::addToGraph(graph, indirectLightPassData);
-
-
-	// voxel debug visualization
-	if (g_giVoxelDebugMode == 2)
-	{
-		m_sparseVoxelBricksModule->addDebugVisualizationToGraph(graph, { &passRecordContext, lightImageViewHandle });
-	}
-
-
-	// irradiance volume debug visualization
-	if (g_giVoxelDebugMode == 1)
-	{
-		DiffuseGIProbesModule::DebugVisualizationData data;
-		data.m_passRecordContext = &passRecordContext;
-		data.m_cascadeIndex = g_debugVoxelCascadeIndex;
-		data.m_showAge = false;//g_giVoxelDebugMode == 4;
-		data.m_colorImageViewHandle = lightImageViewHandle;
-		data.m_depthImageViewHandle = depthImageViewHandle;
-
-		m_diffuseGIProbesModule->addDebugVisualizationToGraph(graph, data);
-	}
-
-
 	// raytrace test
 	RayTraceTestPass::Data rayTraceTestPassData;
 	rayTraceTestPassData.m_passRecordContext = &passRecordContext;
@@ -1020,10 +918,6 @@ void VEngine::VKRenderer::render(const CommonRenderData &commonData, const Rende
 	luminanceHistogramReadBackCopyPassData.m_dstBuffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_curResIdx].getBuffer();
 
 	ReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
-
-
-	// read back allocated brick count to host buffer
-	m_sparseVoxelBricksModule->addAllocatedBrickCountReadBackCopyToGraph(graph, &passRecordContext);
 
 
 	// get swapchain image

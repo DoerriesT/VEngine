@@ -19,7 +19,6 @@
 #include <Graphics/Camera/Camera.h>
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
-#include <Graphics/Vulkan/Module/DiffuseGIProbesModule.h>
 
 uint32_t g_dirLightEntity;
 uint32_t g_debugVoxelCascadeIndex = 0;
@@ -117,38 +116,6 @@ public:
 
 	void update(float timeDelta) override
 	{
-		ImGui::Begin("VEngine");
-		
-		ImGui::Text("Allocated Voxel Bricks: %d (%6.2f %%)", g_allocatedBricks, float(g_allocatedBricks) / (1024.0f * 64.0f) * 100.0f);
-
-		ImGui::Checkbox("Force Voxelization", &g_forceVoxelization);
-		ImGui::Checkbox("Voxelize when required", &g_voxelizeOnDemand);
-
-		int debugMode = g_giVoxelDebugMode;
-		ImGui::RadioButton("None", &debugMode, 0); ImGui::SameLine();
-		ImGui::RadioButton("Irradiance Volume", &debugMode, 1); ImGui::SameLine();
-		ImGui::RadioButton("Bricks", &debugMode, 2);
-		g_giVoxelDebugMode = debugMode;
-		int cascadeIdx = g_debugVoxelCascadeIndex;
-		ImGui::RadioButton("Cascade 0", &cascadeIdx, 0); ImGui::SameLine();
-		ImGui::RadioButton("Cascade 1", &cascadeIdx, 1); ImGui::SameLine();
-		ImGui::RadioButton("Cascade 2", &cascadeIdx, 2);
-		g_debugVoxelCascadeIndex = cascadeIdx;
-
-		ImGui::NewLine();
-		ImGui::Text("Probe Occlusion Culling");
-		ImGui::Separator();
-		{
-			uint32_t draws = 0;
-			uint32_t totalDraws = 1;
-			m_engine->getRenderSystem().getOcclusionCullingStats(draws, totalDraws);
-			const uint32_t totalProbes = VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_WIDTH * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_HEIGHT * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_DEPTH * VEngine::DiffuseGIProbesModule::IRRADIANCE_VOLUME_CASCADES;
-			ImGui::Text("Total Probes: %4u | Culled Probes: %4u (%6.2f %%)", totalProbes, draws, float(draws) / totalProbes * 100.0f);
-			//ImGui::Text("Draws: %4u | Culled Draws: %4u (%6.2f %%) | Total Draws %4u", draws, totalDraws - draws, float(totalDraws - draws) / totalDraws * 100.0f, totalDraws);
-		}
-
-		ImGui::End();
-
 		auto &entityRegistry = m_engine->getEntityRegistry();
 		
 		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();

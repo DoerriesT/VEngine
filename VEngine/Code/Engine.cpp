@@ -12,7 +12,6 @@
 #include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Editor/Editor.h"
-#include "Graphics/Vulkan/Module/DiffuseGIProbesModule.h"
 
 float g_ssrBias = 0.0f;
 
