@@ -40,6 +40,12 @@
     <Filter Include="Code\Graphics\Vulkan\Pass">
       <UniqueIdentifier>{8edcf285-d58c-49bf-822b-af9732ebd00f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\gal">
+      <UniqueIdentifier>{a8af73be-c547-472d-bb63-382abd12e1a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\gal\vulkan">
+      <UniqueIdentifier>{6a41d441-828e-4727-9ce2-3cf01dc55c9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -354,6 +360,81 @@
     <ClInclude Include="Code\Graphics\Vulkan\Pass\VelocityInitializationPass.h">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\GraphicsDevice.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\CommandList.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\SwapChain.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\GraphicsDeviceVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Pipeline.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\QueryPool.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Common.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\PipelineVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\CommandListVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\QueryPoolVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\UtilityVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\RenderPassCacheVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\RenderPassDescriptionVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Resource.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Queue.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\QueueVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\CommandListPool.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\CommandListPoolVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\ResourceVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Semaphore.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\SemaphoreVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\DescriptorSet.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\DescriptorSetVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\SwapChainVk2.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -592,6 +673,48 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Vulkan\Pass\VelocityInitializationPass.cpp">
       <Filter>Code\Graphics\Vulkan\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\GraphicsDeviceVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\PipelineVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\CommandListVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\QueryPoolVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\UtilityVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\RenderPassCacheVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\QueueVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\CommandListPoolVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\ResourceVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\SemaphoreVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\DescriptorSetVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\SwapChainVk2.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\GraphicsDevice.cpp">
+      <Filter>Code\Graphics\gal</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -4,6 +4,12 @@
 
 namespace VEngine
 {
+	template<size_t Size>
+	struct ByteArray
+	{
+		char m_data[Size];
+	};
+
 	template<typename T, size_t Count>
 	class StaticObjectPool
 	{
