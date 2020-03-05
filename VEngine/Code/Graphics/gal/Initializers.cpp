@@ -28,6 +28,13 @@ VEngine::gal::GraphicsPipelineBuilder::GraphicsPipelineBuilder(GraphicsPipelineC
 	:m_createInfo(createInfo)
 {
 	memset(&m_createInfo, 0, sizeof(m_createInfo));
+	m_createInfo.m_viewportState.m_viewportCount = 1;
+	m_createInfo.m_viewportState.m_viewports[0] = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f };
+	m_createInfo.m_viewportState.m_scissors[0] = { {0, 0}, {1, 1} };
+	m_createInfo.m_inputAssemblyState.m_primitiveTopology = PrimitiveTopology::TRIANGLE_LIST;
+	m_createInfo.m_multiSampleState.m_rasterizationSamples = SampleCount::_1;
+	m_createInfo.m_multiSampleState.m_sampleMask = 0xFFFFFFFF;
+	m_createInfo.m_rasterizationState.m_lineWidth = 1.0f;
 }
 
 void VEngine::gal::GraphicsPipelineBuilder::setVertexShader(const char *path)

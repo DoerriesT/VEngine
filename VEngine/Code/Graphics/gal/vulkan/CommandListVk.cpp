@@ -86,7 +86,7 @@ void VEngine::gal::CommandListVk::setStencilReference(StencilFaceFlags faceMask,
 	vkCmdSetStencilReference(m_commandBuffer, faceMask, reference);
 }
 
-void VEngine::gal::CommandListVk::bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets)
+void VEngine::gal::CommandListVk::bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet *const *sets)
 {
 	const auto *pipelineVk = dynamic_cast<const GraphicsPipelineVk *>(pipeline);
 	assert(pipelineVk);
@@ -106,7 +106,7 @@ void VEngine::gal::CommandListVk::bindDescriptorSets(const GraphicsPipeline *pip
 	}
 }
 
-void VEngine::gal::CommandListVk::bindDescriptorSets(const ComputePipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets)
+void VEngine::gal::CommandListVk::bindDescriptorSets(const ComputePipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet *const *sets)
 {
 	const auto *pipelineVk = dynamic_cast<const ComputePipelineVk *>(pipeline);
 	assert(pipelineVk);
@@ -131,10 +131,10 @@ void VEngine::gal::CommandListVk::bindIndexBuffer(const Buffer *buffer, uint64_t
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(buffer);
 	assert(bufferVk);
 
-	vkCmdBindIndexBuffer(m_commandBuffer, (VkBuffer)bufferVk->getNativeHandle(), bufferVk->getOffset(), static_cast<VkIndexType>(indexType));
+	vkCmdBindIndexBuffer(m_commandBuffer, (VkBuffer)bufferVk->getNativeHandle(), offset, static_cast<VkIndexType>(indexType));
 }
 
-void VEngine::gal::CommandListVk::bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer **buffers, uint64_t *offsets)
+void VEngine::gal::CommandListVk::bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer *const *buffers, uint64_t *offsets)
 {
 	constexpr uint32_t batchSize = 8;
 	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;
@@ -222,7 +222,6 @@ void VEngine::gal::CommandListVk::copyBufferToImage(const Buffer *srcBuffer, con
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(srcBuffer);
 	assert(bufferVk);
 
-	const uint64_t srcBufferOffset = bufferVk->getOffset();
 	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(dstImage->getDescription().m_format));
 	const uint32_t iterations = (regionCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
@@ -234,7 +233,7 @@ void VEngine::gal::CommandListVk::copyBufferToImage(const Buffer *srcBuffer, con
 			const auto &region = regions[i * batchSize + j];
 			regionsVk[j] =
 			{
-				srcBufferOffset + region.m_bufferOffset,
+				region.m_bufferOffset,
 				region.m_bufferRowLength,
 				region.m_bufferImageHeight,
 				{ dstAspectMask, region.m_imageMipLevel, region.m_imageBaseLayer, region.m_imageLayerCount },
@@ -251,12 +250,11 @@ void VEngine::gal::CommandListVk::copyImageToBuffer(const Image *srcImage, const
 	constexpr uint32_t batchSize = 16;
 	const VkImage srcImageVk = (VkImage)srcImage->getNativeHandle();
 	const VkBuffer dstBufferVk = (VkBuffer)dstBuffer->getNativeHandle();
-	
+
 
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(dstBuffer);
 	assert(bufferVk);
 
-	const uint64_t dstBufferOffset = bufferVk->getOffset();
 	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(srcImage->getDescription().m_format));
 	const uint32_t iterations = (regionCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
@@ -268,7 +266,7 @@ void VEngine::gal::CommandListVk::copyImageToBuffer(const Image *srcImage, const
 			const auto &region = regions[i * batchSize + j];
 			regionsVk[j] =
 			{
-				dstBufferOffset + region.m_bufferOffset,
+				region.m_bufferOffset,
 				region.m_bufferRowLength,
 				region.m_bufferImageHeight,
 				{ dstAspectMask, region.m_imageMipLevel, region.m_imageBaseLayer, region.m_imageLayerCount },
@@ -282,6 +280,7 @@ void VEngine::gal::CommandListVk::copyImageToBuffer(const Image *srcImage, const
 
 void VEngine::gal::CommandListVk::updateBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t dataSize, const void *data)
 {
+	
 	vkCmdUpdateBuffer(m_commandBuffer, (VkBuffer)dstBuffer->getNativeHandle(), dstOffset, dataSize, data);
 }
 
@@ -338,11 +337,11 @@ void VEngine::gal::CommandListVk::clearAttachments(uint32_t attachmentCount, con
 		for (uint32_t j = 0; j < attachmentCountVk; ++j)
 		{
 			const auto &attachment = attachments[i * batchSize + j];
-			attachmentsVk[j] = 
-			{ 
-				static_cast<VkImageAspectFlags>(attachment.m_colorAttachment == 0xFFFFFFFF ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT),  
-				attachment.m_colorAttachment, 
-				*reinterpret_cast<const VkClearValue*>(&attachment.m_clearValue) 
+			attachmentsVk[j] =
+			{
+				static_cast<VkImageAspectFlags>(attachment.m_colorAttachment == 0xFFFFFFFF ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT),
+				attachment.m_colorAttachment,
+				*reinterpret_cast<const VkClearValue *>(&attachment.m_clearValue)
 			};
 		}
 		vkCmdClearAttachments(m_commandBuffer, attachmentCount, attachmentsVk, rectCount, reinterpret_cast<const VkClearRect *>(rects));
@@ -539,9 +538,9 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	VkImageView attachmentViews[9] = {};
 	RenderPassDescriptionVk::ColorAttachmentDescriptionVk colorAttachmentDescsVk[8] = {};
 	RenderPassDescriptionVk::DepthStencilAttachmentDescriptionVk depthStencilAttachmentDescVk = {};
-	
+
 	uint32_t attachmentCount = 0;
-	
+
 	auto translateLoadOp = [](AttachmentLoadOp loadOp)
 	{
 		switch (loadOp)
@@ -599,7 +598,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 
 		attachmentViews[attachmentCount] = (VkImageView)attachment.m_imageView->getNativeHandle();
 		clearValues[attachmentCount].depthStencil = *reinterpret_cast<const VkClearDepthStencilValue *>(&attachment.m_clearValue);
-		
+
 		auto &imageDesc = image->getDescription();
 
 		auto &attachmentDesc = depthStencilAttachmentDescVk;

@@ -1015,10 +1015,10 @@ namespace VEngine
 			virtual void setStencilCompareMask(StencilFaceFlags faceMask, uint32_t compareMask) = 0;
 			virtual void setStencilWriteMask(StencilFaceFlags faceMask, uint32_t writeMask) = 0;
 			virtual void setStencilReference(StencilFaceFlags faceMask, uint32_t reference) = 0;
-			virtual void bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets) = 0;
-			virtual void bindDescriptorSets(const ComputePipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets) = 0;
+			virtual void bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet *const *sets) = 0;
+			virtual void bindDescriptorSets(const ComputePipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet *const *sets) = 0;
 			virtual void bindIndexBuffer(const Buffer *buffer, uint64_t offset, IndexType indexType) = 0;
-			virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer **buffers, uint64_t *offsets) = 0;
+			virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer *const *buffers, uint64_t *offsets) = 0;
 			virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) = 0;
 			virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) = 0;
 			virtual void drawIndirect(const Buffer *buffer, uint64_t offset, uint32_t drawCount, uint32_t stride) = 0;

@@ -1,6 +1,9 @@
 #include "GALTestRenderer.h"
 #include "gal/GraphicsAbstractionLayer.h"
 #include "gal/Initializers.h"
+#include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
+#include <cstring>
 
 using namespace VEngine::gal;
 
@@ -26,35 +29,70 @@ VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void 
 	m_graphicsDevice->createSemaphore(0, &m_semaphore);
 
 
-	//PipelineColorBlendAttachmentState colorBlendAttachments[]
-	//{
-	//	GraphicsPipelineBuilder::s_defaultBlendAttachment,
-	//};
-	//
-	//DynamicState dynamicState[] = { DynamicState::VIEWPORT, DynamicState::SCISSOR };
-	//
-	//GraphicsPipelineCreateInfo pipelineCreateInfo;
-	//GraphicsPipelineBuilder pipelineBuilder(pipelineCreateInfo);
-	//pipelineBuilder.setVertexShader("Resources/Shaders/galTest_vert.spv");
-	//pipelineBuilder.setFragmentShader("Resources/Shaders/galTest_frag.spv");
-	//pipelineBuilder.setPolygonModeCullMode(PolygonMode::FILL, (CullModeFlags)CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
-	//pipelineBuilder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);
-	//pipelineBuilder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
-	//pipelineBuilder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
-	//pipelineBuilder.setColorAttachmentFormat(m_swapChain->getImageFormat());
+	PipelineColorBlendAttachmentState colorBlendAttachments[]
+	{
+		GraphicsPipelineBuilder::s_defaultBlendAttachment,
+	};
+
+	DynamicState dynamicState[] = { DynamicState::VIEWPORT, DynamicState::SCISSOR };
+
+	GraphicsPipelineCreateInfo pipelineCreateInfo;
+	GraphicsPipelineBuilder pipelineBuilder(pipelineCreateInfo);
+	pipelineBuilder.setVertexShader("Resources/Shaders/galTest_vert.spv");
+	pipelineBuilder.setFragmentShader("Resources/Shaders/galTest_frag.spv");
+	VertexInputAttributeDescription attributeDescs[] = { {0, 0, Format::R32G32_SFLOAT, 0}, {1, 0, Format::R32G32B32_SFLOAT, sizeof(glm::vec2)} };
+	pipelineBuilder.setVertexAttributeDescriptions(2, attributeDescs);
+	pipelineBuilder.setVertexBindingDescription({ 0, sizeof(glm::vec3) + sizeof(glm::vec2), VertexInputRate::VERTEX });
+	pipelineBuilder.setPolygonModeCullMode(PolygonMode::FILL, (CullModeFlags)CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
+	pipelineBuilder.setDepthTest(false, false, CompareOp::GREATER_OR_EQUAL);
+	pipelineBuilder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
+	pipelineBuilder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+	pipelineBuilder.setColorAttachmentFormat(m_swapChain->getImageFormat());
 	//pipelineBuilder.setDepthStencilAttachmentFormat(Format::D32_SFLOAT);
-	//
-	//m_graphicsDevice->createGraphicsPipelines(1, &pipelineCreateInfo, &m_pipeline);
+
+	m_graphicsDevice->createGraphicsPipelines(1, &pipelineCreateInfo, &m_pipeline);
 
 	m_graphicsDevice->createCommandListPool(m_queue, &m_cmdListPools[0]);
 	m_graphicsDevice->createCommandListPool(m_queue, &m_cmdListPools[1]);
 	m_cmdListPools[0]->allocate(1, &m_cmdLists[0]);
 	m_cmdListPools[1]->allocate(1, &m_cmdLists[1]);
+
+
+	struct Vertex
+	{
+		glm::vec2 position;
+		glm::vec3 color;
+	};
+	Vertex vertices[] =
+	{
+		{glm::vec2(0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f)},
+		{glm::vec2(-1.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+		{glm::vec2(1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f)},
+	};
+	uint16_t indices[] = { 0, 1, 2 };
+
+	BufferCreateInfo vertexBufferCreateInfo{ sizeof(vertices), 0, (uint32_t)BufferUsageFlagBits::VERTEX_BUFFER_BIT | (uint32_t)BufferUsageFlagBits::TRANSFER_DST_BIT };
+	m_graphicsDevice->createBuffer(vertexBufferCreateInfo, (uint32_t)MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_vertexBuffer);
+
+	BufferCreateInfo indexBufferCreateInfo{ sizeof(indices), 0, (uint32_t)BufferUsageFlagBits::INDEX_BUFFER_BIT | (uint32_t)BufferUsageFlagBits::TRANSFER_DST_BIT };
+	m_graphicsDevice->createBuffer(indexBufferCreateInfo, (uint32_t)MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_indexBuffer);
+
+	void *data;
+	m_vertexBuffer->map(&data);
+	memcpy(data, vertices, sizeof(vertices));
+	m_vertexBuffer->unmap();
+
+	m_indexBuffer->map(&data);
+	memcpy(data, indices, sizeof(indices));
+	m_indexBuffer->unmap();
 }
 
 VEngine::GALTestRenderer::~GALTestRenderer()
 {
 	m_graphicsDevice->waitIdle();
+	m_graphicsDevice->destroyGraphicsPipeline(m_pipeline);
+	m_graphicsDevice->destroyBuffer(m_vertexBuffer);
+	m_graphicsDevice->destroyBuffer(m_indexBuffer);
 	m_graphicsDevice->destroyImageView(m_imageViews[0]);
 	m_graphicsDevice->destroyImageView(m_imageViews[1]);
 	m_graphicsDevice->destroyCommandListPool(m_cmdListPools[0]);
@@ -71,7 +109,7 @@ void VEngine::GALTestRenderer::render()
 
 	// wait for frame - 2 to complete
 	m_semaphore->wait(m_frameSemaphoreValues[resIdx]);
-	
+
 	m_graphicsDevice->beginFrame();
 
 	// acquire swapchain image
@@ -99,11 +137,23 @@ void VEngine::GALTestRenderer::render()
 			ResourceState::UNDEFINED,
 			ResourceState::WRITE_ATTACHMENT);
 		cmdList->barrier(1, &barrier0);
-		
+
 		ColorAttachmentDescription colorAttachmentDesc = { m_imageViews[resIdx], AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {0.2f, 0.5f, 1.0f} };
 		cmdList->beginRenderPass(1, &colorAttachmentDesc, nullptr, { {}, {m_width, m_height} });
 		{
 			// render stuff
+			cmdList->bindPipeline(m_pipeline);
+
+			Viewport viewport = {0.0f, 0.0f, m_width, m_height, 0.0f, 1.0f};
+			Rect scissor = { {}, {m_width, m_height} };
+			cmdList->setViewport(0, 1, &viewport);
+			cmdList->setScissor(0, 1, &scissor);
+
+			uint64_t vertexBufferOffset = 0;
+			cmdList->bindVertexBuffers(0, 1, &m_vertexBuffer, &vertexBufferOffset);
+			cmdList->bindIndexBuffer(m_indexBuffer, 0, IndexType::UINT_16);
+
+			cmdList->drawIndexed(3, 1, 0, 0, 0);
 		}
 		cmdList->endRenderPass();
 
