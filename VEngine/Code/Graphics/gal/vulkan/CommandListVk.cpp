@@ -454,8 +454,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 				imageBarrier.dstAccessMask = afterStateInfo.m_accessMask;
 				imageBarrier.oldLayout = beforeStateInfo.m_layout;
 				imageBarrier.newLayout = afterStateInfo.m_layout;
-				imageBarrier.srcQueueFamilyIndex = barrier.m_srcQueue->getFamilyIndex();
-				imageBarrier.dstQueueFamilyIndex = barrier.m_dstQueue->getFamilyIndex();
+				imageBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? barrier.m_srcQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
+				imageBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? barrier.m_dstQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
 				imageBarrier.image = (VkImage)barrier.m_image->getNativeHandle();
 				imageBarrier.subresourceRange = { imageAspectMask, subResRange.m_baseMipLevel, subResRange.m_levelCount, subResRange.m_baseArrayLayer, subResRange.m_layerCount };
 			}
@@ -465,8 +465,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 				bufferBarrier = { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
 				bufferBarrier.srcAccessMask = beforeStateInfo.m_accessMask;
 				bufferBarrier.dstAccessMask = afterStateInfo.m_accessMask;
-				bufferBarrier.srcQueueFamilyIndex = barrier.m_srcQueue->getFamilyIndex();
-				bufferBarrier.dstQueueFamilyIndex = barrier.m_dstQueue->getFamilyIndex();
+				bufferBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? barrier.m_srcQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
+				bufferBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? barrier.m_dstQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
 				bufferBarrier.buffer = (VkBuffer)barrier.m_buffer->getNativeHandle();
 				bufferBarrier.offset = 0;
 				bufferBarrier.size = VK_WHOLE_SIZE;
@@ -531,17 +531,17 @@ void VEngine::gal::CommandListVk::pushConstants(const ComputePipeline *pipeline,
 	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), stageFlags, offset, size, values);
 }
 
-void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *renderPassBeginInfo)
+void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea)
 {
-	assert(renderPassBeginInfo->m_colorAttachmentCount <= 8);
+	assert(colorAttachmentCount <= 8);
 
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VkFramebuffer framebuffer = VK_NULL_HANDLE;
 
 	VkClearValue clearValues[9] = {};
 	VkImageView attachmentViews[9] = {};
-	RenderPassDescriptionVk::ColorAttachmentDescriptionVk colorAttachments[8] = {};
-	RenderPassDescriptionVk::DepthStencilAttachmentDescriptionVk depthStencilAttachment = {};
+	RenderPassDescriptionVk::ColorAttachmentDescriptionVk colorAttachmentDescsVk[8] = {};
+	RenderPassDescriptionVk::DepthStencilAttachmentDescriptionVk depthStencilAttachmentDescVk = {};
 	
 	uint32_t attachmentCount = 0;
 	
@@ -574,9 +574,9 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 	};
 
 	// fill out color attachment info structs
-	for (uint32_t i = 0; i < renderPassBeginInfo->m_colorAttachmentCount; ++i)
+	for (uint32_t i = 0; i < colorAttachmentCount; ++i)
 	{
-		const auto &attachment = renderPassBeginInfo->m_colorAttachments[i];
+		const auto &attachment = colorAttachments[i];
 		const auto *image = attachment.m_imageView->getImage();
 
 		attachmentViews[i] = (VkImageView)attachment.m_imageView->getNativeHandle();
@@ -584,7 +584,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 
 		auto &imageDesc = image->getDescription();
 
-		auto &attachmentDesc = colorAttachments[i];
+		auto &attachmentDesc = colorAttachmentDescsVk[i];
 		attachmentDesc = {};
 		attachmentDesc.m_format = static_cast<VkFormat>(imageDesc.m_format);
 		attachmentDesc.m_samples = static_cast<VkSampleCountFlagBits>(imageDesc.m_samples);
@@ -595,9 +595,9 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 	}
 
 	// fill out depth/stencil attachment info struct
-	if (renderPassBeginInfo->m_depthStencilAttachment)
+	if (depthStencilAttachment)
 	{
-		const auto &attachment = *renderPassBeginInfo->m_depthStencilAttachment;
+		const auto &attachment = *depthStencilAttachment;
 		const auto *image = attachment.m_imageView->getImage();
 
 		attachmentViews[attachmentCount] = (VkImageView)attachment.m_imageView->getNativeHandle();
@@ -605,7 +605,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 		
 		auto &imageDesc = image->getDescription();
 
-		auto &attachmentDesc = depthStencilAttachment;
+		auto &attachmentDesc = depthStencilAttachmentDescVk;
 		attachmentDesc = {};
 		attachmentDesc.m_format = static_cast<VkFormat>(imageDesc.m_format);
 		attachmentDesc.m_samples = static_cast<VkSampleCountFlagBits>(imageDesc.m_samples);
@@ -621,10 +621,10 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 	// get renderpass
 	{
 		RenderPassDescriptionVk renderPassDescription;
-		renderPassDescription.setColorAttachments(renderPassBeginInfo->m_colorAttachmentCount, colorAttachments);
-		if (renderPassBeginInfo->m_depthStencilAttachment)
+		renderPassDescription.setColorAttachments(colorAttachmentCount, colorAttachmentDescsVk);
+		if (depthStencilAttachment)
 		{
-			renderPassDescription.setDepthStencilAttachment(depthStencilAttachment);
+			renderPassDescription.setDepthStencilAttachment(depthStencilAttachmentDescVk);
 		}
 		renderPassDescription.finalize();
 
@@ -637,8 +637,8 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 		framebufferCreateInfo.renderPass = renderPass;
 		framebufferCreateInfo.attachmentCount = attachmentCount;
 		framebufferCreateInfo.pAttachments = attachmentViews;
-		framebufferCreateInfo.width = renderPassBeginInfo->m_renderArea.m_extent.m_width;
-		framebufferCreateInfo.height = renderPassBeginInfo->m_renderArea.m_extent.m_height;
+		framebufferCreateInfo.width = renderArea.m_extent.m_width;
+		framebufferCreateInfo.height = renderArea.m_extent.m_height;
 		framebufferCreateInfo.layers = 1;
 
 		UtilityVk::checkResult(vkCreateFramebuffer(m_device->getDevice(), &framebufferCreateInfo, nullptr, &framebuffer), "Failed to create Framebuffer!");
@@ -648,7 +648,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(const RenderPassBeginInfo *ren
 	VkRenderPassBeginInfo renderPassBeginInfoVk{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 	renderPassBeginInfoVk.renderPass = renderPass;
 	renderPassBeginInfoVk.framebuffer = framebuffer;
-	renderPassBeginInfoVk.renderArea = *reinterpret_cast<const VkRect2D *>(&renderPassBeginInfo->m_renderArea);
+	renderPassBeginInfoVk.renderArea = *reinterpret_cast<const VkRect2D *>(&renderArea);
 	renderPassBeginInfoVk.clearValueCount = attachmentCount;
 	renderPassBeginInfoVk.pClearValues = clearValues;
 

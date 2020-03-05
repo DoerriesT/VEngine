@@ -7,7 +7,7 @@ namespace VEngine
 		class QueryPool
 		{
 		public:
-			virtual ~QueryPool() = 0;
+			virtual ~QueryPool() = default;
 			virtual void *getNativeHandle() const = 0;
 		};
 	}

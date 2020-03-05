@@ -16,13 +16,20 @@ namespace VEngine
 	{
 		class RenderPassCacheVk;
 		class MemoryAllocatorVk;
+		class DeletionQueueVk;
 		struct RenderPassDescriptionVk;
 
 		class GraphicsDeviceVk : public GraphicsDevice
 		{
 		public:
 			explicit GraphicsDeviceVk(void *windowHandle, bool debugLayer);
+			GraphicsDeviceVk(GraphicsDeviceVk &) = delete;
+			GraphicsDeviceVk(GraphicsDeviceVk &&) = delete;
+			GraphicsDeviceVk &operator= (const GraphicsDeviceVk &) = delete;
+			GraphicsDeviceVk &operator= (const GraphicsDeviceVk &&) = delete;
 			~GraphicsDeviceVk();
+			void beginFrame();
+			void endFrame();
 			void createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines) override;
 			void createComputePipelines(uint32_t count, const ComputePipelineCreateInfo *createInfo, ComputePipeline **pipelines) override;
 			void destroyGraphicsPipeline(GraphicsPipeline *pipeline) override;
@@ -47,6 +54,10 @@ namespace VEngine
 			void destroyDescriptorPool(DescriptorPool *descriptorPool) override;
 			void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain);
 			void destroySwapChain();
+			void waitIdle();
+			Queue *getGraphicsQueue();
+			Queue *getComputeQueue();
+			Queue *getTransferQueue();
 			VkDevice getDevice() const;
 			void addToDeletionQueue(VkFramebuffer framebuffer);
 			VkRenderPass getRenderPass(const RenderPassDescriptionVk &renderPassDescription);
@@ -67,6 +78,7 @@ namespace VEngine
 			VkDebugUtilsMessengerEXT m_debugUtilsMessenger;
 			RenderPassCacheVk *m_renderPassCache;
 			MemoryAllocatorVk *m_gpuMemoryAllocator;
+			DeletionQueueVk *m_deletionQueue;
 			SwapChainVk2 *m_swapChain;
 			DynamicObjectPool<ByteArray<sizeof(GraphicsPipelineVk)>> m_graphicsPipelineMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(ComputePipelineVk)>> m_computePipelineMemoryPool;
@@ -79,6 +91,8 @@ namespace VEngine
 			DynamicObjectPool<ByteArray<sizeof(SemaphoreVk)>> m_semaphoreMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(QueryPoolVk)>> m_queryPoolMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(DescriptorPoolVk)>> m_descriptorPoolMemoryPool;
+			uint64_t m_frameIndex;
+			bool m_debugLayers;
 		};
 	}
 }

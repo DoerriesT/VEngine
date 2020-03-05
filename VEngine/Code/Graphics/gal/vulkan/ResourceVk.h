@@ -95,7 +95,7 @@ namespace VEngine
 		private:
 			VkDevice m_device;
 			VkBufferView m_bufferView;
-			BufferVk *m_buffer;
+			const BufferVk *m_buffer;
 		};
 	}
 }

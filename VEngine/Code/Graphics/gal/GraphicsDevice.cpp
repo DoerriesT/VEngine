@@ -13,3 +13,8 @@ VEngine::gal::GraphicsDevice *VEngine::gal::GraphicsDevice::create(void *windowH
 	}
 	return nullptr;
 }
+
+void VEngine::gal::GraphicsDevice::destroy(const GraphicsDevice *device)
+{
+	delete device;
+}

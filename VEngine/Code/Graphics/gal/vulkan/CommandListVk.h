@@ -53,7 +53,7 @@ namespace VEngine
 			void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) override;
 			void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) override;
 			void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) override;
-			void beginRenderPass(const RenderPassBeginInfo *renderPassBeginInfo) override;
+			void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) override;
 			void endRenderPass() override;
 
 		private:

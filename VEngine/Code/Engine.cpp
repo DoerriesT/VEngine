@@ -12,6 +12,7 @@
 #include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Editor/Editor.h"
+#include "Graphics/GALTestRenderer.h"
 
 float g_ssrBias = 0.0f;
 
@@ -36,25 +37,25 @@ void VEngine::Engine::start()
 	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->grabMouse(grab); });
 
 	// Setup Dear ImGui context
-	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	//{
+	//	IMGUI_CHECKVERSION();
+	//	ImGui::CreateContext();
+	//	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	//	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	//
+	//	io.ConfigDockingWithShift = true;
+	//
+	//	// Setup Dear ImGui style
+	//	ImGui::StyleColorsDark();
+	//	//ImGui::StyleColorsClassic();
+	//
+	//	// Setup Platform/Renderer bindings
+	//	ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
+	//}
 
-		io.ConfigDockingWithShift = true;
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
-	}
-
-	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
+	//m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
 
 	m_window->addInputListener(m_userInput.get());
 
@@ -65,7 +66,9 @@ void VEngine::Engine::start()
 	uint64_t frameCount = 0;
 	Editor editor(this, width, height);
 	
-	m_renderSystem->setCameraEntity(editor.getEditorCameraEntity());
+	//m_renderSystem->setCameraEntity(editor.getEditorCameraEntity());
+
+	GALTestRenderer testRenderer(width, height, m_window->getWindowHandle());
 
 	while (!m_shutdown && !m_window->shouldClose())
 	{
@@ -77,23 +80,24 @@ void VEngine::Engine::start()
 		{
 			width = m_window->getWidth();
 			height = m_window->getHeight();
-			m_renderSystem->resize(width, height);
+			//m_renderSystem->resize(width, height);
 			editor.resize(width, height);
 		}
 
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
+		//ImGui_ImplGlfw_NewFrame();
+		//ImGui::NewFrame();
+		//ImGuizmo::BeginFrame();
 
 		m_userInput->input();
 		m_cameraControllerSystem->update(timeDelta);
 		m_gameLogic.update(timeDelta);
-		editor.update(timeDelta);
+		//editor.update(timeDelta);
 
 		//ImGui::ShowDemoWindow();
 
-		ImGui::Render();
-		m_renderSystem->update(timeDelta);
+		//ImGui::Render();
+		//m_renderSystem->update(timeDelta);
+		testRenderer.render();
 
 		double timeDiff = (timer.getElapsedTicks() - previousTickCount) / static_cast<double>(timer.getTickFrequency());
 		if (timeDiff > 1.0)

@@ -155,11 +155,13 @@
     <ClInclude Include="Code\GlobalVar.h" />
     <ClInclude Include="Code\Graphics\BVH.h" />
     <ClInclude Include="Code\Graphics\Camera\Camera.h" />
+    <ClInclude Include="Code\Graphics\GALTestRenderer.h" />
     <ClInclude Include="Code\Graphics\gal\CommandList.h" />
     <ClInclude Include="Code\Graphics\gal\CommandListPool.h" />
     <ClInclude Include="Code\Graphics\gal\Common.h" />
     <ClInclude Include="Code\Graphics\gal\DescriptorSet.h" />
     <ClInclude Include="Code\Graphics\gal\GraphicsDevice.h" />
+    <ClInclude Include="Code\Graphics\gal\Initializers.h" />
     <ClInclude Include="Code\Graphics\gal\Queue.h" />
     <ClInclude Include="Code\Graphics\gal\Pipeline.h" />
     <ClInclude Include="Code\Graphics\gal\QueryPool.h" />
@@ -168,6 +170,7 @@
     <ClInclude Include="Code\Graphics\gal\SwapChain.h" />
     <ClInclude Include="Code\Graphics\gal\vulkan\CommandListPoolVk.h" />
     <ClInclude Include="Code\Graphics\gal\vulkan\CommandListVk.h" />
+    <ClInclude Include="Code\Graphics\gal\vulkan\DeletionQueueVk.h" />
     <ClInclude Include="Code\Graphics\gal\vulkan\DescriptorSetVk.h" />
     <ClInclude Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.h" />
     <ClInclude Include="Code\Graphics\gal\vulkan\QueueVk.h" />
@@ -279,9 +282,12 @@
     <ClCompile Include="Code\GlobalVar.cpp" />
     <ClCompile Include="Code\Graphics\BVH.cpp" />
     <ClCompile Include="Code\Graphics\Camera\Camera.cpp" />
+    <ClCompile Include="Code\Graphics\GALTestRenderer.cpp" />
     <ClCompile Include="Code\Graphics\gal\GraphicsDevice.cpp" />
+    <ClCompile Include="Code\Graphics\gal\Initializers.cpp" />
     <ClCompile Include="Code\Graphics\gal\vulkan\CommandListPoolVk.cpp" />
     <ClCompile Include="Code\Graphics\gal\vulkan\CommandListVk.cpp" />
+    <ClCompile Include="Code\Graphics\gal\vulkan\DeletionQueueVk.cpp" />
     <ClCompile Include="Code\Graphics\gal\vulkan\DescriptorSetVk.cpp" />
     <ClCompile Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.cpp" />
     <ClCompile Include="Code\Graphics\gal\vulkan\QueueVk.cpp" />

@@ -40,15 +40,15 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 
 		for (uint32_t j = 0; j < submitInfo[i].m_waitSemaphoreCount; ++j)
 		{
-			semaphores.push_back((VkSemaphore)submitInfo[i].m_waitSemaphores[j].getNativeHandle());
-			commandBuffers.push_back((VkCommandBuffer)submitInfo[i].m_commandLists[j].getNativeHandle());
+			semaphores.push_back((VkSemaphore)submitInfo[i].m_waitSemaphores[j]->getNativeHandle());
+			commandBuffers.push_back((VkCommandBuffer)submitInfo[i].m_commandLists[j]->getNativeHandle());
 		}
 
 		size_t signalSemaphoreOffset = semaphores.size();
 
-		for (uint32_t j = 0; j < submitInfo[i].m_waitSemaphoreCount; ++j)
+		for (uint32_t j = 0; j < submitInfo[i].m_signalSemaphoreCount; ++j)
 		{
-			semaphores.push_back((VkSemaphore)submitInfo[i].m_signalSemaphores[j].getNativeHandle());
+			semaphores.push_back((VkSemaphore)submitInfo[i].m_signalSemaphores[j]->getNativeHandle());
 		}
 
 		auto &timelineSubInfo = timelineSemaphoreInfoVk[i];

@@ -157,10 +157,12 @@ VEngine::gal::ImageViewVk::ImageViewVk(VkDevice device, const ImageViewCreateInf
 	const auto *imageVk = dynamic_cast<const ImageVk *>(createInfo.m_image);
 	assert(imageVk);
 
+	m_image = imageVk;
+
 	VkImageViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfoVk.image = (VkImage)imageVk->getNativeHandle();
 	createInfoVk.viewType = static_cast<VkImageViewType>(createInfo.m_viewType);
-	createInfoVk.format = static_cast<VkFormat>(createInfo.m_format);
+	createInfoVk.format = static_cast<VkFormat>(createInfo.m_format == Format::UNDEFINED ? imageVk->getDescription().m_format : createInfo.m_format);
 	createInfoVk.components = *reinterpret_cast<const VkComponentMapping *>(&createInfo.m_components);
 	createInfoVk.subresourceRange =
 	{
@@ -196,6 +198,8 @@ VEngine::gal::BufferViewVk::BufferViewVk(VkDevice device, const BufferViewCreate
 {
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(createInfo.m_buffer);
 	assert(bufferVk);
+
+	m_buffer = bufferVk;
 
 	VkBufferViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	createInfoVk.buffer = (VkBuffer)bufferVk->getNativeHandle();

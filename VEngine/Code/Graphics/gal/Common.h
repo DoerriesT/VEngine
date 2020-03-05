@@ -90,7 +90,7 @@ namespace VEngine
 		};
 		using MemoryPropertyFlags = uint32_t;
 
-		enum class QueryType 
+		enum class QueryType
 		{
 			OCCLUSION = 0,
 			PIPELINE_STATISTICS = 1,
@@ -364,7 +364,7 @@ namespace VEngine
 		};
 		using ImageUsageFlags = uint32_t;
 
-		enum class ImageCreateFlagBits 
+		enum class ImageCreateFlagBits
 		{
 			CUBE_COMPATIBLE_BIT = 0x00000010,
 		};
@@ -679,10 +679,10 @@ namespace VEngine
 
 		struct ImageSubresourceRange
 		{
-			uint32_t m_baseMipLevel;
-			uint32_t m_levelCount;
-			uint32_t m_baseArrayLayer;
-			uint32_t m_layerCount;
+			uint32_t m_baseMipLevel = 0;
+			uint32_t m_levelCount = 1;
+			uint32_t m_baseArrayLayer = 0;
+			uint32_t m_layerCount = 1;
 		};
 
 		struct Barrier
@@ -717,14 +717,6 @@ namespace VEngine
 			AttachmentStoreOp m_stencilStoreOp;
 			ClearDepthStencilValue m_clearValue;
 			bool m_readOnly;
-		};
-
-		struct RenderPassBeginInfo
-		{
-			uint32_t m_colorAttachmentCount;
-			ColorAttachmentDescription *m_colorAttachments;
-			DepthStencilAttachmentDescription *m_depthStencilAttachment;
-			Rect m_renderArea;
 		};
 
 		struct ShaderStageCreateInfo
@@ -880,13 +872,13 @@ namespace VEngine
 		struct SubmitInfo
 		{
 			uint32_t m_waitSemaphoreCount;
-			const Semaphore *m_waitSemaphores;
+			const Semaphore *const *m_waitSemaphores;
 			const uint64_t *m_waitValues;
 			const PipelineStageFlags *m_waitDstStageMask;
 			uint32_t m_commandListCount;
-			const CommandList *m_commandLists;
+			const CommandList *const *m_commandLists;
 			uint32_t m_signalSemaphoreCount;
-			const Semaphore *m_signalSemaphores;
+			const Semaphore *const *m_signalSemaphores;
 			uint64_t *m_signalValues;
 		};
 
@@ -934,13 +926,13 @@ namespace VEngine
 		struct ImageViewCreateInfo
 		{
 			Image *m_image;
-			ImageViewType m_viewType;
-			Format m_format;
-			ComponentMapping m_components;
-			uint32_t m_baseMipLevel;
-			uint32_t m_levelCount;
-			uint32_t m_baseArrayLayer;
-			uint32_t m_layerCount;
+			ImageViewType m_viewType = gal::ImageViewType::_2D;
+			Format m_format = gal::Format::UNDEFINED;
+			ComponentMapping m_components = {};
+			uint32_t m_baseMipLevel = 0;
+			uint32_t m_levelCount = 1;
+			uint32_t m_baseArrayLayer = 0;
+			uint32_t m_layerCount = 1;
 		};
 
 		struct BufferViewCreateInfo

@@ -91,13 +91,16 @@ void VEngine::gal::SwapChainVk2::getCurrentImageIndex(uint32_t &currentImageInde
 		VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkSemaphore signalSemaphoreVk = (VkSemaphore)signalSemaphore->getNativeHandle();
 
+		uint64_t dummyValue = 0;
+
 		VkTimelineSemaphoreSubmitInfo timelineSubmitInfo{ VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO };
-		timelineSubmitInfo.waitSemaphoreValueCount = 0;
-		timelineSubmitInfo.pWaitSemaphoreValues = nullptr;
+		timelineSubmitInfo.waitSemaphoreValueCount = 1;
+		timelineSubmitInfo.pWaitSemaphoreValues = &dummyValue;
 		timelineSubmitInfo.signalSemaphoreValueCount = 1;
 		timelineSubmitInfo.pSignalSemaphoreValues = &semaphoreSignalValue;
 
-		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineSubmitInfo };
+		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		submitInfo.pNext = &timelineSubmitInfo;
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = &m_acquireSemaphores[resIdx];
 		submitInfo.pWaitDstStageMask = &waitDstStageMask;
@@ -119,11 +122,13 @@ void VEngine::gal::SwapChainVk2::present(Semaphore *waitSemaphore, uint64_t sema
 		VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkSemaphore waitSemaphoreVk = (VkSemaphore)waitSemaphore->getNativeHandle();
 
+		uint64_t dummyValue = 0;
+
 		VkTimelineSemaphoreSubmitInfo timelineSubmitInfo{ VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO };
 		timelineSubmitInfo.waitSemaphoreValueCount = 1;
 		timelineSubmitInfo.pWaitSemaphoreValues = &semaphoreWaitValue;
-		timelineSubmitInfo.signalSemaphoreValueCount = 0;
-		timelineSubmitInfo.pSignalSemaphoreValues = nullptr;
+		timelineSubmitInfo.signalSemaphoreValueCount = 1;
+		timelineSubmitInfo.pSignalSemaphoreValues = &dummyValue;
 
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineSubmitInfo };
 		submitInfo.waitSemaphoreCount = 1;

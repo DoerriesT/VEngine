@@ -11,7 +11,7 @@ namespace VEngine
 		class SwapChain
 		{
 		public:
-			virtual ~SwapChain() = 0;
+			virtual ~SwapChain() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual void resize(uint32_t width, uint32_t height) = 0;
 			virtual void getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) = 0;

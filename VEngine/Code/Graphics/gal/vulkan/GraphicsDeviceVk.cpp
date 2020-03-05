@@ -8,6 +8,7 @@
 #include "RenderPassCacheVk.h"
 #include "MemoryAllocatorVk.h"
 #include "UtilityVk.h"
+#include "DeletionQueueVk.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -38,6 +39,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_debugUtilsMessenger(),
 	m_renderPassCache(),
 	m_gpuMemoryAllocator(),
+	m_deletionQueue(),
 	m_swapChain(),
 	m_graphicsPipelineMemoryPool(64),
 	m_computePipelineMemoryPool(64),
@@ -49,7 +51,9 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_samplerMemoryPool(16),
 	m_semaphoreMemoryPool(16),
 	m_queryPoolMemoryPool(16),
-	m_descriptorPoolMemoryPool(16)
+	m_descriptorPoolMemoryPool(16),
+	m_frameIndex(uint64_t() - 1),
+	m_debugLayers(debugLayer)
 {
 	if (volkInitialize() != VK_SUCCESS)
 	{
@@ -261,10 +265,9 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				swapChainAdequate = formatCount != 0 && presentModeCount != 0;
 			}
 
-			VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES };
-
-			VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
-			supportedFeatures2.pNext = &descriptorIndexingFeatures;
+			VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES };
+			VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, &timelineSemaphoreFeatures };
+			VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &descriptorIndexingFeatures };
 
 			vkGetPhysicalDeviceFeatures2(physicalDevice, &supportedFeatures2);
 
@@ -283,7 +286,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				&& supportedFeatures.fragmentStoresAndAtomics
 				&& supportedFeatures.shaderStorageImageExtendedFormats
 				&& supportedFeatures.shaderStorageImageWriteWithoutFormat
-				&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing)
+				&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing
+				&& timelineSemaphoreFeatures.timelineSemaphore)
 			{
 				m_physicalDevice = physicalDevice;
 
@@ -337,11 +341,13 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		m_enabledFeatures = deviceFeatures;
 
-		VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES };
+		VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES };
+		timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
+		VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, &timelineSemaphoreFeatures };
 		descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		
 
-		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-		createInfo.pNext = &descriptorIndexingFeatures;
+		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &descriptorIndexingFeatures };
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.enabledLayerCount = 0;
@@ -397,6 +403,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_renderPassCache = new RenderPassCacheVk(m_device);
 	m_gpuMemoryAllocator = new MemoryAllocatorVk();
 	m_gpuMemoryAllocator->init(m_device, m_physicalDevice);
+	m_deletionQueue = new DeletionQueueVk(m_device, 2);
 }
 
 VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
@@ -406,6 +413,7 @@ VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
 	m_gpuMemoryAllocator->destroy();
 	delete m_gpuMemoryAllocator;
 	delete m_renderPassCache;
+	delete m_deletionQueue;
 	if (m_swapChain)
 	{
 		delete m_swapChain;
@@ -423,6 +431,28 @@ VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
 
 	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 	vkDestroyInstance(m_instance, nullptr);
+}
+
+void VEngine::gal::GraphicsDeviceVk::beginFrame()
+{
+	++m_frameIndex;
+
+	// TODO: currently validation layers dont recognize waiting on semaphores on the host. in order to prevent false positive
+	// validation errors, we force a sync point here. this should be solved another way and removed once validation layers cover this.
+	if (m_debugLayers)
+	{
+		waitIdle();
+	}
+
+	if (m_swapChain)
+	{
+		m_swapChain->setFrameIndex(m_frameIndex);
+	}
+	m_deletionQueue->update(m_frameIndex);
+}
+
+void VEngine::gal::GraphicsDeviceVk::endFrame()
+{
 }
 
 void VEngine::gal::GraphicsDeviceVk::createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines)
@@ -447,22 +477,28 @@ void VEngine::gal::GraphicsDeviceVk::createComputePipelines(uint32_t count, cons
 
 void VEngine::gal::GraphicsDeviceVk::destroyGraphicsPipeline(GraphicsPipeline *pipeline)
 {
-	auto *pipelineVk = dynamic_cast<GraphicsPipelineVk *>(pipeline);
-	assert(pipelineVk);
-	
-	// call destructor and free backing memory
-	pipelineVk->~GraphicsPipelineVk();
-	m_graphicsPipelineMemoryPool.free(reinterpret_cast<ByteArray<sizeof(GraphicsPipelineVk)> *>(pipelineVk));
+	if (pipeline)
+	{
+		auto *pipelineVk = dynamic_cast<GraphicsPipelineVk *>(pipeline);
+		assert(pipelineVk);
+
+		// call destructor and free backing memory
+		pipelineVk->~GraphicsPipelineVk();
+		m_graphicsPipelineMemoryPool.free(reinterpret_cast<ByteArray<sizeof(GraphicsPipelineVk)> *>(pipelineVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroyComputePipeline(ComputePipeline *pipeline)
 {
-	auto *pipelineVk = dynamic_cast<ComputePipelineVk *>(pipeline);
-	assert(pipelineVk);
+	if (pipeline)
+	{
+		auto *pipelineVk = dynamic_cast<ComputePipelineVk *>(pipeline);
+		assert(pipelineVk);
 
-	// call destructor and free backing memory
-	pipelineVk->~ComputePipelineVk();
-	m_computePipelineMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ComputePipelineVk)> *>(pipelineVk));
+		// call destructor and free backing memory
+		pipelineVk->~ComputePipelineVk();
+		m_computePipelineMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ComputePipelineVk)> *>(pipelineVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createCommandListPool(const Queue *queue, CommandListPool **commandListPool)
@@ -476,12 +512,15 @@ void VEngine::gal::GraphicsDeviceVk::createCommandListPool(const Queue *queue, C
 
 void VEngine::gal::GraphicsDeviceVk::destroyCommandListPool(CommandListPool *commandListPool)
 {
-	auto *poolVk = dynamic_cast<CommandListPoolVk *>(commandListPool);
-	assert(poolVk);
-	
-	// call destructor and free backing memory
-	poolVk->~CommandListPoolVk();
-	m_commandListPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(CommandListPoolVk)> *>(poolVk));
+	if (commandListPool)
+	{
+		auto *poolVk = dynamic_cast<CommandListPoolVk *>(commandListPool);
+		assert(poolVk);
+
+		// call destructor and free backing memory
+		poolVk->~CommandListPoolVk();
+		m_commandListPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(CommandListPoolVk)> *>(poolVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createQueryPool(QueryType queryType, uint32_t queryCount, QueryPool **queryPool)
@@ -493,12 +532,15 @@ void VEngine::gal::GraphicsDeviceVk::createQueryPool(QueryType queryType, uint32
 
 void VEngine::gal::GraphicsDeviceVk::destroyQueryPool(QueryPool *queryPool)
 {
-	auto *poolVk = dynamic_cast<QueryPoolVk *>(queryPool);
-	assert(poolVk);
+	if (queryPool)
+	{
+		auto *poolVk = dynamic_cast<QueryPoolVk *>(queryPool);
+		assert(poolVk);
 
-	// call destructor and free backing memory
-	poolVk->~QueryPoolVk();
-	m_queryPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(QueryPoolVk)> *>(poolVk));
+		// call destructor and free backing memory
+		poolVk->~QueryPoolVk();
+		m_queryPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(QueryPoolVk)> *>(poolVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createImage(const ImageCreateInfo &imageCreateInfo, MemoryPropertyFlags requiredMemoryPropertyFlags, MemoryPropertyFlags preferredMemoryPropertyFlags, bool dedicated, Image **image)
@@ -569,24 +611,30 @@ void VEngine::gal::GraphicsDeviceVk::createBuffer(const BufferCreateInfo &buffer
 
 void VEngine::gal::GraphicsDeviceVk::destroyImage(Image *image)
 {
-	auto *imageVk = dynamic_cast<ImageVk *>(image);
-	assert(imageVk);
-	m_gpuMemoryAllocator->destroyImage((VkImage)imageVk->getNativeHandle(), reinterpret_cast<AllocationHandleVk>(imageVk->getAllocationHandle()));
-	
-	// call destructor and free backing memory
-	imageVk->~ImageVk();
-	m_imageMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageVk)> *>(imageVk));
+	if (image)
+	{
+		auto *imageVk = dynamic_cast<ImageVk *>(image);
+		assert(imageVk);
+		m_gpuMemoryAllocator->destroyImage((VkImage)imageVk->getNativeHandle(), reinterpret_cast<AllocationHandleVk>(imageVk->getAllocationHandle()));
+
+		// call destructor and free backing memory
+		imageVk->~ImageVk();
+		m_imageMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageVk)> *>(imageVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroyBuffer(Buffer *buffer)
 {
-	auto *bufferVk = dynamic_cast<BufferVk *>(buffer);
-	assert(bufferVk);
-	m_gpuMemoryAllocator->destroyBuffer((VkBuffer)bufferVk->getNativeHandle(), reinterpret_cast<AllocationHandleVk>(bufferVk->getAllocationHandle()));
-	
-	// call destructor and free backing memory
-	bufferVk->~BufferVk();
-	m_bufferMemoryPool.free(reinterpret_cast<ByteArray<sizeof(BufferVk)> *>(bufferVk));
+	if (buffer)
+	{
+		auto *bufferVk = dynamic_cast<BufferVk *>(buffer);
+		assert(bufferVk);
+		m_gpuMemoryAllocator->destroyBuffer((VkBuffer)bufferVk->getNativeHandle(), reinterpret_cast<AllocationHandleVk>(bufferVk->getAllocationHandle()));
+
+		// call destructor and free backing memory
+		bufferVk->~BufferVk();
+		m_bufferMemoryPool.free(reinterpret_cast<ByteArray<sizeof(BufferVk)> *>(bufferVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createImageView(const ImageViewCreateInfo &imageViewCreateInfo, ImageView **imageView)
@@ -607,22 +655,28 @@ void VEngine::gal::GraphicsDeviceVk::createBufferView(const BufferViewCreateInfo
 
 void VEngine::gal::GraphicsDeviceVk::destroyImageView(ImageView *imageView)
 {
-	auto *viewVk = dynamic_cast<ImageViewVk *>(imageView);
-	assert(viewVk);
+	if (imageView)
+	{
+		auto *viewVk = dynamic_cast<ImageViewVk *>(imageView);
+		assert(viewVk);
 
-	// call destructor and free backing memory
-	viewVk->~ImageViewVk();
-	m_imageViewMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageViewVk)> *>(viewVk));
+		// call destructor and free backing memory
+		viewVk->~ImageViewVk();
+		m_imageViewMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageViewVk)> *>(viewVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroyBufferView(BufferView *bufferView)
 {
-	auto *viewVk = dynamic_cast<BufferViewVk *>(bufferView);
-	assert(viewVk);
+	if (bufferView)
+	{
+		auto *viewVk = dynamic_cast<BufferViewVk *>(bufferView);
+		assert(viewVk);
 
-	// call destructor and free backing memory
-	viewVk->~BufferViewVk();
-	m_bufferViewMemoryPool.free(reinterpret_cast<ByteArray<sizeof(BufferViewVk)> *>(viewVk));
+		// call destructor and free backing memory
+		viewVk->~BufferViewVk();
+		m_bufferViewMemoryPool.free(reinterpret_cast<ByteArray<sizeof(BufferViewVk)> *>(viewVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createSampler(const SamplerCreateInfo &samplerbufferViewCreateInfo, Sampler **sampler)
@@ -635,12 +689,15 @@ void VEngine::gal::GraphicsDeviceVk::createSampler(const SamplerCreateInfo &samp
 
 void VEngine::gal::GraphicsDeviceVk::destroySampler(Sampler *sampler)
 {
-	auto *samplerVk = dynamic_cast<SamplerVk *>(sampler);
-	assert(samplerVk);
+	if (sampler)
+	{
+		auto *samplerVk = dynamic_cast<SamplerVk *>(sampler);
+		assert(samplerVk);
 
-	// call destructor and free backing memory
-	samplerVk->~SamplerVk();
-	m_samplerMemoryPool.free(reinterpret_cast<ByteArray<sizeof(SamplerVk)> *>(samplerVk));
+		// call destructor and free backing memory
+		samplerVk->~SamplerVk();
+		m_samplerMemoryPool.free(reinterpret_cast<ByteArray<sizeof(SamplerVk)> *>(samplerVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createSemaphore(uint64_t initialValue, Semaphore **semaphore)
@@ -653,12 +710,15 @@ void VEngine::gal::GraphicsDeviceVk::createSemaphore(uint64_t initialValue, Sema
 
 void VEngine::gal::GraphicsDeviceVk::destroySemaphore(Semaphore *semaphore)
 {
-	auto *semaphoreVk = dynamic_cast<SemaphoreVk *>(semaphore);
-	assert(semaphoreVk);
-	
-	// call destructor and free backing memory
-	semaphoreVk->~SemaphoreVk();
-	m_semaphoreMemoryPool.free(reinterpret_cast<ByteArray<sizeof(SemaphoreVk)> *>(semaphoreVk));
+	if (semaphore)
+	{
+		auto *semaphoreVk = dynamic_cast<SemaphoreVk *>(semaphore);
+		assert(semaphoreVk);
+
+		// call destructor and free backing memory
+		semaphoreVk->~SemaphoreVk();
+		m_semaphoreMemoryPool.free(reinterpret_cast<ByteArray<sizeof(SemaphoreVk)> *>(semaphoreVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool)
@@ -706,12 +766,15 @@ void VEngine::gal::GraphicsDeviceVk::createDescriptorPool(uint32_t maxSets, cons
 
 void VEngine::gal::GraphicsDeviceVk::destroyDescriptorPool(DescriptorPool *descriptorPool)
 {
-	auto *poolVk = dynamic_cast<DescriptorPoolVk *>(descriptorPool);
-	assert(poolVk);
-	
-	// call destructor and free backing memory
-	poolVk->~DescriptorPoolVk();
-	m_descriptorPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorPoolVk)> *>(poolVk));
+	if (descriptorPool)
+	{
+		auto *poolVk = dynamic_cast<DescriptorPoolVk *>(descriptorPool);
+		assert(poolVk);
+
+		// call destructor and free backing memory
+		poolVk->~DescriptorPoolVk();
+		m_descriptorPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorPoolVk)> *>(poolVk));
+	}
 }
 
 void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain)
@@ -722,13 +785,34 @@ void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, 
 	queue = presentQueue == &m_graphicsQueue ? &m_graphicsQueue : queue;
 	queue = presentQueue == &m_computeQueue ? &m_computeQueue : queue;
 	assert(queue);
-	m_swapChain = new SwapChainVk2(m_physicalDevice, m_device, m_surface, queue, width, height);
+	*swapChain = m_swapChain = new SwapChainVk2(m_physicalDevice, m_device, m_surface, queue, width, height);
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroySwapChain()
 {
 	assert(m_swapChain);
 	delete m_swapChain;
+	m_swapChain = nullptr;
+}
+
+void VEngine::gal::GraphicsDeviceVk::waitIdle()
+{
+	UtilityVk::checkResult(vkDeviceWaitIdle(m_device));
+}
+
+VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getGraphicsQueue()
+{
+	return &m_graphicsQueue;
+}
+
+VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getComputeQueue()
+{
+	return &m_computeQueue;
+}
+
+VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getTransferQueue()
+{
+	return &m_transferQueue;
 }
 
 VkDevice VEngine::gal::GraphicsDeviceVk::getDevice() const
@@ -738,8 +822,7 @@ VkDevice VEngine::gal::GraphicsDeviceVk::getDevice() const
 
 void VEngine::gal::GraphicsDeviceVk::addToDeletionQueue(VkFramebuffer framebuffer)
 {
-	// TODO
-	assert(false);
+	m_deletionQueue->add(framebuffer);
 }
 
 VkRenderPass VEngine::gal::GraphicsDeviceVk::getRenderPass(const RenderPassDescriptionVk &renderPassDescription)

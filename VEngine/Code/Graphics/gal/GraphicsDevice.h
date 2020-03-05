@@ -23,8 +23,11 @@ namespace VEngine
 		class GraphicsDevice
 		{
 		public:
-			GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackend backend);
-			virtual ~GraphicsDevice() = 0;
+			static GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackend backend);
+			static void destroy(const GraphicsDevice *device);
+			virtual ~GraphicsDevice() = default;
+			virtual void beginFrame() = 0;
+			virtual void endFrame() = 0;
 			virtual void createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines) = 0;
 			virtual void createComputePipelines(uint32_t count, const ComputePipelineCreateInfo *createInfo, ComputePipeline **pipelines) = 0;
 			virtual void destroyGraphicsPipeline(GraphicsPipeline *pipeline) = 0;
@@ -49,6 +52,10 @@ namespace VEngine
 			virtual void destroyDescriptorPool(DescriptorPool *descriptorPool) = 0;
 			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;
 			virtual void destroySwapChain() = 0;
+			virtual void waitIdle() = 0;
+			virtual Queue *getGraphicsQueue() = 0;
+			virtual Queue *getComputeQueue() = 0;
+			virtual Queue *getTransferQueue() = 0;
 		};
 	}
 }

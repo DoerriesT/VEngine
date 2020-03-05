@@ -435,6 +435,15 @@
     <ClInclude Include="Code\Graphics\gal\vulkan\SwapChainVk2.h">
       <Filter>Code\Graphics\gal\vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\GALTestRenderer.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\vulkan\DeletionQueueVk.h">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\gal\Initializers.h">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -714,6 +723,15 @@
       <Filter>Code\Graphics\gal\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Code\Graphics\gal\GraphicsDevice.cpp">
+      <Filter>Code\Graphics\gal</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\GALTestRenderer.cpp">
+      <Filter>Code\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\vulkan\DeletionQueueVk.cpp">
+      <Filter>Code\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\gal\Initializers.cpp">
       <Filter>Code\Graphics\gal</Filter>
     </ClCompile>
   </ItemGroup>

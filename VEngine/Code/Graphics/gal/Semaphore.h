@@ -8,7 +8,7 @@ namespace VEngine
 		class Semaphore
 		{
 		public:
-			virtual ~Semaphore() = 0;
+			virtual ~Semaphore() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual uint64_t getCompletedValue() const = 0;
 			virtual void wait(uint64_t waitValue) const = 0;

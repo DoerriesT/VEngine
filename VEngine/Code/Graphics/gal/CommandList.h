@@ -18,7 +18,7 @@ namespace VEngine
 		class CommandList
 		{
 		public:
-			virtual ~CommandList() = 0;
+			virtual ~CommandList() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual void begin() = 0;
 			virtual void end() = 0;
@@ -60,7 +60,7 @@ namespace VEngine
 			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) = 0;
 			virtual void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
 			virtual void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
-			virtual void beginRenderPass(const RenderPassBeginInfo *renderPassBeginInfo) = 0;
+			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) = 0;
 			virtual void endRenderPass() = 0;
 		};
 	}
