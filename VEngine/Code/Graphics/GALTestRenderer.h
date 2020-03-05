@@ -1,22 +1,9 @@
 #pragma once
 #include <cstdint>
+#include "gal/FwdDecl.h"
 
 namespace VEngine
 {
-	namespace gal
-	{
-		class GraphicsDevice;
-		class Queue;
-		class SwapChain;
-		class Semaphore;
-		class GraphicsPipeline;
-		class Buffer;
-		class Image;
-		class ImageView;
-		class CommandListPool;
-		class CommandList;
-	}
-	 
 	class GALTestRenderer
 	{
 	public:

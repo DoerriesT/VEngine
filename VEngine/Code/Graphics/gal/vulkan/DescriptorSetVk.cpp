@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <new>
 #include "UtilityVk.h"
-#include "Graphics/gal/Resource.h"
 #include "ResourceVk.h"
 
 VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings, uint32_t *typeCounts)

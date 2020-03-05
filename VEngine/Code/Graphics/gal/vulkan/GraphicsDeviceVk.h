@@ -1,5 +1,5 @@
 #pragma once
-#include "Graphics/gal/GraphicsDevice.h"
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "QueueVk.h"
 #include "Utility/ObjectPool.h"
 #include "PipelineVk.h"

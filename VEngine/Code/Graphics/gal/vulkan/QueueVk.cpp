@@ -1,8 +1,5 @@
 #include "QueueVk.h"
 #include <vector>
-#include "Graphics/gal/Common.h"
-#include "Graphics/gal/Semaphore.h"
-#include "Graphics/gal/CommandList.h"
 #include "UtilityVk.h"
 
 void *VEngine::gal::QueueVk::getNativeHandle() const

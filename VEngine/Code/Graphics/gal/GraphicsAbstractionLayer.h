@@ -1,20 +1,12 @@
 #pragma once
 #include <cstdint>
+#include "FwdDecl.h"
 
 namespace VEngine
 {
 	namespace gal
 	{
-		class Image;
-		class Buffer;
-		class ImageView;
-		class BufferView;
-		class Queue;
-		class GraphicsPipeline;
-		class Semaphore;
-		class CommandList;
-		class DescriptorSet;
-		class Sampler;
+		// ENUMS
 
 		enum class GraphicsBackend
 		{
@@ -530,8 +522,11 @@ namespace VEngine
 			B_BIT = 0x00000004,
 			A_BIT = 0x00000008,
 		};
-
 		using ColorComponentFlags = uint32_t;
+
+
+
+		// STRUCTS
 
 		struct VertexInputBindingDescription
 		{
@@ -946,6 +941,233 @@ namespace VEngine
 		struct DescriptorSetLayoutTypeCounts
 		{
 			uint32_t m_typeCounts[(size_t)DescriptorType::RANGE_SIZE];
+		};
+
+
+
+		// INTERFACES
+
+		class DescriptorSetLayout
+		{
+		public:
+			virtual ~DescriptorSetLayout() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual const DescriptorSetLayoutTypeCounts &getTypeCounts() const = 0;
+		};
+
+		class DescriptorSet
+		{
+		public:
+			virtual ~DescriptorSet() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual void update(uint32_t count, const DescriptorSetUpdate *updates) = 0;
+		};
+
+		class DescriptorPool
+		{
+		public:
+			virtual ~DescriptorPool() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout **layouts, DescriptorSet **sets) = 0;
+			virtual void freeDescriptorSets(uint32_t count, DescriptorSet **sets) = 0;
+		};
+
+		class GraphicsPipeline
+		{
+		public:
+			virtual ~GraphicsPipeline() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual uint32_t getDescriptorSetLayoutCount() const = 0;
+			virtual const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const = 0;
+		};
+
+		class ComputePipeline
+		{
+		public:
+			virtual ~ComputePipeline() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual uint32_t getDescriptorSetLayoutCount() const = 0;
+			virtual const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const = 0;
+		};
+
+		class QueryPool
+		{
+		public:
+			virtual ~QueryPool() = default;
+			virtual void *getNativeHandle() const = 0;
+		};
+
+		class CommandList
+		{
+		public:
+			virtual ~CommandList() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual void begin() = 0;
+			virtual void end() = 0;
+			virtual void bindPipeline(const GraphicsPipeline *pipeline) = 0;
+			virtual void bindPipeline(const ComputePipeline *pipeline) = 0;
+			virtual void setViewport(uint32_t firstViewport, uint32_t viewportCount, const Viewport *viewports) = 0;
+			virtual void setScissor(uint32_t firstScissor, uint32_t scissorCount, const Rect *scissors) = 0;
+			virtual void setLineWidth(float lineWidth) = 0;
+			virtual void setDepthBias(float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) = 0;
+			virtual void setBlendConstants(const float blendConstants[4]) = 0;
+			virtual void setDepthBounds(float minDepthBounds, float maxDepthBounds) = 0;
+			virtual void setStencilCompareMask(StencilFaceFlags faceMask, uint32_t compareMask) = 0;
+			virtual void setStencilWriteMask(StencilFaceFlags faceMask, uint32_t writeMask) = 0;
+			virtual void setStencilReference(StencilFaceFlags faceMask, uint32_t reference) = 0;
+			virtual void bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets) = 0;
+			virtual void bindDescriptorSets(const ComputePipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet **sets) = 0;
+			virtual void bindIndexBuffer(const Buffer *buffer, uint64_t offset, IndexType indexType) = 0;
+			virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer **buffers, uint64_t *offsets) = 0;
+			virtual void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) = 0;
+			virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) = 0;
+			virtual void drawIndirect(const Buffer *buffer, uint64_t offset, uint32_t drawCount, uint32_t stride) = 0;
+			virtual void drawIndexedIndirect(const Buffer *buffer, uint64_t offset, uint32_t drawCount, uint32_t stride) = 0;
+			virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
+			virtual void dispatchIndirect(const Buffer *buffer, uint64_t offset) = 0;
+			virtual void copyBuffer(const Buffer *srcBuffer, const Buffer *dstBuffer, uint32_t regionCount, const BufferCopy *regions) = 0;
+			virtual void copyImage(const Image *srcImage, const Image *dstImage, uint32_t regionCount, const ImageCopy *regions) = 0;
+			virtual void copyBufferToImage(const Buffer *srcBuffer, const Image *dstImage, uint32_t regionCount, const BufferImageCopy *regions) = 0;
+			virtual void copyImageToBuffer(const Image *srcImage, const Buffer *dstBuffer, uint32_t regionCount, const BufferImageCopy *regions) = 0;
+			virtual void updateBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t dataSize, const void *data) = 0;
+			virtual void fillBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t size, uint32_t data) = 0;
+			virtual void clearColorImage(const Image *image, const ClearColorValue *color, uint32_t rangeCount, const ImageSubresourceRange *ranges) = 0;
+			virtual void clearDepthStencilImage(const Image *image, const ClearDepthStencilValue *depthStencil, uint32_t rangeCount, const ImageSubresourceRange *ranges) = 0;
+			virtual void clearAttachments(uint32_t attachmentCount, const ClearAttachment *attachments, uint32_t rectCount, const ClearRect *rects) = 0;
+			virtual void barrier(uint32_t count, const Barrier *barriers) = 0;
+			virtual void beginQuery(const QueryPool *queryPool, uint32_t query) = 0;
+			virtual void endQuery(const QueryPool *queryPool, uint32_t query) = 0;
+			virtual void resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount) = 0;
+			virtual void writeTimestamp(PipelineStageFlagBits pipelineStage, const QueryPool *queryPool, uint32_t query) = 0;
+			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) = 0;
+			virtual void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
+			virtual void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
+			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) = 0;
+			virtual void endRenderPass() = 0;
+		};
+
+		class CommandListPool
+		{
+		public:
+			virtual ~CommandListPool() = default;
+			virtual void allocate(uint32_t count, CommandList **commandLists) = 0;
+			virtual void free(uint32_t count, CommandList *commandLists) = 0;
+			virtual void reset() = 0;
+		};
+
+		class Queue
+		{
+		public:
+			virtual ~Queue() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual uint32_t getFamilyIndex() const = 0;
+			virtual void submit(uint32_t count, const SubmitInfo *submitInfo) = 0;
+		};
+
+		class Sampler
+		{
+		public:
+			virtual ~Sampler() = default;
+			virtual void *getNativeHandle() const = 0;
+		};
+
+		class Image
+		{
+		public:
+			virtual ~Image() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual const ImageCreateInfo &getDescription() const = 0;
+		};
+
+		class Buffer
+		{
+		public:
+			virtual ~Buffer() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual const BufferCreateInfo &getDescription() const = 0;
+			virtual void map(void **data) = 0;
+			virtual void unmap() = 0;
+			virtual void invalidate(uint32_t count, const MemoryRange *ranges) = 0;
+			virtual void flush(uint32_t count, const MemoryRange *ranges) = 0;
+		};
+
+		class ImageView
+		{
+		public:
+			virtual ~ImageView() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual const Image *getImage() const = 0;
+		};
+
+		class BufferView
+		{
+		public:
+			virtual ~BufferView() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual const Buffer *getBuffer() const = 0;
+		};
+
+		class Semaphore
+		{
+		public:
+			virtual ~Semaphore() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual uint64_t getCompletedValue() const = 0;
+			virtual void wait(uint64_t waitValue) const = 0;
+			virtual void signal(uint64_t signalValue) const = 0;
+		};
+
+		class SwapChain
+		{
+		public:
+			virtual ~SwapChain() = default;
+			virtual void *getNativeHandle() const = 0;
+			virtual void resize(uint32_t width, uint32_t height) = 0;
+			virtual void getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) = 0;
+			virtual void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue) = 0;
+			virtual Extent2D getExtent() const = 0;
+			virtual Extent2D getRecreationExtent() const = 0;
+			virtual Format getImageFormat() const = 0;
+			virtual Image *getImage(size_t index) const = 0;
+			virtual Queue *getPresentQueue() const = 0;
+		};
+
+		class GraphicsDevice
+		{
+		public:
+			static GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackend backend);
+			static void destroy(const GraphicsDevice *device);
+			virtual ~GraphicsDevice() = default;
+			virtual void beginFrame() = 0;
+			virtual void endFrame() = 0;
+			virtual void createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines) = 0;
+			virtual void createComputePipelines(uint32_t count, const ComputePipelineCreateInfo *createInfo, ComputePipeline **pipelines) = 0;
+			virtual void destroyGraphicsPipeline(GraphicsPipeline *pipeline) = 0;
+			virtual void destroyComputePipeline(ComputePipeline *pipeline) = 0;
+			virtual void createCommandListPool(const Queue *queue, CommandListPool **commandListPool) = 0;
+			virtual void destroyCommandListPool(CommandListPool *commandListPool) = 0;
+			virtual void createQueryPool(QueryType queryType, uint32_t queryCount, QueryPool **queryPool) = 0;
+			virtual void destroyQueryPool(QueryPool *queryPool) = 0;
+			virtual void createImage(const ImageCreateInfo &imageCreateInfo, MemoryPropertyFlags requiredMemoryPropertyFlags, MemoryPropertyFlags preferredMemoryPropertyFlags, bool dedicated, Image **image) = 0;
+			virtual void createBuffer(const BufferCreateInfo &bufferCreateInfo, MemoryPropertyFlags requiredMemoryPropertyFlags, MemoryPropertyFlags preferredMemoryPropertyFlags, bool dedicated, Buffer **buffer) = 0;
+			virtual void destroyImage(Image *image) = 0;
+			virtual void destroyBuffer(Buffer *buffer) = 0;
+			virtual void createImageView(const ImageViewCreateInfo &imageViewCreateInfo, ImageView **imageView) = 0;
+			virtual void createBufferView(const BufferViewCreateInfo &bufferViewCreateInfo, BufferView **bufferView) = 0;
+			virtual void destroyImageView(ImageView *imageView) = 0;
+			virtual void destroyBufferView(BufferView *bufferView) = 0;
+			virtual void createSampler(const SamplerCreateInfo &samplerCreateInfo, Sampler **sampler) = 0;
+			virtual void destroySampler(Sampler *sampler) = 0;
+			virtual void createSemaphore(uint64_t initialValue, Semaphore **semaphore) = 0;
+			virtual void destroySemaphore(Semaphore *semaphore) = 0;
+			virtual void createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool) = 0;
+			virtual void destroyDescriptorPool(DescriptorPool *descriptorPool) = 0;
+			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;
+			virtual void destroySwapChain() = 0;
+			virtual void waitIdle() = 0;
+			virtual Queue *getGraphicsQueue() = 0;
+			virtual Queue *getComputeQueue() = 0;
+			virtual Queue *getTransferQueue() = 0;
 		};
 	}
 }

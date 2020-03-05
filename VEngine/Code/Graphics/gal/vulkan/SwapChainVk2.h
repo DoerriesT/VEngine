@@ -1,5 +1,5 @@
 #pragma once
-#include "Graphics/gal/SwapChain.h"
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "Graphics/Vulkan/volk.h"
 #include "ResourceVk.h"
 #include "Utility/ObjectPool.h"

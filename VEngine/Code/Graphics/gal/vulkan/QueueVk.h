@@ -1,6 +1,5 @@
 #pragma once
-#include "Graphics/gal/Queue.h"
-#include <cstdint>
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "Graphics/Vulkan/volk.h"
 
 namespace VEngine

@@ -1,7 +1,6 @@
 #pragma once
-#include "Graphics/gal/Resource.h"
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "Graphics/Vulkan/volk.h"
-#include "Graphics/gal/Common.h"
 
 namespace VEngine
 {

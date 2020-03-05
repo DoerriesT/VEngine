@@ -2,14 +2,11 @@
 #include "PipelineVk.h"
 #include "ResourceVk.h"
 #include "QueueVk.h"
-#include "Graphics/gal/QueryPool.h"
-#include "Graphics/gal/Resource.h"
 #include <algorithm>
 #include <cassert>
 #include "GraphicsDeviceVk.h"
 #include "RenderPassDescriptionVk.h"
 #include "UtilityVk.h"
-#include "Graphics/gal/DescriptorSet.h"
 
 VEngine::gal::CommandListVk::CommandListVk(VkCommandBuffer commandBuffer, GraphicsDeviceVk *device)
 	:m_commandBuffer(commandBuffer),

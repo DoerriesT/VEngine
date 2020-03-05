@@ -1,11 +1,8 @@
 #include "GALTestRenderer.h"
-#include "gal/GraphicsDevice.h"
-#include "gal/SwapChain.h"
+#include "gal/GraphicsAbstractionLayer.h"
 #include "gal/Initializers.h"
-#include "gal/CommandListPool.h"
-#include "gal/CommandList.h"
-#include "gal/Semaphore.h"
-#include "gal/Queue.h"
+
+using namespace VEngine::gal;
 
 VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void *windowHandle)
 	:m_width(width),
@@ -13,7 +10,7 @@ VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void 
 	m_frameIndex(uint64_t() - 1),
 	m_semaphoreValue(),
 	m_frameSemaphoreValues(),
-	m_graphicsDevice(gal::GraphicsDevice::create(windowHandle, true, gal::GraphicsBackend::VULKAN)),
+	m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackend::VULKAN)),
 	m_queue(),
 	m_swapChain(),
 	m_semaphore(),
@@ -29,23 +26,23 @@ VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void 
 	m_graphicsDevice->createSemaphore(0, &m_semaphore);
 
 
-	//gal::PipelineColorBlendAttachmentState colorBlendAttachments[]
+	//PipelineColorBlendAttachmentState colorBlendAttachments[]
 	//{
-	//	gal::GraphicsPipelineBuilder::s_defaultBlendAttachment,
+	//	GraphicsPipelineBuilder::s_defaultBlendAttachment,
 	//};
 	//
-	//gal::DynamicState dynamicState[] = { gal::DynamicState::VIEWPORT, gal::DynamicState::SCISSOR };
+	//DynamicState dynamicState[] = { DynamicState::VIEWPORT, DynamicState::SCISSOR };
 	//
-	//gal::GraphicsPipelineCreateInfo pipelineCreateInfo;
-	//gal::GraphicsPipelineBuilder pipelineBuilder(pipelineCreateInfo);
+	//GraphicsPipelineCreateInfo pipelineCreateInfo;
+	//GraphicsPipelineBuilder pipelineBuilder(pipelineCreateInfo);
 	//pipelineBuilder.setVertexShader("Resources/Shaders/galTest_vert.spv");
 	//pipelineBuilder.setFragmentShader("Resources/Shaders/galTest_frag.spv");
-	//pipelineBuilder.setPolygonModeCullMode(gal::PolygonMode::FILL, (gal::CullModeFlags)gal::CullModeFlagBits::BACK_BIT, gal::FrontFace::COUNTER_CLOCKWISE);
-	//pipelineBuilder.setDepthTest(true, true, gal::CompareOp::GREATER_OR_EQUAL);
-	//pipelineBuilder.setColorBlendAttachment(gal::GraphicsPipelineBuilder::s_defaultBlendAttachment);
+	//pipelineBuilder.setPolygonModeCullMode(PolygonMode::FILL, (CullModeFlags)CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
+	//pipelineBuilder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);
+	//pipelineBuilder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
 	//pipelineBuilder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
 	//pipelineBuilder.setColorAttachmentFormat(m_swapChain->getImageFormat());
-	//pipelineBuilder.setDepthStencilAttachmentFormat(gal::Format::D32_SFLOAT);
+	//pipelineBuilder.setDepthStencilAttachmentFormat(Format::D32_SFLOAT);
 	//
 	//m_graphicsDevice->createGraphicsPipelines(1, &pipelineCreateInfo, &m_pipeline);
 
@@ -64,7 +61,7 @@ VEngine::GALTestRenderer::~GALTestRenderer()
 	m_graphicsDevice->destroyCommandListPool(m_cmdListPools[1]);
 	m_graphicsDevice->destroySemaphore(m_semaphore);
 	m_graphicsDevice->destroySwapChain();
-	gal::GraphicsDevice::destroy(m_graphicsDevice);
+	GraphicsDevice::destroy(m_graphicsDevice);
 }
 
 void VEngine::GALTestRenderer::render()
@@ -86,7 +83,7 @@ void VEngine::GALTestRenderer::render()
 	m_graphicsDevice->destroyImageView(m_imageViews[resIdx]);
 
 	// create new image view
-	gal::ImageViewCreateInfo imageViewCreateInfo{ swapChainImage };
+	ImageViewCreateInfo imageViewCreateInfo{ swapChainImage };
 	m_graphicsDevice->createImageView(imageViewCreateInfo, &m_imageViews[resIdx]);
 
 	// reset command list pool of this frame
@@ -96,14 +93,14 @@ void VEngine::GALTestRenderer::render()
 	cmdList->begin();
 	{
 		// transition from UNDEFINED to COLOR_ATTACHMENT
-		gal::Barrier barrier0 = gal::Initializers::imageBarrier(swapChainImage,
-			(uint32_t)gal::PipelineStageFlagBits::TOP_OF_PIPE_BIT,
-			(uint32_t)gal::PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
-			gal::ResourceState::UNDEFINED,
-			gal::ResourceState::WRITE_ATTACHMENT);
+		Barrier barrier0 = Initializers::imageBarrier(swapChainImage,
+			(uint32_t)PipelineStageFlagBits::TOP_OF_PIPE_BIT,
+			(uint32_t)PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+			ResourceState::UNDEFINED,
+			ResourceState::WRITE_ATTACHMENT);
 		cmdList->barrier(1, &barrier0);
 		
-		gal::ColorAttachmentDescription colorAttachmentDesc = { m_imageViews[resIdx], gal::AttachmentLoadOp::CLEAR, gal::AttachmentStoreOp::STORE, {0.2f, 0.5f, 1.0f} };
+		ColorAttachmentDescription colorAttachmentDesc = { m_imageViews[resIdx], AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {0.2f, 0.5f, 1.0f} };
 		cmdList->beginRenderPass(1, &colorAttachmentDesc, nullptr, { {}, {m_width, m_height} });
 		{
 			// render stuff
@@ -111,19 +108,19 @@ void VEngine::GALTestRenderer::render()
 		cmdList->endRenderPass();
 
 		// transition from COLOR_ATTACHMENT to PRESENT
-		gal::Barrier barrier1 = gal::Initializers::imageBarrier(swapChainImage,
-			(uint32_t)gal::PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
-			(uint32_t)gal::PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT,
-			gal::ResourceState::WRITE_ATTACHMENT,
-			gal::ResourceState::PRESENT_IMAGE);
+		Barrier barrier1 = Initializers::imageBarrier(swapChainImage,
+			(uint32_t)PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+			(uint32_t)PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT,
+			ResourceState::WRITE_ATTACHMENT,
+			ResourceState::PRESENT_IMAGE);
 		cmdList->barrier(1, &barrier1);
 	}
 	cmdList->end();
 
 	uint64_t waitValue = m_semaphoreValue;
 	uint64_t signalValue = ++m_semaphoreValue;
-	gal::PipelineStageFlags waitDstStageMask = (uint32_t)gal::PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT;
-	gal::SubmitInfo submitInfo;
+	PipelineStageFlags waitDstStageMask = (uint32_t)PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT;
+	SubmitInfo submitInfo;
 	submitInfo.m_waitSemaphoreCount = 1;
 	submitInfo.m_waitSemaphores = &m_semaphore;
 	submitInfo.m_waitValues = &waitValue;

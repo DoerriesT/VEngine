@@ -1,5 +1,5 @@
 #pragma once
-#include "Graphics/gal/Semaphore.h"
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "Graphics/Vulkan/volk.h"
 
 namespace VEngine

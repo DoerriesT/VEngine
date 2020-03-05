@@ -1,5 +1,5 @@
 #pragma once
-#include "Graphics/gal/Pipeline.h"
+#include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "Graphics/Vulkan/volk.h"
 #include "DescriptorSetVk.h"
 #include "Utility/ObjectPool.h"
