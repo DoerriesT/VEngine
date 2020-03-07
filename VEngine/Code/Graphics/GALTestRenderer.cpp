@@ -71,11 +71,11 @@ VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void 
 	};
 	uint16_t indices[] = { 0, 1, 2 };
 
-	BufferCreateInfo vertexBufferCreateInfo{ sizeof(vertices), 0, (uint32_t)BufferUsageFlagBits::VERTEX_BUFFER_BIT | (uint32_t)BufferUsageFlagBits::TRANSFER_DST_BIT };
-	m_graphicsDevice->createBuffer(vertexBufferCreateInfo, (uint32_t)MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_vertexBuffer);
+	BufferCreateInfo vertexBufferCreateInfo{ sizeof(vertices), 0, BufferUsageFlagBits::VERTEX_BUFFER_BIT | BufferUsageFlagBits::TRANSFER_DST_BIT };
+	m_graphicsDevice->createBuffer(vertexBufferCreateInfo, MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_vertexBuffer);
 
-	BufferCreateInfo indexBufferCreateInfo{ sizeof(indices), 0, (uint32_t)BufferUsageFlagBits::INDEX_BUFFER_BIT | (uint32_t)BufferUsageFlagBits::TRANSFER_DST_BIT };
-	m_graphicsDevice->createBuffer(indexBufferCreateInfo, (uint32_t)MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_indexBuffer);
+	BufferCreateInfo indexBufferCreateInfo{ sizeof(indices), 0, BufferUsageFlagBits::INDEX_BUFFER_BIT | BufferUsageFlagBits::TRANSFER_DST_BIT };
+	m_graphicsDevice->createBuffer(indexBufferCreateInfo, MemoryPropertyFlagBits::HOST_COHERENT_BIT, 0, false, &m_indexBuffer);
 
 	void *data;
 	m_vertexBuffer->map(&data);
@@ -132,8 +132,8 @@ void VEngine::GALTestRenderer::render()
 	{
 		// transition from UNDEFINED to COLOR_ATTACHMENT
 		Barrier barrier0 = Initializers::imageBarrier(swapChainImage,
-			(uint32_t)PipelineStageFlagBits::TOP_OF_PIPE_BIT,
-			(uint32_t)PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+			PipelineStageFlagBits::TOP_OF_PIPE_BIT,
+			PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
 			ResourceState::UNDEFINED,
 			ResourceState::WRITE_ATTACHMENT);
 		cmdList->barrier(1, &barrier0);
@@ -159,8 +159,8 @@ void VEngine::GALTestRenderer::render()
 
 		// transition from COLOR_ATTACHMENT to PRESENT
 		Barrier barrier1 = Initializers::imageBarrier(swapChainImage,
-			(uint32_t)PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
-			(uint32_t)PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT,
+			PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+			PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT,
 			ResourceState::WRITE_ATTACHMENT,
 			ResourceState::PRESENT_IMAGE);
 		cmdList->barrier(1, &barrier1);
@@ -169,7 +169,7 @@ void VEngine::GALTestRenderer::render()
 
 	uint64_t waitValue = m_semaphoreValue;
 	uint64_t signalValue = ++m_semaphoreValue;
-	PipelineStageFlags waitDstStageMask = (uint32_t)PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT;
+	PipelineStageFlags waitDstStageMask = PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT;
 	SubmitInfo submitInfo;
 	submitInfo.m_waitSemaphoreCount = 1;
 	submitInfo.m_waitSemaphores = &m_semaphore;

@@ -345,7 +345,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
 		VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, &timelineSemaphoreFeatures };
 		descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-		
+
 
 		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &descriptorIndexingFeatures };
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -364,6 +364,14 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		vkGetDeviceQueue(m_device, m_graphicsQueue.m_queueFamily, 0, &m_graphicsQueue.m_queue);
 		vkGetDeviceQueue(m_device, m_computeQueue.m_queueFamily, 0, &m_computeQueue.m_queue);
 		vkGetDeviceQueue(m_device, m_transferQueue.m_queueFamily, 0, &m_transferQueue.m_queue);
+
+		uint32_t queueFamilyPropertyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyPropertyCount, nullptr);
+		std::vector<VkQueueFamilyProperties> queueFamilyProperites(queueFamilyPropertyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyPropertyCount, queueFamilyProperites.data());
+		m_graphicsQueue.m_timestampValidBits = queueFamilyProperites[m_graphicsQueue.m_queueFamily].timestampValidBits;
+		m_computeQueue.m_timestampValidBits = queueFamilyProperites[m_computeQueue.m_queueFamily].timestampValidBits;
+		m_transferQueue.m_timestampValidBits = queueFamilyProperites[m_transferQueue.m_queueFamily].timestampValidBits;
 	}
 
 	volkLoadDevice(m_device);
@@ -645,6 +653,23 @@ void VEngine::gal::GraphicsDeviceVk::createImageView(const ImageViewCreateInfo &
 	*imageView = new(memory) ImageViewVk(m_device, imageViewCreateInfo);
 }
 
+void VEngine::gal::GraphicsDeviceVk::createImageView(Image *image, ImageView **imageView)
+{
+	const auto &imageDesc = image->getDescription();
+
+	ImageViewCreateInfo imageViewCreateInfo = {};
+	imageViewCreateInfo.m_image = image;
+	imageViewCreateInfo.m_viewType = static_cast<ImageViewType>(imageDesc.m_imageType);
+	imageViewCreateInfo.m_format = imageDesc.m_format;
+	imageViewCreateInfo.m_components = {};
+	imageViewCreateInfo.m_baseMipLevel = 0;
+	imageViewCreateInfo.m_levelCount = imageDesc.m_levels;
+	imageViewCreateInfo.m_baseArrayLayer = 0;
+	imageViewCreateInfo.m_layerCount = imageDesc.m_layers;
+
+	createImageView(imageViewCreateInfo, imageView);
+}
+
 void VEngine::gal::GraphicsDeviceVk::createBufferView(const BufferViewCreateInfo &bufferViewCreateInfo, BufferView **bufferView)
 {
 	auto *memory = m_bufferViewMemoryPool.alloc();
@@ -800,6 +825,87 @@ void VEngine::gal::GraphicsDeviceVk::waitIdle()
 	UtilityVk::checkResult(vkDeviceWaitIdle(m_device));
 }
 
+void VEngine::gal::GraphicsDeviceVk::setDebugObjectName(ObjectType objectType, void *object, const char *name)
+{
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsObjectNameInfoEXT info{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
+		info.pObjectName = name;
+
+		switch (objectType)
+		{
+		case ObjectType::QUEUE:
+			info.objectType = VK_OBJECT_TYPE_QUEUE;
+			info.objectHandle = (uint64_t)reinterpret_cast<Queue *>(object)->getNativeHandle();
+			break;
+		case ObjectType::SEMAPHORE:
+			info.objectType = VK_OBJECT_TYPE_SEMAPHORE;
+			info.objectHandle = (uint64_t)reinterpret_cast<Semaphore *>(object)->getNativeHandle();
+			break;
+		case ObjectType::COMMAND_LIST:
+			info.objectType = VK_OBJECT_TYPE_COMMAND_BUFFER;
+			info.objectHandle = (uint64_t)reinterpret_cast<CommandList *>(object)->getNativeHandle();
+			break;
+		case ObjectType::BUFFER:
+			info.objectType = VK_OBJECT_TYPE_BUFFER;
+			info.objectHandle = (uint64_t)reinterpret_cast<Buffer *>(object)->getNativeHandle();
+			break;
+		case ObjectType::IMAGE:
+			info.objectType = VK_OBJECT_TYPE_IMAGE;
+			info.objectHandle = (uint64_t)reinterpret_cast<Image *>(object)->getNativeHandle();
+			break;
+		case ObjectType::QUERY_POOL:
+			info.objectType = VK_OBJECT_TYPE_QUERY_POOL;
+			info.objectHandle = (uint64_t)reinterpret_cast<QueryPool *>(object)->getNativeHandle();
+			break;
+		case ObjectType::BUFFER_VIEW:
+			info.objectType = VK_OBJECT_TYPE_BUFFER_VIEW;
+			info.objectHandle = (uint64_t)reinterpret_cast<BufferView *>(object)->getNativeHandle();
+			break;
+		case ObjectType::IMAGE_VIEW:
+			info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+			info.objectHandle = (uint64_t)reinterpret_cast<ImageView *>(object)->getNativeHandle();
+			break;
+		case ObjectType::GRAPHICS_PIPELINE:
+			info.objectType = VK_OBJECT_TYPE_PIPELINE;
+			info.objectHandle = (uint64_t)reinterpret_cast<GraphicsPipeline *>(object)->getNativeHandle();
+			break;
+		case ObjectType::COMPUTE_PIPELINE:
+			info.objectType = VK_OBJECT_TYPE_PIPELINE;
+			info.objectHandle = (uint64_t)reinterpret_cast<ComputePipeline *>(object)->getNativeHandle();
+			break;
+		case ObjectType::DESCRIPTOR_SET_LAYOUT:
+			info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
+			info.objectHandle = (uint64_t)reinterpret_cast<DescriptorSetLayout *>(object)->getNativeHandle();
+			break;
+		case ObjectType::SAMPLER:
+			info.objectType = VK_OBJECT_TYPE_SAMPLER;
+			info.objectHandle = (uint64_t)reinterpret_cast<Sampler *>(object)->getNativeHandle();
+			break;
+		case ObjectType::DESCRIPTOR_POOL:
+			info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+			info.objectHandle = (uint64_t)reinterpret_cast<DescriptorPool *>(object)->getNativeHandle();
+			break;
+		case ObjectType::DESCRIPTOR_SET:
+			info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET;
+			info.objectHandle = (uint64_t)reinterpret_cast<DescriptorSet *>(object)->getNativeHandle();
+			break;
+		case ObjectType::COMMAND_LIST_POOL:
+			info.objectType = VK_OBJECT_TYPE_COMMAND_POOL;
+			info.objectHandle = (uint64_t)reinterpret_cast<CommandListPool *>(object)->getNativeHandle();
+			break;
+		case ObjectType::SWAPCHAIN:
+			info.objectType = VK_OBJECT_TYPE_SWAPCHAIN_KHR;
+			info.objectHandle = (uint64_t)reinterpret_cast<SwapChain *>(object)->getNativeHandle();
+			break;
+		default:
+			break;
+		}
+
+		UtilityVk::checkResult(vkSetDebugUtilsObjectNameEXT(m_device, &info));
+	}
+}
+
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getGraphicsQueue()
 {
 	return &m_graphicsQueue;
@@ -807,12 +913,37 @@ VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getGraphicsQueue()
 
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getComputeQueue()
 {
-	return &m_computeQueue;
+	return m_computeQueue.m_queue == m_graphicsQueue.m_queue ? &m_graphicsQueue : &m_computeQueue;
 }
 
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getTransferQueue()
 {
-	return &m_transferQueue;
+	return m_transferQueue.m_queue == m_graphicsQueue.m_queue ? &m_graphicsQueue : &m_transferQueue;
+}
+
+void VEngine::gal::GraphicsDeviceVk::getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags)
+{
+	UtilityVk::checkResult(vkGetQueryPoolResults(m_device, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount, dataSize, data, stride, flags));
+}
+
+float VEngine::gal::GraphicsDeviceVk::getTimestampPeriod() const
+{
+	return m_properties.limits.timestampPeriod;
+}
+
+uint64_t VEngine::gal::GraphicsDeviceVk::getMinUniformBufferOffsetAlignment() const
+{
+	return m_properties.limits.minUniformBufferOffsetAlignment;
+}
+
+uint64_t VEngine::gal::GraphicsDeviceVk::getMinStorageBufferOffsetAlignment() const
+{
+	return m_properties.limits.minStorageBufferOffsetAlignment;
+}
+
+float VEngine::gal::GraphicsDeviceVk::getMaxSamplerAnisotropy() const
+{
+	return m_properties.limits.maxSamplerAnisotropy;
 }
 
 VkDevice VEngine::gal::GraphicsDeviceVk::getDevice() const

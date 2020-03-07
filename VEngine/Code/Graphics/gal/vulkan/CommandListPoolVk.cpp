@@ -21,6 +21,11 @@ VEngine::gal::CommandListPoolVk::~CommandListPoolVk()
 	// simply let the DynamicObjectPool destructor scrap the backing memory without first doing this.
 }
 
+void *VEngine::gal::CommandListPoolVk::getNativeHandle() const
+{
+	return m_commandPool;
+}
+
 void VEngine::gal::CommandListPoolVk::allocate(uint32_t count, CommandList **commandLists)
 {
 	constexpr uint32_t batchSize = 32;
@@ -43,7 +48,7 @@ void VEngine::gal::CommandListPoolVk::allocate(uint32_t count, CommandList **com
 	}
 }
 
-void VEngine::gal::CommandListPoolVk::free(uint32_t count, CommandList *commandLists)
+void VEngine::gal::CommandListPoolVk::free(uint32_t count, CommandList **commandLists)
 {
 	constexpr uint32_t batchSize = 32;
 	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;
@@ -56,7 +61,7 @@ void VEngine::gal::CommandListPoolVk::free(uint32_t count, CommandList *commandL
 		
 		for (uint32_t j = 0; j < countVk; ++j)
 		{
-			auto *commandListVk = dynamic_cast<CommandListVk *>(&commandLists[j + i * batchSize]);
+			auto *commandListVk = dynamic_cast<CommandListVk *>(commandLists[j + i * batchSize]);
 			assert(commandListVk);
 			commandBuffers[j] = (VkCommandBuffer)commandListVk->getNativeHandle();
 

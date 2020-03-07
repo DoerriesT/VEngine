@@ -13,6 +13,26 @@ namespace VEngine
 			VULKAN = 0
 		};
 
+		enum class ObjectType
+		{
+			QUEUE,
+			SEMAPHORE,
+			COMMAND_LIST,
+			BUFFER,
+			IMAGE,
+			QUERY_POOL,
+			BUFFER_VIEW,
+			IMAGE_VIEW,
+			GRAPHICS_PIPELINE,
+			COMPUTE_PIPELINE,
+			DESCRIPTOR_SET_LAYOUT,
+			SAMPLER,
+			DESCRIPTOR_POOL,
+			DESCRIPTOR_SET,
+			COMMAND_LIST_POOL,
+			SWAPCHAIN,
+		};
+
 		enum class ComponentSwizzle
 		{
 			IDENTITY = 0,
@@ -73,65 +93,12 @@ namespace VEngine
 			UINT_32
 		};
 
-		enum class MemoryPropertyFlagBits
-		{
-			DEVICE_LOCAL_BIT = 0x00000001,
-			HOST_VISIBLE_BIT = 0x00000002,
-			HOST_COHERENT_BIT = 0x00000004,
-			HOST_CACHED_BIT = 0x00000008,
-		};
-		using MemoryPropertyFlags = uint32_t;
-
 		enum class QueryType
 		{
 			OCCLUSION = 0,
 			PIPELINE_STATISTICS = 1,
 			TIMESTAMP = 2,
 		};
-
-		enum class QueryPipelineStatisticFlagBits
-		{
-			INPUT_ASSEMBLY_VERTICES_BIT = 0x00000001,
-			INPUT_ASSEMBLY_PRIMITIVES_BIT = 0x00000002,
-			VERTEX_SHADER_INVOCATIONS_BIT = 0x00000004,
-			GEOMETRY_SHADER_INVOCATIONS_BIT = 0x00000008,
-			GEOMETRY_SHADER_PRIMITIVES_BIT = 0x00000010,
-			CLIPPING_INVOCATIONS_BIT = 0x00000020,
-			CLIPPING_PRIMITIVES_BIT = 0x00000040,
-			FRAGMENT_SHADER_INVOCATIONS_BIT = 0x00000080,
-			TESSELLATION_CONTROL_SHADER_PATCHES_BIT = 0x00000100,
-			TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT = 0x00000200,
-			COMPUTE_SHADER_INVOCATIONS_BIT = 0x00000400,
-		};
-		using QueryPipelineStatisticFlags = uint32_t;
-
-		enum class StencilFaceFlagBits
-		{
-			FRONT_BIT = 1,
-			BACK_BIT = 2,
-			FRONT_AND_BACK = FRONT_BIT | BACK_BIT,
-		};
-		using StencilFaceFlags = uint32_t;
-
-		enum class PipelineStageFlagBits
-		{
-			TOP_OF_PIPE_BIT = 0x00000001,
-			DRAW_INDIRECT_BIT = 0x00000002,
-			VERTEX_INPUT_BIT = 0x00000004,
-			VERTEX_SHADER_BIT = 0x00000008,
-			TESSELLATION_CONTROL_SHADER_BIT = 0x00000010,
-			TESSELLATION_EVALUATION_SHADER_BIT = 0x00000020,
-			GEOMETRY_SHADER_BIT = 0x00000040,
-			FRAGMENT_SHADER_BIT = 0x00000080,
-			EARLY_FRAGMENT_TESTS_BIT = 0x00000100,
-			LATE_FRAGMENT_TESTS_BIT = 0x00000200,
-			COLOR_ATTACHMENT_OUTPUT_BIT = 0x00000400,
-			COMPUTE_SHADER_BIT = 0x00000800,
-			TRANSFER_BIT = 0x00001000,
-			BOTTOM_OF_PIPE_BIT = 0x00002000,
-			HOST_BIT = 0x00004000,
-		};
-		using PipelineStageFlags = uint32_t;
 
 		enum class ResourceState
 		{
@@ -345,40 +312,6 @@ namespace VEngine
 			_3D = 2,
 		};
 
-		enum class ImageUsageFlagBits
-		{
-			TRANSFER_SRC_BIT = 0x00000001,
-			TRANSFER_DST_BIT = 0x00000002,
-			SAMPLED_BIT = 0x00000004,
-			STORAGE_BIT = 0x00000008,
-			COLOR_ATTACHMENT_BIT = 0x00000010,
-			DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
-		};
-		using ImageUsageFlags = uint32_t;
-
-		enum class ImageCreateFlagBits
-		{
-			CUBE_COMPATIBLE_BIT = 0x00000010,
-		};
-		using ImageCreateFlags = uint32_t;
-
-		enum class BufferUsageFlagBits
-		{
-			TRANSFER_SRC_BIT = 0x00000001,
-			TRANSFER_DST_BIT = 0x00000002,
-			UNIFORM_TEXEL_BUFFER_BIT = 0x00000004,
-			STORAGE_TEXEL_BUFFER_BIT = 0x00000008,
-			UNIFORM_BUFFER_BIT = 0x00000010,
-			STORAGE_BUFFER_BIT = 0x00000020,
-			INDEX_BUFFER_BIT = 0x00000040,
-			VERTEX_BUFFER_BIT = 0x00000080,
-			INDIRECT_BUFFER_BIT = 0x00000100,
-			SHADER_DEVICE_ADDRESS_BIT = 0x00020000,
-		};
-		using BufferUsageFlags = uint32_t;
-
-		using BufferCreateFlags = uint32_t;
-
 		enum class PrimitiveTopology
 		{
 			POINT_LIST = 0,
@@ -430,16 +363,6 @@ namespace VEngine
 			INCREMENT_AND_WRAP = 6,
 			DECREMENT_AND_WRAP = 7,
 		};
-
-		enum class CullModeFlagBits
-		{
-			NONE = 0,
-			FRONT_BIT = 1,
-			BACK_BIT = 2,
-			FRONT_AND_BACK = FRONT_BIT | BACK_BIT,
-		};
-
-		using CullModeFlags = uint32_t;
 
 		enum class SampleCount
 		{
@@ -515,14 +438,157 @@ namespace VEngine
 			MAX = 4,
 		};
 
-		enum class ColorComponentFlagBits
+
+
+		// FLAGS
+
+		namespace MemoryPropertyFlagBits
 		{
-			R_BIT = 0x00000001,
-			G_BIT = 0x00000002,
-			B_BIT = 0x00000004,
-			A_BIT = 0x00000008,
-		};
+			enum
+			{
+				DEVICE_LOCAL_BIT = 0x00000001,
+				HOST_VISIBLE_BIT = 0x00000002,
+				HOST_COHERENT_BIT = 0x00000004,
+				HOST_CACHED_BIT = 0x00000008,
+			};
+		}
+		using MemoryPropertyFlags = uint32_t;
+
+		namespace QueryPipelineStatisticFlagBits
+		{
+			enum
+			{
+				INPUT_ASSEMBLY_VERTICES_BIT = 0x00000001,
+				INPUT_ASSEMBLY_PRIMITIVES_BIT = 0x00000002,
+				VERTEX_SHADER_INVOCATIONS_BIT = 0x00000004,
+				GEOMETRY_SHADER_INVOCATIONS_BIT = 0x00000008,
+				GEOMETRY_SHADER_PRIMITIVES_BIT = 0x00000010,
+				CLIPPING_INVOCATIONS_BIT = 0x00000020,
+				CLIPPING_PRIMITIVES_BIT = 0x00000040,
+				FRAGMENT_SHADER_INVOCATIONS_BIT = 0x00000080,
+				TESSELLATION_CONTROL_SHADER_PATCHES_BIT = 0x00000100,
+				TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT = 0x00000200,
+				COMPUTE_SHADER_INVOCATIONS_BIT = 0x00000400,
+			};
+		}
+		using QueryPipelineStatisticFlags = uint32_t;
+
+		namespace StencilFaceFlagBits
+		{
+			enum
+			{
+				FRONT_BIT = 1,
+				BACK_BIT = 2,
+				FRONT_AND_BACK = FRONT_BIT | BACK_BIT,
+			};
+		}
+		using StencilFaceFlags = uint32_t;
+
+		namespace PipelineStageFlagBits
+		{
+			enum
+			{
+				TOP_OF_PIPE_BIT = 0x00000001,
+				DRAW_INDIRECT_BIT = 0x00000002,
+				VERTEX_INPUT_BIT = 0x00000004,
+				VERTEX_SHADER_BIT = 0x00000008,
+				TESSELLATION_CONTROL_SHADER_BIT = 0x00000010,
+				TESSELLATION_EVALUATION_SHADER_BIT = 0x00000020,
+				GEOMETRY_SHADER_BIT = 0x00000040,
+				FRAGMENT_SHADER_BIT = 0x00000080,
+				EARLY_FRAGMENT_TESTS_BIT = 0x00000100,
+				LATE_FRAGMENT_TESTS_BIT = 0x00000200,
+				COLOR_ATTACHMENT_OUTPUT_BIT = 0x00000400,
+				COMPUTE_SHADER_BIT = 0x00000800,
+				TRANSFER_BIT = 0x00001000,
+				BOTTOM_OF_PIPE_BIT = 0x00002000,
+				HOST_BIT = 0x00004000,
+			};
+		}
+		using PipelineStageFlags = uint32_t;
+
+
+		namespace ImageUsageFlagBits
+		{
+			enum
+			{
+				TRANSFER_SRC_BIT = 0x00000001,
+				TRANSFER_DST_BIT = 0x00000002,
+				SAMPLED_BIT = 0x00000004,
+				STORAGE_BIT = 0x00000008,
+				COLOR_ATTACHMENT_BIT = 0x00000010,
+				DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
+			};
+		}
+		using ImageUsageFlags = uint32_t;
+
+		namespace ImageCreateFlagBits
+		{
+			enum
+			{
+				MUTABLE_FORMAT_BIT = 0x00000008,
+				CUBE_COMPATIBLE_BIT = 0x00000010,
+				_2D_ARRAY_COMPATIBLE_BIT = 0x00000020,
+			};
+		}
+		using ImageCreateFlags = uint32_t;
+
+		namespace BufferUsageFlagBits
+		{
+			enum
+			{
+				TRANSFER_SRC_BIT = 0x00000001,
+				TRANSFER_DST_BIT = 0x00000002,
+				UNIFORM_TEXEL_BUFFER_BIT = 0x00000004,
+				STORAGE_TEXEL_BUFFER_BIT = 0x00000008,
+				UNIFORM_BUFFER_BIT = 0x00000010,
+				STORAGE_BUFFER_BIT = 0x00000020,
+				INDEX_BUFFER_BIT = 0x00000040,
+				VERTEX_BUFFER_BIT = 0x00000080,
+				INDIRECT_BUFFER_BIT = 0x00000100,
+				SHADER_DEVICE_ADDRESS_BIT = 0x00020000,
+			};
+		}
+		using BufferUsageFlags = uint32_t;
+
+		using BufferCreateFlags = uint32_t;
+
+		namespace CullModeFlagBits
+		{
+			enum
+			{
+				NONE = 0,
+				FRONT_BIT = 1,
+				BACK_BIT = 2,
+				FRONT_AND_BACK = FRONT_BIT | BACK_BIT,
+			};
+		}
+		using CullModeFlags = uint32_t;
+
+		namespace ColorComponentFlagBits
+		{
+			enum
+			{
+				R_BIT = 0x00000001,
+				G_BIT = 0x00000002,
+				B_BIT = 0x00000004,
+				A_BIT = 0x00000008,
+			};
+		}
 		using ColorComponentFlags = uint32_t;
+
+
+		namespace QueryResultFlagBits
+		{
+			enum
+			{
+				_64_BIT = 0x00000001,
+				WAIT_BIT = 0x00000002,
+				WITH_AVAILABILITY_BIT = 0x00000004,
+				PARTIAL_BIT = 0x00000008,
+			};
+		}
+		using QueryResultFlags = uint32_t;
 
 
 
@@ -842,8 +908,8 @@ namespace VEngine
 			uint32_t m_width = 1;
 			uint32_t m_height = 1;
 			uint32_t m_depth = 1;
-			uint32_t m_layers = 1;
 			uint32_t m_levels = 1;
+			uint32_t m_layers = 1;
 			SampleCount m_samples = SampleCount::_1;
 			ImageType m_imageType = ImageType::_2D;
 			Format m_format = Format::UNDEFINED;
@@ -874,7 +940,14 @@ namespace VEngine
 			const CommandList *const *m_commandLists;
 			uint32_t m_signalSemaphoreCount;
 			const Semaphore *const *m_signalSemaphores;
-			uint64_t *m_signalValues;
+			const uint64_t *m_signalValues;
+		};
+
+		struct DescriptorBufferInfo
+		{
+			Buffer *m_buffer;
+			uint64_t m_bufferOffset;
+			uint64_t m_bufferRange;
 		};
 
 		struct DescriptorSetUpdate
@@ -883,12 +956,10 @@ namespace VEngine
 			uint32_t m_dstArrayElement;
 			uint32_t m_descriptorCount;
 			DescriptorType m_descriptorType;
-			Sampler *m_sampler;
-			ImageView *m_imageView;
-			BufferView *m_bufferView;
-			Buffer *m_buffer;
-			uint64_t m_bufferOffset;
-			uint64_t m_bufferRange;
+			Sampler **m_samplers;
+			ImageView **m_imageViews;
+			BufferView **m_bufferViews;
+			DescriptorBufferInfo **m_bufferInfo;
 		};
 
 		struct SamplerCreateInfo
@@ -968,7 +1039,7 @@ namespace VEngine
 		public:
 			virtual ~DescriptorPool() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout **layouts, DescriptorSet **sets) = 0;
+			virtual void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets) = 0;
 			virtual void freeDescriptorSets(uint32_t count, DescriptorSet **sets) = 0;
 		};
 
@@ -1038,20 +1109,24 @@ namespace VEngine
 			virtual void beginQuery(const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void endQuery(const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount) = 0;
-			virtual void writeTimestamp(PipelineStageFlagBits pipelineStage, const QueryPool *queryPool, uint32_t query) = 0;
+			virtual void writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) = 0;
 			virtual void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
 			virtual void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
 			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) = 0;
 			virtual void endRenderPass() = 0;
+			virtual void insertDebugLabel(const char *label) = 0;
+			virtual void beginDebugLabel(const char *label) = 0;
+			virtual void endDebugLabel() = 0;
 		};
 
 		class CommandListPool
 		{
 		public:
 			virtual ~CommandListPool() = default;
+			virtual void *getNativeHandle() const = 0;
 			virtual void allocate(uint32_t count, CommandList **commandLists) = 0;
-			virtual void free(uint32_t count, CommandList *commandLists) = 0;
+			virtual void free(uint32_t count, CommandList **commandLists) = 0;
 			virtual void reset() = 0;
 		};
 
@@ -1061,7 +1136,9 @@ namespace VEngine
 			virtual ~Queue() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual uint32_t getFamilyIndex() const = 0;
+			virtual uint32_t getTimestampValidBits() const = 0;
 			virtual void submit(uint32_t count, const SubmitInfo *submitInfo) = 0;
+			virtual void waitIdle() const = 0;
 		};
 
 		class Sampler
@@ -1153,6 +1230,7 @@ namespace VEngine
 			virtual void destroyImage(Image *image) = 0;
 			virtual void destroyBuffer(Buffer *buffer) = 0;
 			virtual void createImageView(const ImageViewCreateInfo &imageViewCreateInfo, ImageView **imageView) = 0;
+			virtual void createImageView(Image *image, ImageView **imageView) = 0;
 			virtual void createBufferView(const BufferViewCreateInfo &bufferViewCreateInfo, BufferView **bufferView) = 0;
 			virtual void destroyImageView(ImageView *imageView) = 0;
 			virtual void destroyBufferView(BufferView *bufferView) = 0;
@@ -1165,9 +1243,15 @@ namespace VEngine
 			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;
 			virtual void destroySwapChain() = 0;
 			virtual void waitIdle() = 0;
+			virtual void setDebugObjectName(ObjectType objectType, void *object, const char *name) = 0;
 			virtual Queue *getGraphicsQueue() = 0;
 			virtual Queue *getComputeQueue() = 0;
 			virtual Queue *getTransferQueue() = 0;
+			virtual void getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags) = 0;
+			virtual float getTimestampPeriod() const = 0;
+			virtual uint64_t getMinUniformBufferOffsetAlignment() const = 0;
+			virtual uint64_t getMinStorageBufferOffsetAlignment() const = 0;
+			virtual float getMaxSamplerAnisotropy() const = 0;
 		};
 	}
 }

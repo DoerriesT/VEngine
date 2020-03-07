@@ -39,7 +39,6 @@ namespace VEngine
 			const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const;
 			VkPipelineLayout getLayout() const;
 		private:
-			
 			VkPipeline m_pipeline;
 			VkPipelineLayout m_pipelineLayout;
 			GraphicsDeviceVk *m_device;

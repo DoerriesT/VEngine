@@ -20,8 +20,9 @@ namespace VEngine
 			CommandListPoolVk &operator= (const CommandListPoolVk &) = delete;
 			CommandListPoolVk &operator= (const CommandListPoolVk &&) = delete;
 			~CommandListPoolVk();
+			void *getNativeHandle() const override;
 			void allocate(uint32_t count, CommandList **commandLists) override;
-			void free(uint32_t count, CommandList *commandLists) override;
+			void free(uint32_t count, CommandList **commandLists) override;
 			void reset() override;
 		private:
 			GraphicsDeviceVk *m_device;

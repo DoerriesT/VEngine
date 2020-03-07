@@ -49,12 +49,15 @@ namespace VEngine
 			void beginQuery(const QueryPool *queryPool, uint32_t query) override;
 			void endQuery(const QueryPool *queryPool, uint32_t query) override;
 			void resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount) override;
-			void writeTimestamp(PipelineStageFlagBits pipelineStage, const QueryPool *queryPool, uint32_t query) override;
+			void writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query) override;
 			void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) override;
 			void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) override;
 			void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) override;
 			void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) override;
 			void endRenderPass() override;
+			void insertDebugLabel(const char *label) override;
+			virtual void beginDebugLabel(const char *label) override;
+			virtual void endDebugLabel() override;
 
 		private:
 			VkCommandBuffer m_commandBuffer;

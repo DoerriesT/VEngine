@@ -7,8 +7,20 @@ namespace VEngine
 	{
 		namespace Initializers
 		{
-			Barrier imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter);
+			DescriptorSetUpdate samplerDescriptor(Sampler **samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate sampledImage(ImageView **images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageImage(ImageView **images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate uniformTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate uniformBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			Barrier imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter, const ImageSubresourceRange &subresourceRange = { 0, 1, 0, 1 });
 			Barrier bufferBarrier(const Buffer *buffer, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter);
+			void submitSingleTimeCommands(Queue *queue, CommandList *cmdList);
+			bool isReadAccess(ResourceState state);
+			bool isWriteAccess(ResourceState state);
+			uint32_t getUsageFlags(ResourceState state);
+			bool isDepthFormat(Format format);
 		}
 
 		class GraphicsPipelineBuilder

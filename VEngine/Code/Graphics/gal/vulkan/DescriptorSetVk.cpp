@@ -52,14 +52,47 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 	{
 		const uint32_t countVk = std::min(batchSize, count - i * batchSize);
 
-		union InfoData
-		{
-			VkDescriptorImageInfo m_imageInfo;
-			VkDescriptorBufferInfo m_bufferInfo;
-			VkBufferView m_texelBufferView;
-		};
+		std::vector<VkDescriptorImageInfo> imageInfos;
+		std::vector<VkDescriptorBufferInfo> bufferInfos;
+		std::vector<VkBufferView> texelBufferViews;
 
-		InfoData infoDataVk[batchSize];
+		size_t imageInfoReserveCount = 0;
+		size_t bufferInfoReserveCount = 0;
+		size_t texelBufferViewsReserveCount = 0;
+		for (uint32_t j = 0; j < countVk; ++j)
+		{
+			const auto &update = updates[i * batchSize + j];
+			switch (update.m_descriptorType)
+			{
+			case DescriptorType::SAMPLER:
+			case DescriptorType::SAMPLED_IMAGE:
+			case DescriptorType::STORAGE_IMAGE:
+				imageInfoReserveCount += update.m_descriptorCount;
+				break;
+			case DescriptorType::UNIFORM_TEXEL_BUFFER:
+			case DescriptorType::STORAGE_TEXEL_BUFFER:
+				texelBufferViewsReserveCount += update.m_descriptorCount;
+			case DescriptorType::UNIFORM_BUFFER:
+			case DescriptorType::STORAGE_BUFFER:
+				bufferInfoReserveCount += update.m_descriptorCount;
+			default:
+				assert(false);
+				break;
+			}
+		}
+
+		imageInfos.reserve(imageInfoReserveCount);
+		bufferInfos.reserve(bufferInfoReserveCount);
+		texelBufferViews.reserve(texelBufferViewsReserveCount);
+		
+		//union InfoData
+		//{
+		//	VkDescriptorImageInfo m_imageInfo;
+		//	VkDescriptorBufferInfo m_bufferInfo;
+		//	VkBufferView m_texelBufferView;
+		//};
+		//
+		//InfoData infoDataVk[batchSize];
 		VkWriteDescriptorSet writesVk[batchSize];
 
 		for (uint32_t j = 0; j < countVk; ++j)
@@ -73,63 +106,84 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 			write.dstArrayElement = update.m_dstArrayElement;
 			write.descriptorCount = update.m_descriptorCount;
 
-			auto &info = infoDataVk[j];
+			//auto &info = infoDataVk[j];
 
 			switch (update.m_descriptorType)
 			{
 			case DescriptorType::SAMPLER:
 			{
-				info.m_imageInfo = { (VkSampler)update.m_sampler->getNativeHandle(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED };
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					imageInfos.push_back({ (VkSampler)update.m_samplers[k]->getNativeHandle(), VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED });
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-				write.pImageInfo = &info.m_imageInfo;
+				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::SAMPLED_IMAGE:
 			{
-				info.m_imageInfo = { VK_NULL_HANDLE, (VkImageView)update.m_imageView->getNativeHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					imageInfos.push_back({ VK_NULL_HANDLE, (VkImageView)update.m_imageViews[k]->getNativeHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-				write.pImageInfo = &info.m_imageInfo;
+				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::STORAGE_IMAGE:
 			{
-				info.m_imageInfo = { VK_NULL_HANDLE, (VkImageView)update.m_imageView->getNativeHandle(), VK_IMAGE_LAYOUT_GENERAL };
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					imageInfos.push_back({ VK_NULL_HANDLE, (VkImageView)update.m_imageViews[k]->getNativeHandle(), VK_IMAGE_LAYOUT_GENERAL });
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				write.pImageInfo = &info.m_imageInfo;
+				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::UNIFORM_TEXEL_BUFFER:
 			{
-				info.m_texelBufferView = (VkBufferView)update.m_bufferView->getNativeHandle();
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					texelBufferViews.push_back((VkBufferView)update.m_bufferViews[k]->getNativeHandle());
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-				write.pTexelBufferView = &info.m_texelBufferView;
+				write.pTexelBufferView = texelBufferViews.data() + texelBufferViews.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::STORAGE_TEXEL_BUFFER:
 			{
-				info.m_texelBufferView = (VkBufferView)update.m_bufferView->getNativeHandle();
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					texelBufferViews.push_back((VkBufferView)update.m_bufferViews[k]->getNativeHandle());
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-				write.pTexelBufferView = &info.m_texelBufferView;
+				write.pTexelBufferView = texelBufferViews.data() + texelBufferViews.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::UNIFORM_BUFFER:
 			{
-				const auto *bufferVk = dynamic_cast<const BufferVk *>(update.m_buffer);
-				assert(bufferVk);
-
-				info.m_bufferInfo = { (VkBuffer)update.m_buffer->getNativeHandle(), update.m_bufferOffset, update.m_bufferRange };
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					const auto &info = update.m_bufferInfo[k];
+					const auto *bufferVk = dynamic_cast<const BufferVk *>(info->m_buffer);
+					assert(bufferVk);
+					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info->m_bufferOffset, info->m_bufferRange });
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				write.pBufferInfo = &info.m_bufferInfo;
+				write.pBufferInfo = bufferInfos.data() + bufferInfos.size() - update.m_descriptorCount;
 				break;
 			}
 			case DescriptorType::STORAGE_BUFFER:
 			{
-				const auto *bufferVk = dynamic_cast<const BufferVk *>(update.m_buffer);
-				assert(bufferVk);
-
-				info.m_bufferInfo = { (VkBuffer)update.m_buffer->getNativeHandle(), update.m_bufferOffset, update.m_bufferRange };
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					const auto &info = update.m_bufferInfo[k];
+					const auto *bufferVk = dynamic_cast<const BufferVk *>(info->m_buffer);
+					assert(bufferVk);
+					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info->m_bufferOffset, info->m_bufferRange });
+				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				write.pBufferInfo = &info.m_bufferInfo;
+				write.pBufferInfo = bufferInfos.data() + bufferInfos.size() - update.m_descriptorCount;
 				break;
 			}
 			default:
@@ -185,7 +239,7 @@ void *VEngine::gal::DescriptorPoolVk::getNativeHandle() const
 	return m_descriptorPool;
 }
 
-void VEngine::gal::DescriptorPoolVk::allocateDescriptorSets(uint32_t count, const DescriptorSetLayout **layouts, DescriptorSet **sets)
+void VEngine::gal::DescriptorPoolVk::allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets)
 {
 	constexpr uint32_t batchSize = 8;
 	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;

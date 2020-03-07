@@ -2,14 +2,153 @@
 #include <cstring>
 #include <cassert>
 
-VEngine::gal::Barrier VEngine::gal::Initializers::imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter)
+VEngine::gal::Barrier VEngine::gal::Initializers::imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter, const ImageSubresourceRange &subresourceRange)
 {
-	return { image, nullptr, stagesBefore, stagesAfter, stateBefore, stateAfter, nullptr, nullptr };
+	return { image, nullptr, stagesBefore, stagesAfter, stateBefore, stateAfter, nullptr, nullptr, subresourceRange, false, false };
 }
 
 VEngine::gal::Barrier VEngine::gal::Initializers::bufferBarrier(const Buffer *buffer, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter)
 {
 	return { nullptr, buffer, stagesBefore, stagesAfter, stateBefore, stateAfter, nullptr, nullptr };
+}
+
+void VEngine::gal::Initializers::submitSingleTimeCommands(Queue *queue, CommandList *cmdList)
+{
+	SubmitInfo submitInfo = {};
+	submitInfo.m_commandListCount = 1;
+	submitInfo.m_commandLists = &cmdList;
+	queue->submit(1, &submitInfo);
+	queue->waitIdle();
+}
+
+bool VEngine::gal::Initializers::isReadAccess(ResourceState state)
+{
+	switch (state)
+	{
+	case ResourceState::READ_DEPTH_STENCIL:
+	case ResourceState::READ_TEXTURE:
+	case ResourceState::READ_STORAGE_IMAGE:
+	case ResourceState::READ_STORAGE_BUFFER:
+	case ResourceState::READ_UNIFORM_BUFFER:
+	case ResourceState::READ_VERTEX_BUFFER:
+	case ResourceState::READ_INDEX_BUFFER:
+	case ResourceState::READ_INDIRECT_BUFFER:
+	case ResourceState::READ_BUFFER_TRANSFER:
+	case ResourceState::READ_IMAGE_TRANSFER:
+	case ResourceState::READ_WRITE_STORAGE_IMAGE:
+	case ResourceState::READ_WRITE_STORAGE_BUFFER:
+	case ResourceState::READ_WRITE_DEPTH_STENCIL:
+	case ResourceState::PRESENT_IMAGE:
+		return true;
+	default:
+		break;
+	}
+	return false;
+}
+
+bool VEngine::gal::Initializers::isWriteAccess(ResourceState state)
+{
+	switch (state)
+	{
+	case ResourceState::READ_WRITE_STORAGE_IMAGE:
+	case ResourceState::READ_WRITE_STORAGE_BUFFER:
+	case ResourceState::READ_WRITE_DEPTH_STENCIL:
+	case ResourceState::WRITE_ATTACHMENT:
+	case ResourceState::WRITE_STORAGE_IMAGE:
+	case ResourceState::WRITE_STORAGE_BUFFER:
+	case ResourceState::WRITE_BUFFER_TRANSFER:
+	case ResourceState::WRITE_IMAGE_TRANSFER:
+		return true;
+	default:
+		break;
+	}
+	return false;
+}
+
+uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
+{
+	switch (state)
+	{
+	case ResourceState::UNDEFINED:
+		return 0;
+
+	case ResourceState::READ_DEPTH_STENCIL:
+		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	case ResourceState::READ_TEXTURE:
+		return ImageUsageFlagBits::SAMPLED_BIT;
+
+	case ResourceState::READ_STORAGE_IMAGE:
+		return ImageUsageFlagBits::STORAGE_BIT;
+
+	case ResourceState::READ_STORAGE_BUFFER:
+		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+
+	case ResourceState::READ_UNIFORM_BUFFER:
+		return BufferUsageFlagBits::UNIFORM_BUFFER_BIT;
+
+	case ResourceState::READ_VERTEX_BUFFER:
+		return BufferUsageFlagBits::VERTEX_BUFFER_BIT;
+
+	case ResourceState::READ_INDEX_BUFFER:
+		return BufferUsageFlagBits::INDEX_BUFFER_BIT;
+
+	case ResourceState::READ_INDIRECT_BUFFER:
+		return BufferUsageFlagBits::INDIRECT_BUFFER_BIT;
+
+	case ResourceState::READ_BUFFER_TRANSFER:
+		return BufferUsageFlagBits::TRANSFER_SRC_BIT;
+
+	case ResourceState::READ_IMAGE_TRANSFER:
+		return ImageUsageFlagBits::TRANSFER_SRC_BIT;
+
+	case ResourceState::READ_WRITE_STORAGE_IMAGE:
+		return ImageUsageFlagBits::STORAGE_BIT;
+
+	case ResourceState::READ_WRITE_STORAGE_BUFFER:
+		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+
+	case ResourceState::READ_WRITE_DEPTH_STENCIL:
+		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	case ResourceState::WRITE_ATTACHMENT:
+		return ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+
+	case ResourceState::WRITE_STORAGE_IMAGE:
+		return ImageUsageFlagBits::STORAGE_BIT;
+
+	case ResourceState::WRITE_STORAGE_BUFFER:
+		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+
+	case ResourceState::WRITE_BUFFER_TRANSFER:
+		return BufferUsageFlagBits::TRANSFER_DST_BIT;
+
+	case ResourceState::WRITE_IMAGE_TRANSFER:
+		return ImageUsageFlagBits::TRANSFER_DST_BIT;
+
+	case ResourceState::PRESENT_IMAGE:
+		return 0;
+
+	default:
+		assert(false);
+	}
+	return 0;
+}
+
+bool VEngine::gal::Initializers::isDepthFormat(Format format)
+{
+	switch (format)
+	{
+	case Format::D16_UNORM:
+	case Format::X8_D24_UNORM_PACK32:
+	case Format::D32_SFLOAT:
+	case Format::D16_UNORM_S8_UINT:
+	case Format::D24_UNORM_S8_UINT:
+	case Format::D32_SFLOAT_S8_UINT:
+		return true;
+	default:
+		return false;
+	}
 }
 
 const VEngine::gal::PipelineColorBlendAttachmentState VEngine::gal::GraphicsPipelineBuilder::s_defaultBlendAttachment =
@@ -249,4 +388,39 @@ void VEngine::gal::GraphicsPipelineBuilder::setColorAttachmentFormat(Format form
 void VEngine::gal::GraphicsPipelineBuilder::setDepthStencilAttachmentFormat(Format format)
 {
 	m_createInfo.m_attachmentFormats.m_depthStencilFormat = format;
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::samplerDescriptor(Sampler **samplers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::SAMPLER, samplers, nullptr, nullptr, nullptr };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::sampledImage(ImageView **images, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::SAMPLED_IMAGE, nullptr, images, nullptr, nullptr };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageImage(ImageView **images, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::STORAGE_IMAGE, nullptr, images, nullptr, nullptr };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::UNIFORM_TEXEL_BUFFER, nullptr, nullptr, buffers, nullptr };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::STORAGE_TEXEL_BUFFER, nullptr, nullptr, buffers, nullptr };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::UNIFORM_BUFFER, nullptr, nullptr, nullptr, buffers };
+}
+
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+{
+	return { binding, arrayElement, count, DescriptorType::STORAGE_BUFFER, nullptr, nullptr, nullptr, buffers };
 }

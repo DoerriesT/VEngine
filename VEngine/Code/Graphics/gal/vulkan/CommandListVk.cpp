@@ -7,6 +7,7 @@
 #include "GraphicsDeviceVk.h"
 #include "RenderPassDescriptionVk.h"
 #include "UtilityVk.h"
+#include "GlobalVar.h"
 
 VEngine::gal::CommandListVk::CommandListVk(VkCommandBuffer commandBuffer, GraphicsDeviceVk *device)
 	:m_commandBuffer(commandBuffer),
@@ -503,7 +504,7 @@ void VEngine::gal::CommandListVk::resetQueryPool(const QueryPool *queryPool, uin
 	vkCmdResetQueryPool(m_commandBuffer, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount);
 }
 
-void VEngine::gal::CommandListVk::writeTimestamp(PipelineStageFlagBits pipelineStage, const QueryPool *queryPool, uint32_t query)
+void VEngine::gal::CommandListVk::writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query)
 {
 	vkCmdWriteTimestamp(m_commandBuffer, static_cast<VkPipelineStageFlagBits>(pipelineStage), (VkQueryPool)queryPool->getNativeHandle(), query);
 }
@@ -654,4 +655,32 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 void VEngine::gal::CommandListVk::endRenderPass()
 {
 	vkCmdEndRenderPass(m_commandBuffer);
+}
+
+void VEngine::gal::CommandListVk::insertDebugLabel(const char *label)
+{
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsLabelEXT labelVk{ VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+		labelVk.pLabelName = label;
+		vkCmdInsertDebugUtilsLabelEXT(m_commandBuffer, &labelVk);
+	}
+}
+
+void VEngine::gal::CommandListVk::beginDebugLabel(const char *label)
+{
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		VkDebugUtilsLabelEXT labelVk{ VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+		labelVk.pLabelName = label;
+		vkCmdBeginDebugUtilsLabelEXT(m_commandBuffer, &labelVk);
+	}
+}
+
+void VEngine::gal::CommandListVk::endDebugLabel()
+{
+	if (g_vulkanDebugCallBackEnabled)
+	{
+		vkCmdEndDebugUtilsLabelEXT(m_commandBuffer);
+	}
 }

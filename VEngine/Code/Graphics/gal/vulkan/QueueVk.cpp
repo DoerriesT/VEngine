@@ -12,6 +12,11 @@ uint32_t VEngine::gal::QueueVk::getFamilyIndex() const
 	return m_queueFamily;
 }
 
+uint32_t VEngine::gal::QueueVk::getTimestampValidBits() const
+{
+	return m_timestampValidBits;
+}
+
 void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 {
 	size_t semaphoreCount = 0;
@@ -68,4 +73,9 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 	}
 
 	UtilityVk::checkResult(vkQueueSubmit(m_queue, count, submitInfoVk.data(), VK_NULL_HANDLE), "Failed to submit to Queue!");
+}
+
+void VEngine::gal::QueueVk::waitIdle() const
+{
+	vkQueueWaitIdle(m_queue);
 }

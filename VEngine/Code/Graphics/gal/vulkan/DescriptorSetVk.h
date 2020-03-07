@@ -45,8 +45,8 @@ namespace VEngine
 			DescriptorPoolVk &operator= (const DescriptorPoolVk &&) = delete;
 			~DescriptorPoolVk();
 			void *getNativeHandle() const override;
-			void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout **layouts, DescriptorSet **sets);
-			void freeDescriptorSets(uint32_t count, DescriptorSet **sets);
+			void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets) override;
+			void freeDescriptorSets(uint32_t count, DescriptorSet **sets) override;
 		private:
 			VkDevice m_device;
 			VkDescriptorPool m_descriptorPool;
