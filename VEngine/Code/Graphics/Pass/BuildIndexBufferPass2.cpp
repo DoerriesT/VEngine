@@ -58,7 +58,7 @@ void VEngine::BuildIndexBufferPass2::addToGraph(rg::RenderGraph2 &graph, const D
 	DescriptorBufferInfo clusterInfoBufferInfo{ nullptr, 0, glm::max(clusterInfoList.size() * sizeof(ClusterInfo), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
-		data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[data.m_passRecordContext->m_commonRenderData->m_curResIdx]->allocate(clusterInfoBufferInfo.m_bufferRange, clusterInfoBufferInfo.m_bufferOffset, clusterInfoBufferInfo.m_buffer, bufferPtr);
+		data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[data.m_passRecordContext->m_commonRenderData->m_curResIdx]->allocate(clusterInfoBufferInfo.m_range, clusterInfoBufferInfo.m_offset, clusterInfoBufferInfo.m_buffer, bufferPtr);
 		if (!clusterInfoList.empty())
 		{
 			memcpy(bufferPtr, clusterInfoList.data(), clusterInfoList.size() * sizeof(ClusterInfo));

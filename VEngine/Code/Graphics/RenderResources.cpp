@@ -60,10 +60,10 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroySampler(m_samplers[3]);
 	m_graphicsDevice->destroySampler(m_shadowSampler);
 	
-	// TODO
-	//gal::DescriptorSetLayout *m_textureDescriptorSetLayout;
-	//gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout;
-	//gal::DescriptorSetLayout *m_imGuiDescriptorSetLayout;
+	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTextureDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_imGuiDescriptorSetLayout);
+
 	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_textureDescriptorSet);
 	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_computeTextureDescriptorSet);
 	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_imGuiDescriptorSet);
@@ -315,65 +315,42 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 
 	// create texture descriptor set
 	{
-		// TODO:
-		//VkDescriptorSetLayoutBinding bindings[]
-		//{
-		//	{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, VK_SHADER_STAGE_FRAGMENT_BIT},
-		//	{1, VK_DESCRIPTOR_TYPE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-		//};
-		//
-		//VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		//layoutCreateInfo.bindingCount = 2;
-		//layoutCreateInfo.pBindings = bindings;
-		//
-		//if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_textureDescriptorSetLayout) != VK_SUCCESS)
-		//{
-		//	Utility::fatalExit("Failed to create texture array DescriptorSetLayout!", -1);
-		//}
-
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
+			{1, DescriptorType::SAMPLER, 4, ShaderStageFlagBits::FRAGMENT_BIT},
+		};
+		
+		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_textureDescriptorSetLayout);
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSetLayout, &m_textureDescriptorSet);
 	}
 
 	// create compute texture descriptor set
 	{
-		// TODO:
-		//VkDescriptorSetLayoutBinding bindings[]
-		//{
-		//	{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, VK_SHADER_STAGE_COMPUTE_BIT},
-		//	{1, VK_DESCRIPTOR_TYPE_SAMPLER, 4, VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
-		//};
-		//
-		//VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		//layoutCreateInfo.bindingCount = 2;
-		//layoutCreateInfo.pBindings = bindings;
-		//
-		//if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_computeTextureDescriptorSetLayout) != VK_SUCCESS)
-		//{
-		//	Utility::fatalExit("Failed to create texture array DescriptorSetLayout!", -1);
-		//}
-
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
+			{1, DescriptorType::SAMPLER, 4, ShaderStageFlagBits::COMPUTE_BIT},
+		};
+		
+		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_computeTextureDescriptorSetLayout);
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSet);
 	}
 
 	// create ImGui descriptor set
 	{
-		// TODO
-		//VkDescriptorSetLayoutBinding bindings[]
-		//{
-		//	{0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-		//	{1, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, &m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX]},
-		//};
-		//
-		//VkDescriptorSetLayoutCreateInfo layoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		//layoutCreateInfo.bindingCount = 2;
-		//layoutCreateInfo.pBindings = bindings;
-		//
-		//if (vkCreateDescriptorSetLayout(g_context.m_device, &layoutCreateInfo, nullptr, &m_imGuiDescriptorSetLayout) != VK_SUCCESS)
-		//{
-		//	Utility::fatalExit("Failed to create ImGui DescriptorSetLayout!", -1);
-		//}
-
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType::SAMPLED_IMAGE, 1, ShaderStageFlagBits::FRAGMENT_BIT},
+			{1, DescriptorType::SAMPLER, 1, ShaderStageFlagBits::FRAGMENT_BIT},
+		};
+		
+		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_imGuiDescriptorSetLayout);
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSetLayout, &m_imGuiDescriptorSet);
+
+		DescriptorSetUpdate update = Initializers::samplerDescriptor(&m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 1);
+
+		m_imGuiDescriptorSet->update(1, &update);
 	}
 
 	createImGuiFontsTexture();

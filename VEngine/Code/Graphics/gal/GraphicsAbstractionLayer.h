@@ -8,7 +8,7 @@ namespace VEngine
 	{
 		// ENUMS
 
-		enum class GraphicsBackend
+		enum class GraphicsBackendType
 		{
 			VULKAN = 0
 		};
@@ -623,6 +623,14 @@ namespace VEngine
 			uint32_t m_firstInstance;
 		};
 
+		struct DescriptorSetLayoutBinding
+		{
+			uint32_t m_binding;
+			DescriptorType m_descriptorType;
+			uint32_t m_descriptorCount;
+			ShaderStageFlags m_stageFlags;
+		};
+
 		struct VertexInputBindingDescription
 		{
 			uint32_t m_binding;
@@ -975,8 +983,8 @@ namespace VEngine
 		struct DescriptorBufferInfo
 		{
 			Buffer *m_buffer;
-			uint64_t m_bufferOffset;
-			uint64_t m_bufferRange;
+			uint64_t m_offset;
+			uint64_t m_range;
 		};
 
 		struct DescriptorSetUpdate
@@ -1241,7 +1249,7 @@ namespace VEngine
 		class GraphicsDevice
 		{
 		public:
-			static GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackend backend);
+			static GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackendType backend);
 			static void destroy(const GraphicsDevice *device);
 			virtual ~GraphicsDevice() = default;
 			virtual void beginFrame() = 0;
@@ -1269,6 +1277,8 @@ namespace VEngine
 			virtual void destroySemaphore(Semaphore *semaphore) = 0;
 			virtual void createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool) = 0;
 			virtual void destroyDescriptorPool(DescriptorPool *descriptorPool) = 0;
+			virtual void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) = 0;
+			virtual void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) = 0;
 			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;
 			virtual void destroySwapChain() = 0;
 			virtual void waitIdle() = 0;

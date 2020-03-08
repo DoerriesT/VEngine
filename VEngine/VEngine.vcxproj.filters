@@ -543,6 +543,12 @@
     <ClInclude Include="Code\Graphics\Module\SSRModule2.h">
       <Filter>Code\Graphics\Module</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Renderer.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\ResourceDefinitions.h">
+      <Filter>Code\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -949,6 +955,9 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Module\SSRModule2.cpp">
       <Filter>Code\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Renderer.cpp">
+      <Filter>Code\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

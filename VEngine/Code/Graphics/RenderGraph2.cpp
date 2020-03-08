@@ -938,7 +938,7 @@ void VEngine::rg::RenderGraph2::createSynchronization(ResourceViewHandle finalRe
 			if (resDesc.m_external)
 			{
 				const auto &extInfo = m_externalResourceInfo[resDesc.m_externalInfoIndex];
-				prevUsageInfo.m_queue = extInfo ? extInfo[relativeSubresIdx].m_queue : prevUsageInfo.m_queue;
+				prevUsageInfo.m_queue = extInfo && extInfo[relativeSubresIdx].m_queue ? extInfo[relativeSubresIdx].m_queue : prevUsageInfo.m_queue;
 				prevUsageInfo.m_stateStageMask = extInfo ? extInfo[relativeSubresIdx].m_stateStageMask : prevUsageInfo.m_stateStageMask;
 				prevUsageInfo.m_passHandle = prevUsageInfo.m_queue == m_queues[0] ? 0 : prevUsageInfo.m_queue == m_queues[1] ? 1 : 2;
 

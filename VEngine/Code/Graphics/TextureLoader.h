@@ -16,6 +16,7 @@ namespace VEngine
 		~TextureLoader();
 		TextureHandle load(const char *filepath);
 		void free(TextureHandle handle);
+		gal::ImageView **getViews();
 
 	private:
 		gal::GraphicsDevice *m_graphicsDevice;

@@ -13,7 +13,7 @@ VEngine::GALTestRenderer::GALTestRenderer(uint32_t width, uint32_t height, void 
 	m_frameIndex(uint64_t() - 1),
 	m_semaphoreValue(),
 	m_frameSemaphoreValues(),
-	m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackend::VULKAN)),
+	m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN)),
 	m_queue(),
 	m_swapChain(),
 	m_semaphore(),

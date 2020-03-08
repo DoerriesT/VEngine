@@ -167,7 +167,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 					const auto &info = update.m_bufferInfo[k];
 					const auto *bufferVk = dynamic_cast<const BufferVk *>(info.m_buffer);
 					assert(bufferVk);
-					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info.m_bufferOffset, info.m_bufferRange });
+					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info.m_offset, info.m_range });
 				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				write.pBufferInfo = bufferInfos.data() + bufferInfos.size() - update.m_descriptorCount;
@@ -180,7 +180,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 					const auto &info = update.m_bufferInfo[k];
 					const auto *bufferVk = dynamic_cast<const BufferVk *>(info.m_buffer);
 					assert(bufferVk);
-					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info.m_bufferOffset, info.m_bufferRange });
+					bufferInfos.push_back({ (VkBuffer)bufferVk->getNativeHandle(), info.m_offset, info.m_range });
 				}
 				write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				write.pBufferInfo = bufferInfos.data() + bufferInfos.size() - update.m_descriptorCount;

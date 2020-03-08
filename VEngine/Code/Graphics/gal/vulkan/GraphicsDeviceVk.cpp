@@ -52,6 +52,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_semaphoreMemoryPool(16),
 	m_queryPoolMemoryPool(16),
 	m_descriptorPoolMemoryPool(16),
+	m_descriptorSetLayoutMemoryPool(8),
 	m_frameIndex(uint64_t() - 1),
 	m_debugLayers(debugLayer)
 {
@@ -799,6 +800,66 @@ void VEngine::gal::GraphicsDeviceVk::destroyDescriptorPool(DescriptorPool *descr
 		// call destructor and free backing memory
 		poolVk->~DescriptorPoolVk();
 		m_descriptorPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorPoolVk)> *>(poolVk));
+	}
+}
+
+void VEngine::gal::GraphicsDeviceVk::createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout)
+{
+	auto *memory = m_descriptorSetLayoutMemoryPool.alloc();
+	assert(memory);
+
+	uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE] = {};
+	std::vector<VkDescriptorSetLayoutBinding> bindingsVk;
+	bindingsVk.resize(bindingCount);
+
+	for (uint32_t i = 0; i < bindingCount; ++i)
+	{
+		const auto &b = bindings[i];
+		typeCounts[static_cast<size_t>(b.m_descriptorType)] += b.m_descriptorCount;
+		VkDescriptorType typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
+		switch (b.m_descriptorType)
+		{
+		case DescriptorType::SAMPLER:
+			typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
+			break;
+		case DescriptorType::SAMPLED_IMAGE:
+			typeVk = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			break;
+		case  DescriptorType::STORAGE_IMAGE:
+			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			break;
+		case  DescriptorType::UNIFORM_TEXEL_BUFFER:
+			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+			break;
+		case  DescriptorType::STORAGE_TEXEL_BUFFER:
+			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+			break;
+		case  DescriptorType::UNIFORM_BUFFER:
+			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			break;
+		case  DescriptorType::STORAGE_BUFFER:
+			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			break;
+		default:
+			assert(false);
+			break;
+		}
+		bindingsVk.push_back({ b.m_binding, typeVk , b.m_descriptorCount, b.m_stageFlags, nullptr });
+	}
+
+	*descriptorSetLayout = new(memory) DescriptorSetLayoutVk(m_device, bindingCount, bindingsVk.data(), typeCounts);
+}
+
+void VEngine::gal::GraphicsDeviceVk::destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout)
+{
+	if (descriptorSetLayout)
+	{
+		auto *layoutVk = dynamic_cast<DescriptorSetLayoutVk *>(descriptorSetLayout);
+		assert(layoutVk);
+
+		// call destructor and free backing memory
+		layoutVk->~DescriptorSetLayoutVk();
+		m_descriptorSetLayoutMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorSetLayoutVk)> *>(layoutVk));
 	}
 }
 

@@ -213,3 +213,8 @@ void VEngine::TextureLoader::free(TextureHandle handle)
 	m_views[handle] = nullptr;
 	m_images[handle] = nullptr;
 }
+
+VEngine::gal::ImageView **VEngine::TextureLoader::getViews()
+{
+	return m_views;
+}

@@ -1,11 +1,11 @@
 #include "GraphicsAbstractionLayer.h"
 #include "vulkan/GraphicsDeviceVk.h"
 
-VEngine::gal::GraphicsDevice *VEngine::gal::GraphicsDevice::create(void *windowHandle, bool debugLayer, GraphicsBackend backend)
+VEngine::gal::GraphicsDevice *VEngine::gal::GraphicsDevice::create(void *windowHandle, bool debugLayer, GraphicsBackendType backend)
 {
 	switch (backend)
 	{
-	case GraphicsBackend::VULKAN:
+	case GraphicsBackendType::VULKAN:
 		return new GraphicsDeviceVk(windowHandle, debugLayer);
 	default:
 		assert(false);

@@ -53,6 +53,8 @@ namespace VEngine
 			void destroySemaphore(Semaphore *semaphore) override;
 			void createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool) override;
 			void destroyDescriptorPool(DescriptorPool *descriptorPool) override;
+			void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) override;
+			void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) override;
 			void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) override;
 			void destroySwapChain() override;
 			void waitIdle() override;
@@ -98,6 +100,7 @@ namespace VEngine
 			DynamicObjectPool<ByteArray<sizeof(SemaphoreVk)>> m_semaphoreMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(QueryPoolVk)>> m_queryPoolMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(DescriptorPoolVk)>> m_descriptorPoolMemoryPool;
+			DynamicObjectPool<ByteArray<sizeof(DescriptorSetLayoutVk)>> m_descriptorSetLayoutMemoryPool;
 			uint64_t m_frameIndex;
 			bool m_debugLayers;
 		};

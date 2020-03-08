@@ -223,10 +223,12 @@
     <ClInclude Include="Code\Graphics\Pass\VelocityInitializationPass2.h" />
     <ClInclude Include="Code\Graphics\PipelineCache.h" />
     <ClInclude Include="Code\Graphics\RenderData.h" />
+    <ClInclude Include="Code\Graphics\Renderer.h" />
     <ClInclude Include="Code\Graphics\RendererConsts.h" />
     <ClInclude Include="Code\Graphics\RenderGraph2.h" />
     <ClInclude Include="Code\Graphics\RenderResources.h" />
     <ClInclude Include="Code\Graphics\RenderSystem.h" />
+    <ClInclude Include="Code\Graphics\ResourceDefinitions.h" />
     <ClInclude Include="Code\Graphics\TextureLoader.h" />
     <ClInclude Include="Code\Graphics\ViewRenderList.h" />
     <ClInclude Include="Code\Graphics\Vulkan\CommandBufferPool.h" />
@@ -372,6 +374,7 @@
     <ClCompile Include="Code\Graphics\Pass\TonemapPass2.cpp" />
     <ClCompile Include="Code\Graphics\Pass\VelocityInitializationPass2.cpp" />
     <ClCompile Include="Code\Graphics\PipelineCache.cpp" />
+    <ClCompile Include="Code\Graphics\Renderer.cpp" />
     <ClCompile Include="Code\Graphics\RenderGraph2.cpp" />
     <ClCompile Include="Code\Graphics\RenderResources.cpp" />
     <ClCompile Include="Code\Graphics\RenderSystem.cpp" />
