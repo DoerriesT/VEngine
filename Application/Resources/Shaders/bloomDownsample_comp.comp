@@ -5,7 +5,8 @@
 #define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, r11f_g11f_b10f) uniform writeonly image2D uResultImage;
-layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
+layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform texture2D uInputImage;
+layout(set = SAMPLER_SET, binding = SAMPLER_BINDING) uniform sampler uSampler;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -31,23 +32,23 @@ void main()
 		
 		const bool doWeightedAverage = (uPushConsts.doWeightedAverage != 0);
 		
-		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( 0.0,         -texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( 0.0,         -texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
 		
-		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
 		
-		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord,                                          0.0).rgb, 0.5,   doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord,                                          0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
 		
-		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
 		
-		sum += addTap(textureLod(uInputImage, texCoord + vec2(-texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( 0.0,          texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
-		sum += addTap(textureLod(uInputImage, texCoord + vec2( texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( 0.0,          texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+		sum += addTap(textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
 		
 		sum.rgb /= sum.a;
 		

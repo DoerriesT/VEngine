@@ -77,6 +77,15 @@ BufferView *VEngine::rg::Registry2::getBufferView(BufferViewHandle handle) const
 	return m_graph.m_imageBufferViews[(size_t)handle - 1].bufferView;
 }
 
+VEngine::gal::DescriptorBufferInfo VEngine::rg::Registry2::getBufferInfo(BufferViewHandle handle) const
+{
+	const size_t viewIdx = (size_t)handle - 1;
+	const auto &viewDesc = m_graph.m_viewDescriptions[viewIdx];
+	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
+	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
+	return { m_graph.m_imageBuffers[resIdx].buffer, resDesc.m_offset + viewDesc.m_offset, viewDesc.m_range };
+}
+
 VEngine::rg::BufferViewDescription VEngine::rg::Registry2::getBufferViewDescription(BufferViewHandle handle) const
 {
 	const auto &viewDesc = m_graph.m_viewDescriptions[(size_t)handle - 1];

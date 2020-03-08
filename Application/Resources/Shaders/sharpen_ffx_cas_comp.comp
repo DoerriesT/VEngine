@@ -3,7 +3,8 @@
 #include "sharpen_ffx_cas_bindings.h"
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
-layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform texture2D uSourceTexture;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -33,7 +34,7 @@ vec3 accurateSRGBToLinear(in vec3 sRGBCol)
 
 AF3 CasLoad(ASU2 p)
 {
-	return texelFetch(uSourceTexture, ivec2(p), 0).rgb;
+	return texelFetch(sampler2D(uSourceTexture, uPointSampler), ivec2(p), 0).rgb;
 }
 
 void CasInput(inout AF1 r, inout AF1 g, inout AF1 b) 

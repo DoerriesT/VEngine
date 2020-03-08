@@ -4,8 +4,10 @@
 #include "srgb.h"
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uTonemapResultImage;
-layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
-layout(set = BLOOM_IMAGE_SET, binding = BLOOM_IMAGE_BINDING) uniform sampler2D uBloomImage;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform texture2D uSourceTexture;
+layout(set = BLOOM_IMAGE_SET, binding = BLOOM_IMAGE_BINDING) uniform texture2D uBloomImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
+layout(set = LINEAR_SAMPLER_SET, binding = LINEAR_SAMPLER_BINDING) uniform sampler uLinearSampler;
 
 layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LUMINANCE_VALUES
 {
@@ -238,12 +240,12 @@ vec3 applyHuePreservingShoulder(vec3 col)
 
 void main() 
 {
-	vec3 color = texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb;
+	vec3 color = texelFetch(sampler2D(uSourceTexture, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).rgb;
 	
 	vec2 texCoord = vec2(vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(imageSize(uTonemapResultImage).xy);
 	if (uPushConsts.bloomEnabled != 0)
 	{
-		color = mix(color, textureLod(uBloomImage, texCoord, 0.0).rgb, uPushConsts.bloomStrength);
+		color = mix(color, textureLod(sampler2D(uBloomImage, uLinearSampler), texCoord, 0.0).rgb, uPushConsts.bloomStrength);
 	}
 	
 	float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];

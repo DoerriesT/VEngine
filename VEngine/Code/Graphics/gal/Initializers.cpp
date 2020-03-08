@@ -25,6 +25,8 @@ bool VEngine::gal::Initializers::isReadAccess(ResourceState state)
 {
 	switch (state)
 	{
+	case ResourceState::READ_IMAGE_HOST:
+	case ResourceState::READ_BUFFER_HOST:
 	case ResourceState::READ_DEPTH_STENCIL:
 	case ResourceState::READ_TEXTURE:
 	case ResourceState::READ_STORAGE_IMAGE:
@@ -35,6 +37,8 @@ bool VEngine::gal::Initializers::isReadAccess(ResourceState state)
 	case ResourceState::READ_INDIRECT_BUFFER:
 	case ResourceState::READ_BUFFER_TRANSFER:
 	case ResourceState::READ_IMAGE_TRANSFER:
+	case ResourceState::READ_WRITE_IMAGE_HOST:
+	case ResourceState::READ_WRITE_BUFFER_HOST:
 	case ResourceState::READ_WRITE_STORAGE_IMAGE:
 	case ResourceState::READ_WRITE_STORAGE_BUFFER:
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
@@ -50,9 +54,13 @@ bool VEngine::gal::Initializers::isWriteAccess(ResourceState state)
 {
 	switch (state)
 	{
+	case ResourceState::READ_WRITE_IMAGE_HOST:
+	case ResourceState::READ_WRITE_BUFFER_HOST:
 	case ResourceState::READ_WRITE_STORAGE_IMAGE:
 	case ResourceState::READ_WRITE_STORAGE_BUFFER:
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
+	case ResourceState::WRITE_IMAGE_HOST:
+	case ResourceState::WRITE_BUFFER_HOST:
 	case ResourceState::WRITE_ATTACHMENT:
 	case ResourceState::WRITE_STORAGE_IMAGE:
 	case ResourceState::WRITE_STORAGE_BUFFER:
@@ -70,6 +78,12 @@ uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
 	switch (state)
 	{
 	case ResourceState::UNDEFINED:
+		return 0;
+
+	case ResourceState::READ_IMAGE_HOST:
+		return 0;
+
+	case ResourceState::READ_BUFFER_HOST:
 		return 0;
 
 	case ResourceState::READ_DEPTH_STENCIL:
@@ -102,6 +116,12 @@ uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
 	case ResourceState::READ_IMAGE_TRANSFER:
 		return ImageUsageFlagBits::TRANSFER_SRC_BIT;
 
+	case ResourceState::READ_WRITE_IMAGE_HOST:
+		return 0;
+
+	case ResourceState::READ_WRITE_BUFFER_HOST:
+		return 0;
+
 	case ResourceState::READ_WRITE_STORAGE_IMAGE:
 		return ImageUsageFlagBits::STORAGE_BIT;
 
@@ -110,6 +130,12 @@ uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
 
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
 		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	case ResourceState::WRITE_IMAGE_HOST:
+		return 0;
+
+	case ResourceState::WRITE_BUFFER_HOST:
+		return 0;
 
 	case ResourceState::WRITE_ATTACHMENT:
 		return ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
@@ -390,37 +416,48 @@ void VEngine::gal::GraphicsPipelineBuilder::setDepthStencilAttachmentFormat(Form
 	m_createInfo.m_attachmentFormats.m_depthStencilFormat = format;
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::samplerDescriptor(Sampler **samplers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::samplerDescriptor(const Sampler *const *samplers, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::SAMPLER, samplers, nullptr, nullptr, nullptr };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::sampledImage(ImageView **images, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::sampledImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::SAMPLED_IMAGE, nullptr, images, nullptr, nullptr };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageImage(ImageView **images, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::STORAGE_IMAGE, nullptr, images, nullptr, nullptr };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::UNIFORM_TEXEL_BUFFER, nullptr, nullptr, buffers, nullptr };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::STORAGE_TEXEL_BUFFER, nullptr, nullptr, buffers, nullptr };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::uniformBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::UNIFORM_BUFFER, nullptr, nullptr, nullptr, buffers };
 }
 
-VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
+VEngine::gal::DescriptorSetUpdate VEngine::gal::Initializers::storageBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement, uint32_t count)
 {
 	return { binding, arrayElement, count, DescriptorType::STORAGE_BUFFER, nullptr, nullptr, nullptr, buffers };
+}
+
+VEngine::gal::ComputePipelineBuilder::ComputePipelineBuilder(ComputePipelineCreateInfo &createInfo)
+	:m_createInfo(createInfo)
+{
+	memset(&m_createInfo, 0, sizeof(m_createInfo));
+}
+
+void VEngine::gal::ComputePipelineBuilder::setComputeShader(const char *path)
+{
+	strcpy_s(m_createInfo.m_computeShader.m_path, path);
 }

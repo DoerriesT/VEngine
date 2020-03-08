@@ -89,8 +89,8 @@ namespace VEngine
 
 		enum class IndexType
 		{
-			UINT_16,
-			UINT_32
+			UINT16 = 0,
+			UINT32 = 1,
 		};
 
 		enum class QueryType
@@ -103,6 +103,8 @@ namespace VEngine
 		enum class ResourceState
 		{
 			UNDEFINED,
+			READ_IMAGE_HOST,
+			READ_BUFFER_HOST,
 			READ_DEPTH_STENCIL,
 			READ_TEXTURE,
 			READ_STORAGE_IMAGE,
@@ -113,9 +115,13 @@ namespace VEngine
 			READ_INDIRECT_BUFFER,
 			READ_BUFFER_TRANSFER,
 			READ_IMAGE_TRANSFER,
+			READ_WRITE_IMAGE_HOST,
+			READ_WRITE_BUFFER_HOST,
 			READ_WRITE_STORAGE_IMAGE,
 			READ_WRITE_STORAGE_BUFFER,
 			READ_WRITE_DEPTH_STENCIL,
+			WRITE_IMAGE_HOST,
+			WRITE_BUFFER_HOST,
 			WRITE_ATTACHMENT,
 			WRITE_STORAGE_IMAGE,
 			WRITE_STORAGE_BUFFER,
@@ -442,6 +448,20 @@ namespace VEngine
 
 		// FLAGS
 
+		namespace ShaderStageFlagBits
+		{
+			enum 
+			{
+				VERTEX_BIT = 0x00000001,
+				TESSELLATION_CONTROL_BIT = 0x00000002,
+				TESSELLATION_EVALUATION_BIT = 0x00000004,
+				GEOMETRY_BIT = 0x00000008,
+				FRAGMENT_BIT = 0x00000010,
+				COMPUTE_BIT = 0x00000020,
+			};
+		}
+		using ShaderStageFlags = uint32_t;
+
 		namespace MemoryPropertyFlagBits
 		{
 			enum
@@ -593,6 +613,15 @@ namespace VEngine
 
 
 		// STRUCTS
+
+		struct DrawIndexedIndirectCommand
+		{
+			uint32_t m_indexCount;
+			uint32_t m_instanceCount;
+			uint32_t m_firstIndex;
+			int32_t m_vertexOffset;
+			uint32_t m_firstInstance;
+		};
 
 		struct VertexInputBindingDescription
 		{
@@ -956,10 +985,10 @@ namespace VEngine
 			uint32_t m_dstArrayElement;
 			uint32_t m_descriptorCount;
 			DescriptorType m_descriptorType;
-			Sampler **m_samplers;
-			ImageView **m_imageViews;
-			BufferView **m_bufferViews;
-			DescriptorBufferInfo **m_bufferInfo;
+			const Sampler *const *m_samplers;
+			const ImageView *const *m_imageViews;
+			const BufferView *const *m_bufferViews;
+			const DescriptorBufferInfo *m_bufferInfo;
 		};
 
 		struct SamplerCreateInfo
@@ -1111,9 +1140,9 @@ namespace VEngine
 			virtual void resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount) = 0;
 			virtual void writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) = 0;
-			virtual void pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
-			virtual void pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
-			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea) = 0;
+			virtual void pushConstants(const GraphicsPipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
+			virtual void pushConstants(const ComputePipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
+			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea) = 0;
 			virtual void endRenderPass() = 0;
 			virtual void insertDebugLabel(const char *label) = 0;
 			virtual void beginDebugLabel(const char *label) = 0;

@@ -94,7 +94,7 @@ namespace VEngine
 			ClearValue m_clearValue;
 			uint64_t m_size = 0;
 			uint32_t m_usageFlags = 0;
-			bool m_hostVisible;
+			bool m_hostVisible = false;
 		};
 
 		struct PassCreateInfo
@@ -117,6 +117,7 @@ namespace VEngine
 			gal::Buffer *getBuffer(BufferHandle handle) const;
 			gal::Buffer *getBuffer(BufferViewHandle handle) const;
 			gal::BufferView *getBufferView(BufferViewHandle handle) const;
+			gal::DescriptorBufferInfo getBufferInfo(BufferViewHandle handle) const;
 			BufferViewDescription getBufferViewDescription(BufferViewHandle handle) const;
 			BufferDescription getBufferDescription(BufferViewHandle handle) const;
 			bool firstUse(ResourceHandle handle) const;

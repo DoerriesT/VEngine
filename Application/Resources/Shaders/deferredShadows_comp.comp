@@ -3,8 +3,8 @@
 #include "deferredShadows_bindings.h"
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, r8) uniform writeonly image2D uResultImage;
-layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
-layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform texture2D uDepthImage;
+layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform utexture2D uTangentSpaceImage;
 layout(set = SHADOW_IMAGE_SET, binding = SHADOW_IMAGE_BINDING) uniform texture2DArray uShadowImage;
 layout(set = SHADOW_SAMPLER_SET, binding = SHADOW_SAMPLER_BINDING) uniform samplerShadow uShadowSampler;
 layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
@@ -110,14 +110,14 @@ void main()
 	{
 		return;
 	}
-	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	const float depth = texelFetch(sampler2D(uDepthImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).x;
 	if (depth == 0.0)
 	{
 		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
 		return;
 	}
 	
-	const uvec2 encodedTBN = texelFetch(uTangentSpaceImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
+	const uvec2 encodedTBN = texelFetch(usampler2D(uTangentSpaceImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).xy;
 	const vec4 viewSpaceNormal = vec4(decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0), 0.0);
 	const vec3 N = (uPushConsts.invViewMatrix * viewSpaceNormal).xyz;
 	

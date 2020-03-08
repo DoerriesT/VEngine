@@ -4,14 +4,14 @@ namespace VEngine
 {
 	struct RenderResources;
 	class PipelineCache;
-	class DescriptorSetCache;
+	class DescriptorSetCache2;
 	struct CommonRenderData;
 
-	struct PassRecordContext
+	struct PassRecordContext2
 	{
 		RenderResources *m_renderResources;
 		PipelineCache *m_pipelineCache;
-		DescriptorSetCache *m_descriptorSetCache;
+		DescriptorSetCache2 *m_descriptorSetCache;
 		const CommonRenderData *m_commonRenderData;
 	};
 }

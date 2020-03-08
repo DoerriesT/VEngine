@@ -9,13 +9,14 @@
 #include "commonLighting.h"
 #include "srgb.h"
 
-layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 0;
+layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 1;
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
 layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
 layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
-layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform sampler2DArray uDeferredShadowImage;
+layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform texture2DArray uDeferredShadowImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
 {
@@ -147,7 +148,7 @@ void main()
 		const DirectionalLightData directionalLightData = uDirectionalLightData[i];
 		const vec3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
 		// TODO: dont assume that every directional light has a shadow mask
-		result += contribution * (1.0 - texelFetch(uDeferredShadowImage, ivec3(gl_FragCoord.xy, i), 0).x);
+		result += contribution * (1.0 - texelFetch(sampler2DArray(uDeferredShadowImage, uPointSampler), ivec3(gl_FragCoord.xy, i), 0).x);
 	}
 	
 	// point lights

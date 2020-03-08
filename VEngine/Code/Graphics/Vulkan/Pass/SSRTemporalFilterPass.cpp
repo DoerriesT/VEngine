@@ -46,9 +46,11 @@ void VEngine::SSRTemporalFilterPass::addToGraph(RenderGraph &graph, const Data &
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageViewHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_historyImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), HISTORY_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_colorRayDepthImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), COLOR_RAY_DEPTH_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_maskImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), MASK_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_historyImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), HISTORY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_colorRayDepthImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), COLOR_RAY_DEPTH_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_maskImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), MASK_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { pointSamplerClamp }, POINT_SAMPLER_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { linearSamplerClamp }, LINEAR_SAMPLER_BINDING);
 
 				writer.commit();
 			}

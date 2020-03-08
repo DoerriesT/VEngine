@@ -76,13 +76,15 @@ void VEngine::SSRResolvePass::addToGraph(RenderGraph &graph, const Data &data)
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultMaskImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_MASK_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_rayHitPDFImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), RAY_HIT_PDF_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_maskImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), MASK_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), NORMAL_IMAGE_BINDING);
-				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), ALBEDO_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_prevColorImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), PREV_COLOR_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_rayHitPDFImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), RAY_HIT_PDF_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_maskImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), MASK_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), DEPTH_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_normalImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), NORMAL_IMAGE_BINDING);
+				//writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_albedoImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), ALBEDO_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_prevColorImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), PREV_COLOR_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), VELOCITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { pointSamplerClamp }, POINT_SAMPLER_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { linearSamplerClamp }, LINEAR_SAMPLER_BINDING);
 
 				writer.commit();
 			}

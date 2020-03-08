@@ -2,6 +2,8 @@
 #define RESULT_IMAGE_BINDING 0
 #define INPUT_IMAGE_SET 0
 #define INPUT_IMAGE_BINDING 1
+#define SAMPLER_SET 0
+#define SAMPLER_BINDING 2
 
 struct PushConsts
 {

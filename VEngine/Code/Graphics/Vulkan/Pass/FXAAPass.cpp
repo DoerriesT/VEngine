@@ -40,9 +40,10 @@ void VEngine::FXAAPass::addToGraph(RenderGraph &graph, const Data &data)
 		// update descriptor sets
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
-
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX]), INPUT_IMAGE_BINDING);
+			
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_inputImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), INPUT_IMAGE_BINDING);
 			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX] }, LINEAR_SAMPLER_BINDING);
 
 			writer.commit();
 		}

@@ -7,13 +7,13 @@ namespace VEngine
 	{
 		namespace Initializers
 		{
-			DescriptorSetUpdate samplerDescriptor(Sampler **samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate sampledImage(ImageView **images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageImage(ImageView **images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate uniformTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageTexelBuffer(BufferView **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate uniformBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageBuffer(DescriptorBufferInfo **buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate samplerDescriptor(const Sampler *const *samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate sampledImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate uniformTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate uniformBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate storageBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
 			Barrier imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter, const ImageSubresourceRange &subresourceRange = { 0, 1, 0, 1 });
 			Barrier bufferBarrier(const Buffer *buffer, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter);
 			void submitSingleTimeCommands(Queue *queue, CommandList *cmdList);
@@ -63,6 +63,16 @@ namespace VEngine
 
 		private:
 			GraphicsPipelineCreateInfo &m_createInfo;
+		};
+
+		class ComputePipelineBuilder
+		{
+		public:
+			explicit ComputePipelineBuilder(ComputePipelineCreateInfo &createInfo);
+			void setComputeShader(const char *path);
+
+		private:
+			ComputePipelineCreateInfo &m_createInfo;
 		};
 	}
 }

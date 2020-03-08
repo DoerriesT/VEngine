@@ -7,10 +7,12 @@
 #define LOCAL_SIZE_Y 8
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
-layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthTexture;
-layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityTexture;
-layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform sampler2D uHistoryTexture;
-layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform sampler2D uSourceTexture;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform texture2D uDepthTexture;
+layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform texture2D uVelocityTexture;
+layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform texture2D uHistoryTexture;
+layout(set = SOURCE_IMAGE_SET, binding = SOURCE_IMAGE_BINDING) uniform texture2D uSourceTexture;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
+layout(set = LINEAR_SAMPLER_SET, binding = LINEAR_SAMPLER_BINDING) uniform sampler uLinearSampler;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -67,11 +69,11 @@ vec3 sampleHistory(vec2 texCoord, vec4 rtMetrics)
 	vec2 tc12 = (tc1 + w2 / w12) * rtMetrics.zw;
 	
 	// Bicubic filter using bilinear lookups, skipping the 4 corner texels
-	vec4 filtered = vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc0.y ), 0).rgb, 1.0) * (w12.x *  w0.y) +
-	                  vec4(textureLod(uHistoryTexture, vec2(tc0.x,  tc12.y), 0).rgb, 1.0) * ( w0.x * w12.y) +
-	                  vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc12.y), 0).rgb, 1.0) * (w12.x * w12.y) +  // Center pixel
-	                  vec4(textureLod(uHistoryTexture, vec2(tc3.x,  tc12.y), 0).rgb, 1.0) * ( w3.x * w12.y) +
-	                  vec4(textureLod(uHistoryTexture, vec2(tc12.x, tc3.y ), 0).rgb, 1.0) * (w12.x *  w3.y);
+	vec4 filtered = vec4(textureLod(sampler2D(uHistoryTexture, uLinearSampler), vec2(tc12.x, tc0.y ), 0).rgb, 1.0) * (w12.x *  w0.y) +
+	                  vec4(textureLod(sampler2D(uHistoryTexture, uLinearSampler), vec2(tc0.x,  tc12.y), 0).rgb, 1.0) * ( w0.x * w12.y) +
+	                  vec4(textureLod(sampler2D(uHistoryTexture, uLinearSampler), vec2(tc12.x, tc12.y), 0).rgb, 1.0) * (w12.x * w12.y) +  // Center pixel
+	                  vec4(textureLod(sampler2D(uHistoryTexture, uLinearSampler), vec2(tc3.x,  tc12.y), 0).rgb, 1.0) * ( w3.x * w12.y) +
+	                  vec4(textureLod(sampler2D(uHistoryTexture, uLinearSampler), vec2(tc12.x, tc3.y ), 0).rgb, 1.0) * (w12.x *  w3.y);
 	
 	return filtered.rgb * (1.0 / filtered.a);
 }
@@ -150,15 +152,15 @@ void main()
 	{
 		for (int x = -1; x < 2; ++x)
 		{
-			float depth = texelFetch(uDepthTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y), 0).x;
+			float depth = texelFetch(sampler2D(uDepthTexture, uPointSampler), ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y), 0).x;
 			velocityCoordOffset = depth > closestDepth ? ivec2(x, y) : velocityCoordOffset;
 			closestDepth = depth > closestDepth ? depth : closestDepth;
 		}
 	}
 	
-	vec2 velocity = texelFetch(uVelocityTexture, ivec2(gl_GlobalInvocationID.xy) + velocityCoordOffset, 0).xy;
+	vec2 velocity = texelFetch(sampler2D(uVelocityTexture, uPointSampler), ivec2(gl_GlobalInvocationID.xy) + velocityCoordOffset, 0).xy;
 	
-	vec3 currentColor = rgbToYcocg(texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy), 0).rgb);
+	vec3 currentColor = rgbToYcocg(texelFetch(sampler2D(uSourceTexture, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).rgb);
 	vec3 neighborhoodMin = currentColor;
 	vec3 neighborhoodMax = currentColor;
 	vec3 neighborhoodMinPlus = currentColor;
@@ -168,7 +170,7 @@ void main()
 	{
 		for (int x = -1; x < 2; ++x)
 		{
-			vec3 tap = rgbToYcocg(texelFetch(uSourceTexture, ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y), 0).rgb);
+			vec3 tap = rgbToYcocg(texelFetch(sampler2D(uSourceTexture, uPointSampler), ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y), 0).rgb);
 			neighborhoodMin = min(tap, neighborhoodMin);
 			neighborhoodMax = max(tap, neighborhoodMax);
 			neighborhoodMinPlus = (x == 0 || y == 0) ? min(tap, neighborhoodMinPlus) : neighborhoodMinPlus;
@@ -179,14 +181,14 @@ void main()
 	neighborhoodMin = mix(neighborhoodMin, neighborhoodMinPlus, 0.5);
 	neighborhoodMax = mix(neighborhoodMax, neighborhoodMaxPlus, 0.5);
 	
-	vec2 texelSize = 1.0 / vec2(textureSize(uSourceTexture, 0).xy);
+	vec2 texelSize = 1.0 / vec2(textureSize(sampler2D(uSourceTexture, uPointSampler), 0).xy);
 	vec2 texCoord = (vec2(gl_GlobalInvocationID.xy) + 0.5) * texelSize;
 	vec2 prevTexCoord = texCoord - velocity;
 	
-	vec3 historyColor = rgbToYcocg(max(sampleHistory(prevTexCoord, vec4(vec2(textureSize(uSourceTexture, 0).xy), texelSize)).rgb, 0.0.xxx));
+	vec3 historyColor = rgbToYcocg(max(sampleHistory(prevTexCoord, vec4(vec2(textureSize(sampler2D(uSourceTexture, uPointSampler), 0).xy), texelSize)).rgb, 0.0.xxx));
 	historyColor = clipAABB(historyColor, neighborhoodMin, neighborhoodMax);
 	
-	vec2 domainSize = vec2(textureSize(uSourceTexture, 0).xy);
+	vec2 domainSize = vec2(textureSize(sampler2D(uSourceTexture, uPointSampler), 0).xy);
 	float subpixelCorrection = abs(fract(max(abs(prevTexCoord.x) * domainSize.x, abs(prevTexCoord.y) * domainSize.y)) * 2.0 - 1.0);
 	
 	float alpha = mix(0.05, 0.8, subpixelCorrection);

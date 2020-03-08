@@ -54,13 +54,14 @@ void VEngine::BloomDownsamplePass::addToGraph(RenderGraph &graph, const Data &da
 					VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 					if (i == 0)
 					{
-						writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_inputImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSampler), INPUT_IMAGE_BINDING);
+						writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_inputImageViewHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), INPUT_IMAGE_BINDING);
 					}
 					else
 					{
-						writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_resultImageViewHandles[i - 1], ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSampler), INPUT_IMAGE_BINDING);
+						writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_resultImageViewHandles[i - 1], ResourceState::READ_TEXTURE_COMPUTE_SHADER), INPUT_IMAGE_BINDING);
 					}
 					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_resultImageViewHandles[i], ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
+					writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { linearSampler }, SAMPLER_BINDING);
 					writer.commit();
 
 					vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineData.m_layout, 0, 1, &descriptorSet, 0, nullptr);

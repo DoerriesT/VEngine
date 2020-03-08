@@ -11,8 +11,9 @@ layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900
 
 layout(set = RAY_HIT_PDF_IMAGE_SET, binding = RAY_HIT_PDF_IMAGE_BINDING, rgba16f) uniform writeonly image2D uRayHitPdfImage;
 layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING, r8) uniform writeonly image2D uMaskImage;
-layout(set = HIZ_PYRAMID_IMAGE_SET, binding = HIZ_PYRAMID_IMAGE_BINDING) uniform sampler2D uHiZPyramid;
-layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
+layout(set = HIZ_PYRAMID_IMAGE_SET, binding = HIZ_PYRAMID_IMAGE_BINDING) uniform texture2D uHiZPyramid;
+layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform texture2D uNormalImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
 layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
@@ -31,7 +32,7 @@ vec2 getCell(vec2 ray, vec2 cellCount)
 
 vec2 getCellCount(float level)
 {
-	return vec2(textureSize(uHiZPyramid, 0).xy) / (level == 0.0 ? 1.0 : exp2(level));
+	return vec2(textureSize(sampler2D(uHiZPyramid, uPointSampler), 0).xy) / (level == 0.0 ? 1.0 : exp2(level));
 }
 
 vec3 intersectCellBoundary(vec3 pos, vec3 dir, vec2 cellIdx, vec2 cellCount, vec2 crossStep, vec2 crossOffset)
@@ -53,7 +54,7 @@ bool crossedCellBoundary(vec2 cellIdx0, vec2 cellIdx1)
 
 float getMinimumDepthPlane(vec2 ray, float level, vec2 cellCount)
 {
-	return texelFetch(uHiZPyramid, ivec2(ray.xy * cellCount), int(level)).x;
+	return texelFetch(sampler2D(uHiZPyramid, uPointSampler), ivec2(ray.xy * cellCount), int(level)).x;
 }
 
 vec3 hiZTrace(vec3 p, vec3 v)
@@ -123,7 +124,7 @@ void main()
 		return;
 	}
 	
-	const float depth = texelFetch(uHiZPyramid, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	const float depth = texelFetch(sampler2D(uHiZPyramid, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).x;
 	if (depth == 0.0)
 	{
 		imageStore(uRayHitPdfImage, ivec2(gl_GlobalInvocationID.xy), vec4(-1.0, -1.0, -1.0, 1.0));
@@ -137,7 +138,7 @@ void main()
 	
 	const vec3 P = viewSpacePosition.xyz;
 	const vec3 V = -normalize(viewSpacePosition.xyz);
-	vec4 normalRoughness = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	vec4 normalRoughness = texelFetch(sampler2D(uNormalImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0);
 	const vec3 N = normalRoughness.xyz;
 	const float roughness = normalRoughness.w;
 	//const vec3 R = reflect(-V, N);

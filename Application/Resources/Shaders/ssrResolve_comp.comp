@@ -12,13 +12,15 @@ layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform writeonly image2D uResultImage;
 layout(set = RESULT_MASK_IMAGE_SET, binding = RESULT_MASK_IMAGE_BINDING, r8) uniform writeonly image2D uResultMaskImage;
-layout(set = RAY_HIT_PDF_IMAGE_SET, binding = RAY_HIT_PDF_IMAGE_BINDING) uniform sampler2D uRayHitPdfImage;
-layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform sampler2D uMaskImage;
-layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform sampler2D uNormalImage;
-layout(set = ALBEDO_IMAGE_SET, binding = ALBEDO_IMAGE_BINDING) uniform sampler2D uAlbedoImage;
-layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
-layout(set = PREV_COLOR_IMAGE_SET, binding = PREV_COLOR_IMAGE_BINDING) uniform sampler2D uPrevColorImage;
-layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform sampler2D uVelocityImage;
+layout(set = RAY_HIT_PDF_IMAGE_SET, binding = RAY_HIT_PDF_IMAGE_BINDING) uniform texture2D uRayHitPdfImage;
+layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform texture2D uMaskImage;
+layout(set = NORMAL_IMAGE_SET, binding = NORMAL_IMAGE_BINDING) uniform texture2D uNormalImage;
+layout(set = ALBEDO_IMAGE_SET, binding = ALBEDO_IMAGE_BINDING) uniform texture2D uAlbedoImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform texture2D uDepthImage;
+layout(set = PREV_COLOR_IMAGE_SET, binding = PREV_COLOR_IMAGE_BINDING) uniform texture2D uPrevColorImage;
+layout(set = VELOCITY_IMAGE_SET, binding = VELOCITY_IMAGE_BINDING) uniform texture2D uVelocityImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
+layout(set = LINEAR_SAMPLER_SET, binding = LINEAR_SAMPLER_BINDING) uniform sampler uLinearSampler;
 
 layout(set = TEXTURES_SET, binding = TEXTURES_BINDING) uniform texture2D uTextures[TEXTURE_ARRAY_SIZE];
 layout(set = SAMPLERS_SET, binding = SAMPLERS_BINDING) uniform sampler uSamplers[SAMPLER_COUNT];
@@ -81,7 +83,7 @@ void main()
 		return;
 	}
 	
-	const float depth = texelFetch(uDepthImage, ivec2(gl_GlobalInvocationID.xy), 0).x;
+	const float depth = texelFetch(sampler2D(uDepthImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).x;
 	if (depth == 0.0)
 	{
 		imageStore(uResultImage, ivec2(gl_GlobalInvocationID.xy), vec4(0.0));
@@ -95,10 +97,10 @@ void main()
 	
 	const vec3 P = viewSpacePosition.xyz;
 	const vec3 V = -normalize(viewSpacePosition.xyz);
-	vec4 normalRoughness = texelFetch(uNormalImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	vec4 normalRoughness = texelFetch(sampler2D(uNormalImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0);
 	const vec3 N = normalRoughness.xyz;
 	const float roughness = normalRoughness.w;
-	vec4 albedoMetalness = texelFetch(uAlbedoImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	vec4 albedoMetalness = texelFetch(sampler2D(uAlbedoImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0);
 	const float metalness = albedoMetalness.w;
 	const vec3 albedo = accurateSRGBToLinear(albedoMetalness.rgb);
 	const vec3 F0 = mix(vec3(0.04), albedo, metalness);
@@ -121,8 +123,8 @@ void main()
 	for (int i = 0; i < 4; ++i)
 	{
 		ivec2 coord = offsets[i] + ivec2(gl_GlobalInvocationID.xy) + offsetJitter;
-		vec4 rayHitPdf = texelFetch(uRayHitPdfImage, coord, 0);
-		float mask = texelFetch(uMaskImage, coord, 0).x;
+		vec4 rayHitPdf = texelFetch(sampler2D(uRayHitPdfImage, uPointSampler), coord, 0);
+		float mask = texelFetch(sampler2D(uMaskImage, uPointSampler), coord, 0).x;
 		
 		vec4 viewSpaceHitPos = vec4(uPushConsts.unprojectParams.xy * (rayHitPdf.xy * 2.0 - 1.0), -1.0, uPushConsts.unprojectParams.z * rayHitPdf.z + uPushConsts.unprojectParams.w);
 		viewSpaceHitPos.xyz /= viewSpaceHitPos.w;
@@ -136,14 +138,14 @@ void main()
 		if (sampleColor.a > 0.0)
 		{
 			// reproject into last frame
-			vec2 velocity = textureLod(uVelocityImage, rayHitPdf.xy, 0.0).xy;
+			vec2 velocity = textureLod(sampler2D(uVelocityImage, uLinearSampler), rayHitPdf.xy, 0.0).xy;
 			rayHitPdf.xy -= velocity;
 			
 			// is the uv coord still valid?
 			sampleColor.a *= (rayHitPdf.x > 0.0 && rayHitPdf.y > 0.0 && rayHitPdf.x < 1.0 && rayHitPdf.y < 1.0) ? 1.0 : 0.0;
 			
 			float mipLevel = calculateMipLevel(P.z, hitDist, roughness, filterShrinkCompensation);
-			sampleColor.rgb = sampleColor.a > 0.0 ? textureLod(uPrevColorImage, rayHitPdf.xy, mipLevel).rgb : vec3(0.0);
+			sampleColor.rgb = sampleColor.a > 0.0 ? textureLod(sampler2D(uPrevColorImage, uLinearSampler), rayHitPdf.xy, mipLevel).rgb : vec3(0.0);
 		}
 		
 		result += sampleColor * weight;// vec4(sampleColor.rgb * weight, sampleColor.a);

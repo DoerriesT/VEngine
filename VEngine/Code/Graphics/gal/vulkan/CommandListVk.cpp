@@ -369,6 +369,10 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 		{
 		case ResourceState::UNDEFINED:
 			return { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, VK_IMAGE_LAYOUT_UNDEFINED, false, false };
+		case ResourceState::READ_IMAGE_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, true, false };
+		case ResourceState::READ_BUFFER_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, true, false };
 		case ResourceState::READ_DEPTH_STENCIL:
 			return { VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, true, false };
 		case ResourceState::READ_TEXTURE:
@@ -389,12 +393,20 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, true, false };
 		case ResourceState::READ_IMAGE_TRANSFER:
 			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, true, false };
+		case ResourceState::READ_WRITE_IMAGE_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, false, true };
+		case ResourceState::READ_WRITE_BUFFER_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, false, true };
 		case ResourceState::READ_WRITE_STORAGE_IMAGE:
 			return { stageFlags, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, true, true };
 		case ResourceState::READ_WRITE_STORAGE_BUFFER:
 			return { stageFlags, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, true, true };
 		case ResourceState::READ_WRITE_DEPTH_STENCIL:
 			return { VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, false, true };
+		case ResourceState::WRITE_IMAGE_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, true, true };
+		case ResourceState::WRITE_BUFFER_HOST:
+			return { VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, true, true };
 		case ResourceState::WRITE_ATTACHMENT:
 			return { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, false, true };
 		case ResourceState::WRITE_STORAGE_IMAGE:
@@ -514,21 +526,21 @@ void VEngine::gal::CommandListVk::copyQueryPoolResults(const QueryPool *queryPoo
 	vkCmdCopyQueryPoolResults(m_commandBuffer, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount, (VkBuffer)dstBuffer->getNativeHandle(), dstOffset, stride, flags);
 }
 
-void VEngine::gal::CommandListVk::pushConstants(const GraphicsPipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)
+void VEngine::gal::CommandListVk::pushConstants(const GraphicsPipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)
 {
 	const auto *pipelineVk = dynamic_cast<const GraphicsPipelineVk *>(pipeline);
 	assert(pipelineVk);
 	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), stageFlags, offset, size, values);
 }
 
-void VEngine::gal::CommandListVk::pushConstants(const ComputePipeline *pipeline, PipelineStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)
+void VEngine::gal::CommandListVk::pushConstants(const ComputePipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)
 {
 	const auto *pipelineVk = dynamic_cast<const ComputePipelineVk *>(pipeline);
 	assert(pipelineVk);
 	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), stageFlags, offset, size, values);
 }
 
-void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, Rect renderArea)
+void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea)
 {
 	assert(colorAttachmentCount <= 8);
 

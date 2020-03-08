@@ -2,7 +2,8 @@
 
 #include "velocityInitialization_bindings.h"
 
-layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform texture2D uDepthImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -16,7 +17,7 @@ layout(location = 0) out vec4 oResult;
 void main() 
 {
 	// get current and previous frame's pixel position
-	float depth = texelFetch(uDepthImage, ivec2(gl_FragCoord.xy), 0).x;
+	float depth = texelFetch(sampler2D(uDepthImage, uPointSampler), ivec2(gl_FragCoord.xy), 0).x;
 	vec4 reprojectedPos = uPushConsts.reprojectionMatrix * vec4(vTexCoords * 2.0 - 1.0, depth, 1.0);
 	vec2 previousTexCoords = (reprojectedPos.xy / reprojectedPos.w) * 0.5 + 0.5;
 

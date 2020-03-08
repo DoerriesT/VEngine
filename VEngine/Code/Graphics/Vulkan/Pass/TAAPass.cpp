@@ -48,10 +48,12 @@ void VEngine::TAAPass::addToGraph(RenderGraph &graph, const Data &data)
 				VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
 				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, registry.getImageInfo(data.m_taaResolveImageHandle, ResourceState::WRITE_STORAGE_IMAGE_COMPUTE_SHADER), RESULT_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_taaHistoryImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), HISTORY_IMAGE_BINDING);
-				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), SOURCE_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_depthImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), DEPTH_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_velocityImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, pointSamplerClamp), VELOCITY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_taaHistoryImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), HISTORY_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, linearSamplerClamp), SOURCE_IMAGE_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { linearSamplerClamp }, LINEAR_SAMPLER_BINDING);
+				writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { pointSamplerClamp }, POINT_SAMPLER_BINDING);
 
 				writer.commit();
 			}

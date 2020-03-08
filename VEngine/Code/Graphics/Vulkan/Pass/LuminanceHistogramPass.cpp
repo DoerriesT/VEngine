@@ -44,8 +44,9 @@ void VEngine::LuminanceHistogramPass::addToGraph(RenderGraph &graph, const Data 
 		{
 			VKDescriptorSetWriter writer(g_context.m_device, descriptorSet);
 
-			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER, data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX]), SOURCE_IMAGE_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, registry.getImageInfo(data.m_lightImageHandle, ResourceState::READ_TEXTURE_COMPUTE_SHADER), SOURCE_IMAGE_BINDING);
 			writer.writeBufferInfo(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, registry.getBufferInfo(data.m_luminanceHistogramBufferHandle), LUMINANCE_HISTOGRAM_BINDING);
+			writer.writeImageInfo(VK_DESCRIPTOR_TYPE_SAMPLER, { data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX] }, POINT_SAMPLER_BINDING);
 
 			writer.commit();
 		}

@@ -151,7 +151,7 @@ void VEngine::GALTestRenderer::render()
 
 			uint64_t vertexBufferOffset = 0;
 			cmdList->bindVertexBuffers(0, 1, &m_vertexBuffer, &vertexBufferOffset);
-			cmdList->bindIndexBuffer(m_indexBuffer, 0, IndexType::UINT_16);
+			cmdList->bindIndexBuffer(m_indexBuffer, 0, IndexType::UINT16);
 
 			cmdList->drawIndexed(3, 1, 0, 0, 0);
 		}

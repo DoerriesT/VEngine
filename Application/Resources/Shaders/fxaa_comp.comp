@@ -5,10 +5,13 @@
 #define FXAA_PC 1
 #define FXAA_GLSL_130 1
 
-#include "FXAA3_11.h"
 
-layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
+
+layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform texture2D uInputImage;
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
+layout(set = LINEAR_SAMPLER_SET, binding = LINEAR_SAMPLER_BINDING) uniform sampler uLinearSampler;
+
+#include "FXAA3_11.h"
 
 layout(push_constant) uniform PUSH_CONSTS 
 {

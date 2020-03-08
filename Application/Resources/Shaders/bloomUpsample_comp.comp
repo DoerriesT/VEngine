@@ -3,8 +3,9 @@
 #include "bloomUpsample_bindings.h"
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, r11f_g11f_b10f) uniform writeonly image2D uResultImage;
-layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform sampler2D uInputImage;
-layout(set = PREV_RESULT_IMAGE_SET, binding = PREV_RESULT_IMAGE_BINDING) uniform sampler2D uPrevResultImage;
+layout(set = INPUT_IMAGE_SET, binding = INPUT_IMAGE_BINDING) uniform texture2D uInputImage;
+layout(set = PREV_RESULT_IMAGE_SET, binding = PREV_RESULT_IMAGE_BINDING) uniform texture2D uPrevResultImage;
+layout(set = SAMPLER_SET, binding = SAMPLER_BINDING) uniform sampler uSampler;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -24,23 +25,23 @@ void main()
 		
 		vec3 sum = vec3(0.0);
 		
-		sum += 1.0 * textureLod(uInputImage, texCoord + vec2(-texelSize.x, -texelSize.y) * radius, 0.0).rgb;
-		sum += 2.0 * textureLod(uInputImage, texCoord + vec2( 0.0,         -texelSize.y) * radius, 0.0).rgb;
-		sum += 1.0 * textureLod(uInputImage, texCoord + vec2( texelSize.x, -texelSize.y) * radius, 0.0).rgb;
+		sum += 1.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x, -texelSize.y) * radius, 0.0).rgb;
+		sum += 2.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( 0.0,         -texelSize.y) * radius, 0.0).rgb;
+		sum += 1.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x, -texelSize.y) * radius, 0.0).rgb;
 		
-		sum += 2.0 * textureLod(uInputImage, texCoord + vec2(-texelSize.x,          0.0) * radius, 0.0).rgb;
-		sum += 4.0 * textureLod(uInputImage, texCoord,                                             0.0).rgb;
-		sum += 2.0 * textureLod(uInputImage, texCoord + vec2( texelSize.x,          0.0) * radius, 0.0).rgb;
+		sum += 2.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x,          0.0) * radius, 0.0).rgb;
+		sum += 4.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord,                                             0.0).rgb;
+		sum += 2.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x,          0.0) * radius, 0.0).rgb;
 		
-		sum += 1.0 * textureLod(uInputImage, texCoord + vec2(-texelSize.x,  texelSize.y) * radius, 0.0).rgb;
-		sum += 2.0 * textureLod(uInputImage, texCoord + vec2( 0.0,          texelSize.y) * radius, 0.0).rgb;
-		sum += 1.0 * textureLod(uInputImage, texCoord + vec2( texelSize.x,  texelSize.y) * radius, 0.0).rgb;
+		sum += 1.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2(-texelSize.x,  texelSize.y) * radius, 0.0).rgb;
+		sum += 2.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( 0.0,          texelSize.y) * radius, 0.0).rgb;
+		sum += 1.0 * textureLod(sampler2D(uInputImage, uSampler), texCoord + vec2( texelSize.x,  texelSize.y) * radius, 0.0).rgb;
 	
 		sum *= (1.0 / 16.0);
 	
 		if (uPushConsts.addPrevious != 0)
 		{
-			sum += textureLod(uPrevResultImage, texCoord, 0.0).rgb;
+			sum += textureLod(sampler2D(uPrevResultImage, uSampler), texCoord, 0.0).rgb;
 			sum *= 0.5;
 		}
 		

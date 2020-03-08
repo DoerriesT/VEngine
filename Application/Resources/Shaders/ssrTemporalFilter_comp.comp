@@ -8,9 +8,11 @@
 #define LUMA_RGB_TUPLE vec3(0.2126, 0.7152, 0.0722)
 
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image2D uResultImage;
-layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform sampler2D uHistoryImage;
-layout(set = COLOR_RAY_DEPTH_IMAGE_SET, binding = COLOR_RAY_DEPTH_IMAGE_BINDING) uniform sampler2D uColorRayDepthImage;
-layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform sampler2D uMaskImage;
+layout(set = HISTORY_IMAGE_SET, binding = HISTORY_IMAGE_BINDING) uniform texture2D uHistoryImage;
+layout(set = COLOR_RAY_DEPTH_IMAGE_SET, binding = COLOR_RAY_DEPTH_IMAGE_BINDING) uniform texture2D uColorRayDepthImage;
+layout(set = MASK_IMAGE_SET, binding = MASK_IMAGE_BINDING) uniform texture2D uMaskImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
+layout(set = LINEAR_SAMPLER_SET, binding = LINEAR_SAMPLER_BINDING) uniform sampler uLinearSampler;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -79,8 +81,8 @@ void resolverAABB(inout vec4 minColor, inout vec4 maxColor, inout vec4 filteredC
 		for (int x = 0; x < 3; ++x)
 		{
 			vec4 tap;
-			tap.rgb = texelFetch(uColorRayDepthImage, ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y) - 1, 0).rgb;
-			tap.a = texelFetch(uMaskImage, ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y) - 1, 0).x;
+			tap.rgb = texelFetch(sampler2D(uColorRayDepthImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y) - 1, 0).rgb;
+			tap.a = texelFetch(sampler2D(uMaskImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy) + ivec2(x, y) - 1, 0).x;
 			
 			m1 += tap;
 			m2 += tap * tap;
@@ -105,7 +107,7 @@ void main()
 	}
 	
 	vec2 texCoord = vec2(gl_GlobalInvocationID.xy + 0.5) * vec2(uPushConsts.texelWidth, uPushConsts.texelHeight);
-	vec4 colorRayDepth = texelFetch(uColorRayDepthImage, ivec2(gl_GlobalInvocationID.xy), 0);
+	vec4 colorRayDepth = texelFetch(sampler2D(uColorRayDepthImage, uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0);
 	float rayDepth = colorRayDepth.w;
 	vec4 reprojectedCoord = uPushConsts.reprojectionMatrix * vec4(texCoord * 2.0 - 1.0, rayDepth, 1.0);
 	reprojectedCoord.xy /= reprojectedCoord.w;
@@ -118,7 +120,7 @@ void main()
 	
 	vec2 prevTexCoord = current.a == 0.0 ? texCoord : reprojectedCoord.xy;
 	
-	vec4 history = textureLod(uHistoryImage, prevTexCoord, 0.0);
+	vec4 history = textureLod(sampler2D(uHistoryImage, uLinearSampler), prevTexCoord, 0.0);
 	history.rgb = clipAABB(history.rgb, neighborhoodMin.rgb, neighborhoodMax.rgb);
 	history.a = clamp(history.a, neighborhoodMin.a, neighborhoodMax.a);
 	

@@ -10,14 +10,14 @@ VEngine::DescriptorSetCache2::DescriptorSetCache2(GraphicsDevice *graphicsDevice
 {
 }
 
-VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::getDescriptorSet(DescriptorSetLayout *layout, uint32_t *typeCounts)
+VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::getDescriptorSet(const DescriptorSetLayout *layout)
 {
 	auto &pooledSetsPtr = m_layoutToSets[layout];
 
 	// layout doesnt exist yet -> create it
 	if (!pooledSetsPtr)
 	{
-		pooledSetsPtr = std::make_unique<DescriptorSetPools2>(m_graphicsDevice, layout, typeCounts);
+		pooledSetsPtr = std::make_unique<DescriptorSetPools2>(m_graphicsDevice, layout);
 	}
 
 	return pooledSetsPtr->getDescriptorSet(m_frameIndex);
@@ -37,13 +37,13 @@ void VEngine::DescriptorSetCache2::update(uint64_t currentFrameIndex, uint64_t f
 	}
 }
 
-VEngine::DescriptorSetCache2::DescriptorSetPools2::DescriptorSetPools2(GraphicsDevice *graphicsDevice, DescriptorSetLayout *layout, uint32_t *typeCounts)
+VEngine::DescriptorSetCache2::DescriptorSetPools2::DescriptorSetPools2(GraphicsDevice *graphicsDevice, const DescriptorSetLayout *layout)
 	:m_graphicsDevice(graphicsDevice),
 	m_typeCounts(),
 	m_layout(layout),
 	m_pools()
 {
-	memcpy(m_typeCounts, typeCounts, sizeof(m_typeCounts));
+	memcpy(m_typeCounts, layout->getTypeCounts().m_typeCounts, sizeof(m_typeCounts));
 }
 
 VEngine::DescriptorSetCache2::DescriptorSetPools2::~DescriptorSetPools2()
@@ -84,7 +84,7 @@ VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::DescriptorSetPools2::
 
 		// allocate sets from pool
 		{
-			DescriptorSetLayout *layouts[SETS_PER_POOL];
+			const DescriptorSetLayout *layouts[SETS_PER_POOL];
 			for (size_t i = 0; i < SETS_PER_POOL; ++i)
 			{
 				layouts[i] = m_layout;

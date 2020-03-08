@@ -2,9 +2,10 @@
 
 #include "gtao_bindings.h"
 
-layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform sampler2D uDepthImage;
-layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform usampler2D uTangentSpaceImage;
+layout(set = DEPTH_IMAGE_SET, binding = DEPTH_IMAGE_BINDING) uniform texture2D uDepthImage;
+layout(set = TANGENT_SPACE_IMAGE_SET, binding = TANGENT_SPACE_IMAGE_BINDING) uniform utexture2D uTangentSpaceImage;
 layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING) uniform writeonly image2D uResultImage;
+layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(push_constant) uniform PUSH_CONSTS 
 {
@@ -19,7 +20,7 @@ const float PI = 3.14159265;
 vec3 getViewSpacePos(vec2 uv)
 {
 	uv *= uPushConsts.resolution.zw;
-	float depth = textureLod(uDepthImage, uv, 0).r;
+	float depth = textureLod(sampler2D(uDepthImage, uPointSampler), uv, 0).r;
 	vec4 clipSpacePosition = vec4(vec2(uv) * 2.0 - 1.0, depth, 1.0);
 	vec4 viewSpacePosition = uPushConsts.invProjection * clipSpacePosition;
 	viewSpacePosition /= viewSpacePosition.w;
@@ -164,7 +165,7 @@ void main()
 		//const vec3 dPdu = minDiff(P, Pr, Pl);
 		//const vec3 dPdv = minDiff(P, Pt, Pb);
 		
-		const uvec2 encodedTBN = texelFetch(uTangentSpaceImage, ivec2(gl_GlobalInvocationID.xy), 0).xy;
+		const uvec2 encodedTBN = texelFetch(usampler2D(uTangentSpaceImage,  uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).xy;
 		const vec3 N = decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0);//normalize(cross(dPdu, dPdv));
 		
 		// project normal onto slice plane

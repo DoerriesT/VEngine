@@ -46,6 +46,12 @@
     <Filter Include="Code\Graphics\gal\vulkan">
       <UniqueIdentifier>{6a41d441-828e-4727-9ce2-3cf01dc55c9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Graphics\Pass">
+      <UniqueIdentifier>{b1a4a9a2-8d05-4369-a37a-7c38e8009496}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Graphics\Module">
+      <UniqueIdentifier>{dfa06367-ca41-4d2a-a36c-1fe7d402e1eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Graphics\Vulkan\VKContext.h">
@@ -447,6 +453,96 @@
     <ClInclude Include="Code\Graphics\PassRecordContext2.h">
       <Filter>Code\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\BloomDownsamplePass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\BloomUpsamplePass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\BuildIndexBufferPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\DeferredShadowsPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\DepthPrepassPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\ForwardLightingPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\FXAAPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\GeometryPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\GTAOPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\GTAOSpatialFilterPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\GTAOTemporalFilterPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\HiZPyramidPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\ImGuiPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\IntegrateBrdfPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\LightingPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\LuminanceHistogramPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\LuminanceHistogramReduceAveragePass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\RasterTilingPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\ReadBackCopyPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\ShadowPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\SharpenFfxCasPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\SSRPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\SSRResolvePass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\SSRTemporalFilterPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\TAAPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\TonemapPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Pass\VelocityInitializationPass2.h">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Module\BloomModule2.h">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Module\GTAOModule2.h">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Graphics\Module\SSRModule2.h">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\Utility\Utility.cpp">
@@ -763,6 +859,96 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\RenderResources.cpp">
       <Filter>Code\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\BloomDownsamplePass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\BloomUpsamplePass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\BuildIndexBufferPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\DeferredShadowsPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\DepthPrepassPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\ForwardLightingPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\FXAAPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\GeometryPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\GTAOPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\GTAOSpatialFilterPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\GTAOTemporalFilterPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\HiZPyramidPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\ImGuiPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\IntegrateBrdfPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\LightingPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\LuminanceHistogramPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\LuminanceHistogramReduceAveragePass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\RasterTilingPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\ReadBackCopyPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\ShadowPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\SharpenFfxCasPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\SSRPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\SSRResolvePass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\SSRTemporalFilterPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\TAAPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\TonemapPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Pass\VelocityInitializationPass2.cpp">
+      <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Module\BloomModule2.cpp">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Module\GTAOModule2.cpp">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Module\SSRModule2.cpp">
+      <Filter>Code\Graphics\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
