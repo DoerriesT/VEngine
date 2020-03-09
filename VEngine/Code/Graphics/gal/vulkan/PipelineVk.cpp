@@ -306,6 +306,13 @@ VEngine::gal::ComputePipelineVk::~ComputePipelineVk()
 	VkDevice deviceVk = m_device->getDevice();
 	vkDestroyPipeline(deviceVk, m_pipeline, nullptr);
 	vkDestroyPipelineLayout(deviceVk, m_pipelineLayout, nullptr);
+
+	for (uint32_t i = 0; i < m_descriptorSetLayouts.m_layoutCount; ++i)
+	{
+		// call destructor and free backing memory
+		m_descriptorSetLayouts.m_descriptorSetLayouts[i]->~DescriptorSetLayoutVk();
+		m_descriptorSetLayouts.m_descriptorSetLayoutMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorSetLayoutVk)> *>(m_descriptorSetLayouts.m_descriptorSetLayouts[i]));
+	}
 }
 
 void *VEngine::gal::ComputePipelineVk::getNativeHandle() const
@@ -526,7 +533,6 @@ static void createPipelineLayout(VkDevice device, const ReflectionInfo &reflecti
 		if ((reflectionInfo.m_setMask & (1u << i)) != 0)
 		{
 			auto &setLayout = reflectionInfo.m_setLayouts[i];
-			uint32_t typeCounts[VK_DESCRIPTOR_TYPE_RANGE_SIZE] = {};
 
 			std::vector<VkDescriptorSetLayoutBinding> bindings;
 
@@ -537,63 +543,54 @@ static void createPipelineLayout(VkDevice device, const ReflectionInfo &reflecti
 				if ((setLayout.m_uniformBufferMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_uniformTexelBufferMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_storageBufferMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_storageTexelBufferMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_subpassInputMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_storageImageMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_sampledImageMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_separateImageMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
 				if ((setLayout.m_separateSamplerMask & (1u << j)) != 0)
 				{
 					bindings.push_back({ j, VK_DESCRIPTOR_TYPE_SAMPLER, setLayout.m_arraySizes[j], setLayout.m_stageFlags[j] });
-					typeCounts[VK_DESCRIPTOR_TYPE_SAMPLER] += setLayout.m_arraySizes[j];
 					++count;
 				}
 
@@ -607,7 +604,7 @@ static void createPipelineLayout(VkDevice device, const ReflectionInfo &reflecti
 			assert(memory);
 
 			descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount++] = 
-				new(memory) VEngine::gal::DescriptorSetLayoutVk(device, static_cast<uint32_t>(bindings.size()), bindings.data(), typeCounts);
+				new(memory) VEngine::gal::DescriptorSetLayoutVk(device, static_cast<uint32_t>(bindings.size()), bindings.data());
 		
 			layoutsVk[i] = (VkDescriptorSetLayout)descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount - 1]->getNativeHandle();
 		}

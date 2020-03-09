@@ -16,21 +16,21 @@ namespace
 
 void VEngine::BloomUpsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 {
-	rg::ResourceUsageDescription passUsages[BloomModule::BLOOM_MIP_COUNT * 2];
-	for (uint32_t i = 0; i < BloomModule::BLOOM_MIP_COUNT; ++i)
+	rg::ResourceUsageDescription passUsages[BloomModule2::BLOOM_MIP_COUNT * 2];
+	for (uint32_t i = 0; i < BloomModule2::BLOOM_MIP_COUNT; ++i)
 	{
 		passUsages[i] = { rg::ResourceViewHandle(data.m_inputImageViewHandles[i]), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 	}
-	for (uint32_t i = 0; i < BloomModule::BLOOM_MIP_COUNT; ++i)
+	for (uint32_t i = 0; i < BloomModule2::BLOOM_MIP_COUNT; ++i)
 	{
 		// first level isnt read from in this pass
 		if (i == 0)
 		{
-			passUsages[i + BloomModule::BLOOM_MIP_COUNT] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
+			passUsages[i + BloomModule2::BLOOM_MIP_COUNT] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 		}
 		else
 		{
-			passUsages[i + BloomModule::BLOOM_MIP_COUNT] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
+			passUsages[i + BloomModule2::BLOOM_MIP_COUNT] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 		}
 	}
 
@@ -48,16 +48,16 @@ void VEngine::BloomUpsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Data
 
 			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 
-			for (uint32_t i = 0; i < BloomModule::BLOOM_MIP_COUNT - 1; ++i)
+			for (uint32_t i = 0; i < BloomModule2::BLOOM_MIP_COUNT - 1; ++i)
 			{
-				uint32_t curViewIdx = BloomModule::BLOOM_MIP_COUNT - i - 2;
+				uint32_t curViewIdx = BloomModule2::BLOOM_MIP_COUNT - i - 2;
 
 				// update descriptor set
 				{
 					DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 					ImageView *inputImageView = registry.getImageView(i == 0 ? data.m_inputImageViewHandles[curViewIdx + 1] : data.m_resultImageViewHandles[curViewIdx + 1]);
-					ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandles[curViewIdx + 1]);
+					ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandles[curViewIdx]);
 					ImageView *prevResultImageView = registry.getImageView(data.m_inputImageViewHandles[curViewIdx]);
 
 					DescriptorSetUpdate updates[] =
@@ -88,7 +88,7 @@ void VEngine::BloomUpsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Data
 
 
 				// dont insert a barrier after the last iteration: we dont know the dstStage/dstAccess, so let the RenderGraph figure it out
-				if (i < (BloomModule::BLOOM_MIP_COUNT - 2))
+				if (i < (BloomModule2::BLOOM_MIP_COUNT - 2))
 				{
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_resultImageViewHandles[curViewIdx]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,

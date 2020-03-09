@@ -44,6 +44,10 @@ VEngine::DescriptorSetCache2::DescriptorSetPools2::DescriptorSetPools2(GraphicsD
 	m_pools()
 {
 	memcpy(m_typeCounts, layout->getTypeCounts().m_typeCounts, sizeof(m_typeCounts));
+	for (auto &typeCount : m_typeCounts)
+	{
+		typeCount *= SETS_PER_POOL;
+	}
 }
 
 VEngine::DescriptorSetCache2::DescriptorSetPools2::~DescriptorSetPools2()

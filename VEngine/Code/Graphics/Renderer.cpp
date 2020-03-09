@@ -49,9 +49,14 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN))
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);
+	
 	m_graphicsDevice->createSemaphore(0, &m_semaphores[0]);
 	m_graphicsDevice->createSemaphore(0, &m_semaphores[1]);
 	m_graphicsDevice->createSemaphore(0, &m_semaphores[2]);
+
+	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[0], "Graphics Queue Semaphore");
+	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[1], "Compute Queue Semaphore");
+	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[2], "Transfer Queue Semaphore");
 
 	m_width = m_swapChain->getExtent().m_width;
 	m_height = m_swapChain->getExtent().m_height;
@@ -73,7 +78,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<rg::RenderGraph2>(m_graphicsDevice, m_semaphores, (uint64_t **)&m_semaphoreValues);
+		m_frameGraphs[i] = std::make_unique<rg::RenderGraph2>(m_graphicsDevice, m_semaphores, m_semaphoreValues);
 	}
 
 	m_gtaoModule = std::make_unique<GTAOModule2>(m_graphicsDevice, m_width, m_height);
@@ -110,6 +115,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	{
 		return;
 	}
+
+	m_graphicsDevice->beginFrame();
+
 	auto &graph = *m_frameGraphs[commonData.m_curResIdx];
 
 	// reset per frame resources
@@ -621,12 +629,13 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// get swapchain image
+	rg::ResourceStateData swapChainState{ {}, m_graphicsDevice->getGraphicsQueue() };
 	rg::ImageViewHandle swapchainImageViewHandle = 0;
 	{
 		uint32_t swapChainImageIndex;
 		m_swapChain->getCurrentImageIndex(swapChainImageIndex, m_semaphores[0], ++m_semaphoreValues[0]);
 
-		auto imageHandle = graph.importImage(m_swapChain->getImage(m_swapChainImageIndex), "Swapchain Image", false, {});
+		auto imageHandle = graph.importImage(m_swapChain->getImage(swapChainImageIndex), "Swapchain Image", false, {}, &swapChainState);
 		swapchainImageViewHandle = graph.createImageView({ "Swapchain Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
@@ -724,6 +733,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() });
 	
 	m_swapChain->present(m_semaphores[0], m_semaphoreValues[0]);
+
+	m_graphicsDevice->endFrame();
 }
 
 VEngine::TextureHandle VEngine::Renderer::loadTexture(const char *filepath)

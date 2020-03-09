@@ -23,6 +23,9 @@ VEngine::RenderResources::~RenderResources()
 	// per frame images/buffers
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
+		m_mappableUBOBlock[i].reset();
+		m_mappableSSBOBlock[i].reset();
+
 		m_graphicsDevice->destroyImage(m_depthImages[i]);
 		m_graphicsDevice->destroyImage(m_lightImages[i]);
 		m_graphicsDevice->destroyImage(m_taaHistoryTextures[i]);
@@ -322,6 +325,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		};
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_textureDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout");
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSetLayout, &m_textureDescriptorSet);
 	}
 
@@ -334,6 +338,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		};
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_computeTextureDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout (Compute)");
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSet);
 	}
 
@@ -346,6 +351,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		};
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_imGuiDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "ImGui DSet Layout");
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSetLayout, &m_imGuiDescriptorSet);
 
 		DescriptorSetUpdate update = Initializers::samplerDescriptor(&m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 1);
@@ -546,9 +552,9 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_graphicsDevice->createBuffer(indexBufferInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_boxIndexBuffer);
 
 		void *data;
-		m_boxIndexBuffer->map(&data);
+		m_stagingBuffer->map(&data);
 		memcpy(data, indices, sizeof(indices));
-		m_boxIndexBuffer->unmap();
+		m_stagingBuffer->unmap();
 
 		m_commandListPool->reset();
 		m_commandList->begin();

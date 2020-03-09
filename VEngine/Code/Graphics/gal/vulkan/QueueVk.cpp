@@ -33,7 +33,7 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 	std::vector<VkSemaphore> semaphores;
 	semaphores.reserve(semaphoreCount);
 	std::vector<VkCommandBuffer> commandBuffers;
-	commandBuffers.resize(commandBufferCount);
+	commandBuffers.reserve(commandBufferCount);
 
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -43,6 +43,10 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 		for (uint32_t j = 0; j < submitInfo[i].m_waitSemaphoreCount; ++j)
 		{
 			semaphores.push_back((VkSemaphore)submitInfo[i].m_waitSemaphores[j]->getNativeHandle());
+		}
+
+		for (uint32_t j = 0; j < submitInfo[i].m_commandListCount; ++j)
+		{
 			commandBuffers.push_back((VkCommandBuffer)submitInfo[i].m_commandLists[j]->getNativeHandle());
 		}
 

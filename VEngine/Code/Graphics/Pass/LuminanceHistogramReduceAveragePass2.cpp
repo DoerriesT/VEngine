@@ -36,6 +36,7 @@ void VEngine::LuminanceHistogramAveragePass2::addToGraph(rg::RenderGraph2 &graph
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
+		cmdList->bindPipeline(pipeline);
 		
 		// update descriptor sets
 		{

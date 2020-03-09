@@ -102,7 +102,7 @@ void VEngine::GeometryPass2::addToGraph(rg::RenderGraph2 &graph, const Data &dat
 		}
 
 		DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-		cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+		cmdList->bindDescriptorSets(pipeline, 0, data.m_alphaMasked ? 2 : 1, descriptorSets);
 
 		Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 		Rect scissor{ { 0, 0 }, { width, height } };

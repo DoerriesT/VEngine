@@ -25,8 +25,9 @@ namespace VEngine
 		gal::Buffer *m_stagingBuffer;
 		gal::CommandListPool *m_cmdListPool;
 		gal::CommandList *m_cmdList;
-		// first element is dummy image
-		gal::ImageView *m_views[RendererConsts::TEXTURE_ARRAY_SIZE + 1];
-		gal::Image *m_images[RendererConsts::TEXTURE_ARRAY_SIZE + 1];
+		gal::ImageView *m_dummyView;
+		gal::Image *m_dummyImage;
+		gal::ImageView *m_views[RendererConsts::TEXTURE_ARRAY_SIZE];
+		gal::Image *m_images[RendererConsts::TEXTURE_ARRAY_SIZE];
 	};
 }

@@ -9,10 +9,11 @@
 #include "Utility/AxisAlignedBoundingBox.h"
 #include "Vulkan/VKMemoryAllocator.h"
 #include "BVH.h"
+#include "Graphics/Renderer.h"
 
 namespace VEngine
 {
-	class VKRenderer;
+	class Renderer;
 	struct Material;
 	struct SubMesh;
 	struct PassTimingInfo;
@@ -40,7 +41,7 @@ namespace VEngine
 
 	private:
 		entt::registry &m_entityRegistry;
-		std::unique_ptr<VKRenderer> m_renderer;
+		std::unique_ptr<Renderer> m_renderer;
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;

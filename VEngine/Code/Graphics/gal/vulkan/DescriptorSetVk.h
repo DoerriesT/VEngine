@@ -10,7 +10,7 @@ namespace VEngine
 		class DescriptorSetLayoutVk : public DescriptorSetLayout
 		{
 		public:
-			explicit DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings, uint32_t *typeCounts);
+			explicit DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings);
 			DescriptorSetLayoutVk(DescriptorSetLayoutVk &) = delete;
 			DescriptorSetLayoutVk(DescriptorSetLayoutVk &&) = delete;
 			DescriptorSetLayoutVk &operator= (const DescriptorSetLayoutVk &) = delete;

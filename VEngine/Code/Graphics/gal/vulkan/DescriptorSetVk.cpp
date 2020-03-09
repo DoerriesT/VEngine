@@ -4,18 +4,48 @@
 #include "UtilityVk.h"
 #include "ResourceVk.h"
 
-VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings, uint32_t *typeCounts)
+VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings)
 	:m_device(device),
 	m_descriptorSetLayout(VK_NULL_HANDLE),
 	m_typeCounts()
 {
+	for (uint32_t i = 0; i < bindingCount; ++i)
+	{
+		switch (bindings[i].descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLER)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLED_IMAGE)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_IMAGE)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_TEXEL_BUFFER)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_TEXEL_BUFFER)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_BUFFER)] += bindings[i].descriptorCount;
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_BUFFER)] += bindings[i].descriptorCount;
+			break;
+		default:
+			// unsupported descriptor type
+			assert(false);
+			break;
+		}
+	}
+
 	VkDescriptorSetLayoutCreateInfo createInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
 	createInfo.bindingCount = bindingCount;
 	createInfo.pBindings = bindings;
 
 	UtilityVk::checkResult(vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &m_descriptorSetLayout), "Failed to create DescriptorSetLayout!");
-
-	memcpy(m_typeCounts.m_typeCounts, typeCounts, sizeof(m_typeCounts.m_typeCounts));
 }
 
 VEngine::gal::DescriptorSetLayoutVk::~DescriptorSetLayoutVk()
@@ -72,9 +102,11 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 			case DescriptorType::UNIFORM_TEXEL_BUFFER:
 			case DescriptorType::STORAGE_TEXEL_BUFFER:
 				texelBufferViewsReserveCount += update.m_descriptorCount;
+				break;
 			case DescriptorType::UNIFORM_BUFFER:
 			case DescriptorType::STORAGE_BUFFER:
 				bufferInfoReserveCount += update.m_descriptorCount;
+				break;
 			default:
 				assert(false);
 				break;
@@ -84,7 +116,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 		imageInfos.reserve(imageInfoReserveCount);
 		bufferInfos.reserve(bufferInfoReserveCount);
 		texelBufferViews.reserve(texelBufferViewsReserveCount);
-		
+
 		//union InfoData
 		//{
 		//	VkDescriptorImageInfo m_imageInfo;
@@ -282,7 +314,8 @@ void VEngine::gal::DescriptorPoolVk::freeDescriptorSets(uint32_t count, Descript
 		{
 			setsVk[j] = (VkDescriptorSet)sets[i * batchSize + j]->getNativeHandle();
 		}
-		UtilityVk::checkResult(vkFreeDescriptorSets(m_device, m_descriptorPool, countVk, setsVk), "Failed to free Descriptor Sets!");
+		// we dont use VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, so we cant actually free the set from the pool
+		//UtilityVk::checkResult(vkFreeDescriptorSets(m_device, m_descriptorPool, countVk, setsVk), "Failed to free Descriptor Sets!");
 		for (uint32_t j = 0; j < countVk; ++j)
 		{
 			auto *descriptorSetVk = dynamic_cast<DescriptorSetVk *>(sets[i * batchSize + j]);

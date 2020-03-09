@@ -1,6 +1,6 @@
 #pragma once
 #include "Graphics/RenderGraph2.h"
-#include "Graphics/Vulkan/Module/BloomModule.h"
+#include "Graphics/Module/BloomModule2.h"
 
 namespace VEngine
 {
@@ -12,7 +12,7 @@ namespace VEngine
 		{
 			PassRecordContext2 *m_passRecordContext;
 			rg::ImageViewHandle m_inputImageViewHandle;
-			rg::ImageViewHandle m_resultImageViewHandles[BloomModule::BLOOM_MIP_COUNT];
+			rg::ImageViewHandle m_resultImageViewHandles[BloomModule2::BLOOM_MIP_COUNT];
 		};
 
 		void addToGraph(rg::RenderGraph2 &graph, const Data &data);

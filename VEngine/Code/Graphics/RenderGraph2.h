@@ -138,7 +138,7 @@ namespace VEngine
 		public:
 			static const gal::Queue *undefinedQueue;
 
-			explicit RenderGraph2(gal::GraphicsDevice *graphicsDevice, gal::Semaphore **semaphores, uint64_t **semaphoreValues);
+			explicit RenderGraph2(gal::GraphicsDevice *graphicsDevice, gal::Semaphore **semaphores, uint64_t *semaphoreValues);
 			RenderGraph2(const RenderGraph2 &) = delete;
 			RenderGraph2(const RenderGraph2 &&) = delete;
 			RenderGraph2 &operator= (const RenderGraph2 &) = delete;

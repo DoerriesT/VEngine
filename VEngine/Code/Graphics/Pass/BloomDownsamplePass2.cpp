@@ -16,13 +16,13 @@ namespace
 
 void VEngine::BloomDownsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 {
-	rg::ResourceUsageDescription passUsages[1 + BloomModule::BLOOM_MIP_COUNT];
+	rg::ResourceUsageDescription passUsages[1 + BloomModule2::BLOOM_MIP_COUNT];
 
 	passUsages[0] = { rg::ResourceViewHandle(data.m_inputImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
-	for (uint32_t i = 0; i < BloomModule::BLOOM_MIP_COUNT; ++i)
+	for (uint32_t i = 0; i < BloomModule2::BLOOM_MIP_COUNT; ++i)
 	{
 		// last level isnt read from in this pass
-		if (i == (BloomModule::BLOOM_MIP_COUNT - 1))
+		if (i == (BloomModule2::BLOOM_MIP_COUNT - 1))
 		{
 			passUsages[i + 1] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }};
 		}
@@ -47,7 +47,7 @@ void VEngine::BloomDownsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Da
 			uint32_t mipWidth = glm::max(data.m_passRecordContext->m_commonRenderData->m_width / 2u, 1u);
 			uint32_t mipHeight = glm::max(data.m_passRecordContext->m_commonRenderData->m_height / 2u, 1u);
 
-			for (uint32_t i = 0; i < BloomModule::BLOOM_MIP_COUNT; ++i)
+			for (uint32_t i = 0; i < BloomModule2::BLOOM_MIP_COUNT; ++i)
 			{
 				// update descriptor set
 				{
@@ -63,7 +63,7 @@ void VEngine::BloomDownsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Da
 						Initializers::samplerDescriptor(&linearSampler, SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(2, updates);
+					descriptorSet->update(3, updates);
 					
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}
@@ -83,7 +83,7 @@ void VEngine::BloomDownsamplePass2::addToGraph(rg::RenderGraph2 &graph, const Da
 				
 
 				// dont insert a barrier after the last iteration: we dont know the next resource state, so let the RenderGraph figure it out
-				if (i < (BloomModule::BLOOM_MIP_COUNT - 1))
+				if (i < (BloomModule2::BLOOM_MIP_COUNT - 1))
 				{
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_resultImageViewHandles[i]), 
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT, 

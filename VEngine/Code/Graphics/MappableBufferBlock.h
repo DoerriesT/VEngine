@@ -8,6 +8,7 @@ namespace VEngine
 	{
 	public:
 		explicit MappableBufferBlock(gal::Buffer *buffer, uint64_t alignment);
+		~MappableBufferBlock();
 		void allocate(uint64_t &size, uint64_t &offset, gal::Buffer *&buffer, uint8_t *&data);
 		void reset();
 

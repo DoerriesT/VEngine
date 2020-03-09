@@ -82,7 +82,7 @@ void VEngine::LightingPass2::addToGraph(rg::RenderGraph2 &graph, const Data &dat
 				descriptorSet->update(15, updates);
 			}
 
-			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
+			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
 			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
 
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;

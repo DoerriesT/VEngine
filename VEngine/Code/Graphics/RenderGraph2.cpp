@@ -142,7 +142,7 @@ void VEngine::rg::Registry2::unmap(BufferViewHandle handle) const
 	m_graph.m_imageBuffers[resIdx].buffer->unmap();
 }
 
-VEngine::rg::RenderGraph2::RenderGraph2(gal::GraphicsDevice *graphicsDevice, Semaphore **semaphores, uint64_t **semaphoreValues)
+VEngine::rg::RenderGraph2::RenderGraph2(gal::GraphicsDevice *graphicsDevice, Semaphore **semaphores, uint64_t *semaphoreValues)
 	:m_graphicsDevice(graphicsDevice),
 	m_semaphores(),
 	m_semaphoreValues(),
@@ -162,7 +162,7 @@ VEngine::rg::RenderGraph2::RenderGraph2(gal::GraphicsDevice *graphicsDevice, Sem
 	for (size_t i = 0; i < 3; ++i)
 	{
 		m_semaphores[i] = semaphores[i];
-		m_semaphoreValues[i] = semaphoreValues[i];
+		m_semaphoreValues[i] = semaphoreValues + i;
 		m_graphicsDevice->createQueryPool(QueryType::TIMESTAMP, TIMESTAMP_QUERY_COUNT /*TODO: make this dynamic?*/, &m_queryPools[i]);
 
 		const uint32_t validBits = m_queues[i]->getTimestampValidBits();
@@ -493,7 +493,7 @@ void VEngine::rg::RenderGraph2::reset()
 		}
 	}
 
-	//m_commandBufferPool.reset();
+	m_commandListFramePool.reset();
 }
 
 void VEngine::rg::RenderGraph2::execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData)
@@ -1037,8 +1037,8 @@ void VEngine::rg::RenderGraph2::createSynchronization(ResourceViewHandle finalRe
 			}
 		}
 
-		// some other passes needs to wait on this one -> end batch after this pass
-		if (!m_passRecordInfo[passHandle].m_afterBarriers.empty())
+		// some other passes needs to wait on this one or this is the last pass -> end batch after this pass
+		if (!m_passRecordInfo[passHandle].m_afterBarriers.empty() || i == m_passHandleOrder.size() - 1)
 		{
 			startNewBatch = true;
 			auto &batch = m_batches.back();

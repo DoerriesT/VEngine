@@ -9,6 +9,12 @@ VEngine::MappableBufferBlock::MappableBufferBlock(gal::Buffer *buffer, uint64_t 
 	m_ptr(),
 	m_buffer(buffer)
 {
+	m_buffer->map((void **)&m_ptr);
+}
+
+VEngine::MappableBufferBlock::~MappableBufferBlock()
+{
+	m_buffer->unmap();
 }
 
 void VEngine::MappableBufferBlock::allocate(uint64_t &size, uint64_t &offset, gal::Buffer *&buffer, uint8_t *&data)

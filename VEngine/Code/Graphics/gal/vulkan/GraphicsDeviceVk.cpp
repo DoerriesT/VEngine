@@ -749,7 +749,7 @@ void VEngine::gal::GraphicsDeviceVk::destroySemaphore(Semaphore *semaphore)
 
 void VEngine::gal::GraphicsDeviceVk::createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool)
 {
-	uint32_t typeCountsVk[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+	uint32_t typeCountsVk[VK_DESCRIPTOR_TYPE_RANGE_SIZE] = {};
 	for (uint32_t i = 0; i < (uint32_t)DescriptorType::RANGE_SIZE; ++i)
 	{
 		auto type = static_cast<DescriptorType>(i);
@@ -808,14 +808,12 @@ void VEngine::gal::GraphicsDeviceVk::createDescriptorSetLayout(uint32_t bindingC
 	auto *memory = m_descriptorSetLayoutMemoryPool.alloc();
 	assert(memory);
 
-	uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE] = {};
 	std::vector<VkDescriptorSetLayoutBinding> bindingsVk;
-	bindingsVk.resize(bindingCount);
+	bindingsVk.reserve(bindingCount);
 
 	for (uint32_t i = 0; i < bindingCount; ++i)
 	{
 		const auto &b = bindings[i];
-		typeCounts[static_cast<size_t>(b.m_descriptorType)] += b.m_descriptorCount;
 		VkDescriptorType typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
 		switch (b.m_descriptorType)
 		{
@@ -847,7 +845,7 @@ void VEngine::gal::GraphicsDeviceVk::createDescriptorSetLayout(uint32_t bindingC
 		bindingsVk.push_back({ b.m_binding, typeVk , b.m_descriptorCount, b.m_stageFlags, nullptr });
 	}
 
-	*descriptorSetLayout = new(memory) DescriptorSetLayoutVk(m_device, bindingCount, bindingsVk.data(), typeCounts);
+	*descriptorSetLayout = new(memory) DescriptorSetLayoutVk(m_device, bindingCount, bindingsVk.data());
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout)

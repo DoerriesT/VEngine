@@ -38,14 +38,14 @@ public:
 		//entt::entity cameraEntity = entityRegistry.create();
 		//entityRegistry.assign<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
 		//entityRegistry.assign<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
-		// m_engine->getRenderSystem().setCameraEntity(cameraEntity);
+		//m_engine->getRenderSystem().setCameraEntity(cameraEntity);
 
-		//VEngine::Scene scene = {};
-		//scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
-		//entt::entity sponzaEntity = entityRegistry.create();
-		//entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
-		//entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
-		//entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
+		VEngine::Scene scene = {};
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
+		entt::entity sponzaEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
+		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
 
 		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 		entt::entity giHouseEntity = entityRegistry.create();
@@ -86,18 +86,18 @@ public:
 		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
 
-		//g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
-		//entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
-		//auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
-		//dlc.m_depthBias[0] = 5.0f;
-		//dlc.m_depthBias[1] = 5.0f;
-		//dlc.m_depthBias[2] = 5.0f;
-		//dlc.m_depthBias[3] = 5.0f;
-		//dlc.m_normalOffsetBias[0] = 2.0f;
-		//dlc.m_normalOffsetBias[1] = 2.0f;
-		//dlc.m_normalOffsetBias[2] = 2.0f;
-		//dlc.m_normalOffsetBias[3] = 2.0f;
-		//entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
+		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
+		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
+		dlc.m_depthBias[0] = 5.0f;
+		dlc.m_depthBias[1] = 5.0f;
+		dlc.m_depthBias[2] = 5.0f;
+		dlc.m_depthBias[3] = 5.0f;
+		dlc.m_normalOffsetBias[0] = 2.0f;
+		dlc.m_normalOffsetBias[1] = 2.0f;
+		dlc.m_normalOffsetBias[2] = 2.0f;
+		dlc.m_normalOffsetBias[3] = 2.0f;
+		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
 
 		//std::default_random_engine e;
 		//std::uniform_real_distribution<float> px(-14.0f, 14.0f);

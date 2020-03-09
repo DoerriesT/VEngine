@@ -5,7 +5,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/CameraComponent.h"
-#include "Graphics/Vulkan/VKRenderer.h"
+#include "Graphics/Renderer.h"
 #include "GlobalVar.h"
 #include <glm/ext.hpp>
 #include <glm/vec3.hpp>
@@ -29,7 +29,7 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 		m_haltonY[i] = Utility::halton(i + 1, 3) * 2.0f - 1.0f;
 	}
 
-	m_renderer = std::make_unique<VKRenderer>(m_width, m_height, windowHandle);
+	m_renderer = std::make_unique<Renderer>(m_width, m_height, windowHandle);
 	memset(&m_commonRenderData, 0, sizeof(m_commonRenderData));
 }
 
@@ -511,7 +511,7 @@ const uint32_t * VEngine::RenderSystem::getLuminanceHistogram() const
 
 std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::RenderSystem::getMemoryAllocatorDebugInfo() const
 {
-	return m_renderer->getMemoryAllocatorDebugInfo();
+	return {};// m_renderer->getMemoryAllocatorDebugInfo();
 }
 
 void VEngine::RenderSystem::getTimingInfo(size_t *count, const PassTimingInfo **data) const

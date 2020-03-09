@@ -68,7 +68,6 @@ namespace VEngine
 
 		uint32_t m_width;
 		uint32_t m_height;
-		uint32_t m_swapChainImageIndex;
 		TextureHandle m_fontAtlasTextureIndex;
 		TextureHandle m_blueNoiseTextureIndex;
 		size_t m_passTimingCount;
