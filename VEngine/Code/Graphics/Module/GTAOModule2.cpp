@@ -1,14 +1,14 @@
-#include "GTAOModule2.h"
-#include "Graphics/Pass/GTAOPass2.h"
-#include "Graphics/Pass/GTAOSpatialFilterPass2.h"
-#include "Graphics/Pass/GTAOTemporalFilterPass2.h"
+#include "GTAOModule.h"
+#include "Graphics/Pass/GTAOPass.h"
+#include "Graphics/Pass/GTAOSpatialFilterPass.h"
+#include "Graphics/Pass/GTAOTemporalFilterPass.h"
 #include "Utility/Utility.h"
-#include "Graphics/PassRecordContext2.h"
+#include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 
 using namespace VEngine::gal;
 
-VEngine::GTAOModule2::GTAOModule2(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
+VEngine::GTAOModule::GTAOModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
 	:m_graphicsDevice(graphicsDevice),
 	m_width(width),
 	m_height(height)
@@ -17,7 +17,7 @@ VEngine::GTAOModule2::GTAOModule2(gal::GraphicsDevice *graphicsDevice, uint32_t 
 }
 
 
-VEngine::GTAOModule2::~GTAOModule2()
+VEngine::GTAOModule::~GTAOModule()
 {
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
@@ -25,7 +25,7 @@ VEngine::GTAOModule2::~GTAOModule2()
 	}
 }
 
-void VEngine::GTAOModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
+void VEngine::GTAOModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	auto &commonData = *data.m_passRecordContext->m_commonRenderData;
 
@@ -61,36 +61,36 @@ void VEngine::GTAOModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 
 
 	// gtao
-	GTAOPass2::Data gtaoPassData;
+	GTAOPass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassData.m_depthImageHandle = data.m_depthImageViewHandle;
 	gtaoPassData.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
-	GTAOPass2::addToGraph(graph, gtaoPassData);
+	GTAOPass::addToGraph(graph, gtaoPassData);
 
 
 	// gtao spatial filter
-	GTAOSpatialFilterPass2::Data gtaoPassSpatialFilterPassData;
+	GTAOSpatialFilterPass::Data gtaoPassSpatialFilterPassData;
 	gtaoPassSpatialFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassSpatialFilterPassData.m_inputImageHandle = gtaoRawImageViewHandle;
 	gtaoPassSpatialFilterPassData.m_resultImageHandle = gtaoSpatiallyFilteredImageViewHandle;
 
-	GTAOSpatialFilterPass2::addToGraph(graph, gtaoPassSpatialFilterPassData);
+	GTAOSpatialFilterPass::addToGraph(graph, gtaoPassSpatialFilterPassData);
 
 
 	// gtao temporal filter
-	GTAOTemporalFilterPass2::Data gtaoPassTemporalFilterPassData;
+	GTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
 	gtaoPassTemporalFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_velocityImageHandle = data.m_velocityImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_resultImageHandle = m_gtaoImageViewHandle;
 
-	GTAOTemporalFilterPass2::addToGraph(graph, gtaoPassTemporalFilterPassData);
+	GTAOTemporalFilterPass::addToGraph(graph, gtaoPassTemporalFilterPassData);
 }
 
-void VEngine::GTAOModule2::resize(uint32_t width, uint32_t height)
+void VEngine::GTAOModule::resize(uint32_t width, uint32_t height)
 {
 	m_width = width;
 	m_height = height;
@@ -124,7 +124,7 @@ void VEngine::GTAOModule2::resize(uint32_t width, uint32_t height)
 	}
 }
 
-VEngine::rg::ImageViewHandle VEngine::GTAOModule2::getAOResultImageViewHandle()
+VEngine::rg::ImageViewHandle VEngine::GTAOModule::getAOResultImageViewHandle()
 {
 	return m_gtaoImageViewHandle;
 }

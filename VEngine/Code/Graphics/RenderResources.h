@@ -3,7 +3,7 @@
 #include "RendererConsts.h"
 #include "MappableBufferBlock.h"
 #include <memory>
-#include "RenderGraph2.h"
+#include "RenderGraph.h"
 
 namespace VEngine
 {

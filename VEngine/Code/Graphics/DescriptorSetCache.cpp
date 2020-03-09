@@ -3,27 +3,27 @@
 
 using namespace VEngine::gal;
 
-VEngine::DescriptorSetCache2::DescriptorSetCache2(GraphicsDevice *graphicsDevice)
+VEngine::DescriptorSetCache::DescriptorSetCache(GraphicsDevice *graphicsDevice)
 	:m_graphicsDevice(graphicsDevice),
 	m_frameIndex(),
 	m_layoutToSets()
 {
 }
 
-VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::getDescriptorSet(const DescriptorSetLayout *layout)
+VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache::getDescriptorSet(const DescriptorSetLayout *layout)
 {
 	auto &pooledSetsPtr = m_layoutToSets[layout];
 
 	// layout doesnt exist yet -> create it
 	if (!pooledSetsPtr)
 	{
-		pooledSetsPtr = std::make_unique<DescriptorSetPools2>(m_graphicsDevice, layout);
+		pooledSetsPtr = std::make_unique<DescriptorSetPools>(m_graphicsDevice, layout);
 	}
 
 	return pooledSetsPtr->getDescriptorSet(m_frameIndex);
 }
 
-void VEngine::DescriptorSetCache2::update(uint64_t currentFrameIndex, uint64_t frameIndexToRelease)
+void VEngine::DescriptorSetCache::update(uint64_t currentFrameIndex, uint64_t frameIndexToRelease)
 {
 	m_frameIndex = currentFrameIndex;
 
@@ -37,7 +37,7 @@ void VEngine::DescriptorSetCache2::update(uint64_t currentFrameIndex, uint64_t f
 	}
 }
 
-VEngine::DescriptorSetCache2::DescriptorSetPools2::DescriptorSetPools2(GraphicsDevice *graphicsDevice, const DescriptorSetLayout *layout)
+VEngine::DescriptorSetCache::DescriptorSetPools::DescriptorSetPools(GraphicsDevice *graphicsDevice, const DescriptorSetLayout *layout)
 	:m_graphicsDevice(graphicsDevice),
 	m_typeCounts(),
 	m_layout(layout),
@@ -50,7 +50,7 @@ VEngine::DescriptorSetCache2::DescriptorSetPools2::DescriptorSetPools2(GraphicsD
 	}
 }
 
-VEngine::DescriptorSetCache2::DescriptorSetPools2::~DescriptorSetPools2()
+VEngine::DescriptorSetCache::DescriptorSetPools::~DescriptorSetPools()
 {
 	for (auto &pool : m_pools)
 	{
@@ -59,7 +59,7 @@ VEngine::DescriptorSetCache2::DescriptorSetPools2::~DescriptorSetPools2()
 	}
 }
 
-VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::DescriptorSetPools2::getDescriptorSet(uint64_t currentFrameIndex)
+VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache::DescriptorSetPools::getDescriptorSet(uint64_t currentFrameIndex)
 {
 	// look for existing free set
 	for (auto &pool : m_pools)
@@ -112,7 +112,7 @@ VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache2::DescriptorSetPools2::
 	return pool.m_sets[0];
 }
 
-void VEngine::DescriptorSetCache2::DescriptorSetPools2::update(uint64_t currentFrameIndex, uint64_t frameIndexToRelease)
+void VEngine::DescriptorSetCache::DescriptorSetPools::update(uint64_t currentFrameIndex, uint64_t frameIndexToRelease)
 {
 	for (auto &pool : m_pools)
 	{

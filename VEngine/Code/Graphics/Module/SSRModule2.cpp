@@ -1,16 +1,16 @@
-#include "SSRModule2.h"
+#include "SSRModule.h"
 #include "Utility/Utility.h"
-#include "Graphics/PassRecordContext2.h"
+#include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
-#include "Graphics/Pass/SSRPass2.h"
-#include "Graphics/Pass/SSRResolvePass2.h"
-#include "Graphics/Pass/SSRTemporalFilterPass2.h"
+#include "Graphics/Pass/SSRPass.h"
+#include "Graphics/Pass/SSRResolvePass.h"
+#include "Graphics/Pass/SSRTemporalFilterPass.h"
 
 using namespace VEngine::gal;
 
 extern float g_ssrBias;
 
-VEngine::SSRModule2::SSRModule2(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
+VEngine::SSRModule::SSRModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
 	:m_graphicsDevice(graphicsDevice),
 	m_width(width),
 	m_height(height)
@@ -18,7 +18,7 @@ VEngine::SSRModule2::SSRModule2(gal::GraphicsDevice *graphicsDevice, uint32_t wi
 	resize(width, height);
 }
 
-VEngine::SSRModule2::~SSRModule2()
+VEngine::SSRModule::~SSRModule()
 {
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
@@ -26,7 +26,7 @@ VEngine::SSRModule2::~SSRModule2()
 	}
 }
 
-void VEngine::SSRModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
+void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	auto &commonData = *data.m_passRecordContext->m_commonRenderData;
 
@@ -96,7 +96,7 @@ void VEngine::SSRModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 
 
 	// trace rays
-	SSRPass2::Data ssrPassData;
+	SSRPass::Data ssrPassData;
 	ssrPassData.m_passRecordContext = data.m_passRecordContext;
 	ssrPassData.m_bias = g_ssrBias;
 	ssrPassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
@@ -105,11 +105,11 @@ void VEngine::SSRModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 	ssrPassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
 	ssrPassData.m_maskImageHandle = ssrMaskImageViewHandle;
 
-	SSRPass2::addToGraph(graph, ssrPassData);
+	SSRPass::addToGraph(graph, ssrPassData);
 
 
 	// resolve color
-	SSRResolvePass2::Data ssrResolvePassData;
+	SSRResolvePass::Data ssrResolvePassData;
 	ssrResolvePassData.m_passRecordContext = data.m_passRecordContext;
 	ssrResolvePassData.m_bias = g_ssrBias;
 	ssrResolvePassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
@@ -123,23 +123,23 @@ void VEngine::SSRModule2::addToGraph(rg::RenderGraph2 &graph, const Data &data)
 	ssrResolvePassData.m_resultImageHandle = resolvedColorRayDepthImageViewHandle;
 	ssrResolvePassData.m_resultMaskImageHandle = resolvedMaskImageViewHandle;
 
-	SSRResolvePass2::addToGraph(graph, ssrResolvePassData);
+	SSRResolvePass::addToGraph(graph, ssrResolvePassData);
 
 	//m_ssrImageViewHandle = resolvedColorRayDepthImageViewHandle;
 
 
 	// temporal filter
-	SSRTemporalFilterPass2::Data ssrTemporalFilterPassData;
+	SSRTemporalFilterPass::Data ssrTemporalFilterPassData;
 	ssrTemporalFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	ssrTemporalFilterPassData.m_resultImageViewHandle = m_ssrImageViewHandle;
 	ssrTemporalFilterPassData.m_historyImageViewHandle = ssrPreviousImageViewHandle;
 	ssrTemporalFilterPassData.m_colorRayDepthImageViewHandle = resolvedColorRayDepthImageViewHandle;
 	ssrTemporalFilterPassData.m_maskImageViewHandle = resolvedMaskImageViewHandle;
 
-	SSRTemporalFilterPass2::addToGraph(graph, ssrTemporalFilterPassData);
+	SSRTemporalFilterPass::addToGraph(graph, ssrTemporalFilterPassData);
 }
 
-void VEngine::SSRModule2::resize(uint32_t width, uint32_t height)
+void VEngine::SSRModule::resize(uint32_t width, uint32_t height)
 {
 	m_width = width;
 	m_height = height;
@@ -172,7 +172,7 @@ void VEngine::SSRModule2::resize(uint32_t width, uint32_t height)
 	}
 }
 
-VEngine::rg::ImageViewHandle VEngine::SSRModule2::getSSRResultImageViewHandle()
+VEngine::rg::ImageViewHandle VEngine::SSRModule::getSSRResultImageViewHandle()
 {
 	return m_ssrImageViewHandle;
 }

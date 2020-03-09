@@ -10,7 +10,7 @@ namespace VEngine
 {
 	namespace rg
 	{
-		class RenderGraph2;
+		class RenderGraph;
 	}
 
 	struct RenderResources;
@@ -18,7 +18,7 @@ namespace VEngine
 	class MaterialManager;
 	class MeshManager;
 	class PipelineCache;
-	class DescriptorSetCache2;
+	class DescriptorSetCache;
 	struct CommonRenderData;
 	struct RenderData;
 	struct LightData;
@@ -26,8 +26,8 @@ namespace VEngine
 	struct SubMesh;
 	struct BVHNode;
 	struct Triangle;
-	class GTAOModule2;
-	class SSRModule2;
+	class GTAOModule;
+	class SSRModule;
 
 	class Renderer
 	{
@@ -56,13 +56,13 @@ namespace VEngine
 		uint64_t m_semaphoreValues[3];
 		std::unique_ptr<RenderResources> m_renderResources;
 		std::unique_ptr<PipelineCache> m_pipelineCache;
-		std::unique_ptr<DescriptorSetCache2> m_descriptorSetCache;
+		std::unique_ptr<DescriptorSetCache> m_descriptorSetCache;
 		std::unique_ptr<TextureLoader> m_textureLoader;
 		std::unique_ptr<MaterialManager> m_materialManager;
 		std::unique_ptr<MeshManager> m_meshManager;
-		std::unique_ptr<rg::RenderGraph2> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
-		std::unique_ptr<GTAOModule2> m_gtaoModule;
-		std::unique_ptr<SSRModule2> m_ssrModule;
+		std::unique_ptr<rg::RenderGraph> m_frameGraphs[RendererConsts::FRAMES_IN_FLIGHT];
+		std::unique_ptr<GTAOModule> m_gtaoModule;
+		std::unique_ptr<SSRModule> m_ssrModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 

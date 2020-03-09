@@ -8,14 +8,14 @@
 
 namespace VEngine
 {
-	class DescriptorSetCache2
+	class DescriptorSetCache
 	{
 	public:
-		DescriptorSetCache2(gal::GraphicsDevice *graphicsDevice);
-		DescriptorSetCache2(DescriptorSetCache2 &) = delete;
-		DescriptorSetCache2(DescriptorSetCache2 &&) = delete;
-		DescriptorSetCache2 &operator= (const DescriptorSetCache2 &) = delete;
-		DescriptorSetCache2 &operator= (const DescriptorSetCache2 &&) = delete;
+		DescriptorSetCache(gal::GraphicsDevice *graphicsDevice);
+		DescriptorSetCache(DescriptorSetCache &) = delete;
+		DescriptorSetCache(DescriptorSetCache &&) = delete;
+		DescriptorSetCache &operator= (const DescriptorSetCache &) = delete;
+		DescriptorSetCache &operator= (const DescriptorSetCache &&) = delete;
 
 		gal::DescriptorSet *getDescriptorSet(const gal::DescriptorSetLayout *layout);
 		// index of current frame and index of frame which finished rendering and whose resources may be freed
@@ -24,7 +24,7 @@ namespace VEngine
 	private:
 
 		// holds a vector of pools for a specific layout that dynamically grows to satisfy requests
-		struct DescriptorSetPools2
+		struct DescriptorSetPools
 		{
 			enum { SETS_PER_POOL = 16 };
 
@@ -42,12 +42,12 @@ namespace VEngine
 			const gal::DescriptorSetLayout *m_layout;
 			std::vector<Pool> m_pools;
 
-			explicit DescriptorSetPools2(gal::GraphicsDevice *graphicsDevice, const gal::DescriptorSetLayout *layout);
-			DescriptorSetPools2(DescriptorSetPools2 &) = delete;
-			DescriptorSetPools2(DescriptorSetPools2 &&) = delete;
-			DescriptorSetPools2 &operator= (const DescriptorSetPools2 &) = delete;
-			DescriptorSetPools2 &operator= (const DescriptorSetPools2 &&) = delete;
-			~DescriptorSetPools2();
+			explicit DescriptorSetPools(gal::GraphicsDevice *graphicsDevice, const gal::DescriptorSetLayout *layout);
+			DescriptorSetPools(DescriptorSetPools &) = delete;
+			DescriptorSetPools(DescriptorSetPools &&) = delete;
+			DescriptorSetPools &operator= (const DescriptorSetPools &) = delete;
+			DescriptorSetPools &operator= (const DescriptorSetPools &&) = delete;
+			~DescriptorSetPools();
 
 			gal::DescriptorSet *getDescriptorSet(uint64_t currentFrameIndex);
 			void update(uint64_t currentFrameIndex, uint64_t frameIndexToRelease);
@@ -55,6 +55,6 @@ namespace VEngine
 
 		gal::GraphicsDevice *m_graphicsDevice;
 		uint64_t m_frameIndex;
-		std::map<const gal::DescriptorSetLayout *, std::unique_ptr<DescriptorSetPools2>> m_layoutToSets;
+		std::map<const gal::DescriptorSetLayout *, std::unique_ptr<DescriptorSetPools>> m_layoutToSets;
 	};
 }

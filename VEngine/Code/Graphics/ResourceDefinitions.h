@@ -1,5 +1,5 @@
 #pragma once
-#include "RenderGraph2.h"
+#include "RenderGraph.h"
 #include "Graphics/LightData.h"
 #include "Utility/Utility.h"
 #include "Graphics/RendererConsts.h"
@@ -8,7 +8,7 @@ namespace VEngine
 {
 	namespace ResourceDefinitions
 	{
-		inline rg::ImageViewHandle createFinalImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createFinalImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Final Image";
@@ -25,7 +25,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createDepthImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createDepthImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Depth Image";
@@ -42,7 +42,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createUVImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createUVImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "UV Image";
@@ -59,7 +59,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createDerivativesLengthImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createDerivativesLengthImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "DDXY Length Image";
@@ -76,7 +76,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createDerivativesRotMaterialIdImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createDerivativesRotMaterialIdImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "DDXY Rot & Material ID Image";
@@ -93,7 +93,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createTangentSpaceImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createTangentSpaceImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Tangent Space Image";
@@ -110,7 +110,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createVelocityImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createVelocityImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Velocity Image";
@@ -127,7 +127,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createLightImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createLightImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Light Image";
@@ -144,7 +144,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createTransparencyAccumImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createTransparencyAccumImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Transparency Accum Image";
@@ -164,7 +164,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createGTAOImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createGTAOImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "GTAO Image";
@@ -181,7 +181,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::ImageViewHandle createDeferredShadowsImageViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height)
+		inline rg::ImageViewHandle createDeferredShadowsImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height)
 		{
 			rg::ImageDescription desc = {};
 			desc.m_name = "Deferred Shadows Image";
@@ -198,7 +198,7 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::BufferViewHandle createPointLightBitMaskBufferViewHandle(rg::RenderGraph2 &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
+		inline rg::BufferViewHandle createPointLightBitMaskBufferViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
 		{
 			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
 			uint32_t h = height / RendererConsts::LIGHTING_TILE_SIZE + ((height % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
@@ -216,7 +216,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createLuminanceHistogramBufferViewHandle(rg::RenderGraph2 &graph)
+		inline rg::BufferViewHandle createLuminanceHistogramBufferViewHandle(rg::RenderGraph &graph)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "Luminance Histogram Buffer";
@@ -228,7 +228,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createTriangleFilterIndexCountsBufferViewHandle(rg::RenderGraph2 &graph, uint32_t drawCount)
+		inline rg::BufferViewHandle createTriangleFilterIndexCountsBufferViewHandle(rg::RenderGraph &graph, uint32_t drawCount)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "Trinagle Filter Index Counts Buffer";
@@ -241,7 +241,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createTriangleFilterFilteredIndexBufferViewHandle(rg::RenderGraph2 &graph, uint32_t count)
+		inline rg::BufferViewHandle createTriangleFilterFilteredIndexBufferViewHandle(rg::RenderGraph &graph, uint32_t count)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "Trinagle Filter Filtered Index Buffer";
@@ -254,7 +254,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createSDSMDepthBoundsBufferViewHandle(rg::RenderGraph2 &graph)
+		inline rg::BufferViewHandle createSDSMDepthBoundsBufferViewHandle(rg::RenderGraph &graph)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "SDSM Depth Bounds Buffer";
@@ -267,7 +267,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createSDSMSplitsBufferViewHandle(rg::RenderGraph2 &graph, uint32_t partitions)
+		inline rg::BufferViewHandle createSDSMSplitsBufferViewHandle(rg::RenderGraph &graph, uint32_t partitions)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "SDSM Splits Buffer";
@@ -280,7 +280,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createSDSMPartitionBoundsBufferViewHandle(rg::RenderGraph2 &graph, uint32_t partitions)
+		inline rg::BufferViewHandle createSDSMPartitionBoundsBufferViewHandle(rg::RenderGraph &graph, uint32_t partitions)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "SDSM Partition Bounds Buffer";
@@ -293,7 +293,7 @@ namespace VEngine
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
 
-		inline rg::BufferViewHandle createOcclusionCullingVisibilityBufferViewHandle(rg::RenderGraph2 &graph, uint32_t instances)
+		inline rg::BufferViewHandle createOcclusionCullingVisibilityBufferViewHandle(rg::RenderGraph &graph, uint32_t instances)
 		{
 			rg::BufferDescription desc = {};
 			desc.m_name = "Occlusion Culling Visibility Buffer";

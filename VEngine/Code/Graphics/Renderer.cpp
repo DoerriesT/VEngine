@@ -6,33 +6,33 @@
 #include "Graphics/LightData.h"
 #include "TextureLoader.h"
 #include "GlobalVar.h"
-#include "Pass/IntegrateBrdfPass2.h"
-#include "Pass/GeometryPass2.h"
-#include "Pass/ShadowPass2.h"
-#include "Pass/RasterTilingPass2.h"
-#include "Pass/LuminanceHistogramPass2.h"
-#include "Pass/LuminanceHistogramReduceAveragePass2.h"
-#include "Pass/TonemapPass2.h"
-#include "Pass/VelocityInitializationPass2.h"
-#include "Pass/FXAAPass2.h"
-#include "Pass/LightingPass2.h"
-#include "Pass/DeferredShadowsPass2.h"
-#include "Pass/ImGuiPass2.h"
-#include "Pass/ReadBackCopyPass2.h"
-#include "Pass/HiZPyramidPass2.h"
-#include "Pass/BuildIndexBufferPass2.h"
-#include "Pass/SharpenFfxCasPass2.h"
-#include "Pass/TAAPass2.h"
-#include "Module/GTAOModule2.h"
-#include "Module/SSRModule2.h"
-#include "Module/BloomModule2.h"
+#include "Pass/IntegrateBrdfPass.h"
+#include "Pass/GeometryPass.h"
+#include "Pass/ShadowPass.h"
+#include "Pass/RasterTilingPass.h"
+#include "Pass/LuminanceHistogramPass.h"
+#include "Pass/LuminanceHistogramReduceAveragePass.h"
+#include "Pass/TonemapPass.h"
+#include "Pass/VelocityInitializationPass.h"
+#include "Pass/FXAAPass.h"
+#include "Pass/LightingPass.h"
+#include "Pass/DeferredShadowsPass.h"
+#include "Pass/ImGuiPass.h"
+#include "Pass/ReadBackCopyPass.h"
+#include "Pass/HiZPyramidPass.h"
+#include "Pass/BuildIndexBufferPass.h"
+#include "Pass/SharpenFfxCasPass.h"
+#include "Pass/TAAPass.h"
+#include "Module/GTAOModule.h"
+#include "Module/SSRModule.h"
+#include "Module/BloomModule.h"
 #include "PipelineCache.h"
 #include "DescriptorSetCache.h"
 #include "MaterialManager.h"
 #include "MeshManager.h"
 #include <glm/gtc/matrix_transform.hpp>
-#include "RenderGraph2.h"
-#include "PassRecordContext2.h"
+#include "RenderGraph.h"
+#include "PassRecordContext.h"
 #include "Graphics/imgui/imgui.h"
 #include "Graphics/ViewRenderList.h"
 #include "ResourceDefinitions.h"
@@ -65,7 +65,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_renderResources->init(m_width, m_height);
 
 	m_pipelineCache = std::make_unique<PipelineCache>(m_graphicsDevice);
-	m_descriptorSetCache = std::make_unique<DescriptorSetCache2>(m_graphicsDevice);
+	m_descriptorSetCache = std::make_unique<DescriptorSetCache>(m_graphicsDevice);
 	m_textureLoader = std::make_unique<TextureLoader>(m_graphicsDevice, m_renderResources->m_stagingBuffer);
 	m_materialManager = std::make_unique<MaterialManager>(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
 	m_meshManager = std::make_unique<MeshManager>(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
@@ -78,11 +78,11 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<rg::RenderGraph2>(m_graphicsDevice, m_semaphores, m_semaphoreValues);
+		m_frameGraphs[i] = std::make_unique<rg::RenderGraph>(m_graphicsDevice, m_semaphores, m_semaphoreValues);
 	}
 
-	m_gtaoModule = std::make_unique<GTAOModule2>(m_graphicsDevice, m_width, m_height);
-	m_ssrModule = std::make_unique<SSRModule2>(m_graphicsDevice, m_width, m_height);
+	m_gtaoModule = std::make_unique<GTAOModule>(m_graphicsDevice, m_width, m_height);
+	m_ssrModule = std::make_unique<SSRModule>(m_graphicsDevice, m_width, m_height);
 }
 
 VEngine::Renderer::~Renderer()
@@ -377,7 +377,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
-	PassRecordContext2 passRecordContext{};
+	PassRecordContext passRecordContext{};
 	passRecordContext.m_renderResources = m_renderResources.get();
 	passRecordContext.m_pipelineCache = m_pipelineCache.get();
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
@@ -385,23 +385,23 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	if (commonData.m_frame == 0)
 	{
-		IntegrateBrdfPass2::Data integrateBrdfPassData;
+		IntegrateBrdfPass::Data integrateBrdfPassData;
 		integrateBrdfPassData.m_passRecordContext = &passRecordContext;
 		integrateBrdfPassData.m_resultImageViewHandle = brdfLUTImageViewHandle;
 
-		IntegrateBrdfPass2::addToGraph(graph, integrateBrdfPassData);
+		IntegrateBrdfPass::addToGraph(graph, integrateBrdfPassData);
 	}
 
 	// Hi-Z furthest depth pyramid
-	HiZPyramidPass2::OutData hiZMinPyramidPassOutData;
-	HiZPyramidPass2::Data hiZMinPyramidPassData;
+	HiZPyramidPass::OutData hiZMinPyramidPassOutData;
+	HiZPyramidPass::Data hiZMinPyramidPassData;
 	hiZMinPyramidPassData.m_passRecordContext = &passRecordContext;
 	hiZMinPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
 	hiZMinPyramidPassData.m_maxReduction = false;
 	hiZMinPyramidPassData.m_copyFirstLevel = false;
 	hiZMinPyramidPassData.m_forceExecution = true;
 
-	HiZPyramidPass2::addToGraph(graph, hiZMinPyramidPassData, hiZMinPyramidPassOutData);
+	HiZPyramidPass::addToGraph(graph, hiZMinPyramidPassData, hiZMinPyramidPassOutData);
 
 	rg::ImageViewHandle depthPyramidImageViewHandle = hiZMinPyramidPassOutData.m_resultImageViewHandle;
 
@@ -410,7 +410,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount)
 	{
 		// draw opaque geometry to gbuffer
-		GeometryPass2::Data opaqueGeometryPassData;
+		GeometryPass::Data opaqueGeometryPassData;
 		opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
 		opaqueGeometryPassData.m_alphaMasked = false;
 		opaqueGeometryPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
@@ -429,14 +429,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		//opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 		//opaqueGeometryPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
 
-		GeometryPass2::addToGraph(graph, opaqueGeometryPassData);
+		GeometryPass::addToGraph(graph, opaqueGeometryPassData);
 	}
 
 	// alpha masked geometry
 	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount)
 	{
 		// draw alpha masked geometry to gbuffer
-		GeometryPass2::Data maskedGeometryPassData;
+		GeometryPass::Data maskedGeometryPassData;
 		maskedGeometryPassData.m_passRecordContext = &passRecordContext;
 		maskedGeometryPassData.m_alphaMasked = true;
 		maskedGeometryPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
@@ -456,16 +456,16 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		//maskedGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
 		//maskedGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
 
-		GeometryPass2::addToGraph(graph, maskedGeometryPassData);
+		GeometryPass::addToGraph(graph, maskedGeometryPassData);
 	}
 
 	// initialize velocity of static objects
-	VelocityInitializationPass2::Data velocityInitializationPassData;
+	VelocityInitializationPass::Data velocityInitializationPassData;
 	velocityInitializationPassData.m_passRecordContext = &passRecordContext;
 	velocityInitializationPassData.m_depthImageHandle = depthImageViewHandle;
 	velocityInitializationPassData.m_velocityImageHandle = velocityImageViewHandle;
 
-	VelocityInitializationPass2::addToGraph(graph, velocityInitializationPassData);
+	VelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
 
 	rg::ImageViewHandle shadowImageViewHandle = 0;
 	{
@@ -492,7 +492,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			// draw shadows
 			if (drawList.m_opaqueCount)
 			{
-				ShadowPass2::Data opaqueShadowPassData;
+				ShadowPass::Data opaqueShadowPassData;
 				opaqueShadowPassData.m_passRecordContext = &passRecordContext;
 				opaqueShadowPassData.m_shadowMapSize = 2048;
 				opaqueShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
@@ -510,7 +510,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 				//opaqueShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
 				opaqueShadowPassData.m_shadowImageHandle = shadowLayer;
 
-				ShadowPass2::addToGraph(graph, opaqueShadowPassData);
+				ShadowPass::addToGraph(graph, opaqueShadowPassData);
 			}
 
 
@@ -518,7 +518,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			// draw masked shadows
 			if (drawList.m_maskedCount)
 			{
-				ShadowPass2::Data maskedShadowPassData;
+				ShadowPass::Data maskedShadowPassData;
 				maskedShadowPassData.m_passRecordContext = &passRecordContext;
 				maskedShadowPassData.m_shadowMapSize = 2048;
 				maskedShadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
@@ -536,14 +536,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 				//maskedShadowPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
 				maskedShadowPassData.m_shadowImageHandle = shadowLayer;
 
-				ShadowPass2::addToGraph(graph, maskedShadowPassData);
+				ShadowPass::addToGraph(graph, maskedShadowPassData);
 			}
 		}
 	}
 
 
 	// deferred shadows
-	DeferredShadowsPass2::Data deferredShadowsPassData;
+	DeferredShadowsPass::Data deferredShadowsPassData;
 	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
 	deferredShadowsPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightData.size());
 	deferredShadowsPassData.m_lightData = lightData.m_directionalLightData.data();
@@ -554,10 +554,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
 
-	DeferredShadowsPass2::addToGraph(graph, deferredShadowsPassData);
+	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 
 	// gtao
-	GTAOModule2::Data gtaoModuleData;
+	GTAOModule::Data gtaoModuleData;
 	gtaoModuleData.m_passRecordContext = &passRecordContext;
 	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
 	gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
@@ -569,18 +569,18 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// cull lights to tiles
-	RasterTilingPass2::Data rasterTilingPassData;
+	RasterTilingPass::Data rasterTilingPassData;
 	rasterTilingPassData.m_passRecordContext = &passRecordContext;
 	rasterTilingPassData.m_lightData = &lightData;
 	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 
 	if (!lightData.m_pointLightData.empty())
 	{
-		RasterTilingPass2::addToGraph(graph, rasterTilingPassData);
+		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
 
 	// light gbuffer
-	LightingPass2::Data lightingPassData;
+	LightingPass::Data lightingPassData;
 	lightingPassData.m_passRecordContext = &passRecordContext;
 	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
 	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
@@ -597,35 +597,35 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	lightingPassData.m_albedoImageHandle = albedoImageViewHandle;
 	lightingPassData.m_normalImageHandle = normalImageViewHandle;
 
-	LightingPass2::addToGraph(graph, lightingPassData);
+	LightingPass::addToGraph(graph, lightingPassData);
 
 
 	// calculate luminance histograms
-	LuminanceHistogramPass2::Data luminanceHistogramPassData;
+	LuminanceHistogramPass::Data luminanceHistogramPassData;
 	luminanceHistogramPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramPassData.m_lightImageHandle = lightImageViewHandle;
 	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 
-	LuminanceHistogramPass2::addToGraph(graph, luminanceHistogramPassData);
+	LuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
 
 
 	// calculate avg luminance
-	LuminanceHistogramAveragePass2::Data luminanceHistogramAvgPassData;
+	LuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
 	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
-	LuminanceHistogramAveragePass2::addToGraph(graph, luminanceHistogramAvgPassData);
+	LuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
 
 
 	// copy luminance histogram to readback buffer
-	ReadBackCopyPass2::Data luminanceHistogramReadBackCopyPassData;
+	ReadBackCopyPass::Data luminanceHistogramReadBackCopyPassData;
 	luminanceHistogramReadBackCopyPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramReadBackCopyPassData.m_bufferCopy = { 0, 0, RendererConsts::LUMINANCE_HISTOGRAM_SIZE * sizeof(uint32_t) };
 	luminanceHistogramReadBackCopyPassData.m_srcBuffer = luminanceHistogramBufferViewHandle;
 	luminanceHistogramReadBackCopyPassData.m_dstBuffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_curResIdx];
 
-	ReadBackCopyPass2::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
+	ReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
 
 
 	// get swapchain image
@@ -640,7 +640,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	TAAPass2::Data taaPassData;
+	TAAPass::Data taaPassData;
 	taaPassData.m_passRecordContext = &passRecordContext;
 	taaPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
 	taaPassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
@@ -652,7 +652,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	if (g_TAAEnabled)
 	{
-		TAAPass2::addToGraph(graph, taaPassData);
+		TAAPass::addToGraph(graph, taaPassData);
 
 		lightImageViewHandle = taaResolveImageViewHandle;
 	}
@@ -663,14 +663,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// bloom
 	rg::ImageViewHandle bloomImageViewHandle = 0;
-	BloomModule2::OutputData bloomModuleOutData;
-	BloomModule2::InputData bloomModuleInData;
+	BloomModule::OutputData bloomModuleOutData;
+	BloomModule::InputData bloomModuleInData;
 	bloomModuleInData.m_passRecordContext = &passRecordContext;
 	bloomModuleInData.m_colorImageViewHandle = currentOutput;
 
 	if (g_bloomEnabled)
 	{
-		BloomModule2::addToGraph(graph, bloomModuleInData, bloomModuleOutData);
+		BloomModule::addToGraph(graph, bloomModuleInData, bloomModuleOutData);
 		bloomImageViewHandle = bloomModuleOutData.m_bloomImageViewHandle;
 	}
 
@@ -678,7 +678,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rg::ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainImageViewHandle;
 
 	// tonemap
-	TonemapPass2::Data tonemapPassData;
+	TonemapPass::Data tonemapPassData;
 	tonemapPassData.m_passRecordContext = &passRecordContext;
 	tonemapPassData.m_bloomEnabled = g_bloomEnabled;
 	tonemapPassData.m_bloomStrength = g_bloomStrength;
@@ -688,7 +688,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	tonemapPassData.m_bloomImageViewHandle = bloomImageViewHandle;
 	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
 
-	TonemapPass2::addToGraph(graph, tonemapPassData);
+	TonemapPass::addToGraph(graph, tonemapPassData);
 
 	currentOutput = tonemapTargetTextureHandle;
 
@@ -696,20 +696,20 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rg::ImageViewHandle fxaaTargetTextureHandle = g_CASEnabled ? finalImageViewHandle2 : swapchainImageViewHandle;
 
 	// FXAA
-	FXAAPass2::Data fxaaPassData;
+	FXAAPass::Data fxaaPassData;
 	fxaaPassData.m_passRecordContext = &passRecordContext;
 	fxaaPassData.m_inputImageHandle = currentOutput;
 	fxaaPassData.m_resultImageHandle = fxaaTargetTextureHandle;
 
 	if (g_FXAAEnabled)
 	{
-		FXAAPass2::addToGraph(graph, fxaaPassData);
+		FXAAPass::addToGraph(graph, fxaaPassData);
 		currentOutput = fxaaTargetTextureHandle;
 	}
 
 
 	// Sharpen (CAS)
-	SharpenFfxCasPass2::Data sharpenFfxCasPassData;
+	SharpenFfxCasPass::Data sharpenFfxCasPassData;
 	sharpenFfxCasPassData.m_passRecordContext = &passRecordContext;
 	sharpenFfxCasPassData.m_gammaSpaceInput = tonemapPassData.m_applyLinearToGamma;
 	sharpenFfxCasPassData.m_sharpness = g_CASSharpness;
@@ -718,17 +718,17 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	if (g_CASEnabled)
 	{
-		SharpenFfxCasPass2::addToGraph(graph, sharpenFfxCasPassData);
+		SharpenFfxCasPass::addToGraph(graph, sharpenFfxCasPassData);
 	}
 
 
 	// ImGui
-	ImGuiPass2::Data imGuiPassData;
+	ImGuiPass::Data imGuiPassData;
 	imGuiPassData.m_passRecordContext = &passRecordContext;
 	imGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
 	imGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
 
-	ImGuiPass2::addToGraph(graph, imGuiPassData);
+	ImGuiPass::addToGraph(graph, imGuiPassData);
 
 	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() });
 	
