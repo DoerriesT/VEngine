@@ -509,11 +509,6 @@ const uint32_t * VEngine::RenderSystem::getLuminanceHistogram() const
 	return m_renderer->getLuminanceHistogram();
 }
 
-std::vector<VEngine::VKMemoryBlockDebugInfo> VEngine::RenderSystem::getMemoryAllocatorDebugInfo() const
-{
-	return {};// m_renderer->getMemoryAllocatorDebugInfo();
-}
-
 void VEngine::RenderSystem::getTimingInfo(size_t *count, const PassTimingInfo **data) const
 {
 	m_renderer->getTimingInfo(count, data);

@@ -130,42 +130,42 @@ void VEngine::Editor::update(float timeDelta)
 	{
 		ImGui::Begin("VRAM Allocator");
 
-		float(*memoryPlotValuesGetter)(void *data, int idx, int *type) = [](void *data, int idx, int *type) -> float
-		{
-			const VKMemoryBlockDebugInfo *debugInfo = (VKMemoryBlockDebugInfo *)data;
-			const auto &span = debugInfo->m_spans[idx];
-			*type = (int)span.m_state;
-			return static_cast<float>(span.m_offset + span.m_size) / debugInfo->m_allocationSize;
-		};
-
-		auto memoryInfo = renderSystem.getMemoryAllocatorDebugInfo();
-		uint32_t currentMemoryType = ~uint32_t();
-		for (auto &info : memoryInfo)
-		{
-			if (info.m_memoryType != currentMemoryType)
-			{
-				ImGui::Separator();
-				ImGui::Text("Memory Type %u", info.m_memoryType);
-				currentMemoryType = info.m_memoryType;
-			}
-			plotMemoryAllocator("", memoryPlotValuesGetter, &info, info.m_spans.size(), nullptr, {});
-			uint32_t freeUsedWasted[3]{};
-			uint32_t allocCount = 0;
-			for (auto &span : info.m_spans)
-			{
-				freeUsedWasted[(size_t)span.m_state] += span.m_size;
-				allocCount += span.m_state == TLSFSpanDebugInfo::State::USED ? 1 : 0;
-			}
-			float freeUsedWastedMB[3];
-			float total = 0.0f;
-			for (size_t i = 0; i < 3; ++i)
-			{
-				freeUsedWastedMB[i] = freeUsedWasted[i] * (1.0f / (1024.0f * 1024.0f));
-				total += freeUsedWastedMB[i];
-			}
-			float toPercent = 100.0f * (1.0f / total);
-			ImGui::Text("Free: %7.3f MB (%6.2f %%) | Used: %7.3f MB (%6.2f %%) | Total: %7.3f MB | Allocations: %u", freeUsedWastedMB[0], freeUsedWastedMB[0] * toPercent, freeUsedWastedMB[1], freeUsedWastedMB[1] * toPercent, total, allocCount);
-		}
+		//float(*memoryPlotValuesGetter)(void *data, int idx, int *type) = [](void *data, int idx, int *type) -> float
+		//{
+		//	const VKMemoryBlockDebugInfo *debugInfo = (VKMemoryBlockDebugInfo *)data;
+		//	const auto &span = debugInfo->m_spans[idx];
+		//	*type = (int)span.m_state;
+		//	return static_cast<float>(span.m_offset + span.m_size) / debugInfo->m_allocationSize;
+		//};
+		//
+		//auto memoryInfo = renderSystem.getMemoryAllocatorDebugInfo();
+		//uint32_t currentMemoryType = ~uint32_t();
+		//for (auto &info : memoryInfo)
+		//{
+		//	if (info.m_memoryType != currentMemoryType)
+		//	{
+		//		ImGui::Separator();
+		//		ImGui::Text("Memory Type %u", info.m_memoryType);
+		//		currentMemoryType = info.m_memoryType;
+		//	}
+		//	plotMemoryAllocator("", memoryPlotValuesGetter, &info, info.m_spans.size(), nullptr, {});
+		//	uint32_t freeUsedWasted[3]{};
+		//	uint32_t allocCount = 0;
+		//	for (auto &span : info.m_spans)
+		//	{
+		//		freeUsedWasted[(size_t)span.m_state] += span.m_size;
+		//		allocCount += span.m_state == TLSFSpanDebugInfo::State::USED ? 1 : 0;
+		//	}
+		//	float freeUsedWastedMB[3];
+		//	float total = 0.0f;
+		//	for (size_t i = 0; i < 3; ++i)
+		//	{
+		//		freeUsedWastedMB[i] = freeUsedWasted[i] * (1.0f / (1024.0f * 1024.0f));
+		//		total += freeUsedWastedMB[i];
+		//	}
+		//	float toPercent = 100.0f * (1.0f / total);
+		//	ImGui::Text("Free: %7.3f MB (%6.2f %%) | Used: %7.3f MB (%6.2f %%) | Total: %7.3f MB | Allocations: %u", freeUsedWastedMB[0], freeUsedWastedMB[0] * toPercent, freeUsedWastedMB[1], freeUsedWastedMB[1] * toPercent, total, allocCount);
+		//}
 
 		ImGui::End();
 	}

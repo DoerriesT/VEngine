@@ -1,5 +1,5 @@
 #include "GraphicsDeviceVk.h"
-#include "Graphics/Vulkan/volk.h"
+#include "volk.h"
 #include <GLFW/glfw3.h>
 #include "Utility/Utility.h"
 #include "GlobalVar.h"

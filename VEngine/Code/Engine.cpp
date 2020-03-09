@@ -1,8 +1,6 @@
 #include "Engine.h"
 #include "Window/Window.h"
 #include "Input/UserInput.h"
-#include "Graphics/Vulkan/VKRenderer.h"
-#include "Graphics/Vulkan/VKContext.h"
 #include "IGameLogic.h"
 #include "Graphics/RenderSystem.h"
 #include "Input/CameraControllerSystem.h"
