@@ -32,7 +32,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 		{
 			{rg::ResourceViewHandle(resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_depthImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-			{rg::ResourceViewHandle(data.m_tangentSpaceImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+			//{rg::ResourceViewHandle(data.m_tangentSpaceImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		};
 
@@ -58,14 +58,14 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 					Sampler *shadowSampler = data.m_passRecordContext->m_renderResources->m_shadowSampler;
 					ImageView *resultImageView = registry.getImageView(resultImageViewHandle);
 					ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
-					ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageViewHandle);
+					//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageViewHandle);
 					ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 
 					DescriptorSetUpdate updates[] =
 					{
 						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 						Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-						Initializers::sampledImage(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
+						//Initializers::sampledImage(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
 						Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
@@ -73,7 +73,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
 					};
 
-					descriptorSet->update(8, updates);
+					descriptorSet->update(7, updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}

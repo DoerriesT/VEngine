@@ -53,17 +53,17 @@ layout(location = 1) flat out uint vMaterialIndex;
 
 void main() 
 {
-	uint instanceIndex = gl_VertexIndex >> 16;
-	SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
-	uint vertexIndex = (gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
+	//uint instanceIndex = gl_VertexIndex >> 16;
+	//SubMeshInstanceData instanceData = uInstanceData[instanceIndex];
+	uint vertexIndex = gl_VertexIndex;//uint vertexIndex = (gl_VertexIndex & 0xFFFF) + uSubMeshData[instanceData.subMeshIndex].vertexOffset;
 	
-	const mat4 modelMatrix = uTransformData[instanceData.transformIndex];
+	const mat4 modelMatrix = uTransformData[uPushConsts.transformIndex];
 	const vec3 position = vec3(uPositions[vertexIndex * 3 + 0], uPositions[vertexIndex * 3 + 1], uPositions[vertexIndex * 3 + 2]);
     gl_Position = uPushConsts.jitteredViewProjectionMatrix * modelMatrix * vec4(position, 1.0);									
 	
 #if ALPHA_MASK_ENABLED
 	vTexCoord = vec2(uTexCoords[vertexIndex * 2 + 0], uTexCoords[vertexIndex * 2 + 1]);
-	vMaterialIndex= instanceData.materialIndex;
+	vMaterialIndex= uPushConsts.materialIndex;
 #endif // ALPHA_MASK_ENABLED
 }
 

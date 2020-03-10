@@ -19,4 +19,6 @@
 struct PushConsts
 {
 	mat4 jitteredViewProjectionMatrix;
+	uint transformIndex;
+	uint materialIndex;
 };

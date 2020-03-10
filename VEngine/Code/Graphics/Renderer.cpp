@@ -23,6 +23,8 @@
 #include "Pass/BuildIndexBufferPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/TAAPass.h"
+#include "Pass/DepthPrepassPass.h"
+#include "Pass/ForwardLightingPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -228,6 +230,22 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}
 
+	rg::ImageViewHandle specularRoughnessImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Specular/Roughness Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::R8G8B8A8_UNORM;
+
+		specularRoughnessImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+	}
+
 	rg::ImageViewHandle ssrRayHitPdfImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
@@ -410,54 +428,38 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount)
 	{
 		// draw opaque geometry to gbuffer
-		GeometryPass::Data opaqueGeometryPassData;
-		opaqueGeometryPassData.m_passRecordContext = &passRecordContext;
-		opaqueGeometryPassData.m_alphaMasked = false;
-		opaqueGeometryPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-		opaqueGeometryPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-		opaqueGeometryPassData.m_instanceData = sortedInstanceData.data();
-		opaqueGeometryPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		//opaqueGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-		opaqueGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-		opaqueGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		//opaqueGeometryPassData.m_indirectBufferHandle = opaqueIndirectDrawBufferViewHandle;
-		opaqueGeometryPassData.m_depthImageHandle = depthImageViewHandle;
-		opaqueGeometryPassData.m_uvImageHandle = uvImageViewHandle;
-		opaqueGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-		opaqueGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-		opaqueGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-		//opaqueGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		//opaqueGeometryPassData.m_indicesBufferHandle = opaqueFilteredIndicesBufferViewHandle;
+		DepthPrepassPass::Data opaqueDepthPrePassData;
+		opaqueDepthPrePassData.m_passRecordContext = &passRecordContext;
+		opaqueDepthPrePassData.m_alphaMasked = false;
+		opaqueDepthPrePassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+		opaqueDepthPrePassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+		opaqueDepthPrePassData.m_instanceData = sortedInstanceData.data();
+		opaqueDepthPrePassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		opaqueDepthPrePassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+		opaqueDepthPrePassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		opaqueDepthPrePassData.m_depthImageHandle = depthImageViewHandle;
 
-		GeometryPass::addToGraph(graph, opaqueGeometryPassData);
+		DepthPrepassPass::addToGraph(graph, opaqueDepthPrePassData);
 	}
 
 	// alpha masked geometry
 	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount)
 	{
 		// draw alpha masked geometry to gbuffer
-		GeometryPass::Data maskedGeometryPassData;
-		maskedGeometryPassData.m_passRecordContext = &passRecordContext;
-		maskedGeometryPassData.m_alphaMasked = true;
-		maskedGeometryPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
-		maskedGeometryPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
-		maskedGeometryPassData.m_instanceData = sortedInstanceData.data();
-		maskedGeometryPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		//maskedGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-		//maskedGeometryPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-		maskedGeometryPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-		maskedGeometryPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-		//maskedGeometryPassData.m_indirectBufferHandle = indirectDrawBufferViewHandle;
-		maskedGeometryPassData.m_depthImageHandle = depthImageViewHandle;
-		maskedGeometryPassData.m_uvImageHandle = uvImageViewHandle;
-		maskedGeometryPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-		maskedGeometryPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-		maskedGeometryPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-		//maskedGeometryPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer.getBuffer(), 0, m_renderResources->m_subMeshDataInfoBuffer.getSize() };
-		//maskedGeometryPassData.m_indicesBufferHandle = filteredIndicesBufferViewHandle;
-
-		GeometryPass::addToGraph(graph, maskedGeometryPassData);
+		DepthPrepassPass::Data maskedDepthPrePassData;
+		maskedDepthPrePassData.m_passRecordContext = &passRecordContext;
+		maskedDepthPrePassData.m_alphaMasked = true;
+		maskedDepthPrePassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+		maskedDepthPrePassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+		maskedDepthPrePassData.m_instanceData = sortedInstanceData.data();
+		maskedDepthPrePassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		maskedDepthPrePassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+		maskedDepthPrePassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		maskedDepthPrePassData.m_depthImageHandle = depthImageViewHandle;
+	
+		DepthPrepassPass::addToGraph(graph, maskedDepthPrePassData);
 	}
+
 
 	// initialize velocity of static objects
 	VelocityInitializationPass::Data velocityInitializationPassData;
@@ -549,7 +551,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	deferredShadowsPassData.m_lightData = lightData.m_directionalLightData.data();
 	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
-	deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
+	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
@@ -580,24 +582,73 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// light gbuffer
-	LightingPass::Data lightingPassData;
-	lightingPassData.m_passRecordContext = &passRecordContext;
-	lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
-	lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };;
-	lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-	lightingPassData.m_depthImageHandle = depthImageViewHandle;
-	lightingPassData.m_uvImageHandle = uvImageViewHandle;
-	lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
-	lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
-	lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
-	lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	lightingPassData.m_resultImageHandle = lightImageViewHandle;
-	lightingPassData.m_albedoImageHandle = albedoImageViewHandle;
-	lightingPassData.m_normalImageHandle = normalImageViewHandle;
+	//LightingPass::Data lightingPassData;
+	//lightingPassData.m_passRecordContext = &passRecordContext;
+	//lightingPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+	//lightingPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+	//lightingPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+	//lightingPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };;
+	//lightingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	//lightingPassData.m_depthImageHandle = depthImageViewHandle;
+	//lightingPassData.m_uvImageHandle = uvImageViewHandle;
+	//lightingPassData.m_ddxyLengthImageHandle = ddxyLengthImageViewHandle;
+	//lightingPassData.m_ddxyRotMaterialIdImageHandle = ddxyRotMaterialIdImageViewHandle;
+	//lightingPassData.m_tangentSpaceImageHandle = tangentSpaceImageViewHandle;
+	//lightingPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	//lightingPassData.m_resultImageHandle = lightImageViewHandle;
+	//lightingPassData.m_albedoImageHandle = albedoImageViewHandle;
+	//lightingPassData.m_normalImageHandle = normalImageViewHandle;
+	//
+	//LightingPass::addToGraph(graph, lightingPassData);
 
-	LightingPass::addToGraph(graph, lightingPassData);
+
+	// forward lighting opaque
+	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount)
+	{
+		ForwardLightingPass::Data forwardPassData;
+		forwardPassData.m_passRecordContext = &passRecordContext;
+		forwardPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+		forwardPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+		forwardPassData.m_instanceData = sortedInstanceData.data();
+		forwardPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		forwardPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+		forwardPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+		forwardPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+		forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+		forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		forwardPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+		forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+		forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
+		forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
+		forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
+		forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+
+		ForwardLightingPass::addToGraph(graph, forwardPassData);
+	}
+
+	// forward lighting alpha masked
+	if (renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset)
+	{
+		ForwardLightingPass::Data forwardPassData;
+		forwardPassData.m_passRecordContext = &passRecordContext;
+		forwardPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+		forwardPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+		forwardPassData.m_instanceData = sortedInstanceData.data();
+		forwardPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		forwardPassData.m_directionalLightDataBufferInfo = directionalLightDataBufferInfo;
+		forwardPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
+		forwardPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
+		forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+		forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+		forwardPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+		forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+		forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
+		forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
+		forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
+		forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+	
+		ForwardLightingPass::addToGraph(graph, forwardPassData);
+	}
 
 
 	// calculate luminance histograms

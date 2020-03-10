@@ -40,6 +40,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c ssr_comp.comp -o ssr_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c ssrResolve_comp.comp -o ssrResolve_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c ssrTemporalFilter_comp.comp -o ssrTemporalFilter_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_vert.vert -o depthPrepass_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c -DALPHA_MASK_ENABLED=1 depthPrepass_vert.vert -o depthPrepass_ALPHA_MASK_ENABLED_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c depthPrepass_frag.frag -o depthPrepass_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c forward_vert.vert -o forward_vert.spv
 glslc --target-env=vulkan1.1 -O -Werror -c forward_frag.frag -o forward_frag.spv

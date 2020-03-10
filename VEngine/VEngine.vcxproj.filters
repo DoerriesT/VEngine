@@ -497,12 +497,6 @@
     <ClCompile Include="Code\Graphics\RenderResources.cpp">
       <Filter>Code\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Module\GTAOModule2.cpp">
-      <Filter>Code\Graphics\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Graphics\Module\SSRModule2.cpp">
-      <Filter>Code\Graphics\Module</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Graphics\Renderer.cpp">
       <Filter>Code\Graphics</Filter>
     </ClCompile>
@@ -595,6 +589,12 @@
     </ClCompile>
     <ClCompile Include="Code\Graphics\Pass\VelocityInitializationPass.cpp">
       <Filter>Code\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Module\GTAOModule.cpp">
+      <Filter>Code\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Graphics\Module\SSRModule.cpp">
+      <Filter>Code\Graphics\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

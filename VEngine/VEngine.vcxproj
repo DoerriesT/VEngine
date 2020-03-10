@@ -284,8 +284,8 @@
     <ClCompile Include="Code\Graphics\MaterialManager.cpp" />
     <ClCompile Include="Code\Graphics\MeshManager.cpp" />
     <ClCompile Include="Code\Graphics\Module\BloomModule.cpp" />
-    <ClCompile Include="Code\Graphics\Module\GTAOModule2.cpp" />
-    <ClCompile Include="Code\Graphics\Module\SSRModule2.cpp" />
+    <ClCompile Include="Code\Graphics\Module\GTAOModule.cpp" />
+    <ClCompile Include="Code\Graphics\Module\SSRModule.cpp" />
     <ClCompile Include="Code\Graphics\Pass\BloomDownsamplePass.cpp" />
     <ClCompile Include="Code\Graphics\Pass\BloomUpsamplePass.cpp" />
     <ClCompile Include="Code\Graphics\Pass\BuildIndexBufferPass.cpp" />

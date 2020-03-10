@@ -47,4 +47,6 @@ struct PushConsts
 	vec4 viewMatrixRow1;
 	vec4 viewMatrixRow2;
 	uint pointLightCount;
+	uint transformIndex;
+	uint materialIndex;
 };
