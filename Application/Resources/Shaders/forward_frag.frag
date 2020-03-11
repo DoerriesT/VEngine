@@ -16,6 +16,7 @@ layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform texture2DArray uDeferredShadowImage;
+layout(set = VOLUMETRIC_FOG_IMAGE_SET, binding = VOLUMETRIC_FOG_IMAGE_BINDING) uniform texture3D uVolumetricFogImage;
 layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
 
 layout(set = DIRECTIONAL_LIGHT_DATA_SET, binding = DIRECTIONAL_LIGHT_DATA_BINDING) readonly buffer DIRECTIONAL_LIGHT_DATA
@@ -193,6 +194,17 @@ void main()
 				result += evaluatePointLight(lightingParams, uPointLightData[index]);
 			}
 		}
+	}
+	
+	// apply volumetric fog
+	{
+		float z = (-lightingParams.viewSpacePosition.z - 0.1) / (300.0 - 0.1) * (300.0 / 64.0);
+		float nearClipOverFarClip = 0.1 / 64.0;
+		z = (z - nearClipOverFarClip) / (1 - nearClipOverFarClip);
+
+		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * vec2(cTexelWidth, cTexelHeight), z);
+		vec4 fog = z < 0.0 ? vec4(0.0, 0.0, 0.0, 1.0) : textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
+		result = result * fog.aaa + fog.rgb;
 	}
 
 	oResult = vec4(result, 1.0);

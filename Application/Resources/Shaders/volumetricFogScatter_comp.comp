@@ -1,0 +1,112 @@
+#version 450
+
+#include "volumetricFogScatter_bindings.h"
+#include "common.h"
+
+layout(set = RESULT_IMAGE_SET, binding = RESULT_IMAGE_BINDING, rgba16f) uniform image3D uResultImage;
+layout(set = SHADOW_IMAGE_SET, binding = SHADOW_IMAGE_BINDING) uniform texture2DArray uShadowImage;
+layout(set = SHADOW_SAMPLER_SET, binding = SHADOW_SAMPLER_BINDING) uniform samplerShadow uShadowSampler;
+
+layout(set = SHADOW_MATRICES_SET, binding = SHADOW_MATRICES_BINDING) readonly buffer SHADOW_MATRICES
+{
+	mat4 uShadowMatrices[];
+};
+
+layout(push_constant) uniform PUSH_CONSTS 
+{
+	PushConsts uPushConsts;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+float computeLayerThickNess(int layer)
+{
+	return 1.0;
+	int gridDepth = int(vec3(160, 90, 64).z);
+	return exp(-float(gridDepth - layer - 1) / float(gridDepth));
+}
+
+vec3 calcWorldSpacePos(ivec3 coord)
+{
+	vec2 uv = coord.xy / vec2(vec3(160, 90, 64));
+	
+	vec3 pos = mix(uPushConsts.frustumCornerTL, uPushConsts.frustumCornerTR, uv.x);
+	pos = mix(pos, mix(uPushConsts.frustumCornerBL, uPushConsts.frustumCornerBR, uv.x), uv.y);
+	
+	float z = coord.z / float(64);
+	float nearClipOverFarClip = 0.1 / 64.0;
+	pos *= nearClipOverFarClip + z * (1 - nearClipOverFarClip);
+	
+	pos += uPushConsts.cameraPos;
+	
+	return pos;
+}
+
+vec3 getSunLightingRadiance(vec3 worldSpacePos)
+{
+	vec4 tc = vec4(-1.0);
+	const int cascadeDataOffset = uPushConsts.cascadeOffset;
+	for (int i = uPushConsts.cascadeCount - 1; i >= 0; --i)
+	{
+		const vec4 shadowCoord = vec4((uShadowMatrices[cascadeDataOffset + i] * vec4(worldSpacePos, 1.0)).xyz, cascadeDataOffset + i);
+		const bool valid = all(lessThan(abs(shadowCoord.xy), vec2(1.0)));
+		tc = valid ? shadowCoord : tc;
+	}
+	
+	tc.xy = tc.xy * 0.5 + 0.5;
+	const float shadow = tc.w != -1.0 ? texture(sampler2DArrayShadow(uShadowImage, uShadowSampler), tc.xywz).x : 0.0;
+	
+	return uPushConsts.sunLightRadiance * (1.0 - shadow);
+}
+
+float getPhaseFunction(vec3 V, vec3 L, float g)
+{
+	float num =  -g * g + 1.0;
+	float cosTheta = dot(L, V);
+	float denom = 4.0 * PI * pow((g * g + 1.0) - 2.0 * g * cosTheta, 1.5);
+	return num / denom;
+}
+
+float calcDensityFunction(vec3 worldSpacePos)
+{
+	return uPushConsts.density;
+}
+
+void main() 
+{
+	// world-space position of volumetric texture texel
+	vec3 worldSpacePos = calcWorldSpacePos(ivec3(gl_GlobalInvocationID.xyz));
+	
+	// thiccness of slice -- non-constant due to exponential slice distribution
+	float layerThickness = computeLayerThickNess(int(gl_GlobalInvocationID.z));
+	
+	// estimated density of participating medium at given point
+	float density = calcDensityFunction(worldSpacePos);
+	
+	// scattering coefficient
+	float scattering = uPushConsts.scatteringCoefficient * density * layerThickness;
+	
+	// absorption coefficient
+	float absorption = uPushConsts.absorptionCoefficient * density * layerThickness;
+	
+	// normalized view dir
+	vec3 viewDirection = normalize(worldSpacePos - uPushConsts.cameraPos.xyz);
+	
+	vec3 lighting = vec3(0.0);
+	
+	// lighting section:
+	// adding all contributing lights radiance and multiplying it by
+	// a phase function -- volumetric fog equivalent of BRDFs
+	
+	lighting += getSunLightingRadiance(worldSpacePos)
+		* getPhaseFunction(-viewDirection, uPushConsts.sunDirection.xyz, uPushConsts.phaseAnisotropy);
+
+	// finally, we apply some potentially non-white fog scattering albedo
+	lighting *= unpackUnorm4x8(uPushConsts.fogAlbedo).rgb;
+	
+	// final in-scattering is product of outgoing radiance and scattering
+	// coefficients, while extinction is sum of scattering and absorption
+	vec4 finalOutValue = vec4(lighting * scattering, density/*scattering + absorption*/);
+	
+	imageStore(uResultImage, ivec3(gl_GlobalInvocationID.xyz), finalOutValue);
+}

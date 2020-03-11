@@ -27,6 +27,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		{rg::ResourceViewHandle(data.m_specularRoughnessImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} },
 		{rg::ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_deferredShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
 	graph.addPass("Forward Lighting", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -85,6 +86,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				DescriptorBufferInfo normalsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) };
 				DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 				ImageView *shadowImageView = registry.getImageView(data.m_deferredShadowImageViewHandle);
+				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 				DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
 
 				DescriptorSetUpdate updates[] =
@@ -97,6 +99,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					//Initializers::storageBuffer(&data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
 					Initializers::sampledImage(&shadowImageView, DEFERRED_SHADOW_IMAGE_BINDING),
+					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
 					Initializers::storageBuffer(&data.m_directionalLightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BINDING),

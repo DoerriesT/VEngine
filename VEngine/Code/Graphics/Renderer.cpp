@@ -25,6 +25,8 @@
 #include "Pass/TAAPass.h"
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
+#include "Pass/VolumetricFogScatterPass.h"
+#include "Pass/VolumetricFogIntegratePass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -197,6 +199,42 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// create graph managed resources
+
+	rg::ImageViewHandle volumetricFogImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Volumetric Fog Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 160;
+		desc.m_height = 90;
+		desc.m_depth = 64;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_imageType = ImageType::_3D;
+		desc.m_format = Format::R16G16B16A16_SFLOAT;
+
+		volumetricFogImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+	}
+
+	rg::ImageViewHandle volumetricFogScatterImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Volumetric Fog Scatter Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 160;
+		desc.m_height = 90;
+		desc.m_depth = 64;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_imageType = ImageType::_3D;
+		desc.m_format = Format::R16G16B16A16_SFLOAT;
+
+		volumetricFogScatterImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+	}
 
 	rg::ImageViewHandle albedoImageViewHandle;
 	{
@@ -558,6 +596,30 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 
+
+
+	// volumetric fog scatter
+	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
+	volumetricFogScatterPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogScatterPassData.m_lightData = lightData.m_directionalLightData.data();
+	volumetricFogScatterPassData.m_commonData = &commonData;
+	volumetricFogScatterPassData.m_resultImageViewHandle = volumetricFogScatterImageViewHandle;
+	volumetricFogScatterPassData.m_shadowImageViewHandle = shadowImageViewHandle;
+	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+
+	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
+
+
+	// volumetric fog integrate
+	VolumetricFogIntegratePass::Data volumetricFogIntegratePassData;
+	volumetricFogIntegratePassData.m_passRecordContext = &passRecordContext;
+	volumetricFogIntegratePassData.m_inputImageViewHandle = volumetricFogScatterImageViewHandle;
+	volumetricFogIntegratePassData.m_resultImageViewHandle = volumetricFogImageViewHandle;
+
+	VolumetricFogIntegratePass::addToGraph(graph, volumetricFogIntegratePassData);
+
+
+
 	// gtao
 	GTAOModule::Data gtaoModuleData;
 	gtaoModuleData.m_passRecordContext = &passRecordContext;
@@ -622,6 +684,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
 		forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
 		forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+		forwardPassData.m_volumetricFogImageViewHandle = volumetricFogImageViewHandle;
 
 		ForwardLightingPass::addToGraph(graph, forwardPassData);
 	}
@@ -646,6 +709,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
 		forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
 		forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+		forwardPassData.m_volumetricFogImageViewHandle = volumetricFogImageViewHandle;
 	
 		ForwardLightingPass::addToGraph(graph, forwardPassData);
 	}

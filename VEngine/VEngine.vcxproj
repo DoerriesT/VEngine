@@ -221,6 +221,8 @@
     <ClInclude Include="Code\Graphics\Pass\TAAPass.h" />
     <ClInclude Include="Code\Graphics\Pass\TonemapPass.h" />
     <ClInclude Include="Code\Graphics\Pass\VelocityInitializationPass.h" />
+    <ClInclude Include="Code\Graphics\Pass\VolumetricFogIntegratePass.h" />
+    <ClInclude Include="Code\Graphics\Pass\VolumetricFogScatterPass.h" />
     <ClInclude Include="Code\Graphics\PipelineCache.h" />
     <ClInclude Include="Code\Graphics\RenderData.h" />
     <ClInclude Include="Code\Graphics\Renderer.h" />
@@ -313,6 +315,8 @@
     <ClCompile Include="Code\Graphics\Pass\TAAPass.cpp" />
     <ClCompile Include="Code\Graphics\Pass\TonemapPass.cpp" />
     <ClCompile Include="Code\Graphics\Pass\VelocityInitializationPass.cpp" />
+    <ClCompile Include="Code\Graphics\Pass\VolumetricFogIntegratePass.cpp" />
+    <ClCompile Include="Code\Graphics\Pass\VolumetricFogScatterPass.cpp" />
     <ClCompile Include="Code\Graphics\PipelineCache.cpp" />
     <ClCompile Include="Code\Graphics\Renderer.cpp" />
     <ClCompile Include="Code\Graphics\RenderGraph.cpp" />

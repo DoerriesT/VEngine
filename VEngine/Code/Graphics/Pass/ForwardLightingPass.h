@@ -31,6 +31,7 @@ namespace VEngine
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_normalImageViewHandle;
 			rg::ImageViewHandle m_specularRoughnessImageViewHandle;
+			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

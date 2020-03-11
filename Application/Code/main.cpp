@@ -116,29 +116,29 @@ public:
 
 	void update(float timeDelta) override
 	{
-		//auto &entityRegistry = m_engine->getEntityRegistry();
-		//
-		//auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
-		//auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
-		//VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
-		//
-		//auto viewMatrix = camera.getViewMatrix();
-		//auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
-		//
-		//auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
-		//
-		//auto &io = ImGui::GetIO();
-		//
-		//glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
-		//
-		//ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
-		//ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
-		//glm::vec3 position;
-		//glm::vec3 eulerAngles;
-		//glm::vec3 scale;
-		//ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
-		//
-		//tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+		auto &entityRegistry = m_engine->getEntityRegistry();
+		
+		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
+		auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
+		VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
+		
+		auto viewMatrix = camera.getViewMatrix();
+		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
+		
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
+		
+		auto &io = ImGui::GetIO();
+		
+		glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
+		
+		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
+		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
+		glm::vec3 position;
+		glm::vec3 eulerAngles;
+		glm::vec3 scale;
+		ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
+		
+		tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
 	};
 
 	void shutdown() override
