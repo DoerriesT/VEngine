@@ -12,9 +12,10 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_alphaMasked;
-			uint32_t m_instanceDataCount;
-			uint32_t m_instanceDataOffset;
+			uint32_t m_opaqueInstanceDataCount;
+			uint32_t m_opaqueInstanceDataOffset;
+			uint32_t m_maskedInstanceDataCount;
+			uint32_t m_maskedInstanceDataOffset;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
 			//gal::DescriptorBufferInfo m_instanceDataBufferInfo;

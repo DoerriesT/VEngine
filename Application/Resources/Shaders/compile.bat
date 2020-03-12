@@ -47,5 +47,7 @@ glslc --target-env=vulkan1.1 -O -Werror -c forward_frag.frag -o forward_frag.spv
 glslc --target-env=vulkan1.1 -O -Werror -c integrateBrdf_comp.comp -o integrateBrdf_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c volumetricFogScatter_comp.comp -o volumetricFogScatter_comp.spv
 glslc --target-env=vulkan1.1 -O -Werror -c volumetricFogIntegrate_comp.comp -o volumetricFogIntegrate_comp.spv
+glslc --target-env=vulkan1.1 -O -Werror -c sky_vert.vert -o sky_vert.spv
+glslc --target-env=vulkan1.1 -O -Werror -c sky_frag.frag -o sky_frag.spv
 
 pause

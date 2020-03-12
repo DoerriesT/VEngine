@@ -15,10 +15,10 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_shadowMapSize;
 			glm::mat4 m_shadowMatrix;
-			bool m_alphaMasked;
-			bool m_clear;
-			uint32_t m_instanceDataCount;
-			uint32_t m_instanceDataOffset;
+			uint32_t m_opaqueInstanceDataCount;
+			uint32_t m_opaqueInstanceDataOffset;
+			uint32_t m_maskedInstanceDataCount;
+			uint32_t m_maskedInstanceDataOffset;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
 			//VkDescriptorBufferInfo m_instanceDataBufferInfo;
