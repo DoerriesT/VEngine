@@ -57,8 +57,7 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 			const auto &imageDesc = registry.getImage(data.m_resultImageViewHandle)->getDescription();
 			uint32_t w = imageDesc.m_width;
 			uint32_t h = imageDesc.m_height;
-			uint32_t d = imageDesc.m_depth;
 
-			cmdList->dispatch((w + 7) / 8, (h + 7) / 8, d);
+			cmdList->dispatch((w + 7) / 8, (h + 7) / 8, 1);
 		});
 }
