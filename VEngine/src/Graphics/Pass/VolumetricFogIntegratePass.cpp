@@ -10,7 +10,7 @@ using namespace VEngine::gal;
 
 namespace
 {
-#include "../../../../Application/Resources/Shaders/volumetricFogIntegrate_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogIntegrate.hlsli"
 }
 
 void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -29,7 +29,7 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/volumetricFogIntegrate_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogIntegrate_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -46,10 +46,10 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 				{
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+					//Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(3, updates);
+				descriptorSet->update(2, updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

@@ -21,8 +21,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/volumetricFogScatter_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogScatter.hlsli"
 }
 
 void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -41,7 +41,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/volumetricFogScatter_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogScatter_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
