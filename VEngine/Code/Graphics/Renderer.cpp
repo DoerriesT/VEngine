@@ -206,8 +206,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_name = "Volumetric Fog Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 160;
-		desc.m_height = 90;
+		desc.m_width = 200;
+		desc.m_height = 113;
 		desc.m_depth = 64;
 		desc.m_layers = 1;
 		desc.m_levels = 1;
@@ -224,8 +224,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_name = "Volumetric Fog Scatter Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 160;
-		desc.m_height = 90;
+		desc.m_width = 200;
+		desc.m_height = 113;
 		desc.m_depth = 64;
 		desc.m_layers = 1;
 		desc.m_levels = 1;
@@ -486,6 +486,20 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	VelocityInitializationPass::addToGraph(graph, velocityInitializationPassData);
 
+
+
+	// cull lights to tiles
+	RasterTilingPass::Data rasterTilingPassData;
+	rasterTilingPassData.m_passRecordContext = &passRecordContext;
+	rasterTilingPassData.m_lightData = &lightData;
+	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+
+	if (!lightData.m_pointLightData.empty())
+	{
+		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
+	}
+
+
 	rg::ImageViewHandle shadowImageViewHandle = 0;
 	{
 		rg::ImageDescription desc = {};
@@ -543,6 +557,18 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 
 
+	// gtao
+	GTAOModule::Data gtaoModuleData;
+	gtaoModuleData.m_passRecordContext = &passRecordContext;
+	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
+	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
+
+	if (g_ssaoEnabled)
+	{
+		m_gtaoModule->addToGraph(graph, gtaoModuleData);
+	}
+
 
 	// volumetric fog scatter
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
@@ -563,32 +589,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogIntegratePassData.m_resultImageViewHandle = volumetricFogImageViewHandle;
 
 	VolumetricFogIntegratePass::addToGraph(graph, volumetricFogIntegratePassData);
-
-
-
-	// gtao
-	GTAOModule::Data gtaoModuleData;
-	gtaoModuleData.m_passRecordContext = &passRecordContext;
-	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
-	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
-
-	if (g_ssaoEnabled)
-	{
-		m_gtaoModule->addToGraph(graph, gtaoModuleData);
-	}
-
-
-	// cull lights to tiles
-	RasterTilingPass::Data rasterTilingPassData;
-	rasterTilingPassData.m_passRecordContext = &passRecordContext;
-	rasterTilingPassData.m_lightData = &lightData;
-	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-
-	if (!lightData.m_pointLightData.empty())
-	{
-		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
-	}
 
 
 	// forward lighting

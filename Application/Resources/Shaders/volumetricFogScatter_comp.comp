@@ -22,20 +22,22 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 float computeLayerThickNess(int layer)
 {
 	return 1.0;
-	int gridDepth = int(vec3(160, 90, 64).z);
+	int gridDepth = int(imageSize(uResultImage).z);
 	return exp(-float(gridDepth - layer - 1) / float(gridDepth));
 }
 
 vec3 calcWorldSpacePos(ivec3 coord)
 {
-	vec2 uv = coord.xy / vec2(vec3(160, 90, 64));
+	vec2 uv = coord.xy / vec2(imageSize(uResultImage));
 	
 	vec3 pos = mix(uPushConsts.frustumCornerTL, uPushConsts.frustumCornerTR, uv.x);
 	pos = mix(pos, mix(uPushConsts.frustumCornerBL, uPushConsts.frustumCornerBR, uv.x), uv.y);
 	
-	float z = coord.z / float(64);
-	float nearClipOverFarClip = 0.1 / 64.0;
-	pos *= nearClipOverFarClip + z * (1 - nearClipOverFarClip);
+	float d = coord.z / float(64);
+	float n = 0.5;
+	float f = 64.0;
+	float z = n * exp2(d * (log2(f / n)));
+	pos *= z / (f - n);
 	
 	pos += uPushConsts.cameraPos;
 	

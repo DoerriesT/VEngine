@@ -198,12 +198,13 @@ void main()
 	
 	// apply volumetric fog
 	{
-		float z = (-lightingParams.viewSpacePosition.z - 0.1) / (300.0 - 0.1) * (300.0 / 64.0);
-		float nearClipOverFarClip = 0.1 / 64.0;
-		z = (z - nearClipOverFarClip) / (1 - nearClipOverFarClip);
+		float n = 0.5;
+		float f = 64.0;
+		float z = -lightingParams.viewSpacePosition.z;
+		float d = (log2(max(0, z * (1.0 / n))) * (1.0 / log2(f / n)));
 
-		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * vec2(cTexelWidth, cTexelHeight), z);
-		vec4 fog = z < 0.0 ? vec4(0.0, 0.0, 0.0, 1.0) : textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
+		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * vec2(cTexelWidth, cTexelHeight), d);
+		vec4 fog = d < 0.0 ? vec4(0.0, 0.0, 0.0, 1.0) : textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}
 
