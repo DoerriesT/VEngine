@@ -1,612 +1,612 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Code">
+    <Filter Include="src">
       <UniqueIdentifier>{78ebb4f1-34d2-409e-a3e6-f10fecef27bd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics">
+    <Filter Include="src\Graphics">
       <UniqueIdentifier>{b0dea819-ca9b-4419-b8da-442cde84aef1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Window">
+    <Filter Include="src\Window">
       <UniqueIdentifier>{59c747bc-b5aa-451b-8f24-0b64d90d9e51}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Utility">
+    <Filter Include="src\Utility">
       <UniqueIdentifier>{ac3be736-9823-40ac-bf53-de54f6304185}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Input">
+    <Filter Include="src\Input">
       <UniqueIdentifier>{b9042ce5-8996-43e3-a87d-136048f86e5f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\Camera">
+    <Filter Include="src\Graphics\Camera">
       <UniqueIdentifier>{a5522172-68aa-49ee-a986-0fd565925279}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Component">
+    <Filter Include="src\Component">
       <UniqueIdentifier>{afa93efd-7cf8-40f5-84e3-eef527e09db9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\imgui">
+    <Filter Include="src\Graphics\imgui">
       <UniqueIdentifier>{a1620fde-1206-4c40-8066-221a5b760040}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Gui">
+    <Filter Include="src\Gui">
       <UniqueIdentifier>{a986f54a-fb21-4e47-bcd4-d4d615a52a56}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Editor">
+    <Filter Include="src\Editor">
       <UniqueIdentifier>{df1a4664-06a3-40aa-9f97-a2abfdeb2b26}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\gal">
+    <Filter Include="src\Graphics\gal">
       <UniqueIdentifier>{a8af73be-c547-472d-bb63-382abd12e1a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\gal\vulkan">
+    <Filter Include="src\Graphics\gal\vulkan">
       <UniqueIdentifier>{6a41d441-828e-4727-9ce2-3cf01dc55c9b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\Pass">
+    <Filter Include="src\Graphics\Pass">
       <UniqueIdentifier>{b1a4a9a2-8d05-4369-a37a-7c38e8009496}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Graphics\Module">
+    <Filter Include="src\Graphics\Module">
       <UniqueIdentifier>{dfa06367-ca41-4d2a-a36c-1fe7d402e1eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\Utility\Utility.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\Utility.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\ContainerUtility.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\ContainerUtility.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Input\IInputListener.h">
-      <Filter>Code\Input</Filter>
+    <ClInclude Include="src\Input\IInputListener.h">
+      <Filter>src\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Input\InputTokens.h">
-      <Filter>Code\Input</Filter>
+    <ClInclude Include="src\Input\InputTokens.h">
+      <Filter>src\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Input\UserInput.h">
-      <Filter>Code\Input</Filter>
+    <ClInclude Include="src\Input\UserInput.h">
+      <Filter>src\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Engine.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\Engine.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\IGameLogic.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\IGameLogic.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Window\Window.h">
-      <Filter>Code\Window</Filter>
+    <ClInclude Include="src\Window\Window.h">
+      <Filter>src\Window</Filter>
     </ClInclude>
-    <ClInclude Include="Code\GlobalVar.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\GlobalVar.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Scene.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\Scene.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Camera\Camera.h">
-      <Filter>Code\Graphics\Camera</Filter>
+    <ClInclude Include="src\Graphics\Camera\Camera.h">
+      <Filter>src\Graphics\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Mesh.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\Mesh.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\LightData.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\LightData.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\ObjectPool.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\ObjectPool.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\CameraComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\CameraComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\DirectionalLightComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\DirectionalLightComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\MeshComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\MeshComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\PointLightComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\PointLightComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\RenderableComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\RenderableComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\SpotLightComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\SpotLightComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\TransformationComponent.h">
-      <Filter>Code\Component</Filter>
+    <ClInclude Include="src\Components\TransformationComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderSystem.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\RenderSystem.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Input\CameraControllerSystem.h">
-      <Filter>Code\Input</Filter>
+    <ClInclude Include="src\Input\CameraControllerSystem.h">
+      <Filter>src\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\Timer.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\Timer.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RendererConsts.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\RendererConsts.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Handles.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\Handles.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderData.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\RenderData.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\TLSFAllocator.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\TLSFAllocator.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Utility\AxisAlignedBoundingBox.h">
-      <Filter>Code\Utility</Filter>
+    <ClInclude Include="src\Utility\AxisAlignedBoundingBox.h">
+      <Filter>src\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imconfig.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imconfig.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imgui.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imgui.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imgui_internal.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imgui_internal.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imstb_rectpack.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imstb_rectpack.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imstb_textedit.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imstb_textedit.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imstb_truetype.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imstb_truetype.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\imgui_impl_glfw.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\imgui_impl_glfw.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\imgui\ImGuizmo.h">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClInclude Include="src\Graphics\imgui\ImGuizmo.h">
+      <Filter>src\Graphics\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Gui\MemoryAllocatorPlot.h">
-      <Filter>Code\Gui</Filter>
+    <ClInclude Include="src\Gui\MemoryAllocatorPlot.h">
+      <Filter>src\Gui</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\PassTimingInfo.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\PassTimingInfo.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\ViewRenderList.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\ViewRenderList.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Level.h">
-      <Filter>Code</Filter>
+    <ClInclude Include="src\Level.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Editor\EntityDetailsWindow.h">
-      <Filter>Code\Editor</Filter>
+    <ClInclude Include="src\Editor\EntityDetailsWindow.h">
+      <Filter>src\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Editor\Editor.h">
-      <Filter>Code\Editor</Filter>
+    <ClInclude Include="src\Editor\Editor.h">
+      <Filter>src\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\BVH.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\BVH.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\GraphicsDeviceVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\GraphicsDeviceVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\PipelineVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\PipelineVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\CommandListVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\CommandListVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\QueryPoolVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\QueryPoolVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\UtilityVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\UtilityVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\RenderPassCacheVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\RenderPassCacheVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\RenderPassDescriptionVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\RenderPassDescriptionVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\QueueVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\QueueVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\CommandListPoolVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\CommandListPoolVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\ResourceVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\ResourceVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\MemoryAllocatorVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\SemaphoreVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\SemaphoreVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\DescriptorSetVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\DescriptorSetVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\SwapChainVk2.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\SwapChainVk2.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\DeletionQueueVk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\DeletionQueueVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\Initializers.h">
-      <Filter>Code\Graphics\gal</Filter>
+    <ClInclude Include="src\Graphics\gal\Initializers.h">
+      <Filter>src\Graphics\gal</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\GraphicsAbstractionLayer.h">
-      <Filter>Code\Graphics\gal</Filter>
+    <ClInclude Include="src\Graphics\gal\GraphicsAbstractionLayer.h">
+      <Filter>src\Graphics\gal</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\FwdDecl.h">
-      <Filter>Code\Graphics\gal</Filter>
+    <ClInclude Include="src\Graphics\gal\FwdDecl.h">
+      <Filter>src\Graphics\gal</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\PipelineCache.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\PipelineCache.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\MappableBufferBlock.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\MappableBufferBlock.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\MaterialManager.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\MaterialManager.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\MeshManager.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\MeshManager.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\TextureLoader.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\TextureLoader.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\CommandListFramePool.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\CommandListFramePool.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\DescriptorSetCache.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\DescriptorSetCache.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderResources.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\RenderResources.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Renderer.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\Renderer.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\ResourceDefinitions.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\ResourceDefinitions.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\gal\vulkan\volk.h">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClInclude Include="src\Graphics\gal\vulkan\volk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\RenderGraph.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\RenderGraph.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\PassRecordContext.h">
-      <Filter>Code\Graphics</Filter>
+    <ClInclude Include="src\Graphics\PassRecordContext.h">
+      <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Module\BloomModule.h">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClInclude Include="src\Graphics\Module\BloomModule.h">
+      <Filter>src\Graphics\Module</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Module\GTAOModule.h">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClInclude Include="src\Graphics\Module\GTAOModule.h">
+      <Filter>src\Graphics\Module</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Module\SSRModule.h">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClInclude Include="src\Graphics\Module\SSRModule.h">
+      <Filter>src\Graphics\Module</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\BloomDownsamplePass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\BloomUpsamplePass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\BloomUpsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\BuildIndexBufferPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\BuildIndexBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\DeferredShadowsPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\DepthPrepassPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\ForwardLightingPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\FXAAPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\FXAAPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\GeometryPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\GeometryPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\GTAOPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\GTAOPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\GTAOSpatialFilterPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\GTAOSpatialFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\GTAOTemporalFilterPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\GTAOTemporalFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\HiZPyramidPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\HiZPyramidPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\ImGuiPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\ImGuiPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\IntegrateBrdfPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\LightingPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\LightingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\LuminanceHistogramPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\LuminanceHistogramReduceAveragePass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\RasterTilingPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\ReadBackCopyPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\ShadowPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\ShadowPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\SharpenFfxCasPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\SharpenFfxCasPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\SSRPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\SSRPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\SSRResolvePass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\SSRResolvePass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\SSRTemporalFilterPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\SSRTemporalFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\TAAPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\TAAPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\TonemapPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\TonemapPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\VelocityInitializationPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\VolumetricFogScatterPass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Graphics\Pass\VolumetricFogIntegratePass.h">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h">
+      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Code\Utility\Utility.cpp">
-      <Filter>Code\Utility</Filter>
+    <ClCompile Include="src\Utility\Utility.cpp">
+      <Filter>src\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Input\UserInput.cpp">
-      <Filter>Code\Input</Filter>
+    <ClCompile Include="src\Input\UserInput.cpp">
+      <Filter>src\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Engine.cpp">
-      <Filter>Code</Filter>
+    <ClCompile Include="src\Engine.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Window\Window.cpp">
-      <Filter>Code\Window</Filter>
+    <ClCompile Include="src\Window\Window.cpp">
+      <Filter>src\Window</Filter>
     </ClCompile>
-    <ClCompile Include="Code\GlobalVar.cpp">
-      <Filter>Code</Filter>
+    <ClCompile Include="src\GlobalVar.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Camera\Camera.cpp">
-      <Filter>Code\Graphics\Camera</Filter>
+    <ClCompile Include="src\Graphics\Camera\Camera.cpp">
+      <Filter>src\Graphics\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Scene.cpp">
-      <Filter>Code</Filter>
+    <ClCompile Include="src\Scene.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\RenderSystem.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\RenderSystem.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Input\CameraControllerSystem.cpp">
-      <Filter>Code\Input</Filter>
+    <ClCompile Include="src\Input\CameraControllerSystem.cpp">
+      <Filter>src\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utility\Timer.cpp">
-      <Filter>Code\Utility</Filter>
+    <ClCompile Include="src\Utility\Timer.cpp">
+      <Filter>src\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Utility\TLSFAllocator.cpp">
-      <Filter>Code\Utility</Filter>
+    <ClCompile Include="src\Utility\TLSFAllocator.cpp">
+      <Filter>src\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\imgui.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\imgui.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\imgui_demo.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\imgui_demo.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\imgui_draw.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\imgui_draw.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\imgui_widgets.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\imgui_widgets.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\imgui_impl_glfw.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\imgui_impl_glfw.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\imgui\ImGuizmo.cpp">
-      <Filter>Code\Graphics\imgui</Filter>
+    <ClCompile Include="src\Graphics\imgui\ImGuizmo.cpp">
+      <Filter>src\Graphics\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Gui\MemoryAllocatorPlot.cpp">
-      <Filter>Code\Gui</Filter>
+    <ClCompile Include="src\Gui\MemoryAllocatorPlot.cpp">
+      <Filter>src\Gui</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Editor\EntityDetailsWindow.cpp">
-      <Filter>Code\Editor</Filter>
+    <ClCompile Include="src\Editor\EntityDetailsWindow.cpp">
+      <Filter>src\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Editor\Editor.cpp">
-      <Filter>Code\Editor</Filter>
+    <ClCompile Include="src\Editor\Editor.cpp">
+      <Filter>src\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\BVH.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\BVH.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\GraphicsDeviceVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\GraphicsDeviceVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\PipelineVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\PipelineVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\CommandListVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\CommandListVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\QueryPoolVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\QueryPoolVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\UtilityVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\UtilityVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\RenderPassCacheVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\RenderPassCacheVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\QueueVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\QueueVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\CommandListPoolVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\CommandListPoolVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\ResourceVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\ResourceVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\MemoryAllocatorVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\MemoryAllocatorVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\SemaphoreVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\SemaphoreVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\DescriptorSetVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\DescriptorSetVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\SwapChainVk2.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\SwapChainVk2.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\DeletionQueueVk.cpp">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\DeletionQueueVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\Initializers.cpp">
-      <Filter>Code\Graphics\gal</Filter>
+    <ClCompile Include="src\Graphics\gal\Initializers.cpp">
+      <Filter>src\Graphics\gal</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\GraphicsAbstractionLayer.cpp">
-      <Filter>Code\Graphics\gal</Filter>
+    <ClCompile Include="src\Graphics\gal\GraphicsAbstractionLayer.cpp">
+      <Filter>src\Graphics\gal</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\PipelineCache.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\PipelineCache.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\MappableBufferBlock.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\MappableBufferBlock.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\MaterialManager.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\MaterialManager.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\MeshManager.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\MeshManager.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\TextureLoader.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\TextureLoader.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\CommandListFramePool.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\CommandListFramePool.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\DescriptorSetCache.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\DescriptorSetCache.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\RenderResources.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\RenderResources.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Renderer.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\Renderer.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\gal\vulkan\volk.c">
-      <Filter>Code\Graphics\gal\vulkan</Filter>
+    <ClCompile Include="src\Graphics\gal\vulkan\volk.c">
+      <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\RenderGraph.cpp">
-      <Filter>Code\Graphics</Filter>
+    <ClCompile Include="src\Graphics\RenderGraph.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Module\BloomModule.cpp">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClCompile Include="src\Graphics\Module\BloomModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\BloomDownsamplePass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\BloomUpsamplePass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\BuildIndexBufferPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\DeferredShadowsPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\DepthPrepassPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\ForwardLightingPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\FXAAPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\GeometryPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\GeometryPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\GTAOPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\GTAOPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\GTAOSpatialFilterPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\GTAOSpatialFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\GTAOTemporalFilterPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\GTAOTemporalFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\HiZPyramidPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\HiZPyramidPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\ImGuiPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\ImGuiPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\IntegrateBrdfPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\LightingPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\LightingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\LuminanceHistogramPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\LuminanceHistogramReduceAveragePass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\RasterTilingPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\ReadBackCopyPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\ShadowPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\ShadowPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\SharpenFfxCasPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\SharpenFfxCasPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\SSRPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\SSRPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\SSRResolvePass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\SSRResolvePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\SSRTemporalFilterPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\SSRTemporalFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\TAAPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\TAAPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\TonemapPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\VelocityInitializationPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Module\GTAOModule.cpp">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClCompile Include="src\Graphics\Module\GTAOModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Module\SSRModule.cpp">
-      <Filter>Code\Graphics\Module</Filter>
+    <ClCompile Include="src\Graphics\Module\SSRModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\VolumetricFogScatterPass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Graphics\Pass\VolumetricFogIntegratePass.cpp">
-      <Filter>Code\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
