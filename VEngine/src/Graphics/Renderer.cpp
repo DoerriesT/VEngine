@@ -561,7 +561,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	GTAOModule::Data gtaoModuleData;
 	gtaoModuleData.m_passRecordContext = &passRecordContext;
 	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
+	//gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
 
 	if (g_ssaoEnabled)
@@ -594,6 +594,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// forward lighting
 	ForwardLightingPass::Data forwardPassData;
 	forwardPassData.m_passRecordContext = &passRecordContext;
+	forwardPassData.m_ssao = g_ssaoEnabled;
 	forwardPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount
 		+ renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount; // masked entities come right after opaque entities in the list, so we can just add the counts
 	forwardPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
@@ -611,6 +612,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
 	forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
 	forwardPassData.m_volumetricFogImageViewHandle = volumetricFogImageViewHandle;
+	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 

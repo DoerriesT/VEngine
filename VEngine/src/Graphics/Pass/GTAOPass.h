@@ -11,7 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			rg::ImageViewHandle m_depthImageHandle;
-			rg::ImageViewHandle m_tangentSpaceImageHandle;
+			//rg::ImageViewHandle m_tangentSpaceImageHandle;
 			rg::ImageViewHandle m_resultImageHandle;
 		};
 

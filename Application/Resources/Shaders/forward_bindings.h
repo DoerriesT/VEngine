@@ -26,6 +26,8 @@
 #define POINT_SAMPLER_BINDING 12
 #define VOLUMETRIC_FOG_IMAGE_SET 0
 #define VOLUMETRIC_FOG_IMAGE_BINDING 13
+#define SSAO_IMAGE_SET 0
+#define SSAO_IMAGE_BINDING 14
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -51,4 +53,5 @@ struct PushConsts
 	uint pointLightCount;
 	uint transformIndex;
 	uint materialIndex;
+	uint ambientOcclusion;
 };

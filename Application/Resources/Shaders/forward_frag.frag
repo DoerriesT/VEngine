@@ -15,6 +15,7 @@ layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
 layout(constant_id = TEXEL_WIDTH_CONST_ID) const float cTexelWidth = 1.0 / 1600.0;
 layout(constant_id = TEXEL_HEIGHT_CONST_ID) const float cTexelHeight = 1.0 / 900;
 
+layout(set = SSAO_IMAGE_SET, binding = SSAO_IMAGE_BINDING) uniform texture2D uAmbientOcclusionImage;
 layout(set = DEFERRED_SHADOW_IMAGE_SET, binding = DEFERRED_SHADOW_IMAGE_BINDING) uniform texture2DArray uDeferredShadowImage;
 layout(set = VOLUMETRIC_FOG_IMAGE_SET, binding = VOLUMETRIC_FOG_IMAGE_BINDING) uniform texture3D uVolumetricFogImage;
 layout(set = POINT_SAMPLER_SET, binding = POINT_SAMPLER_BINDING) uniform sampler uPointSampler;
@@ -141,7 +142,12 @@ void main()
 	
 	
 	vec3 result = vec3(0.0);
-	result = lightingParams.albedo;
+	float ao = 1.0;
+	if (uPushConsts.ambientOcclusion != 0)
+	{
+		ao = texelFetch(sampler2D(uAmbientOcclusionImage, uPointSampler), ivec2(gl_FragCoord.xy), 0).x;
+	}
+	result = lightingParams.albedo * ao;
 	
 	// directional lights
 	for (uint i = 0; i < cDirectionalLightCount; ++i)
