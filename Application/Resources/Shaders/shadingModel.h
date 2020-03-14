@@ -5,6 +5,8 @@
 
 vec3 Default_Lit(vec3 baseColor, vec3 F0, vec3 radiance, vec3 N, vec3 V, vec3 L, float roughness, float metalness)
 {
+	// avoid precision problems
+	roughness = max(roughness, 0.04);
 	float NdotV = abs(dot(N, V)) + 1e-5;
 	vec3 H = normalize(V + L);
 	float VdotH = max(dot(V, H), 0.0);
