@@ -112,7 +112,7 @@ void main()
 			vec3 tangentSpaceNormal;
 			tangentSpaceNormal.xy = textureGrad(sampler2D(uTextures[nonuniformEXT(normalTextureIndex - 1)], uSamplers[SAMPLER_LINEAR_REPEAT]), vTexCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			normal = calculateTBN(normal, lightingParams.viewSpacePosition, vTexCoord) * tangentSpaceNormal;
+			normal = calculateTBN(normal, lightingParams.viewSpacePosition, vec2(vTexCoord.x, -vTexCoord.y)) * tangentSpaceNormal;
 			normal = normalize(normal);
 		}
 		lightingParams.N = normal;
