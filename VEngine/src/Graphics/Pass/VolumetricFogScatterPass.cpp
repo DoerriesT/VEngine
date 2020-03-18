@@ -10,11 +10,6 @@
 #include <glm/packing.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-float g_scatteringCoefficient = 1.0f;
-float g_absorptionCoefficient = 1.0f;
-float g_phaseAnisotropy = 0.0f;
-float g_fogAlbedo[3] = { 1.0f, 1.0f, 1.0f };
-float g_density = 1.0f;
 float g_volumeDepth = 64.0f;
 
 using namespace VEngine::gal;
@@ -30,6 +25,8 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_scatteringExtinctionImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_emissivePhaseImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 
@@ -52,17 +49,21 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
+				ImageView *scatteringExtinctionImageView = registry.getImageView(data.m_scatteringExtinctionImageViewHandle);
+				ImageView *emissivePhaseImageView = registry.getImageView(data.m_emissivePhaseImageViewHandle);
 				ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::sampledImage(&scatteringExtinctionImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
+					Initializers::sampledImage(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 				};
 
-				descriptorSet->update(4, updates);
+				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
@@ -86,19 +87,14 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 
 			PushConsts pushConsts;
 			pushConsts.frustumCornerTL = frustumCorners[0];
-			pushConsts.scatteringCoefficient = g_scatteringCoefficient;
 			pushConsts.frustumCornerTR = frustumCorners[1];
-			pushConsts.absorptionCoefficient = g_absorptionCoefficient;
 			pushConsts.frustumCornerBL = frustumCorners[2];
-			pushConsts.phaseAnisotropy = g_phaseAnisotropy;
 			pushConsts.frustumCornerBR = frustumCorners[3];
 			pushConsts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
 			pushConsts.cameraPos = data.m_commonData->m_cameraPosition;
 			pushConsts.cascadeCount = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount & 0xFFFF);
 			pushConsts.sunDirection = glm::normalize(glm::vec3(data.m_commonData->m_invViewMatrix * glm::vec4(glm::vec3(lightData.m_direction), 0.0f)));
-			pushConsts.fogAlbedo = glm::packUnorm4x8({ g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2], 1.0f });
 			pushConsts.sunLightRadiance = lightData.m_color;
-			pushConsts.density = g_density;
 
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);

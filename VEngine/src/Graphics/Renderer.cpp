@@ -25,11 +25,10 @@
 #include "Pass/TAAPass.h"
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
-#include "Pass/VolumetricFogScatterPass.h"
-#include "Pass/VolumetricFogIntegratePass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
+#include "Module/VolumetricFogModule.h"
 #include "PipelineCache.h"
 #include "DescriptorSetCache.h"
 #include "MaterialManager.h"
@@ -87,6 +86,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 
 	m_gtaoModule = std::make_unique<GTAOModule>(m_graphicsDevice, m_width, m_height);
 	m_ssrModule = std::make_unique<SSRModule>(m_graphicsDevice, m_width, m_height);
+	m_volumetricFogModule = std::make_unique<VolumetricFogModule>(m_graphicsDevice, m_width, m_height);
 }
 
 VEngine::Renderer::~Renderer()
@@ -104,6 +104,7 @@ VEngine::Renderer::~Renderer()
 	m_gtaoModule.reset();
 	m_ssrModule.reset();
 	m_renderResources.reset();
+	m_volumetricFogModule.reset();
 
 	m_graphicsDevice->destroySemaphore(m_semaphores[0]);
 	m_graphicsDevice->destroySemaphore(m_semaphores[1]);
@@ -200,41 +201,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// create graph managed resources
 
-	rg::ImageViewHandle volumetricFogImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Volumetric Fog Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 200;
-		desc.m_height = 113;
-		desc.m_depth = 64;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_imageType = ImageType::_3D;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
-
-		volumetricFogImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
-	}
-
-	rg::ImageViewHandle volumetricFogScatterImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Volumetric Fog Scatter Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 200;
-		desc.m_height = 113;
-		desc.m_depth = 64;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_imageType = ImageType::_3D;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
-
-		volumetricFogScatterImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
-	}
 
 	rg::ImageViewHandle albedoImageViewHandle;
 	{
@@ -570,25 +536,15 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	// volumetric fog scatter
-	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
-	volumetricFogScatterPassData.m_passRecordContext = &passRecordContext;
-	volumetricFogScatterPassData.m_lightData = lightData.m_directionalLightData.data();
-	volumetricFogScatterPassData.m_commonData = &commonData;
-	volumetricFogScatterPassData.m_resultImageViewHandle = volumetricFogScatterImageViewHandle;
-	volumetricFogScatterPassData.m_shadowImageViewHandle = shadowImageViewHandle;
-	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	// volumetric fog
+	VolumetricFogModule::Data volumetricFogModuleData;
+	volumetricFogModuleData.m_passRecordContext = &passRecordContext;
+	volumetricFogModuleData.m_lightData = lightData.m_directionalLightData.data();
+	volumetricFogModuleData.m_commonData = &commonData;
+	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
+	volumetricFogModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 
-	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
-
-
-	// volumetric fog integrate
-	VolumetricFogIntegratePass::Data volumetricFogIntegratePassData;
-	volumetricFogIntegratePassData.m_passRecordContext = &passRecordContext;
-	volumetricFogIntegratePassData.m_inputImageViewHandle = volumetricFogScatterImageViewHandle;
-	volumetricFogIntegratePassData.m_resultImageViewHandle = volumetricFogImageViewHandle;
-
-	VolumetricFogIntegratePass::addToGraph(graph, volumetricFogIntegratePassData);
+	m_volumetricFogModule->addToGraph(graph, volumetricFogModuleData);
 
 
 	// forward lighting
@@ -611,7 +567,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
 	forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
 	forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
-	forwardPassData.m_volumetricFogImageViewHandle = volumetricFogImageViewHandle;
+	forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
@@ -831,5 +787,6 @@ void VEngine::Renderer::resize(uint32_t width, uint32_t height)
 		m_renderResources->resize(width, height);
 		m_gtaoModule->resize(width, height);
 		m_ssrModule->resize(width, height);
+		m_volumetricFogModule->resize(width, height);
 	}
 }

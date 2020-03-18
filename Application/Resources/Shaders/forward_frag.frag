@@ -204,7 +204,7 @@ void main()
 	
 	// apply volumetric fog
 	{
-		float n = 0.5;
+		float n = 0.1;
 		float f = 64.0;
 		float z = -lightingParams.viewSpacePosition.z;
 		float d = (log2(max(0, z * (1.0 / n))) * (1.0 / log2(f / n)));

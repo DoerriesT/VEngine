@@ -6,12 +6,25 @@
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
 
-float4 scatterStep(float3 accumulatedLight, float accumulatedTransmittance, float3 sliceLight, float sliceDensity)
+
+float getStepLength(int slice)
 {
-	sliceDensity = max(sliceDensity, 1e-5);
-	float sliceTransmittance = exp(-sliceDensity / VOLUME_DEPTH);
+	float n = 0.1;
+	float f = 64.0;
+
+	float logFarOverNear = log2(f / n);
+	float d0 = slice * (1.0 / VOLUME_DEPTH);
+	float d1 = (slice + 1.0) * (1.0 / VOLUME_DEPTH);
 	
-	float3 sliceLightIntegral = sliceLight * (1.0 - sliceTransmittance) / sliceDensity;
+	return n * (exp2(d1 * logFarOverNear) - exp2(d0 * logFarOverNear));
+}
+
+float4 scatterStep(float3 accumulatedLight, float accumulatedTransmittance, float3 sliceLight, float sliceExtinction, float stepLength)
+{
+	sliceExtinction = max(sliceExtinction, 1e-5);
+	float sliceTransmittance = exp(-sliceExtinction * stepLength);
+	
+	float3 sliceLightIntegral = (-sliceLight * sliceTransmittance + sliceLight) * rcp(sliceExtinction);
 	
 	accumulatedLight += sliceLightIntegral * accumulatedTransmittance;
 	accumulatedTransmittance *= sliceTransmittance;
@@ -28,7 +41,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		int4 pos = int4(threadID.xy, z, 0);
 		float4 slice = g_InputImage.Load(pos);
-		accum = scatterStep(accum.rgb, accum.a, slice.rgb, slice.a);
+		accum = scatterStep(accum.rgb, accum.a, slice.rgb, slice.a, getStepLength(z));
 		g_ResultImage[pos.xyz] = accum;
 	}
 }

@@ -366,6 +366,12 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Module\VolumetricFogModule.h">
+      <Filter>src\Graphics\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -607,6 +613,12 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp">
       <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Module\VolumetricFogModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

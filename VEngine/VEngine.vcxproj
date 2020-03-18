@@ -192,6 +192,7 @@
     <ClInclude Include="src\Graphics\Module\BloomModule.h" />
     <ClInclude Include="src\Graphics\Module\GTAOModule.h" />
     <ClInclude Include="src\Graphics\Module\SSRModule.h" />
+    <ClInclude Include="src\Graphics\Module\VolumetricFogModule.h" />
     <ClInclude Include="src\Graphics\PassRecordContext.h" />
     <ClInclude Include="src\Graphics\PassTimingInfo.h" />
     <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h" />
@@ -223,6 +224,7 @@
     <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h" />
     <ClInclude Include="src\Graphics\PipelineCache.h" />
     <ClInclude Include="src\Graphics\RenderData.h" />
     <ClInclude Include="src\Graphics\Renderer.h" />
@@ -288,6 +290,7 @@
     <ClCompile Include="src\Graphics\Module\BloomModule.cpp" />
     <ClCompile Include="src\Graphics\Module\GTAOModule.cpp" />
     <ClCompile Include="src\Graphics\Module\SSRModule.cpp" />
+    <ClCompile Include="src\Graphics\Module\VolumetricFogModule.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp" />
@@ -317,6 +320,7 @@
     <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp" />
     <ClCompile Include="src\Graphics\PipelineCache.cpp" />
     <ClCompile Include="src\Graphics\Renderer.cpp" />
     <ClCompile Include="src\Graphics\RenderGraph.cpp" />

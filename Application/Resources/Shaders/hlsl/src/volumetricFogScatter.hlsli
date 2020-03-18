@@ -1,26 +1,29 @@
 #define RESULT_IMAGE_SET 0
 #define RESULT_IMAGE_BINDING 0
+#define SCATTERING_EXTINCTION_IMAGE_SET 0
+#define SCATTERING_EXTINCTION_IMAGE_BINDING 1
+#define EMISSIVE_PHASE_IMAGE_SET 0
+#define EMISSIVE_PHASE_IMAGE_BINDING 2
 #define SHADOW_IMAGE_SET 0
-#define SHADOW_IMAGE_BINDING 1
+#define SHADOW_IMAGE_BINDING 3
 #define SHADOW_SAMPLER_SET 0
-#define SHADOW_SAMPLER_BINDING 2
+#define SHADOW_SAMPLER_BINDING 4
 #define SHADOW_MATRICES_SET 0
-#define SHADOW_MATRICES_BINDING 3
+#define SHADOW_MATRICES_BINDING 5
 
 struct PushConsts
 {
 	float3 frustumCornerTL;
-	float scatteringCoefficient;
+	uint padding0;
 	float3 frustumCornerTR;
-	float absorptionCoefficient;
+	uint padding1;
 	float3 frustumCornerBL;
-	float phaseAnisotropy;
+	uint padding2;
 	float3 frustumCornerBR;
 	int cascadeOffset;
 	float3 cameraPos;
 	int cascadeCount;
 	float3 sunDirection;
-	uint fogAlbedo;
+	uint padding3;
 	float3 sunLightRadiance;
-	float density;
 };
