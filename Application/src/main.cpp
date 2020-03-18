@@ -20,6 +20,15 @@
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
 
+extern bool g_albedoExtinctionMode;
+extern float g_fogScattering[3];
+extern float g_fogAbsorption[3];
+extern float g_fogAlbedo[3];
+extern float g_fogExtinction;
+extern float g_fogEmissiveColor[3];
+extern float g_fogEmissiveIntensity;
+extern float g_fogPhase;
+
 uint32_t g_dirLightEntity;
 uint32_t g_debugVoxelCascadeIndex = 0;
 uint32_t g_giVoxelDebugMode = 0;
@@ -59,7 +68,7 @@ public:
 		quadTc.m_scale = 60.0f;
 		entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);*/
-		
+
 
 		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
 		entt::entity exteriorEntity = entityRegistry.create();
@@ -117,28 +126,65 @@ public:
 	void update(float timeDelta) override
 	{
 		auto &entityRegistry = m_engine->getEntityRegistry();
-		
+
 		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
 		auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
 		VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
-		
+
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
-		
+
 		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
-		
+
 		auto &io = ImGui::GetIO();
-		
+
 		glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
-		
+
 		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
 		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
 		glm::vec3 position;
 		glm::vec3 eulerAngles;
 		glm::vec3 scale;
-		ImGuizmo::DecomposeMatrixToComponents((float*)&orientation, (float*)&position, (float *)&eulerAngles, (float *)&scale);
-		
+		ImGuizmo::DecomposeMatrixToComponents((float *)&orientation, (float *)&position, (float *)&eulerAngles, (float *)&scale);
+
 		tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+
+		ImGui::Begin("Volumetric Fog");
+		{
+			ImGui::DragFloat3("Scattering", g_fogScattering, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			ImGui::DragFloat3("Absorption", g_fogAbsorption, 0.001f, 0.0f, FLT_MAX, "%.7f");
+
+			ImGui::Checkbox("Albedo/Extinction Mode", &g_albedoExtinctionMode);
+
+			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
+			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
+
+			ImGui::Separator();
+
+			ImGui::ColorPicker3("Emissive Color", g_fogEmissiveColor);
+			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.999f, 0.99f, "%.7f");
+
+			if (g_albedoExtinctionMode)
+			{
+				g_fogScattering[0] = g_fogAlbedo[0] * g_fogExtinction;
+				g_fogScattering[1] = g_fogAlbedo[1] * g_fogExtinction;
+				g_fogScattering[2] = g_fogAlbedo[2] * g_fogExtinction;
+				g_fogAbsorption[0] = g_fogExtinction - g_fogScattering[0];
+				g_fogAbsorption[1] = g_fogExtinction - g_fogScattering[1];
+				g_fogAbsorption[2] = g_fogExtinction - g_fogScattering[2];
+			}
+			else
+			{
+				g_fogAlbedo[0] = g_fogScattering[0] > 0.0 ? g_fogScattering[0] / (g_fogScattering[0] + g_fogAbsorption[0]) : 0.0f;
+				g_fogAlbedo[1] = g_fogScattering[1] > 0.0 ? g_fogScattering[1] / (g_fogScattering[1] + g_fogAbsorption[1]) : 0.0f;
+				g_fogAlbedo[2] = g_fogScattering[2] > 0.0 ? g_fogScattering[2] / (g_fogScattering[2] + g_fogAbsorption[2]) : 0.0f;
+				g_fogExtinction = (g_fogScattering[0] + g_fogAbsorption[0]) * 0.2126f
+					+ (g_fogScattering[1] + g_fogAbsorption[1]) * 0.7152f
+					+ (g_fogScattering[2] + g_fogAbsorption[2]) * 0.0722f;
+			}
+		}
+		ImGui::End();
 	};
 
 	void shutdown() override

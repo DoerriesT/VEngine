@@ -7,12 +7,13 @@
 #include "Graphics/gal/Initializers.h"
 #include <glm/gtc/type_ptr.hpp>
 
-bool g_albedoExtinctionMode = false;
+bool g_albedoExtinctionMode = true;
 float g_fogScattering[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogAbsorption[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogAlbedo[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogExtinction = 0.01f;
-float g_fogEmissive[3] = {};
+float g_fogEmissiveColor[3] = {};
+float g_fogEmissiveIntensity = 0.0f;
 float g_fogPhase = 0.0f;
 
 using namespace VEngine::gal;
@@ -64,8 +65,8 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 			}
 
 			PushConsts pushConsts;
-			pushConsts.scatteringExtinction = glm::vec4(glm::make_vec3(g_fogAlbedo) * g_fogExtinction, g_fogExtinction);
-			pushConsts.emissivePhase = glm::vec4(glm::make_vec3(g_fogEmissive), g_fogPhase);
+			pushConsts.scatteringExtinction = glm::vec4(glm::make_vec3(g_fogScattering), g_fogExtinction);
+			pushConsts.emissivePhase = glm::vec4(glm::make_vec3(g_fogEmissiveColor) * g_fogEmissiveIntensity, g_fogPhase);
 
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
