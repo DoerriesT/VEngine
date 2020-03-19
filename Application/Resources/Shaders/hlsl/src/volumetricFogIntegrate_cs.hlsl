@@ -2,6 +2,8 @@
 #include "volumetricFogIntegrate.hlsli"
 
 #define VOLUME_DEPTH (64)
+#define VOLUME_NEAR (0.5)
+#define VOLUME_FAR (64.0)
 
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
@@ -9,14 +11,11 @@ Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_S
 
 float getStepLength(int slice)
 {
-	float n = 0.1;
-	float f = 64.0;
-
-	float logFarOverNear = log2(f / n);
+	float logFarOverNear = log2(VOLUME_FAR / VOLUME_NEAR);
 	float d0 = slice * (1.0 / VOLUME_DEPTH);
 	float d1 = (slice + 1.0) * (1.0 / VOLUME_DEPTH);
 	
-	return n * (exp2(d1 * logFarOverNear) - exp2(d0 * logFarOverNear));
+	return VOLUME_NEAR * (exp2(d1 * logFarOverNear) - exp2(d0 * logFarOverNear));
 }
 
 float4 scatterStep(float3 accumulatedLight, float accumulatedTransmittance, float3 sliceLight, float sliceExtinction, float stepLength)

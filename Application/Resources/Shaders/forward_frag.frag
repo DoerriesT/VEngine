@@ -9,6 +9,10 @@
 #include "commonLighting.h"
 #include "srgb.h"
 
+#define VOLUME_DEPTH (64)
+#define VOLUME_NEAR (0.5)
+#define VOLUME_FAR (64.0)
+
 layout(constant_id = DIRECTIONAL_LIGHT_COUNT_CONST_ID) const uint cDirectionalLightCount = 1;
 layout(constant_id = WIDTH_CONST_ID) const uint cWidth = 1600;
 layout(constant_id = HEIGHT_CONST_ID) const uint cHeight = 900;
@@ -204,17 +208,15 @@ void main()
 	
 	// apply volumetric fog
 	{
-		float n = 0.1;
-		float f = 64.0;
 		float z = -lightingParams.viewSpacePosition.z;
-		float d = (log2(max(0, z * (1.0 / n))) * (1.0 / log2(f / n)));
-
+		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
+	
 		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * vec2(cTexelWidth, cTexelHeight), d);
-		vec4 fog = d < 0.0 ? vec4(0.0, 0.0, 0.0, 1.0) : textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
+		vec4 fog = textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}
 
-	oResult = vec4(result, 1.0);
+	oResult = vec4(any(isinf(result)) || any(isnan(result)) ? vec3(1.0, 0.0, 0.0) : result, 1.0);
 	oNormal = vec4(lightingParams.N, 1.0);
 	oSpecularRoughness = accurateLinearToSRGB(vec4(mix(vec3(0.04), lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
 }

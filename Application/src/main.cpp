@@ -151,15 +151,24 @@ public:
 
 		ImGui::Begin("Volumetric Fog");
 		{
-			ImGui::DragFloat3("Scattering", g_fogScattering, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			ImGui::DragFloat3("Absorption", g_fogAbsorption, 0.001f, 0.0f, FLT_MAX, "%.7f");
-
 			ImGui::Checkbox("Albedo/Extinction Mode", &g_albedoExtinctionMode);
-
-			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
-			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
-
+			ImGui::NewLine();
 			ImGui::Separator();
+			ImGui::NewLine();
+			if (g_albedoExtinctionMode)
+			{
+				ImGui::ColorPicker3("Albedo", g_fogAlbedo);
+				ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			}
+			else
+			{
+				ImGui::DragFloat3("Scattering", g_fogScattering, 0.001f, 0.0f, FLT_MAX, "%.7f");
+				ImGui::DragFloat3("Absorption", g_fogAbsorption, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			}
+
+			ImGui::NewLine();
+			ImGui::Separator();
+			ImGui::NewLine();
 
 			ImGui::ColorPicker3("Emissive Color", g_fogEmissiveColor);
 			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");

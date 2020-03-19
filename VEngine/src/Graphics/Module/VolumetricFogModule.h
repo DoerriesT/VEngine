@@ -1,5 +1,6 @@
 #pragma once
 #include "Graphics/RenderGraph.h"
+#include "Graphics/RendererConsts.h"
 
 namespace VEngine
 {
@@ -36,5 +37,9 @@ namespace VEngine
 		uint32_t m_width = 1;
 		uint32_t m_height = 1;
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
+
+		gal::Image *m_inScatteringHistoryImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
+
+		rg::ResourceStateData m_inScatteringHistoryImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 	};
 }
