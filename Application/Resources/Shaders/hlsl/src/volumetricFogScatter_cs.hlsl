@@ -101,10 +101,10 @@ float getDistanceAtt(float3 unnormalizedLightVector, float invSqrAttRadius)
 	return attenuation;
 }
 
-[numthreads(64, 1, 1)]
+[numthreads(2, 2, 16)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-	uint3 froxelID = threadID.yzx;
+	uint3 froxelID = threadID.xyz;
 	// world-space position of volumetric texture texel
 	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, g_Constants.jitterZ));
 	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;

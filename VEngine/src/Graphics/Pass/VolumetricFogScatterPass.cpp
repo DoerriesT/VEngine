@@ -111,6 +111,6 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 			uint32_t h = imageDesc.m_height;
 			uint32_t d = imageDesc.m_depth;
 
-			cmdList->dispatch((d + 63) / 64, w, h);
+			cmdList->dispatch((w + 1) / 2, (h + 1) / 2, (d + 15) / 16);
 		});
 }
