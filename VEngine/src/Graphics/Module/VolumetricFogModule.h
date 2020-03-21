@@ -33,9 +33,11 @@ namespace VEngine
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
 
 	private:
+		static constexpr size_t s_haltonSampleCount = 64;
 		gal::GraphicsDevice *m_graphicsDevice;
 		uint32_t m_width = 1;
 		uint32_t m_height = 1;
+		float *m_haltonJitter;
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
 
 		gal::Image *m_inScatteringHistoryImages[RendererConsts::FRAMES_IN_FLIGHT] = {};

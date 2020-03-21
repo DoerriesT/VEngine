@@ -505,7 +505,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		indexBufferInfo.m_createFlags = 0;
 		indexBufferInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT;
 
-		m_graphicsDevice->createBuffer(vertexBufferInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_lightProxyIndexBuffer);
+		m_graphicsDevice->createBuffer(indexBufferInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_lightProxyIndexBuffer);
 
 		void *data;
 		m_stagingBuffer->map(&data);

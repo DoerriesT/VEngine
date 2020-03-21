@@ -10,7 +10,6 @@
 #include <glm/packing.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Graphics/MappableBufferBlock.h"
-#include "Utility/Utility.h"
 
 float g_volumeDepth = 64.0f;
 
@@ -18,29 +17,12 @@ using namespace VEngine::gal;
 
 namespace
 {
-	constexpr size_t numHaltonSamples = 64;
-	float haltonX[numHaltonSamples];
-	float haltonY[numHaltonSamples];
-	float haltonZ[numHaltonSamples];
-
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
 #include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogScatter.hlsli"
 }
 
 void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	static bool initialized = false;
-	if (!initialized)
-	{
-		initialized = true;
-		for (size_t i = 0; i < numHaltonSamples; ++i)
-		{
-			haltonX[i] = Utility::halton(i + 1, 2);
-			haltonY[i] = Utility::halton(i + 1, 3);
-			haltonZ[i] = Utility::halton(i + 1, 5);
-		}
-	}
-
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
@@ -71,18 +53,17 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 		c -= commonData->m_cameraPosition;
 	}
 
-	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
 	const auto &lightData = *data.m_lightData;
 
 	Constants consts;
 	consts.prevViewMatrix = commonData->m_prevViewMatrix;
 	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
 	consts.frustumCornerTL = frustumCorners[0];
-	consts.jitterX = haltonX[haltonIdx];
+	consts.jitterX = data.m_jitterX;
 	consts.frustumCornerTR = frustumCorners[1];
-	consts.jitterY = haltonY[haltonIdx];
+	consts.jitterY = data.m_jitterY;
 	consts.frustumCornerBL = frustumCorners[2];
-	consts.jitterZ = haltonZ[haltonIdx];
+	consts.jitterZ = data.m_jitterZ;
 	consts.frustumCornerBR = frustumCorners[3];
 	consts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
 	consts.cameraPos = commonData->m_cameraPosition;

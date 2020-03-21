@@ -3,6 +3,8 @@
 #include "Graphics/Pass/VolumetricFogScatterPass.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
 #include "Graphics/RenderData.h"
+#include "Utility/Utility.h"
+#include "Graphics/PassRecordContext.h"
 
 using namespace VEngine::gal;
 
@@ -10,8 +12,16 @@ VEngine::VolumetricFogModule::VolumetricFogModule(gal::GraphicsDevice *graphicsD
 	:m_graphicsDevice(graphicsDevice),
 	m_width(width),
 	m_height(height),
+	m_haltonJitter(new float[s_haltonSampleCount * 3]),
 	m_volumetricScatteringImageViewHandle()
 {
+	for (size_t i = 0; i < s_haltonSampleCount; ++i)
+	{
+		m_haltonJitter[i * 3 + 0] = Utility::halton(i + 1, 2);
+		m_haltonJitter[i * 3 + 1] = Utility::halton(i + 1, 3);
+		m_haltonJitter[i * 3 + 2] = Utility::halton(i + 1, 5);
+	}
+
 	resize(width, height);
 }
 
@@ -21,6 +31,7 @@ VEngine::VolumetricFogModule::~VolumetricFogModule()
 	{
 		m_graphicsDevice->destroyImage(m_inScatteringHistoryImages[i]);
 	}
+	delete[] m_haltonJitter;
 }
 
 void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -64,9 +75,17 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		m_volumetricScatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 	}
 
+	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % s_haltonSampleCount;
+	const float jitterX = m_haltonJitter[haltonIdx * 3 + 0];
+	const float jitterY = m_haltonJitter[haltonIdx * 3 + 1];
+	const float jitterZ = m_haltonJitter[haltonIdx * 3 + 2];
+
 	// volumetric fog v-buffer
 	VolumetricFogVBufferPass::Data volumetricFogVBufferPassData;
 	volumetricFogVBufferPassData.m_passRecordContext = data.m_passRecordContext;
+	volumetricFogVBufferPassData.m_jitterX = jitterX;
+	volumetricFogVBufferPassData.m_jitterY = jitterY;
+	volumetricFogVBufferPassData.m_jitterZ = jitterZ;
 	volumetricFogVBufferPassData.m_scatteringExtinctionImageViewHandle = vBufferScatteringExtinctionImageViewHandle;
 	volumetricFogVBufferPassData.m_emissivePhaseImageViewHandle = vbufferEmissivePhasImageViewHandle;
 
@@ -76,6 +95,9 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	// volumetric fog scatter
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
+	volumetricFogScatterPassData.m_jitterX = jitterX;
+	volumetricFogScatterPassData.m_jitterY = jitterY;
+	volumetricFogScatterPassData.m_jitterZ = jitterZ;
 	volumetricFogScatterPassData.m_lightData = data.m_lightData;
 	volumetricFogScatterPassData.m_resultImageViewHandle = inscatteringImageViewHandle;
 	volumetricFogScatterPassData.m_prevResultImageViewHandle = prevInscatteringImageViewHandle;
