@@ -6,6 +6,15 @@
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
+#define TILE_SIZE (16)
+
+struct PointLightData
+{
+	float4 positionRadius;
+	float4 colorInvSqrAttRadius;
+	//uint shadowDataOffset;
+	//uint shadowDataCount;
+};
 
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture3D<float4> g_PrevResultImage : REGISTER_SRV(PREV_RESULT_IMAGE_BINDING, PREV_RESULT_IMAGE_SET);
@@ -16,9 +25,17 @@ SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_S
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
+ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
+StructuredBuffer<PointLightData> g_PointLightData : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
+float getViewSpaceDistance(float texelDepth)
+{
+	float d = texelDepth * (1.0 / VOLUME_DEPTH);
+	return VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
+}
 
 float3 calcWorldSpacePos(float3 texelCoord)
 {
@@ -29,9 +46,7 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
 	
-	float d = texelCoord.z * (1.0 / VOLUME_DEPTH);
-	float z = VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
-	pos *= z / VOLUME_FAR;
+	pos *= getViewSpaceDistance(texelCoord.z) / VOLUME_FAR;
 	
 	pos += g_Constants.cameraPos;
 	
@@ -63,23 +78,102 @@ float henyeyGreenstein(float3 V, float3 L, float g)
 	return num / denom;
 }
 
-[numthreads(8, 8, 1)]
+uint getTileAddress(uint2 coord, uint width, uint wordCount)
+{
+	uint2 tile = (coord * 8 + (TILE_SIZE - 1)) / TILE_SIZE;
+	uint address = tile.x + tile.y * ((width * 8 + (TILE_SIZE - 1)) / TILE_SIZE);
+	return address * wordCount;
+}
+
+float smoothDistanceAtt(float squaredDistance, float invSqrAttRadius)
+{
+	float factor = squaredDistance * invSqrAttRadius;
+	float smoothFactor = saturate(1.0 - factor * factor);
+	return smoothFactor * smoothFactor;
+}
+
+float getDistanceAtt(float3 unnormalizedLightVector, float invSqrAttRadius)
+{
+	float sqrDist = dot(unnormalizedLightVector, unnormalizedLightVector);
+	float attenuation = 1.0 / (max(sqrDist, invSqrAttRadius));
+	attenuation *= smoothDistanceAtt(sqrDist, invSqrAttRadius);
+	
+	return attenuation;
+}
+
+[numthreads(64, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
+	uint3 froxelID = threadID.yzx;
 	// world-space position of volumetric texture texel
-	const float3 worldSpacePos = calcWorldSpacePos(threadID + float3(g_Constants.jitterX, g_Constants.jitterY, g_Constants.jitterZ));
+	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, g_Constants.jitterZ));
+	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
 	
 	// normalized view dir
 	const float3 V = normalize(g_Constants.cameraPos.xyz - worldSpacePos);
 	
-	const float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(int4(threadID.xyz, 0));
-	const float4 emissivePhase = g_EmissivePhaseImage.Load(int4(threadID.xyz, 0));
+	const float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(int4(froxelID.xyz, 0));
+	const float4 emissivePhase = g_EmissivePhaseImage.Load(int4(froxelID.xyz, 0));
 	
 	// integrate inscattered lighting
 	float3 lighting = emissivePhase.rgb;
 	{
 		// directional light
 		lighting += getSunLightingRadiance(worldSpacePos) * henyeyGreenstein(V, g_Constants.sunDirection.xyz, emissivePhase.w);
+		
+		// point lights
+		if (g_Constants.pointLightCount > 0)
+		{
+			const float3 viewSpaceV = normalize(-viewSpacePos);
+			uint wordMin = 0;
+			const uint wordCount = (g_Constants.pointLightCount + 31) / 32;
+			uint wordMax = wordCount - 1;
+			
+			const uint zBinAddress = clamp(uint(floor(-viewSpacePos.z)), 0, 8191);
+			const uint zBinData = g_PointLightZBins.Load(zBinAddress * 4);
+			const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+			const uint maxIndex = zBinData & uint(0xFFFF);
+			// mergedMin scalar from this point
+			const uint mergedMin = WaveReadLaneFirst(WaveActiveMin(minIndex)); 
+			// mergedMax scalar from this point
+			const uint mergedMax = WaveReadLaneFirst(WaveActiveMax(maxIndex)); 
+			wordMin = max(mergedMin / 32, wordMin);
+			wordMax = min(mergedMax / 32, wordMax);
+			uint3 imageDims;
+			g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
+			const uint address = getTileAddress(froxelID.xy, imageDims.x, wordCount);
+			
+			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+			{
+				uint mask = g_PointBitMask.Load((address + wordIndex) * 4);
+				
+				// mask by zbin mask
+				const int localBaseIndex = int(wordIndex * 32);
+				const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
+				const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
+				const uint maskWidth = localMax - localMin + 1;
+				const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
+				mask &= zBinMask;
+				
+				// compact word bitmask over all threads in subgroup
+				uint mergedMask = WaveReadLaneFirst(WaveActiveBitOr(mask));
+				
+				while (mergedMask != 0)
+				{
+					const uint bitIndex = firstbitlow(mergedMask);
+					const uint index = 32 * wordIndex + bitIndex;
+					mergedMask ^= (1 << bitIndex);
+					
+					PointLightData pointLightData = g_PointLightData[index];
+					const float3 unnormalizedLightVector = pointLightData.positionRadius.xyz - viewSpacePos;
+					const float3 L = normalize(unnormalizedLightVector);
+					const float att = getDistanceAtt(unnormalizedLightVector, pointLightData.colorInvSqrAttRadius.w);
+					const float3 radiance = pointLightData.colorInvSqrAttRadius.rgb * att;
+					
+					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
+				}
+			}
+		}
 	}
 	
 	const float3 albedo = scatteringExtinction.rgb / max(scatteringExtinction.w, 1e-7);
@@ -89,7 +183,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	// reproject and combine with previous result from previous frame
 	{
-		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
+		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(froxelID + 0.5), 1.0));
 		
 		float z = -prevViewSpacePos.z;
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
@@ -104,5 +198,5 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		result = lerp(prevResult, result, validCoord ? 0.015 : 1.0);
 	}
 	
-	g_ResultImage[threadID] = result;
+	g_ResultImage[froxelID] = result;
 }

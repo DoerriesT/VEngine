@@ -16,6 +16,12 @@
 #define CONSTANT_BUFFER_BINDING 7
 #define LINEAR_SAMPLER_SET 0
 #define LINEAR_SAMPLER_BINDING 8
+#define POINT_LIGHT_Z_BINS_BUFFER_SET 0
+#define POINT_LIGHT_Z_BINS_BUFFER_BINDING 9
+#define POINT_LIGHT_BIT_MASK_BUFFER_SET 0
+#define POINT_LIGHT_BIT_MASK_BUFFER_BINDING 10
+#define POINT_LIGHT_DATA_SET 0
+#define POINT_LIGHT_DATA_BINDING 11
 
 struct PushConsts
 {
@@ -36,6 +42,7 @@ struct PushConsts
 
 struct Constants
 {
+	float4x4 viewMatrix;
 	float4x4 prevViewMatrix;
 	float4x4 prevProjMatrix;
 	float3 frustumCornerTL;
@@ -49,7 +56,7 @@ struct Constants
 	float3 cameraPos;
 	int cascadeCount;
 	float3 sunDirection;
-	uint padding3;
+	uint pointLightCount;
 	float3 sunLightRadiance;
 	uint padding4;
 	float4 reprojectedTexCoordScaleBias;

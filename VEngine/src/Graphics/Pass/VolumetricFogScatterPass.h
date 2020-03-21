@@ -15,6 +15,9 @@ namespace VEngine
 			float m_jitter[3];
 			float m_reprojectedTexCoordScaleBias[4];
 			const DirectionalLightData *m_lightData;
+			gal::DescriptorBufferInfo m_pointLightDataBufferInfo;
+			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
+			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_prevResultImageViewHandle;
 			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;
