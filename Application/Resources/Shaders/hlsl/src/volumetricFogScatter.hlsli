@@ -51,4 +51,6 @@ struct Constants
 	float3 sunDirection;
 	uint padding3;
 	float3 sunLightRadiance;
+	uint padding4;
+	float4 reprojectedTexCoordScaleBias;
 };

@@ -7,11 +7,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/LightData.h"
 #include "Graphics/gal/Initializers.h"
-#include <glm/packing.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "Graphics/MappableBufferBlock.h"
-
-float g_volumeDepth = 64.0f;
 
 using namespace VEngine::gal;
 
@@ -39,37 +35,24 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
-	auto proj = glm::perspective(commonData->m_fovy, commonData->m_width / float(commonData->m_height), commonData->m_nearPlane, g_volumeDepth);
-	auto invViewProj = glm::inverse(proj * commonData->m_viewMatrix);
-	glm::vec4 frustumCorners[4];
-	frustumCorners[0] = invViewProj * glm::vec4(-1.0f, 1.0f, 1.0f, 1.0f);
-	frustumCorners[1] = invViewProj * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	frustumCorners[2] = invViewProj * glm::vec4(-1.0f, -1.0f, 1.0f, 1.0f);
-	frustumCorners[3] = invViewProj * glm::vec4(1.0f, -1.0f, 1.0f, 1.0f);
-
-	for (auto &c : frustumCorners)
-	{
-		c /= c.w;
-		c -= commonData->m_cameraPosition;
-	}
-
 	const auto &lightData = *data.m_lightData;
 
 	Constants consts;
 	consts.prevViewMatrix = commonData->m_prevViewMatrix;
 	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
-	consts.frustumCornerTL = frustumCorners[0];
-	consts.jitterX = data.m_jitterX;
-	consts.frustumCornerTR = frustumCorners[1];
-	consts.jitterY = data.m_jitterY;
-	consts.frustumCornerBL = frustumCorners[2];
-	consts.jitterZ = data.m_jitterZ;
-	consts.frustumCornerBR = frustumCorners[3];
+	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
+	consts.jitterX = data.m_jitter[0];
+	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
+	consts.jitterY = data.m_jitter[1];
+	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
+	consts.jitterZ = data.m_jitter[2];
+	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
 	consts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
 	consts.cameraPos = commonData->m_cameraPosition;
 	consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount & 0xFFFF);
 	consts.sunDirection = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(glm::vec3(lightData.m_direction), 0.0f)));
 	consts.sunLightRadiance = lightData.m_color;
+	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 

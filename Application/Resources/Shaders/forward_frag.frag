@@ -210,8 +210,13 @@ void main()
 	{
 		float z = -lightingParams.viewSpacePosition.z;
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-	
-		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * vec2(cTexelWidth, cTexelHeight), d);
+		
+		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
+		// of the current texel but instead need to scale the uv with respect to the fog image resolution
+		vec2 fogImageSize = vec2(textureSize(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), 0).xy);
+		vec2 scaledFogImageTexelSize = 1.0 / (fogImageSize * 8.0);
+		
+		vec3 volumetricFogTexCoord = vec3(gl_FragCoord.xy * scaledFogImageTexelSize, d);
 		vec4 fog = textureLod(sampler3D(uVolumetricFogImage, uSamplers[SAMPLER_LINEAR_CLAMP]), volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}

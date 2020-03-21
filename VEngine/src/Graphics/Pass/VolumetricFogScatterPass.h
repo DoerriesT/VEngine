@@ -11,9 +11,9 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			float m_jitterX;
-			float m_jitterY;
-			float m_jitterZ;
+			float m_frustumCorners[4][3];
+			float m_jitter[3];
+			float m_reprojectedTexCoordScaleBias[4];
 			const DirectionalLightData *m_lightData;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_prevResultImageViewHandle;

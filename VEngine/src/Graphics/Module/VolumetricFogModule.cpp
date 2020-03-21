@@ -5,6 +5,8 @@
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
 #include "Graphics/PassRecordContext.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 using namespace VEngine::gal;
 
@@ -80,12 +82,35 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	const float jitterY = m_haltonJitter[haltonIdx * 3 + 1];
 	const float jitterZ = m_haltonJitter[haltonIdx * 3 + 2];
 
+	// we may need to expand the frustum a little to the right and a little downwards, so that each froxel corresponds
+	// exactly to a single tile from the tiled lighting setup
+	const float overSizeX = imageWidth * 8.0f / m_width - 1.0f;
+	const float overSizeY = imageHeight * 8.0f / m_height - 1.0f;
+
+	auto proj = glm::perspective(commonData.m_fovy, m_width / float(m_height), commonData.m_nearPlane, 64.0f);
+	auto invViewProj = glm::inverse(proj * commonData.m_viewMatrix);
+	glm::vec4 frustumCorners[4];
+	frustumCorners[0] = invViewProj * glm::vec4(-1.0f					, 1.0f						, 1.0f, 1.0f); // top left
+	frustumCorners[1] = invViewProj * glm::vec4(1.0f + 2.0f * overSizeX	, 1.0f						, 1.0f, 1.0f); // top right
+	frustumCorners[2] = invViewProj * glm::vec4(-1.0f					, -1.0f - 2.0f * overSizeY	, 1.0f, 1.0f); // bottom left
+	frustumCorners[3] = invViewProj * glm::vec4(1.0f + 2.0f * overSizeX	, -1.0f - 2.0f * overSizeY	, 1.0f, 1.0f); // bottom right
+
+	for (auto &c : frustumCorners)
+	{
+		c /= c.w;
+		c -= commonData.m_cameraPosition;
+	}
+
+	glm::vec4 reprojectedTexCoordScaleBias = glm::vec4(m_width / (imageWidth * 8.0f), m_height / (imageHeight * 8.0f), 0.0f, 0.0f);
+
+
 	// volumetric fog v-buffer
 	VolumetricFogVBufferPass::Data volumetricFogVBufferPassData;
 	volumetricFogVBufferPassData.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogVBufferPassData.m_jitterX = jitterX;
-	volumetricFogVBufferPassData.m_jitterY = jitterY;
-	volumetricFogVBufferPassData.m_jitterZ = jitterZ;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogVBufferPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	volumetricFogVBufferPassData.m_jitter[0] = jitterX;
+	volumetricFogVBufferPassData.m_jitter[1] = jitterY;
+	volumetricFogVBufferPassData.m_jitter[2] = jitterZ;
 	volumetricFogVBufferPassData.m_scatteringExtinctionImageViewHandle = vBufferScatteringExtinctionImageViewHandle;
 	volumetricFogVBufferPassData.m_emissivePhaseImageViewHandle = vbufferEmissivePhasImageViewHandle;
 
@@ -95,9 +120,11 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	// volumetric fog scatter
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogScatterPassData.m_jitterX = jitterX;
-	volumetricFogScatterPassData.m_jitterY = jitterY;
-	volumetricFogScatterPassData.m_jitterZ = jitterZ;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	volumetricFogScatterPassData.m_jitter[0] = jitterX;
+	volumetricFogScatterPassData.m_jitter[1] = jitterY;
+	volumetricFogScatterPassData.m_jitter[2] = jitterZ;
+	memcpy(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias, &reprojectedTexCoordScaleBias, sizeof(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias));
 	volumetricFogScatterPassData.m_lightData = data.m_lightData;
 	volumetricFogScatterPassData.m_resultImageViewHandle = inscatteringImageViewHandle;
 	volumetricFogScatterPassData.m_prevResultImageViewHandle = prevInscatteringImageViewHandle;

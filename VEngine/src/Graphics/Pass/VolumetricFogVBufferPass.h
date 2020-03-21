@@ -12,9 +12,8 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			float m_jitterX;
-			float m_jitterY;
-			float m_jitterZ;
+			float m_frustumCorners[4][3];
+			float m_jitter[3];
 			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;
 			rg::ImageViewHandle m_emissivePhaseImageViewHandle;
 		};
