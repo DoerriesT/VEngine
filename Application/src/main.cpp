@@ -114,14 +114,15 @@ public:
 		std::uniform_real_distribution<float> py(0.0f, 10.0f);
 		std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
+		std::uniform_real_distribution<float> r(0.0f, glm::two_pi<float>());
 		
-		for (size_t i = 0; i < 1024; ++i)
-		{
-			entt::entity lightEntity = entityRegistry.create();
-			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 1.0f);
-			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-		}
+		//for (size_t i = 0; i < 1024; ++i)
+		//{
+		//	entt::entity lightEntity = entityRegistry.create();
+		//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
+		//	entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 1.0f);
+		//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
+		//}
 
 		//entt::entity pointLightEntity = entityRegistry.create();
 		//entityRegistry.assign<VEngine::TransformationComponent>(pointLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(10.0f, 1.0f, 0.0f));
@@ -130,8 +131,16 @@ public:
 		entt::entity spotLightEntity = entityRegistry.create();
 		m_spotLightEntity = spotLightEntity;
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(c(e), c(e), c(e)), 10000.0f, 18.0f, glm::radians(45.0f), glm::radians(15.0f));
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(1.0f, 0.92f, 0.5725f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f));
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
+
+		for (size_t i = 0; i < 64; ++i)
+		{
+			entt::entity lightEntity = entityRegistry.create();
+			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)), glm::quat(glm::vec3(r(e), r(e), r(e))));
+			entityRegistry.assign<VEngine::SpotLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, glm::radians(79.0f), glm::radians(15.0f));
+			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
+		}
 	}
 
 	void update(float timeDelta) override
@@ -149,16 +158,48 @@ public:
 
 		auto &io = ImGui::GetIO();
 
-		glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
+		static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
+		static ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
+
+		auto &input = m_engine->getUserInput();
+		if (input.isKeyPressed(InputKey::ONE))
+		{
+			operation = ImGuizmo::OPERATION::TRANSLATE;
+		}
+		else if (input.isKeyPressed(InputKey::TWO))
+		{
+			operation = ImGuizmo::OPERATION::ROTATE;
+		}
+
+		if (input.isKeyPressed(InputKey::F1))
+		{
+			mode = ImGuizmo::MODE::WORLD;
+		}
+		else if (input.isKeyPressed(InputKey::F2))
+		{
+			mode = ImGuizmo::MODE::LOCAL;
+		}
+
+
+
+		glm::mat4 orientation = glm::translate(tansC.m_position) * glm::mat4_cast(tansC.m_orientation);
 
 		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
-		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::LOCAL, (float *)&orientation);
+		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, operation, mode, (float *)&orientation);
 		glm::vec3 position;
 		glm::vec3 eulerAngles;
 		glm::vec3 scale;
 		ImGuizmo::DecomposeMatrixToComponents((float *)&orientation, (float *)&position, (float *)&eulerAngles, (float *)&scale);
 
-		tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+		if (operation == ImGuizmo::OPERATION::TRANSLATE)
+		{
+			tansC.m_position = position;
+		}
+		else if (operation == ImGuizmo::OPERATION::ROTATE)
+		{
+			tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+		}
+		
 
 		ImGui::Begin("Volumetric Fog");
 		{

@@ -17,7 +17,10 @@ namespace VEngine
 			const DirectionalLightData *m_lightData;
 			gal::DescriptorBufferInfo m_pointLightDataBufferInfo;
 			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightDataBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightZBinsBufferInfo;
 			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
+			rg::BufferViewHandle m_spotLightBitMaskBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_prevResultImageViewHandle;
 			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;

@@ -571,6 +571,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
 	volumetricFogModuleData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
 	volumetricFogModuleData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_spotLightDataBufferInfo = spotLightDataBufferInfo;
+	volumetricFogModuleData.m_spotLightZBinsBufferInfo = spotLightZBinsBufferInfo;
+	volumetricFogModuleData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
 
 	m_volumetricFogModule->addToGraph(graph, volumetricFogModuleData);
 

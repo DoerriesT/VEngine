@@ -19,9 +19,12 @@ namespace VEngine
 			const CommonRenderData *m_commonData;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
+			rg::BufferViewHandle m_spotLightBitMaskBufferHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 			gal::DescriptorBufferInfo m_pointLightDataBufferInfo;
 			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightDataBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightZBinsBufferInfo;
 		};
 
 		explicit VolumetricFogModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height);

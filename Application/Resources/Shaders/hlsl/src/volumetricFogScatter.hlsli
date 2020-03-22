@@ -22,6 +22,12 @@
 #define POINT_LIGHT_BIT_MASK_BUFFER_BINDING 10
 #define POINT_LIGHT_DATA_SET 0
 #define POINT_LIGHT_DATA_BINDING 11
+#define SPOT_LIGHT_Z_BINS_BUFFER_SET 0
+#define SPOT_LIGHT_Z_BINS_BUFFER_BINDING 12
+#define SPOT_LIGHT_BIT_MASK_BUFFER_SET 0
+#define SPOT_LIGHT_BIT_MASK_BUFFER_BINDING 13
+#define SPOT_LIGHT_DATA_SET 0
+#define SPOT_LIGHT_DATA_BINDING 14
 
 struct PushConsts
 {
@@ -58,6 +64,6 @@ struct Constants
 	float3 sunDirection;
 	uint pointLightCount;
 	float3 sunLightRadiance;
-	uint padding4;
+	uint spotLightCount;
 	float4 reprojectedTexCoordScaleBias;
 };

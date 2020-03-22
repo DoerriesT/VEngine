@@ -16,6 +16,15 @@ struct PointLightData
 	//uint shadowDataCount;
 };
 
+struct SpotLightData
+{
+	float4 colorInvSqrAttRadius;
+	float4 positionAngleScale;
+	float4 directionAngleOffset;
+	//uint shadowDataOffset;
+	//uint shadowDataCount;
+};
+
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture3D<float4> g_PrevResultImage : REGISTER_SRV(PREV_RESULT_IMAGE_BINDING, PREV_RESULT_IMAGE_SET);
 Texture3D<float4> g_ScatteringExtinctionImage : REGISTER_SRV(SCATTERING_EXTINCTION_IMAGE_BINDING, SCATTERING_EXTINCTION_IMAGE_SET);
@@ -28,6 +37,9 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CO
 ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
 StructuredBuffer<PointLightData> g_PointLightData : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
+ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
+ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
+StructuredBuffer<SpotLightData> g_SpotLightData : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -101,6 +113,15 @@ float getDistanceAtt(float3 unnormalizedLightVector, float invSqrAttRadius)
 	return attenuation;
 }
 
+float getAngleAtt(float3 L, float3 lightDir, float lightAngleScale, float lightAngleOffset)
+{
+	float cd = dot(lightDir, L);
+	float attenuation = saturate(cd * lightAngleScale + lightAngleOffset);
+	attenuation *= attenuation;
+	
+	return attenuation;
+}
+
 [numthreads(2, 2, 16)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
@@ -169,6 +190,61 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					const float3 L = normalize(unnormalizedLightVector);
 					const float att = getDistanceAtt(unnormalizedLightVector, pointLightData.colorInvSqrAttRadius.w);
 					const float3 radiance = pointLightData.colorInvSqrAttRadius.rgb * att;
+					
+					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
+				}
+			}
+		}
+		
+		// spot lights
+		if (g_Constants.spotLightCount > 0)
+		{
+			const float3 viewSpaceV = normalize(-viewSpacePos);
+			uint wordMin = 0;
+			const uint wordCount = (g_Constants.spotLightCount + 31) / 32;
+			uint wordMax = wordCount - 1;
+			
+			const uint zBinAddress = clamp(uint(floor(-viewSpacePos.z)), 0, 8191);
+			const uint zBinData = g_SpotLightZBins.Load(zBinAddress * 4);
+			const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+			const uint maxIndex = zBinData & uint(0xFFFF);
+			// mergedMin scalar from this point
+			const uint mergedMin = WaveReadLaneFirst(WaveActiveMin(minIndex)); 
+			// mergedMax scalar from this point
+			const uint mergedMax = WaveReadLaneFirst(WaveActiveMax(maxIndex)); 
+			wordMin = max(mergedMin / 32, wordMin);
+			wordMax = min(mergedMax / 32, wordMax);
+			uint3 imageDims;
+			g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
+			const uint address = getTileAddress(froxelID.xy, imageDims.x, wordCount);
+			
+			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+			{
+				uint mask = g_SpotBitMask.Load((address + wordIndex) * 4);
+				
+				// mask by zbin mask
+				const int localBaseIndex = int(wordIndex * 32);
+				const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
+				const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
+				const uint maskWidth = localMax - localMin + 1;
+				const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
+				mask &= zBinMask;
+				
+				// compact word bitmask over all threads in subgroup
+				uint mergedMask = WaveReadLaneFirst(WaveActiveBitOr(mask));
+				
+				while (mergedMask != 0)
+				{
+					const uint bitIndex = firstbitlow(mergedMask);
+					const uint index = 32 * wordIndex + bitIndex;
+					mergedMask ^= (1 << bitIndex);
+					
+					SpotLightData spotLightData = g_SpotLightData[index];
+					const float3 unnormalizedLightVector = spotLightData.positionAngleScale.xyz - viewSpacePos;
+					const float3 L = normalize(unnormalizedLightVector);
+					const float att = getDistanceAtt(unnormalizedLightVector, spotLightData.colorInvSqrAttRadius.w)
+									* getAngleAtt(L, spotLightData.directionAngleOffset.xyz, spotLightData.positionAngleScale.w, spotLightData.directionAngleOffset.w);
+					const float3 radiance = spotLightData.colorInvSqrAttRadius.rgb * att;
 					
 					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
 				}

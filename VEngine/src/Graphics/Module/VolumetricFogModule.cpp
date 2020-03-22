@@ -128,7 +128,10 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_lightData = data.m_lightData;
 	volumetricFogScatterPassData.m_pointLightDataBufferInfo = data.m_pointLightDataBufferInfo;
 	volumetricFogScatterPassData.m_pointLightZBinsBufferInfo = data.m_pointLightZBinsBufferInfo;
+	volumetricFogScatterPassData.m_spotLightDataBufferInfo = data.m_spotLightDataBufferInfo;
+	volumetricFogScatterPassData.m_spotLightZBinsBufferInfo = data.m_spotLightZBinsBufferInfo;
 	volumetricFogScatterPassData.m_pointLightBitMaskBufferHandle = data.m_pointLightBitMaskBufferHandle;
+	volumetricFogScatterPassData.m_spotLightBitMaskBufferHandle = data.m_spotLightBitMaskBufferHandle;
 	volumetricFogScatterPassData.m_resultImageViewHandle = inscatteringImageViewHandle;
 	volumetricFogScatterPassData.m_prevResultImageViewHandle = prevInscatteringImageViewHandle;
 	volumetricFogScatterPassData.m_scatteringExtinctionImageViewHandle = vBufferScatteringExtinctionImageViewHandle;

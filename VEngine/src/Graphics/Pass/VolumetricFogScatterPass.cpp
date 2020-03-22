@@ -55,6 +55,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.sunDirection = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(glm::vec3(lightData.m_direction), 0.0f)));
 	consts.pointLightCount = commonData->m_pointLightCount;
 	consts.sunLightRadiance = lightData.m_color;
+	consts.spotLightCount = commonData->m_spotLightCount;
 	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
@@ -83,6 +84,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 				ImageView *emissivePhaseImageView = registry.getImageView(data.m_emissivePhaseImageViewHandle);
 				ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
+				DescriptorBufferInfo spotLightMaskBufferInfo = registry.getBufferInfo(data.m_spotLightBitMaskBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -98,6 +100,9 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::storageBuffer(&data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BUFFER_BINDING),
 					Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_BIT_MASK_BUFFER_BINDING),
+					Initializers::storageBuffer(&data.m_spotLightDataBufferInfo, SPOT_LIGHT_DATA_BINDING),
+					Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BUFFER_BINDING),
+					Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_BIT_MASK_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

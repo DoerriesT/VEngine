@@ -40,7 +40,7 @@ float getAngleAtt(vec3 L, vec3 lightDir, float lightAngleScale, float lightAngle
 	attenuation *= attenuation;
 	
 	return attenuation;
-}	
+}
 
 vec3 evaluatePointLight(const LightingParams params, const PointLightData pointLightData)
 {
