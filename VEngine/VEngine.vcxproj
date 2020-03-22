@@ -226,6 +226,7 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h" />
     <ClInclude Include="src\Graphics\PipelineCache.h" />
+    <ClInclude Include="src\Graphics\ProxyMeshes.h" />
     <ClInclude Include="src\Graphics\RenderData.h" />
     <ClInclude Include="src\Graphics\Renderer.h" />
     <ClInclude Include="src\Graphics\RendererConsts.h" />

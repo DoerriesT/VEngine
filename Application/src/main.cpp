@@ -114,11 +114,11 @@ public:
 		std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
 		
-		for (size_t i = 0; i < 256; ++i)
+		for (size_t i = 0; i < 16; ++i)
 		{
 			entt::entity lightEntity = entityRegistry.create();
 			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 1.0f);
+			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f);
 			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
 		}
 	}

@@ -81,6 +81,14 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, alignedDomainSizeX), sizeof(alignedDomainSizeX), &alignedDomainSizeX);
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
 
+		auto &renderResource = *data.m_passRecordContext->m_renderResources;
+		const uint32_t pointLightProxyMeshIndexCount = renderResource.m_pointLightProxyMeshIndexCount;
+		const uint32_t pointLightProxyMeshFirstIndex = renderResource.m_pointLightProxyMeshFirstIndex;
+		const uint32_t pointLightProxyMeshVertexOffset = renderResource.m_pointLightProxyMeshVertexOffset;
+		const uint32_t spotLightProxyMeshIndexCount = renderResource.m_spotLightProxyMeshIndexCount;
+		const uint32_t spotLightProxyMeshFirstIndex = renderResource.m_spotLightProxyMeshFirstIndex;
+		const uint32_t spotLightProxyMeshVertexOffset = renderResource.m_spotLightProxyMeshVertexOffset;
+
 		for (size_t i = 0; i < data.m_lightData->m_pointLightData.size(); ++i)
 		{
 			const auto &item = data.m_lightData->m_pointLightData[i];
@@ -91,7 +99,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
 
-			cmdList->drawIndexed(240, 1, 0, 0, 0);
+			cmdList->drawIndexed(pointLightProxyMeshIndexCount, 1, pointLightProxyMeshFirstIndex, pointLightProxyMeshVertexOffset, 0);
 		}
 
 		cmdList->endRenderPass();

@@ -65,6 +65,14 @@ namespace VEngine
 		gal::DescriptorSet *m_imGuiDescriptorSet = {};
 		gal::DescriptorPool *m_textureDescriptorSetPool = {};
 
+		// proxy mesh info
+		uint32_t m_pointLightProxyMeshIndexCount;
+		uint32_t m_pointLightProxyMeshFirstIndex;
+		uint32_t m_pointLightProxyMeshVertexOffset;
+		uint32_t m_spotLightProxyMeshIndexCount;
+		uint32_t m_spotLightProxyMeshFirstIndex;
+		uint32_t m_spotLightProxyMeshVertexOffset;
+
 		explicit RenderResources(gal::GraphicsDevice *graphicsDevice);
 		RenderResources(const RenderResources &) = delete;
 		RenderResources(const RenderResources &&) = delete;
