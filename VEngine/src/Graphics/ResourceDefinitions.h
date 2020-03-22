@@ -203,7 +203,7 @@ namespace VEngine
 			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
 			uint32_t h = height / RendererConsts::LIGHTING_TILE_SIZE + ((height % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
 			uint32_t tileCount = w * h;
-			uint64_t bufferSize = Utility::alignUp(pointLightCount, uint32_t(32)) / 32 * sizeof(uint32_t) * tileCount;
+			uint64_t bufferSize = Utility::alignUp(pointLightCount == 0 ? 1 : pointLightCount, uint32_t(32)) / 32 * sizeof(uint32_t) * tileCount;
 
 			rg::BufferDescription desc = {};
 			desc.m_name = "Point Light Bit Mask Buffer";

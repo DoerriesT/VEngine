@@ -8,6 +8,7 @@
 #include <Components/RenderableComponent.h>
 #include <Components/CameraComponent.h>
 #include <Components/PointLightComponent.h>
+#include <Components/SpotLightComponent.h>
 #include <Components/DirectionalLightComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
@@ -114,13 +115,23 @@ public:
 		std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
 		
-		for (size_t i = 0; i < 16; ++i)
+		for (size_t i = 0; i < 1024; ++i)
 		{
 			entt::entity lightEntity = entityRegistry.create();
 			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f);
+			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 1.0f);
 			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
 		}
+
+		//entt::entity pointLightEntity = entityRegistry.create();
+		//entityRegistry.assign<VEngine::TransformationComponent>(pointLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(10.0f, 1.0f, 0.0f));
+		//entityRegistry.assign<VEngine::PointLightComponent>(pointLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f);
+		//entityRegistry.assign<VEngine::RenderableComponent>(pointLightEntity);
+		entt::entity spotLightEntity = entityRegistry.create();
+		m_spotLightEntity = spotLightEntity;
+		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(c(e), c(e), c(e)), 10000.0f, 18.0f, glm::radians(45.0f), glm::radians(15.0f));
+		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 	}
 
 	void update(float timeDelta) override
@@ -134,14 +145,14 @@ public:
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_sunLightEntity);
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_spotLightEntity);
 
 		auto &io = ImGui::GetIO();
 
 		glm::mat4 orientation = glm::mat4_cast(tansC.m_orientation);
 
 		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
-		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, (float *)&orientation);
+		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::LOCAL, (float *)&orientation);
 		glm::vec3 position;
 		glm::vec3 eulerAngles;
 		glm::vec3 scale;
@@ -203,6 +214,7 @@ public:
 private:
 	VEngine::Engine *m_engine;
 	entt::entity m_sunLightEntity;
+	entt::entity m_spotLightEntity;
 };
 
 int main()

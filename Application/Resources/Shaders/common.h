@@ -55,7 +55,6 @@ struct SpotLightData
 	vec4 colorInvSqrAttRadius;
 	vec4 positionAngleScale;
 	vec4 directionAngleOffset;
-	vec4 boundingSphere;
 	//uint shadowDataOffset;
 	//uint shadowDataCount;
 };

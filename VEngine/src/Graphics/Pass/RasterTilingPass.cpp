@@ -22,6 +22,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_spotLightBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
 	graph.addPass("Raster Tiling", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -53,13 +54,15 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 			DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
+			DescriptorBufferInfo spotLightMaskBufferInfo = registry.getBufferInfo(data.m_spotLightBitMaskBufferHandle);
 
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_MASK_BINDING),
+				Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_MASK_BINDING),
 			};
 
-			descriptorSet->update(1, updates);
+			descriptorSet->update(2, updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
@@ -76,10 +79,9 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		cmdList->bindVertexBuffers(0, 1, &data.m_passRecordContext->m_renderResources->m_lightProxyVertexBuffer, &vertexOffset);
 
 		uint32_t alignedDomainSizeX = (width + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
-		uint32_t wordCount = static_cast<uint32_t>((data.m_lightData->m_pointLightData.size() + 31) / 32);
+		
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, alignedDomainSizeX), sizeof(alignedDomainSizeX), &alignedDomainSizeX);
-		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
 
 		auto &renderResource = *data.m_passRecordContext->m_renderResources;
 		const uint32_t pointLightProxyMeshIndexCount = renderResource.m_pointLightProxyMeshIndexCount;
@@ -88,18 +90,40 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		const uint32_t spotLightProxyMeshIndexCount = renderResource.m_spotLightProxyMeshIndexCount;
 		const uint32_t spotLightProxyMeshFirstIndex = renderResource.m_spotLightProxyMeshFirstIndex;
 		const uint32_t spotLightProxyMeshVertexOffset = renderResource.m_spotLightProxyMeshVertexOffset;
+		
+		auto &commonData = *data.m_passRecordContext->m_commonRenderData;
+		auto &lightData = *data.m_lightData;
 
-		for (size_t i = 0; i < data.m_lightData->m_pointLightData.size(); ++i)
+		// point lights
+		uint32_t targetBuffer = 0;
+		uint32_t wordCount = static_cast<uint32_t>((data.m_lightData->m_pointLightData.size() + 31) / 32);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
+		for (size_t i = 0; i < lightData.m_pointLightData.size(); ++i)
 		{
-			const auto &item = data.m_lightData->m_pointLightData[i];
-
 			PushConsts pushConsts;
-			pushConsts.transform = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix * glm::translate(glm::vec3(item.m_positionRadius)) * glm::scale(glm::vec3(item.m_positionRadius.w));
+			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_pointLightTransforms[lightData.m_pointLightOrder[i]];
 			pushConsts.index = static_cast<uint32_t>(i);
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
 
 			cmdList->drawIndexed(pointLightProxyMeshIndexCount, 1, pointLightProxyMeshFirstIndex, pointLightProxyMeshVertexOffset, 0);
+		}
+
+		// spot lights
+		targetBuffer = 1;
+		wordCount = static_cast<uint32_t>((data.m_lightData->m_spotLightData.size() + 31) / 32);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
+		for (size_t i = 0; i < data.m_lightData->m_spotLightData.size(); ++i)
+		{
+			PushConsts pushConsts;
+			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_spotLightTransforms[lightData.m_spotLightOrder[i]];
+			pushConsts.index = static_cast<uint32_t>(i);
+
+			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
+
+			cmdList->drawIndexed(spotLightProxyMeshIndexCount, 1, spotLightProxyMeshFirstIndex, spotLightProxyMeshVertexOffset, 0);
 		}
 
 		cmdList->endRenderPass();

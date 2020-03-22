@@ -33,6 +33,15 @@ float getDistanceAtt(vec3 unnormalizedLightVector, float invSqrAttRadius)
 	return attenuation;
 }
 
+float getAngleAtt(vec3 L, vec3 lightDir, float lightAngleScale, float lightAngleOffset)
+{
+	float cd = dot(lightDir, L);
+	float attenuation = clamp(cd * lightAngleScale + lightAngleOffset, 0.0, 1.0);
+	attenuation *= attenuation;
+	
+	return attenuation;
+}	
+
 vec3 evaluatePointLight(const LightingParams params, const PointLightData pointLightData)
 {
 	const vec3 unnormalizedLightVector = pointLightData.positionRadius.xyz - params.viewSpacePosition;
@@ -40,6 +49,22 @@ vec3 evaluatePointLight(const LightingParams params, const PointLightData pointL
 	const float att = getDistanceAtt(unnormalizedLightVector, pointLightData.colorInvSqrAttRadius.w);
 	const vec3 radiance = pointLightData.colorInvSqrAttRadius.rgb * att;
 
+#if DIFFUSE_ONLY
+	return Diffuse_Lit(params.albedo, radiance, params.N, L);
+#else
+	const vec3 F0 = mix(vec3(0.04), params.albedo, params.metalness);
+	return Default_Lit(params.albedo, F0, radiance, params.N, params.V, L, params.roughness, params.metalness);
+#endif // DIFFUSE_ONLY
+}
+
+vec3 evaluateSpotLight(const LightingParams params, const SpotLightData spotLightData)
+{
+	const vec3 unnormalizedLightVector = spotLightData.positionAngleScale.xyz - params.viewSpacePosition;
+	const vec3 L = normalize(unnormalizedLightVector);
+	const float att = getDistanceAtt(unnormalizedLightVector, spotLightData.colorInvSqrAttRadius.w)
+					* getAngleAtt(L, spotLightData.directionAngleOffset.xyz, spotLightData.positionAngleScale.w, spotLightData.directionAngleOffset.w);
+	const vec3 radiance = spotLightData.colorInvSqrAttRadius.rgb * att;
+	
 #if DIFFUSE_ONLY
 	return Diffuse_Lit(params.albedo, radiance, params.N, L);
 #else

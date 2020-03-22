@@ -9,6 +9,11 @@ layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) buffer PO
 	uint uPointLightBitMask[];
 };
 
+layout(set = SPOT_LIGHT_MASK_SET, binding = SPOT_LIGHT_MASK_BINDING) buffer SPOT_LIGHT_BITMASK 
+{
+	uint uSpotLightBitMask[];
+};
+
 layout(push_constant) uniform PUSH_CONSTS 
 {
 	PushConsts uPushConsts;
@@ -50,7 +55,14 @@ void main()
 	// branch only for first occurrence of unique key within subgroup
 	if (hash == 0)
 	{
-		atomicOr(uPointLightBitMask[wordIndex], lightBit);
+		if (uPushConsts.targetBuffer == 0)
+		{
+			atomicOr(uPointLightBitMask[wordIndex], lightBit);
+		}
+		else if (uPushConsts.targetBuffer == 1)
+		{
+			atomicOr(uSpotLightBitMask[wordIndex], lightBit);
+		}
 	}
 }
 

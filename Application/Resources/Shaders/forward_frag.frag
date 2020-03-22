@@ -44,6 +44,21 @@ layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) readonly 
 	uint uPointLightBitMask[];
 };
 
+layout(set = SPOT_LIGHT_DATA_SET, binding = SPOT_LIGHT_DATA_BINDING) readonly buffer SPOT_LIGHT_DATA
+{
+	SpotLightData uSpotLightData[];
+};
+
+layout(set = SPOT_LIGHT_Z_BINS_SET, binding = SPOT_LIGHT_Z_BINS_BINDING) readonly buffer SPOT_LIGHT_Z_BINS
+{
+	uint uSpotLightZBins[];
+};
+
+layout(set = SPOT_LIGHT_MASK_SET, binding = SPOT_LIGHT_MASK_BINDING) readonly buffer SPOT_LIGHT_BITMASK 
+{
+	uint uSpotLightBitMask[];
+};
+
 layout(set = MATERIAL_DATA_SET, binding = MATERIAL_DATA_BINDING) readonly buffer MATERIAL_DATA 
 {
     MaterialData uMaterialData[];
@@ -163,10 +178,11 @@ void main()
 	}
 	
 	// point lights
-	if (uPushConsts.pointLightCount > 0)
+	uint pointLightCount = uPushConsts.pointLightCount & 0xFFFF;
+	if (pointLightCount > 0)
 	{
 		uint wordMin = 0;
-		const uint wordCount = (uPushConsts.pointLightCount + 31) / 32;
+		const uint wordCount = (pointLightCount + 31) / 32;
 		uint wordMax = wordCount - 1;
 		
 		const uint zBinAddress = clamp(uint(floor(-lightingParams.viewSpacePosition.z)), 0, 8191);
@@ -202,6 +218,51 @@ void main()
 				const uint index = 32 * wordIndex + bitIndex;
 				mergedMask ^= (1 << bitIndex);
 				result += evaluatePointLight(lightingParams, uPointLightData[index]);
+			}
+		}
+	}
+	
+	// spot lights
+	uint spotLightCount = (uPushConsts.pointLightCount & 0xFFFF0000) >> 16;
+	if (spotLightCount > 0)
+	{
+		uint wordMin = 0;
+		const uint wordCount = (spotLightCount + 31) / 32;
+		uint wordMax = wordCount - 1;
+		
+		const uint zBinAddress = clamp(uint(floor(-lightingParams.viewSpacePosition.z)), 0, 8191);
+		const uint zBinData = uSpotLightZBins[zBinAddress];
+		const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
+		const uint maxIndex = zBinData & uint(0xFFFF);
+		// mergedMin scalar from this point
+		const uint mergedMin = subgroupBroadcastFirst(subgroupMin(minIndex)); 
+		// mergedMax scalar from this point
+		const uint mergedMax = subgroupBroadcastFirst(subgroupMax(maxIndex)); 
+		wordMin = max(mergedMin / 32, wordMin);
+		wordMax = min(mergedMax / 32, wordMax);
+		const uint address = getTileAddress(uvec2(gl_FragCoord.xy), cWidth, wordCount);
+		
+		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+		{
+			uint mask = uSpotLightBitMask[address + wordIndex];
+			
+			// mask by zbin mask
+			const int localBaseIndex = int(wordIndex * 32);
+			const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
+			const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
+			const uint maskWidth = localMax - localMin + 1;
+			const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
+			mask &= zBinMask;
+			
+			// compact word bitmask over all threads in subrgroup
+			uint mergedMask = subgroupBroadcastFirst(subgroupOr(mask));
+			
+			while (mergedMask != 0)
+			{
+				const uint bitIndex = findLSB(mergedMask);
+				const uint index = 32 * wordIndex + bitIndex;
+				mergedMask ^= (1 << bitIndex);
+				result += evaluateSpotLight(lightingParams, uSpotLightData[index]);
 			}
 		}
 	}

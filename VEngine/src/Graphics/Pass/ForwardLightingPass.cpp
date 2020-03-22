@@ -26,6 +26,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		{rg::ResourceViewHandle(data.m_normalImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT}},
 		{rg::ResourceViewHandle(data.m_specularRoughnessImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} },
 		{rg::ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_spotLightBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_deferredShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
@@ -120,6 +121,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 					ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
 					DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
+					DescriptorBufferInfo spotLightMaskBufferInfo = registry.getBufferInfo(data.m_spotLightBitMaskBufferHandle);
 
 					DescriptorSetUpdate updates[] =
 					{
@@ -137,6 +139,9 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BINDING),
 						Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_MASK_BINDING),
+						Initializers::storageBuffer(&data.m_spotLightDataBufferInfo, SPOT_LIGHT_DATA_BINDING),
+						Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BINDING),
+						Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_MASK_BINDING),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					};
 
@@ -162,7 +167,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
 				pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
 				pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
-				pushConsts.pointLightCount = data.m_passRecordContext->m_commonRenderData->m_pointLightCount;
+				pushConsts.pointLightCount = (data.m_passRecordContext->m_commonRenderData->m_pointLightCount & 0xFFFF) | ((data.m_passRecordContext->m_commonRenderData->m_spotLightCount & 0xFFFF) << 16);
 				pushConsts.ambientOcclusion = data.m_ssao;
 
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, transformIndex), &pushConsts);

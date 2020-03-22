@@ -25,7 +25,6 @@ namespace VEngine
 		glm::vec4 m_colorInvSqrAttRadius;
 		glm::vec4 m_positionAngleScale;
 		glm::vec4 m_directionAngleOffset;
-		glm::vec4 m_boundingSphere;
 	};
 
 	struct LightData
@@ -33,6 +32,11 @@ namespace VEngine
 		std::vector<DirectionalLightData> m_directionalLightData;
 		std::vector<PointLightData> m_pointLightData;
 		std::vector<SpotLightData> m_spotLightData;
-		std::array<uint32_t, RendererConsts::Z_BINS> m_zBins;
+		std::vector<glm::mat4> m_pointLightTransforms;
+		std::vector<glm::mat4> m_spotLightTransforms;
+		std::vector<uint32_t> m_pointLightOrder;
+		std::vector<uint32_t> m_spotLightOrder;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_pointLightDepthBins;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_spotLightDepthBins;
 	};
 }
