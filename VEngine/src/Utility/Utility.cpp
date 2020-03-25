@@ -1,6 +1,7 @@
 #include "Utility.h"
 #include <Windows.h>
 #include <fstream>
+#include <cassert>
 
 std::vector<char> VEngine::Utility::readBinaryFile(const char *filepath)
 {
@@ -111,6 +112,25 @@ uint32_t VEngine::Utility::findLastSetBit(uint32_t mask)
 		r -= 1;
 	}
 	return r - 1;
+}
+
+bool VEngine::Utility::isPowerOfTwo(uint32_t value)
+{
+	return (value & (value - 1)) == 0 && value > 0;
+}
+
+uint32_t VEngine::Utility::nextPowerOfTwo(uint32_t value)
+{
+	assert(value > 0);
+	// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+	value--;
+	value |= value >> 1;
+	value |= value >> 2;
+	value |= value >> 4;
+	value |= value >> 8;
+	value |= value >> 16;
+	value++;
+	return value;
 }
 
 float VEngine::Utility::halton(size_t index, size_t base)

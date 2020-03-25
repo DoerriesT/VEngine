@@ -248,6 +248,7 @@
     <ClInclude Include="src\Utility\AxisAlignedBoundingBox.h" />
     <ClInclude Include="src\Utility\ContainerUtility.h" />
     <ClInclude Include="src\Utility\ObjectPool.h" />
+    <ClInclude Include="src\Utility\QuadTreeAllocator.h" />
     <ClInclude Include="src\Utility\Timer.h" />
     <ClInclude Include="src\Utility\TLSFAllocator.h" />
     <ClInclude Include="src\Utility\Utility.h" />
@@ -332,6 +333,7 @@
     <ClCompile Include="src\Input\CameraControllerSystem.cpp" />
     <ClCompile Include="src\Input\UserInput.cpp" />
     <ClCompile Include="src\Scene.cpp" />
+    <ClCompile Include="src\Utility\QuadTreeAllocator.cpp" />
     <ClCompile Include="src\Utility\Timer.cpp" />
     <ClCompile Include="src\Utility\TLSFAllocator.cpp" />
     <ClCompile Include="src\Utility\Utility.cpp" />
