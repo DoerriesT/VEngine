@@ -6,24 +6,6 @@
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
-#define TILE_SIZE (16)
-
-struct PointLightData
-{
-	float4 positionRadius;
-	float4 colorInvSqrAttRadius;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
-};
-
-struct SpotLightData
-{
-	float4 colorInvSqrAttRadius;
-	float4 positionAngleScale;
-	float4 directionAngleOffset;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
-};
 
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture3D<float4> g_PrevResultImage : REGISTER_SRV(PREV_RESULT_IMAGE_BINDING, PREV_RESULT_IMAGE_SET);

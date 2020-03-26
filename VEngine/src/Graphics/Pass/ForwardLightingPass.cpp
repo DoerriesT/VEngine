@@ -11,12 +11,34 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/forward_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/forward.hlsli"
 }
 
 void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
+
+	Constants consts;
+	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
+	consts.viewMatrixRow0 = rowMajorViewMatrix[0];
+	consts.viewMatrixRow1 = rowMajorViewMatrix[1];
+	consts.viewMatrixRow2 = rowMajorViewMatrix[2];
+	consts.directionalLightCount = commonData->m_directionalLightCount;
+	consts.pointLightCount = (data.m_passRecordContext->m_commonRenderData->m_pointLightCount & 0xFFFF) | ((data.m_passRecordContext->m_commonRenderData->m_spotLightCount & 0xFFFF) << 16);
+	consts.ambientOcclusion = data.m_ssao;
+	consts.width = commonData->m_width;
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		//{rg::ResourceViewHandle(data.m_indicesBufferHandle), {gal::ResourceState::READ_INDEX_BUFFER, PipelineStageFlagBits::VERTEX_INPUT_BIT}},
@@ -96,8 +118,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/forward_vert.spv");
-				builder.setFragmentShader("Resources/Shaders/forward_frag.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/forward_vs.spv");
+				builder.setFragmentShader("Resources/Shaders/hlsl/forward_ps.spv");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, false, CompareOp::EQUAL);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
@@ -125,6 +147,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 
 					DescriptorSetUpdate updates[] =
 					{
+						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
 						Initializers::storageBuffer(&normalsBufferInfo, VERTEX_NORMALS_BINDING),
 						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
@@ -137,12 +160,11 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::sampledImage(&ssaoImageViewHandle, SSAO_IMAGE_BINDING),
 						Initializers::storageBuffer(&data.m_directionalLightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING),
-						Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BINDING),
-						Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_MASK_BINDING),
+						Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BUFFER_BINDING),
+						Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_BIT_MASK_BUFFER_BINDING),
 						Initializers::storageBuffer(&data.m_spotLightDataBufferInfo, SPOT_LIGHT_DATA_BINDING),
-						Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BINDING),
-						Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_MASK_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+						Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BUFFER_BINDING),
+						Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_BIT_MASK_BUFFER_BINDING),
 					};
 
 					descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);
@@ -160,27 +182,15 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				//cmdList->bindIndexBuffer(registry.getBuffer(data.m_indicesBufferHandle), 0, IndexType::UINT32);
 				cmdList->bindIndexBuffer(data.m_passRecordContext->m_renderResources->m_indexBuffer, 0, IndexType::UINT16);
 
-				const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
-
-				PushConsts pushConsts;
-				pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-				pushConsts.viewMatrixRow0 = rowMajorViewMatrix[0];
-				pushConsts.viewMatrixRow1 = rowMajorViewMatrix[1];
-				pushConsts.viewMatrixRow2 = rowMajorViewMatrix[2];
-				pushConsts.pointLightCount = (data.m_passRecordContext->m_commonRenderData->m_pointLightCount & 0xFFFF) | ((data.m_passRecordContext->m_commonRenderData->m_spotLightCount & 0xFFFF) << 16);
-				pushConsts.ambientOcclusion = data.m_ssao;
-
-				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, transformIndex), &pushConsts);
-
 				for (uint32_t i = 0; i < data.m_instanceDataCount; ++i)
 				{
 					const auto &instanceData = data.m_instanceData[i + data.m_instanceDataOffset];
 
-
+					PushConsts pushConsts;
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
 
-					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, transformIndex), sizeof(pushConsts) - offsetof(PushConsts, transformIndex), &pushConsts.transformIndex);
+					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
