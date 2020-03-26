@@ -12,14 +12,40 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/deferredShadows_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/deferredShadows.hlsli"
 }
 
 void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
 	for (size_t i = 0; i < data.m_lightDataCount; ++i)
 	{
+		DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+		uint8_t *uboDataPtr = nullptr;
+		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
+
+		
+		const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+		const auto &lightData = data.m_lightData[i];
+
+		Constants consts;
+		consts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
+		consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
+		consts.direction = glm::vec3(lightData.m_direction);
+		consts.cascadeDataOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
+		consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount & 0xFFFF);
+		consts.width = commonData->m_width;
+		consts.height = commonData->m_height;
+		consts.texelWidth = 1.0f / consts.width;
+		consts.texelHeight = 1.0f / consts.height;
+
+		memcpy(uboDataPtr, &consts, sizeof(consts));
+
 		rg::ImageViewHandle resultImageViewHandle;
 
 		rg::ImageViewDescription viewDesc{};
@@ -44,7 +70,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 				// create pipeline description
 				ComputePipelineCreateInfo pipelineCreateInfo;
 				ComputePipelineBuilder builder(pipelineCreateInfo);
-				builder.setComputeShader("Resources/Shaders/deferredShadows_comp.spv");
+				builder.setComputeShader("Resources/Shaders/hlsl/deferredShadows_cs.spv");
 
 				auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -63,6 +89,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 
 					DescriptorSetUpdate updates[] =
 					{
+						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 						Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
 						//Initializers::sampledImage(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
@@ -73,22 +100,10 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
 					};
 
-					descriptorSet->update(7, updates);
+					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}
-
-				const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
-				const auto &lightData = data.m_lightData[i];
-
-				PushConsts pushConsts;
-				pushConsts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
-				pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-				pushConsts.direction = glm::vec3(lightData.m_direction);
-				pushConsts.cascadeDataOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
-				pushConsts.cascadeCount = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount & 0xFFFF);
-
-				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 				
 				cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 			});

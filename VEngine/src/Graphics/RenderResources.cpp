@@ -114,7 +114,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
 				m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, false, &m_uboBuffers[i]);
-				m_mappableUBOBlock[i] = std::make_unique<MappableBufferBlock>(m_uboBuffers[i], m_graphicsDevice->getMinStorageBufferOffsetAlignment());
+				m_mappableUBOBlock[i] = std::make_unique<MappableBufferBlock>(m_uboBuffers[i], m_graphicsDevice->getMinUniformBufferOffsetAlignment());
 			}
 		}
 
