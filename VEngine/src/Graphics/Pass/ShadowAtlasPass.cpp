@@ -79,10 +79,12 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 			{
 				const auto &drawInfo = data.m_shadowDrawInfo[i];
 
+				Rect renderArea = { {static_cast<int32_t>(drawInfo.m_offsetX), static_cast<int32_t>(drawInfo.m_offsetY)}, {drawInfo.m_size, drawInfo.m_size} };
+
 				// begin renderpass
 				DepthStencilAttachmentDescription depthAttachDesc =
 				{ shadowAtlasImageView, AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::DONT_CARE, { 1.0f, 0 } };
-				cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, { {drawInfo.m_offsetX, drawInfo.m_offsetY}, {drawInfo.m_size, drawInfo.m_size} });
+				cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, renderArea);
 
 				for (size_t j = 0; j < 2; ++j)
 				{
@@ -94,10 +96,9 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 					cmdList->bindDescriptorSets(pipelines[j], 0, alphaMasked ? 2 : 1, descriptorSets);
 
 					Viewport viewport{ static_cast<float>(drawInfo.m_offsetX), static_cast<float>(drawInfo.m_offsetY), static_cast<float>(drawInfo.m_size), static_cast<float>(drawInfo.m_size), 0.0f, 1.0f };
-					Rect scissor{ { drawInfo.m_offsetX, drawInfo.m_offsetY }, { drawInfo.m_size, drawInfo.m_size } };
 
 					cmdList->setViewport(0, 1, &viewport);
-					cmdList->setScissor(0, 1, &scissor);
+					cmdList->setScissor(0, 1, &renderArea);
 
 					
 					const uint32_t instanceDataCount = alphaMasked ? data.m_maskedInstanceDataCounts[i] : data.m_opaqueInstanceDataCounts[i];

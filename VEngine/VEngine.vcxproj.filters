@@ -378,6 +378,9 @@
     <ClInclude Include="src\Utility\QuadTreeAllocator.h">
       <Filter>src\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -628,6 +631,9 @@
     </ClCompile>
     <ClCompile Include="src\Utility\QuadTreeAllocator.cpp">
       <Filter>src\Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

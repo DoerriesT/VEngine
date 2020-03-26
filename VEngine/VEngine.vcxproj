@@ -214,6 +214,7 @@
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.h" />
     <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h" />
     <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h" />
+    <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h" />
     <ClInclude Include="src\Graphics\Pass\ShadowPass.h" />
     <ClInclude Include="src\Graphics\Pass\SharpenFfxCasPass.h" />
     <ClInclude Include="src\Graphics\Pass\SSRPass.h" />
@@ -312,6 +313,7 @@
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ShadowPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\SharpenFfxCasPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\SSRPass.cpp" />
