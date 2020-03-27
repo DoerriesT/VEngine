@@ -17,6 +17,7 @@ namespace VEngine
 			rg::ImageViewHandle m_dstImageHandle;
 			rg::ImageViewHandle m_bloomImageViewHandle;
 			rg::BufferViewHandle m_avgLuminanceBufferHandle;
+			rg::BufferViewHandle m_exposureDataBufferHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

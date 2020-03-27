@@ -31,6 +31,7 @@ namespace VEngine
 		gal::Buffer *m_lightProxyIndexBuffer = {};
 		gal::Buffer *m_boxIndexBuffer = {};
 		gal::Buffer *m_avgLuminanceBuffer = {};
+		gal::Buffer *m_exposureDataBuffer = {};
 		gal::Buffer *m_luminanceHistogramReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Buffer *m_occlusionCullStatsReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Buffer *m_stagingBuffer = {};
@@ -55,6 +56,7 @@ namespace VEngine
 		rg::ResourceStateData m_lightImageState[RendererConsts::FRAMES_IN_FLIGHT][14] = {};
 		rg::ResourceStateData m_taaHistoryTextureState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		rg::ResourceStateData m_avgLuminanceBufferState = {};
+		rg::ResourceStateData m_exposureDataBufferState = {};
 		rg::ResourceStateData m_brdfLutImageState = {};
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};

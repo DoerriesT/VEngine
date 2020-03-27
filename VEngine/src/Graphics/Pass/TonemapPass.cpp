@@ -25,6 +25,7 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		{rg::ResourceViewHandle(data.m_srcImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_dstImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_bloomImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	uint32_t usageCount = data.m_bloomEnabled ? sizeof(passUsages) / sizeof(passUsages[0]) : sizeof(passUsages) / sizeof(passUsages[0]) - 1;
@@ -51,18 +52,20 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			ImageView *inputImageView = registry.getImageView(data.m_srcImageHandle);
 			ImageView *bloomImageImageView = registry.getImageView(data.m_bloomEnabled ? data.m_bloomImageViewHandle : data.m_srcImageHandle); // need to bind a valid image if bloom is disabled
 			DescriptorBufferInfo avgLumBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
+			DescriptorBufferInfo exposureBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 				Initializers::sampledImage(&inputImageView, SOURCE_IMAGE_BINDING),
 				Initializers::sampledImage(&bloomImageImageView, BLOOM_IMAGE_BINDING),
-				Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
+				//Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
+				Initializers::storageBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(6, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

@@ -14,6 +14,11 @@ layout(set = LUMINANCE_VALUES_SET, binding = LUMINANCE_VALUES_BINDING) buffer LU
     float uLuminanceValues[];
 };
 
+layout(set = EXPOSURE_DATA_SET, binding = EXPOSURE_DATA_BINDING) buffer EXPOSURE_DATA
+{
+    float uExposureData[];
+};
+
 layout(push_constant) uniform PUSH_CONSTS 
 {
 	PushConsts uPushConsts;
@@ -248,12 +253,14 @@ void main()
 		color = mix(color, textureLod(sampler2D(uBloomImage, uLinearSampler), texCoord, 0.0).rgb, uPushConsts.bloomStrength);
 	}
 	
-	float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
-	//float EV100 = computeEV100(16.0, 0.01, 100);
-	float EV100 = computeEV100FromAvgLuminance(avgLuminance);
-	EV100 -= uPushConsts.exposureCompensation;
-	float exposure = clamp(convertEV100ToExposure(EV100), uPushConsts.exposureMin, uPushConsts.exposureMax);
-	color *= uPushConsts.fixExposureToMax != 0 ? uPushConsts.exposureMax : exposure;
+	color *= uExposureData[0];
+	
+	//float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
+	////float EV100 = computeEV100(16.0, 0.01, 100);
+	//float EV100 = computeEV100FromAvgLuminance(avgLuminance);
+	//EV100 -= uPushConsts.exposureCompensation;
+	//float exposure = clamp(convertEV100ToExposure(EV100), uPushConsts.exposureMin, uPushConsts.exposureMax);
+	//color *= uPushConsts.fixExposureToMax != 0 ? uPushConsts.exposureMax : exposure;
 
 	color = applyHuePreservingShoulder(color);
 	//float exposureBias = 1.0;

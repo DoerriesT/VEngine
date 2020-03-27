@@ -55,6 +55,7 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyBuffer(m_lightProxyIndexBuffer);
 	m_graphicsDevice->destroyBuffer(m_boxIndexBuffer);
 	m_graphicsDevice->destroyBuffer(m_avgLuminanceBuffer);
+	m_graphicsDevice->destroyBuffer(m_exposureDataBuffer);
 	
 	m_graphicsDevice->destroyBuffer(m_stagingBuffer);
 	m_graphicsDevice->destroyBuffer(m_materialBuffer);
@@ -142,6 +143,27 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::STORAGE_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_avgLuminanceBuffer);
+	}
+
+	// exposure data buffer
+	{
+		BufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.m_size = sizeof(float) * 2;
+		bufferCreateInfo.m_createFlags = 0;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::STORAGE_BUFFER_BIT | BufferUsageFlagBits::TRANSFER_DST_BIT;
+
+		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_exposureDataBuffer);
+
+		m_commandListPool->reset();
+		m_commandList->begin();
+		{
+			float data[] = { 1.0f, 1.0f };
+			m_commandList->updateBuffer(m_exposureDataBuffer, 0, 8, data);
+			m_exposureDataBufferState.m_queue = m_graphicsDevice->getGraphicsQueue();
+			m_exposureDataBufferState.m_stateStageMask = { ResourceState::WRITE_BUFFER_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT };
+		}
+		m_commandList->end();
+		Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);
 	}
 
 	// luminance histogram readback buffers

@@ -22,6 +22,7 @@ void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, 
 	{
 		{rg::ResourceViewHandle(data.m_luminanceHistogramBufferHandle), {gal::ResourceState::READ_WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_avgLuminanceBufferHandle), {gal::ResourceState::READ_WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Luminance Histogram Average", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -44,14 +45,16 @@ void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, 
 
 			DescriptorBufferInfo histoBufferInfo = registry.getBufferInfo(data.m_luminanceHistogramBufferHandle);
 			DescriptorBufferInfo avgLumBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
+			DescriptorBufferInfo exposureBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
 				Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
+				Initializers::storageBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
 			};
 
-			descriptorSet->update(2, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
@@ -82,6 +85,12 @@ void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, 
 
 		pushConsts.currentResourceIndex = data.m_passRecordContext->m_commonRenderData->m_curResIdx;
 		pushConsts.previousResourceIndex = data.m_passRecordContext->m_commonRenderData->m_prevResIdx;
+		pushConsts.exposureCompensation = g_ExposureCompensation;
+		pushConsts.exposureMin = g_ExposureMin;
+		pushConsts.exposureMax = g_ExposureFixed ? g_ExposureFixedValue : g_ExposureMax;
+		pushConsts.exposureMax = glm::max(pushConsts.exposureMax, 1e-7f);
+		pushConsts.exposureMin = glm::clamp(pushConsts.exposureMin, 1e-7f, pushConsts.exposureMax);
+		pushConsts.fixExposureToMax = g_ExposureFixed ? 1 : 0;
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 		

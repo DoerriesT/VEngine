@@ -193,6 +193,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		avgLuminanceBufferViewHandle = graph.createBufferView({ "Average Luminance Buffer", avgLuminanceBufferHandle, 0, m_renderResources->m_avgLuminanceBuffer->getDescription().m_size });
 	}
 
+	rg::BufferViewHandle exposureDataBufferViewHandle = 0;
+	{
+		rg::BufferHandle exposureDataBufferHandle = graph.importBuffer(m_renderResources->m_exposureDataBuffer, "Exposure Data Buffer", false, {}, &m_renderResources->m_exposureDataBufferState);
+		exposureDataBufferViewHandle = graph.createBufferView({ "Exposure Data Buffer", exposureDataBufferHandle, 0, m_renderResources->m_exposureDataBuffer->getDescription().m_size });
+	}
+
 	rg::ImageViewHandle brdfLUTImageViewHandle = 0;
 	{
 		rg::ImageHandle imageHandle = graph.importImage(m_renderResources->m_brdfLUT, "BRDF LUT Image", false, {}, &m_renderResources->m_brdfLutImageState);
@@ -621,6 +627,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
 	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
+	luminanceHistogramAvgPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 
 	LuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
 
@@ -694,6 +701,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
 	tonemapPassData.m_bloomImageViewHandle = bloomImageViewHandle;
 	tonemapPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
+	tonemapPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 
 	TonemapPass::addToGraph(graph, tonemapPassData);
 
