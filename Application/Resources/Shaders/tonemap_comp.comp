@@ -253,7 +253,8 @@ void main()
 		color = mix(color, textureLod(sampler2D(uBloomImage, uLinearSampler), texCoord, 0.0).rgb, uPushConsts.bloomStrength);
 	}
 	
-	color *= uExposureData[0];
+	// convert from previous frame exposure to current frame exposure
+	color *= uExposureData[1];
 	
 	//float avgLuminance = uLuminanceValues[uPushConsts.luminanceIndex];
 	////float EV100 = computeEV100(16.0, 0.01, 100);

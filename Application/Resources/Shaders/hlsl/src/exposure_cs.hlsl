@@ -57,7 +57,7 @@ float computeExposureFromAvgLuminance(float avgLuminance)
 }
 
 [numthreads(LOCAL_SIZE_X, 1, 1)]
-void main(uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
+void main(uint3 groupThreadID : SV_GroupThreadID)
 {
 	// fill local histogram
 	{
@@ -119,7 +119,7 @@ void main(uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
 		
 		g_LuminanceValues.Store(g_PushConsts.currentResourceIndex << 2, asuint(lum));
 		
-		const float previousExposure = computeExposureFromAvgLuminance(previousLum);
+		const float previousExposure = asfloat(g_ExposureData.Load(0));//computeExposureFromAvgLuminance(previousLum);
 		const float exposure = computeExposureFromAvgLuminance(lum);
 		const float previousToCurrent = exposure / previousExposure;
 		

@@ -37,6 +37,7 @@ StructuredBuffer<PointLightData> g_PointLightData : REGISTER_SRV(POINT_LIGHT_DAT
 ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
 StructuredBuffer<SpotLightData> g_SpotLightData : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
@@ -245,6 +246,9 @@ PSOutput main(PSInput psIn)
 		float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}
+	
+	// apply pre-exposure
+	result *= asfloat(g_ExposureData.Load(0));
 
 	PSOutput psOut;
 	

@@ -51,6 +51,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		{rg::ResourceViewHandle(data.m_spotLightBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_deferredShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
@@ -144,6 +145,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
 					DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
 					DescriptorBufferInfo spotLightMaskBufferInfo = registry.getBufferInfo(data.m_spotLightBitMaskBufferHandle);
+					DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 					DescriptorSetUpdate updates[] =
 					{
@@ -165,6 +167,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_spotLightDataBufferInfo, SPOT_LIGHT_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BUFFER_BINDING),
 						Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_BIT_MASK_BUFFER_BINDING),
+						Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 					};
 
 					descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);

@@ -6,6 +6,7 @@
 
 Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
 RWByteAddressBuffer g_LuminanceHistogram : REGISTER_UAV(LUMINANCE_HISTOGRAM_BINDING, LUMINANCE_HISTOGRAM_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -26,12 +27,14 @@ void main(uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
 	
 	// each work group computes a local histogram for one horizontal line in the input image
 	{
+		// input data is pre exposed, so we need to inverse that
+		float invExposure = 1.0 / asfloat(g_ExposureData.Load(0));
 		const uint width = g_PushConsts.width;
 		for (uint i = groupThreadID.x; i < width; i += LOCAL_SIZE_X)
 		{
 			if (i < width)
 			{
-				float3 color = g_InputImage.Load(int3(i, groupID.x, 0)).rgb;
+				float3 color = g_InputImage.Load(int3(i, groupID.x, 0)).rgb * invExposure;
 				float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
 			
 				luma = log2(max(luma, 1e-5)) * g_PushConsts.scale + g_PushConsts.bias;//log(luma + 1.0) * 128;

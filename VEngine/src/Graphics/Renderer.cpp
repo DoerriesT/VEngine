@@ -602,6 +602,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	forwardPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 	forwardPassData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
+	forwardPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
 	forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
@@ -618,6 +619,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	luminanceHistogramPassData.m_passRecordContext = &passRecordContext;
 	luminanceHistogramPassData.m_lightImageHandle = lightImageViewHandle;
 	luminanceHistogramPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
+	luminanceHistogramPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 
 	LuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
 
