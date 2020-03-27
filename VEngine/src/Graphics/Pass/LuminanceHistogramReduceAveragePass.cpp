@@ -12,8 +12,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/luminanceHistogramReduceAverage_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/exposure.hlsli"
 }
 
 void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -32,7 +32,7 @@ void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, 
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/luminanceHistogramReduceAverage_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/exposure_cs.spv");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

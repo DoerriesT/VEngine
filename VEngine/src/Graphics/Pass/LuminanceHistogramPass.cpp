@@ -13,7 +13,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-#include "../../../../Application/Resources/Shaders/luminanceHistogram_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/luminanceHistogram.hlsli"
 }
 
 void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -32,7 +33,7 @@ void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const D
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/luminanceHistogram_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/luminanceHistogram_cs.spv");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -47,12 +48,11 @@ void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const D
 
 			DescriptorSetUpdate updates[] =
 			{
-				Initializers::sampledImage(&lightImageView, SOURCE_IMAGE_BINDING),
+				Initializers::sampledImage(&lightImageView, INPUT_IMAGE_BINDING),
 				Initializers::storageBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(3, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
@@ -65,6 +65,7 @@ void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const D
 		PushConsts pushConsts;
 		pushConsts.scale = 1.0f / (logMax - logMin);
 		pushConsts.bias = -logMin * pushConsts.scale;
+		pushConsts.width = width;
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
