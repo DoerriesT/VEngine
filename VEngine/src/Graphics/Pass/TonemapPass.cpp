@@ -11,10 +11,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
-#include "../../../../Application/Resources/Shaders/tonemap_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/tonemap.hlsli"
 }
 
 void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -38,7 +36,7 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/tonemap_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/tonemap_cs.spv");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -57,11 +55,10 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::sampledImage(&inputImageView, SOURCE_IMAGE_BINDING),
+				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 				Initializers::sampledImage(&bloomImageImageView, BLOOM_IMAGE_BINDING),
 				//Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
 				Initializers::storageBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 			};
 
@@ -71,18 +68,10 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		}
 
 		PushConsts pushConsts;
-		pushConsts.luminanceIndex = static_cast<uint32_t>(data.m_passRecordContext->m_commonRenderData->m_curResIdx);
+		pushConsts.texelSize = 1.0f / glm::vec2(width, height);
 		pushConsts.applyLinearToGamma = data.m_applyLinearToGamma;
 		pushConsts.bloomEnabled = data.m_bloomEnabled;
 		pushConsts.bloomStrength = data.m_bloomStrength;
-		pushConsts.exposureCompensation = g_ExposureCompensation;
-		pushConsts.exposureMin = g_ExposureMin;
-		pushConsts.exposureMax = g_ExposureFixed ? g_ExposureFixedValue : g_ExposureMax;
-
-		pushConsts.exposureMax = glm::max(pushConsts.exposureMax, 1e-7f);
-		pushConsts.exposureMin = glm::clamp(pushConsts.exposureMin, 1e-7f, pushConsts.exposureMax);
-
-		pushConsts.fixExposureToMax = g_ExposureFixed ? 1 : 0;
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

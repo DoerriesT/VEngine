@@ -327,9 +327,6 @@
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
@@ -379,6 +376,9 @@
       <Filter>src\Utility</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ExposurePass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -578,9 +578,6 @@
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\LuminanceHistogramReduceAveragePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
@@ -633,6 +630,9 @@
       <Filter>src\Utility</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

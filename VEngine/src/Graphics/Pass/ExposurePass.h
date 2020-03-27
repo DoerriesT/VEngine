@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace LuminanceHistogramAveragePass
+	namespace ExposurePass
 	{
 		struct Data
 		{

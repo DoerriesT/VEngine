@@ -11,7 +11,7 @@
 #include "Pass/ShadowPass.h"
 #include "Pass/RasterTilingPass.h"
 #include "Pass/LuminanceHistogramPass.h"
-#include "Pass/LuminanceHistogramReduceAveragePass.h"
+#include "Pass/ExposurePass.h"
 #include "Pass/TonemapPass.h"
 #include "Pass/VelocityInitializationPass.h"
 #include "Pass/FXAAPass.h"
@@ -624,14 +624,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	LuminanceHistogramPass::addToGraph(graph, luminanceHistogramPassData);
 
 
-	// calculate avg luminance
-	LuminanceHistogramAveragePass::Data luminanceHistogramAvgPassData;
-	luminanceHistogramAvgPassData.m_passRecordContext = &passRecordContext;
-	luminanceHistogramAvgPassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
-	luminanceHistogramAvgPassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
-	luminanceHistogramAvgPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	// calculate avg luminance and exposure
+	ExposurePass::Data exposurePassData;
+	exposurePassData.m_passRecordContext = &passRecordContext;
+	exposurePassData.m_luminanceHistogramBufferHandle = luminanceHistogramBufferViewHandle;
+	exposurePassData.m_avgLuminanceBufferHandle = avgLuminanceBufferViewHandle;
+	exposurePassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 
-	LuminanceHistogramAveragePass::addToGraph(graph, luminanceHistogramAvgPassData);
+	ExposurePass::addToGraph(graph, exposurePassData);
 
 
 	// copy luminance histogram to readback buffer

@@ -1,4 +1,4 @@
-#include "LuminanceHistogramReduceAveragePass.h"
+#include "ExposurePass.h"
 #include "Graphics/RenderResources.h"
 #include "Graphics/PipelineCache.h"
 #include "Graphics/DescriptorSetCache.h"
@@ -16,7 +16,7 @@ namespace
 #include "../../../../Application/Resources/Shaders/hlsl/src/exposure.hlsli"
 }
 
-void VEngine::LuminanceHistogramAveragePass::addToGraph(rg::RenderGraph &graph, const Data &data)
+void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	rg::ResourceUsageDescription passUsages[]
 	{
