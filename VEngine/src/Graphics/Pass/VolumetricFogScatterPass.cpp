@@ -49,9 +49,9 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
 	consts.jitterZ = data.m_jitter[2];
 	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
-	consts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount >> 16);
+	consts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowOffset);
 	consts.cameraPos = commonData->m_cameraPosition;
-	consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowMatricesOffsetCount & 0xFFFF);
+	consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowCount);
 	consts.sunDirection = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(glm::vec3(lightData.m_direction), 0.0f)));
 	consts.pointLightCount = commonData->m_pointLightCount;
 	consts.sunLightRadiance = lightData.m_color;

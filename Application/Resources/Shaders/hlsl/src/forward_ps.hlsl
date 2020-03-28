@@ -27,16 +27,16 @@ struct PSOutput
 
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
-StructuredBuffer<DirectionalLightData> g_DirectionalLightData : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
 Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
 ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<PointLightData> g_PointLightData : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
+StructuredBuffer<PointLight> g_PointLights : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
 ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<SpotLightData> g_SpotLightData : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
+StructuredBuffer<SpotLight> g_SpotLights : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 
@@ -135,8 +135,8 @@ PSOutput main(PSInput psIn)
 	// directional lights
 	for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 	{
-		const DirectionalLightData directionalLightData = g_DirectionalLightData[i];
-		const float3 contribution = evaluateDirectionalLight(lightingParams, directionalLightData);
+		const DirectionalLight directionalLight = g_DirectionalLights[i];
+		const float3 contribution = evaluateDirectionalLight(lightingParams, directionalLight);
 		// TODO: dont assume that every directional light has a shadow mask
 		result += contribution * (1.0 - g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x);
 	}
@@ -145,43 +145,20 @@ PSOutput main(PSInput psIn)
 	uint pointLightCount = g_Constants.pointLightCount & 0xFFFF;
 	if (pointLightCount > 0)
 	{
-		uint wordMin = 0;
-		const uint wordCount = (pointLightCount + 31) / 32;
-		uint wordMax = wordCount - 1;
-		
-		const uint zBinAddress = clamp(uint(floor(-lightingParams.viewSpacePosition.z)), 0, 8191);
-		const uint zBinData = g_PointLightZBins.Load(zBinAddress << 2);
-		const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
-		const uint maxIndex = zBinData & uint(0xFFFF);
-		// mergedMin scalar from this point
-		const uint mergedMin = WaveReadLaneFirst(WaveActiveMin(minIndex)); 
-		// mergedMax scalar from this point
-		const uint mergedMax = WaveReadLaneFirst(WaveActiveMax(maxIndex)); 
-		wordMin = max(mergedMin / 32, wordMin);
-		wordMax = min(mergedMax / 32, wordMax);
+		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
+		getLightingMinMaxIndices(g_PointLightZBins, pointLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
-		
+
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = g_PointBitMask.Load((address + wordIndex) << 2);
+			uint mask = getLightingBitMask(g_PointBitMask, address, wordIndex, minIndex, maxIndex);
 			
-			// mask by zbin mask
-			const int localBaseIndex = int(wordIndex * 32);
-			const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
-			const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
-			const uint maskWidth = localMax - localMin + 1;
-			const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
-			mask &= zBinMask;
-			
-			// compact word bitmask over all threads in subrgroup
-			uint mergedMask = WaveReadLaneFirst(WaveActiveBitOr(mask));
-			
-			while (mergedMask != 0)
+			while (mask != 0)
 			{
-				const uint bitIndex = firstbitlow(mergedMask);
+				const uint bitIndex = firstbitlow(mask);
 				const uint index = 32 * wordIndex + bitIndex;
-				mergedMask ^= (1 << bitIndex);
-				result += evaluatePointLight(lightingParams, g_PointLightData[index]);
+				mask ^= (1 << bitIndex);
+				result += evaluatePointLight(lightingParams, g_PointLights[index]);
 			}
 		}
 	}
@@ -190,43 +167,20 @@ PSOutput main(PSInput psIn)
 	uint spotLightCount = (g_Constants.pointLightCount & 0xFFFF0000) >> 16;
 	if (spotLightCount > 0)
 	{
-		uint wordMin = 0;
-		const uint wordCount = (spotLightCount + 31) / 32;
-		uint wordMax = wordCount - 1;
-		
-		const uint zBinAddress = clamp(uint(floor(-lightingParams.viewSpacePosition.z)), 0, 8191);
-		const uint zBinData = g_SpotLightZBins.Load(zBinAddress << 2);
-		const uint minIndex = (zBinData & uint(0xFFFF0000)) >> 16;
-		const uint maxIndex = zBinData & uint(0xFFFF);
-		// mergedMin scalar from this point
-		const uint mergedMin = WaveReadLaneFirst(WaveActiveMin(minIndex)); 
-		// mergedMax scalar from this point
-		const uint mergedMax = WaveReadLaneFirst(WaveActiveMax(maxIndex)); 
-		wordMin = max(mergedMin / 32, wordMin);
-		wordMax = min(mergedMax / 32, wordMax);
+		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
+		getLightingMinMaxIndices(g_SpotLightZBins, spotLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
 		
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = g_SpotBitMask.Load((address + wordIndex) << 2);
+			uint mask = getLightingBitMask(g_SpotBitMask, address, wordIndex, minIndex, maxIndex);
 			
-			// mask by zbin mask
-			const int localBaseIndex = int(wordIndex * 32);
-			const uint localMin = clamp(int(minIndex) - localBaseIndex, 0, 31);
-			const uint localMax = clamp(int(maxIndex) - localBaseIndex, 0, 31);
-			const uint maskWidth = localMax - localMin + 1;
-			const uint zBinMask = (maskWidth == 32) ? uint(0xFFFFFFFF) : (((1 << maskWidth) - 1) << localMin);
-			mask &= zBinMask;
-			
-			// compact word bitmask over all threads in subrgroup
-			uint mergedMask = WaveReadLaneFirst(WaveActiveBitOr(mask));
-			
-			while (mergedMask != 0)
+			while (mask != 0)
 			{
-				const uint bitIndex = firstbitlow(mergedMask);
+				const uint bitIndex = firstbitlow(mask);
 				const uint index = 32 * wordIndex + bitIndex;
-				mergedMask ^= (1 << bitIndex);
-				result += evaluateSpotLight(lightingParams, g_SpotLightData[index]);
+				mask ^= (1 << bitIndex);
+				result += evaluateSpotLight(lightingParams, g_SpotLights[index]);
 			}
 		}
 	}

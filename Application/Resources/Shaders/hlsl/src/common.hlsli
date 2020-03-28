@@ -34,28 +34,43 @@
 #define ALPHA_MIP_SCALE (0.25)
 #endif // MIP_SCALE
 
-struct DirectionalLightData
+struct DirectionalLight
 {
-	float4 color;
-	float4 direction;
-	uint shadowDataOffsetCount;
+	float3 color;
+	uint shadowOffset;
+	float3 direction;
+	uint shadowCount;
 };
 
-struct PointLightData
+struct PointLight
 {
-	float4 positionRadius;
-	float4 colorInvSqrAttRadius;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
+	float3 color;
+	float invSqrAttRadius;
+	float3 position;
+	float radius;
 };
 
-struct SpotLightData
+struct PointLightShadowed
 {
-	float4 colorInvSqrAttRadius;
-	float4 positionAngleScale;
-	float4 directionAngleOffset;
-	//uint shadowDataOffset;
-	//uint shadowDataCount;
+	PointLight pointLight;
+	float4 shadowAtlasParams[6];
+};
+
+struct SpotLight
+{
+	float3 color;
+	float invSqrAttRadius;
+	float3 position;
+	float angleScale;
+	float3 direction;
+	float angleOffset;
+};
+
+struct SpotLightShadowed
+{
+	SpotLight spotLight;
+	float3 shadowAtlasScaleBias;
+	uint shadowOffset;
 };
 
 struct MaterialData

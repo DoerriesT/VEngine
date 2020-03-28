@@ -4,7 +4,7 @@
 namespace VEngine
 {
 	struct PassRecordContext;
-	struct DirectionalLightData;
+	struct DirectionalLight;
 
 	namespace DeferredShadowsPass
 	{
@@ -12,7 +12,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_lightDataCount;
-			const DirectionalLightData *m_lightData;
+			const DirectionalLight *m_lightData;
 			rg::ImageHandle m_resultImageHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			//rg::ImageViewHandle m_tangentSpaceImageViewHandle;

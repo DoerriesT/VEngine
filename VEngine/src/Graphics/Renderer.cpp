@@ -344,18 +344,18 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// directional light data write
-	DescriptorBufferInfo directionalLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightData.size() * sizeof(DirectionalLightData), size_t(1)) };
+	DescriptorBufferInfo directionalLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightData.size() * sizeof(DirectionalLight), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightDataBufferInfo.m_range, directionalLightDataBufferInfo.m_offset, directionalLightDataBufferInfo.m_buffer, bufferPtr);
 		if (!lightData.m_directionalLightData.empty())
 		{
-			memcpy(bufferPtr, lightData.m_directionalLightData.data(), lightData.m_directionalLightData.size() * sizeof(DirectionalLightData));
+			memcpy(bufferPtr, lightData.m_directionalLightData.data(), lightData.m_directionalLightData.size() * sizeof(DirectionalLight));
 		}
 	}
 
 	// point light data write
-	DescriptorBufferInfo pointLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_pointLightData.size() * sizeof(PointLightData), size_t(1)) };
+	DescriptorBufferInfo pointLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_pointLightData.size() * sizeof(PointLight), size_t(1)) };
 	DescriptorBufferInfo pointLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_pointLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -366,7 +366,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		{
 			for (size_t i = 0; i < lightData.m_pointLightOrder.size(); ++i)
 			{
-				((PointLightData *)dataBufferPtr)[i] = lightData.m_pointLightData[lightData.m_pointLightOrder[i]];
+				((PointLight *)dataBufferPtr)[i] = lightData.m_pointLightData[lightData.m_pointLightOrder[i]];
 			}
 			//memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
 			memcpy(zBinsBufferPtr, lightData.m_pointLightDepthBins.data(), lightData.m_pointLightDepthBins.size() * sizeof(uint32_t));
@@ -374,7 +374,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// spot light data write
-	DescriptorBufferInfo spotLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightData.size() * sizeof(SpotLightData), size_t(1)) };
+	DescriptorBufferInfo spotLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightData.size() * sizeof(SpotLight), size_t(1)) };
 	DescriptorBufferInfo spotLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -385,7 +385,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		{
 			for (size_t i = 0; i < lightData.m_spotLightData.size(); ++i)
 			{
-				((SpotLightData *)dataBufferPtr)[i] = lightData.m_spotLightData[lightData.m_spotLightOrder[i]];
+				((SpotLight *)dataBufferPtr)[i] = lightData.m_spotLightData[lightData.m_spotLightOrder[i]];
 			}
 			//memcpy(dataBufferPtr, lightData.m_spotLightData.data(), lightData.m_spotLightData.size() * sizeof(SpotLightData));
 			memcpy(zBinsBufferPtr, lightData.m_spotLightDepthBins.data(), lightData.m_spotLightDepthBins.size() * sizeof(uint32_t));

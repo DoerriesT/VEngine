@@ -7,31 +7,50 @@
 
 namespace VEngine
 {
-	struct DirectionalLightData
+	struct DirectionalLight
 	{
-		glm::vec4 m_color;
-		glm::vec4 m_direction;
-		uint32_t m_shadowMatricesOffsetCount;
+		glm::vec3 m_color;
+		uint32_t m_shadowOffset;
+		glm::vec3 m_direction;
+		uint32_t m_shadowCount;
 	};
 
-	struct PointLightData
+	struct PointLight
 	{
-		glm::vec4 m_positionRadius;
-		glm::vec4 m_colorInvSqrAttRadius;
+		glm::vec3 m_color;
+		float m_invSqrAttRadius;
+		glm::vec3 m_position;
+		float m_radius;
 	};
 
-	struct SpotLightData
+	struct PointLightShadowed
 	{
-		glm::vec4 m_colorInvSqrAttRadius;
-		glm::vec4 m_positionAngleScale;
-		glm::vec4 m_directionAngleOffset;
+		PointLight m_pointLight;
+		glm::vec4 m_shadowAtlasParams[6];
+	};
+
+	struct SpotLight
+	{
+		glm::vec3 m_color;
+		float m_invSqrAttRadius;
+		glm::vec3 m_position;
+		float m_angleScale;
+		glm::vec3 m_direction;
+		float m_angleOffset;
+	};
+
+	struct SpotLightShadowed
+	{
+		SpotLight m_spotLight;
+		glm::vec3 m_shadowAtlasScaleBias;
+		uint32_t m_shadowOffset;
 	};
 
 	struct LightData
 	{
-		std::vector<DirectionalLightData> m_directionalLightData;
-		std::vector<PointLightData> m_pointLightData;
-		std::vector<SpotLightData> m_spotLightData;
+		std::vector<DirectionalLight> m_directionalLightData;
+		std::vector<PointLight> m_pointLightData;
+		std::vector<SpotLight> m_spotLightData;
 		std::vector<glm::mat4> m_pointLightTransforms;
 		std::vector<glm::mat4> m_spotLightTransforms;
 		std::vector<uint32_t> m_pointLightOrder;

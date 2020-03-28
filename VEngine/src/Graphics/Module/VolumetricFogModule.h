@@ -5,7 +5,7 @@
 namespace VEngine
 {
 	struct PassRecordContext;
-	struct DirectionalLightData;
+	struct DirectionalLight;
 	struct CommonRenderData;
 
 	class VolumetricFogModule
@@ -15,7 +15,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			const DirectionalLightData *m_lightData;
+			const DirectionalLight *m_lightData;
 			const CommonRenderData *m_commonData;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
