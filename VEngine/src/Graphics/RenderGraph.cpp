@@ -294,6 +294,8 @@ VEngine::rg::ImageHandle VEngine::rg::RenderGraph::createImage(const ImageDescri
 	resDesc.m_concurrent = false;
 	resDesc.m_image = true;
 
+	assert(resDesc.m_width && resDesc.m_height && resDesc.m_layers && resDesc.m_levels);
+
 	m_resourceDescriptions.push_back(resDesc);
 	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));
 	for (size_t i = 0; i < resDesc.m_subresourceCount; ++i)
@@ -316,6 +318,8 @@ VEngine::rg::BufferHandle VEngine::rg::RenderGraph::createBuffer(const BufferDes
 	resDesc.m_subresourceCount = 1;
 	resDesc.m_concurrent = true;
 	resDesc.m_hostVisible = bufferDesc.m_hostVisible;
+
+	assert(resDesc.m_size);
 
 	m_resourceDescriptions.push_back(resDesc);
 	m_resourceUsageOffsets.push_back(static_cast<uint32_t>(m_resourceUsages.size()));

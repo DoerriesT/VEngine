@@ -36,6 +36,8 @@
 #define CONSTANT_BUFFER_BINDING 18
 #define EXPOSURE_DATA_BUFFER_SET 0
 #define EXPOSURE_DATA_BUFFER_BINDING 19
+#define DIRECTIONAL_LIGHTS_SHADOWED_SET 0
+#define DIRECTIONAL_LIGHTS_SHADOWED_BINDING 20
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -55,6 +57,7 @@ struct Constants
 	float4 viewMatrixRow1;
 	float4 viewMatrixRow2;
 	uint directionalLightCount;
+	uint directionalLightShadowedCount;
 	uint pointLightCount;
 	uint ambientOcclusion;
 	uint width;

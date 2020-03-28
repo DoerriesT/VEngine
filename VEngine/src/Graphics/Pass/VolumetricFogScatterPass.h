@@ -14,7 +14,8 @@ namespace VEngine
 			float m_frustumCorners[4][3];
 			float m_jitter[3];
 			float m_reprojectedTexCoordScaleBias[4];
-			const DirectionalLight *m_lightData;
+			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
+			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_pointLightDataBufferInfo;
 			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_spotLightDataBufferInfo;

@@ -28,6 +28,10 @@
 #define SPOT_LIGHT_BIT_MASK_BUFFER_BINDING 13
 #define SPOT_LIGHT_DATA_SET 0
 #define SPOT_LIGHT_DATA_BINDING 14
+#define DIRECTIONAL_LIGHT_DATA_SET 0
+#define DIRECTIONAL_LIGHT_DATA_BINDING 15
+#define DIRECTIONAL_LIGHTS_SHADOWED_SET 0
+#define DIRECTIONAL_LIGHTS_SHADOWED_BINDING 16
 
 struct PushConsts
 {
@@ -51,6 +55,7 @@ struct Constants
 	float4x4 viewMatrix;
 	float4x4 prevViewMatrix;
 	float4x4 prevProjMatrix;
+	float4 reprojectedTexCoordScaleBias;
 	float3 frustumCornerTL;
 	float jitterX;
 	float3 frustumCornerTR;
@@ -58,12 +63,10 @@ struct Constants
 	float3 frustumCornerBL;
 	float jitterZ;
 	float3 frustumCornerBR;
-	int cascadeOffset;
+	uint directionalLightCount;
 	float3 cameraPos;
-	int cascadeCount;
-	float3 sunDirection;
+	uint directionalLightShadowedCount;
 	uint pointLightCount;
-	float3 sunLightRadiance;
 	uint spotLightCount;
-	float4 reprojectedTexCoordScaleBias;
+	
 };

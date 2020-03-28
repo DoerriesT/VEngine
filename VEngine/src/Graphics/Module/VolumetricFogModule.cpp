@@ -125,7 +125,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_jitter[1] = jitterY;
 	volumetricFogScatterPassData.m_jitter[2] = jitterZ;
 	memcpy(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias, &reprojectedTexCoordScaleBias, sizeof(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias));
-	volumetricFogScatterPassData.m_lightData = data.m_lightData;
+	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
+	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
 	volumetricFogScatterPassData.m_pointLightDataBufferInfo = data.m_pointLightDataBufferInfo;
 	volumetricFogScatterPassData.m_pointLightZBinsBufferInfo = data.m_pointLightZBinsBufferInfo;
 	volumetricFogScatterPassData.m_spotLightDataBufferInfo = data.m_spotLightDataBufferInfo;

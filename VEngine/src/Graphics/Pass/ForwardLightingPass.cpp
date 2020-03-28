@@ -32,6 +32,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	consts.viewMatrixRow1 = rowMajorViewMatrix[1];
 	consts.viewMatrixRow2 = rowMajorViewMatrix[2];
 	consts.directionalLightCount = commonData->m_directionalLightCount;
+	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.pointLightCount = (data.m_passRecordContext->m_commonRenderData->m_pointLightCount & 0xFFFF) | ((data.m_passRecordContext->m_commonRenderData->m_spotLightCount & 0xFFFF) << 16);
 	consts.ambientOcclusion = data.m_ssao;
 	consts.width = commonData->m_width;
@@ -160,7 +161,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::sampledImage(&shadowImageView, DEFERRED_SHADOW_IMAGE_BINDING),
 						Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
 						Initializers::sampledImage(&ssaoImageViewHandle, SSAO_IMAGE_BINDING),
-						Initializers::storageBuffer(&data.m_directionalLightDataBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING),
+						Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING),
+						Initializers::storageBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
 						Initializers::storageBuffer(&data.m_pointLightDataBufferInfo, POINT_LIGHT_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_pointLightZBinsBufferInfo, POINT_LIGHT_Z_BINS_BUFFER_BINDING),
 						Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_BIT_MASK_BUFFER_BINDING),

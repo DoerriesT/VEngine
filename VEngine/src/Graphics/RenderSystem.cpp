@@ -40,14 +40,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 	m_subMeshInstanceData.clear();
 	m_shadowMatrices.clear();
 	m_shadowCascadeParams.clear();
-
-	m_lightData.m_directionalLightData.clear();
-	m_lightData.m_pointLightData.clear();
-	m_lightData.m_spotLightData.clear();
-	m_lightData.m_pointLightTransforms.clear();
-	m_lightData.m_spotLightTransforms.clear();
-	m_lightData.m_pointLightOrder.clear();
-	m_lightData.m_spotLightOrder.clear();
+	m_lightData.clear();
 
 	std::vector<ViewRenderList> renderLists;
 	std::vector<SubMeshInstanceData> allInstanceData;
@@ -173,11 +166,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 					directionalLight.m_direction = m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f);
 					directionalLight.m_shadowCount = directionalLightComponent.m_shadows ? directionalLightComponent.m_cascadeCount : 0;
 
-					m_lightData.m_directionalLightData.push_back(directionalLight);
-
-					// calculate shadow matrices
 					if (directionalLightComponent.m_shadows)
 					{
+						m_lightData.m_directionalLightsShadowed.push_back(directionalLight);
+
+						// calculate shadow matrices
 						glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
 						glm::vec4 cascadeParams[DirectionalLightComponent::MAX_CASCADES];
 
@@ -216,6 +209,10 @@ void VEngine::RenderSystem::update(float timeDelta)
 							}
 						}
 					}
+					else
+					{
+						m_lightData.m_directionalLights.push_back(directionalLight);
+					}
 				});
 			}
 
@@ -242,7 +239,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						}
 					}
 
-					m_lightData.m_pointLightData.push_back(pointLight);
+					m_lightData.m_pointLights.push_back(pointLight);
 					m_lightData.m_pointLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
 					m_lightData.m_pointLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_pointLightOrder.size()));
 				});
@@ -251,7 +248,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				// sort by distance to camera
 				std::sort(m_lightData.m_pointLightOrder.begin(), m_lightData.m_pointLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
 				{
-					return -m_lightData.m_pointLightData[lhs].m_position.z < -m_lightData.m_pointLightData[rhs].m_position.z;
+					return -m_lightData.m_pointLights[lhs].m_position.z < -m_lightData.m_pointLights[rhs].m_position.z;
 				});
 
 				// clear bins
@@ -262,9 +259,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 				}
 
 				// assign lights to bins
-				for (size_t i = 0; i < m_lightData.m_pointLightData.size(); ++i)
+				for (size_t i = 0; i < m_lightData.m_pointLights.size(); ++i)
 				{
-					const auto &pointLight = m_lightData.m_pointLightData[m_lightData.m_pointLightOrder[i]];
+					const auto &pointLight = m_lightData.m_pointLights[m_lightData.m_pointLightOrder[i]];
 					float nearestPoint = -pointLight.m_position.z - pointLight.m_radius;
 					float furthestPoint = -pointLight.m_position.z + pointLight.m_radius;
 
@@ -312,7 +309,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							}
 						}
 			
-						m_lightData.m_spotLightData.push_back(spotLight);
+						m_lightData.m_spotLights.push_back(spotLight);
 						m_lightData.m_spotLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));
 						m_lightData.m_spotLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_spotLightOrder.size()));
 					});
@@ -320,7 +317,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				// sort by distance to camera
 				std::sort(m_lightData.m_spotLightOrder.begin(), m_lightData.m_spotLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
 					{
-						return -m_lightData.m_spotLightData[lhs].m_position.z < -m_lightData.m_spotLightData[rhs].m_position.z;
+						return -m_lightData.m_spotLights[lhs].m_position.z < -m_lightData.m_spotLights[rhs].m_position.z;
 					});
 			
 				// clear bins
@@ -331,9 +328,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 				}
 			
 				// assign lights to bins
-				for (size_t i = 0; i < m_lightData.m_spotLightData.size(); ++i)
+				for (size_t i = 0; i < m_lightData.m_spotLights.size(); ++i)
 				{
-					const auto &spotLightData = m_lightData.m_spotLightData[m_lightData.m_spotLightOrder[i]];
+					const auto &spotLightData = m_lightData.m_spotLights[m_lightData.m_spotLightOrder[i]];
 					const float posDepth = -spotLightData.m_position.z;
 					const float radius = glm::sqrt(1.0f / spotLightData.m_invSqrAttRadius);
 					float nearestPoint = posDepth - radius;
@@ -475,9 +472,12 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		assert(drawCallKeys.size() == m_subMeshInstanceData.size());
 
-		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLightData.size());
-		m_commonRenderData.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLightData.size());
-		m_commonRenderData.m_spotLightCount = static_cast<uint32_t>(m_lightData.m_spotLightData.size());
+		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLights.size());
+		m_commonRenderData.m_pointLightCount = static_cast<uint32_t>(m_lightData.m_pointLights.size());
+		m_commonRenderData.m_spotLightCount = static_cast<uint32_t>(m_lightData.m_spotLights.size());
+		m_commonRenderData.m_directionalLightShadowedCount = static_cast<uint32_t>(m_lightData.m_directionalLightsShadowed.size());
+		m_commonRenderData.m_pointLightShadowedCount = static_cast<uint32_t>(m_lightData.m_pointLightsShadowed.size());
+		m_commonRenderData.m_spotLightShadowedCount = static_cast<uint32_t>(m_lightData.m_spotLightsShadowed.size());
 
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
@@ -490,7 +490,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_drawCallKeys = drawCallKeys.data();
 		renderData.m_mainViewRenderListIndex = 0;
 		renderData.m_shadowCascadeViewRenderListOffset = 1;
-		renderData.m_shadowCascadeViewRenderListCount = static_cast<uint32_t>(m_shadowMatrices.size());
+		renderData.m_shadowCascadeViewRenderListCount = static_cast<uint32_t>(m_shadowCascadeParams.size());
 		renderData.m_renderLists = renderLists.data();
 		renderData.m_allInstanceDataCount = allInstanceData.size();
 		renderData.m_allInstanceData = allInstanceData.data();

@@ -96,10 +96,10 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 		// point lights
 		uint32_t targetBuffer = 0;
-		uint32_t wordCount = static_cast<uint32_t>((data.m_lightData->m_pointLightData.size() + 31) / 32);
+		uint32_t wordCount = static_cast<uint32_t>((data.m_lightData->m_pointLights.size() + 31) / 32);
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
-		for (size_t i = 0; i < lightData.m_pointLightData.size(); ++i)
+		for (size_t i = 0; i < lightData.m_pointLights.size(); ++i)
 		{
 			PushConsts pushConsts;
 			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_pointLightTransforms[lightData.m_pointLightOrder[i]];
@@ -112,10 +112,10 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 		// spot lights
 		targetBuffer = 1;
-		wordCount = static_cast<uint32_t>((data.m_lightData->m_spotLightData.size() + 31) / 32);
+		wordCount = static_cast<uint32_t>((data.m_lightData->m_spotLights.size() + 31) / 32);
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
-		for (size_t i = 0; i < data.m_lightData->m_spotLightData.size(); ++i)
+		for (size_t i = 0; i < data.m_lightData->m_spotLights.size(); ++i)
 		{
 			PushConsts pushConsts;
 			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_spotLightTransforms[lightData.m_spotLightOrder[i]];

@@ -36,12 +36,11 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
-	const auto &lightData = *data.m_lightData;
-
 	Constants consts;
 	consts.viewMatrix = commonData->m_viewMatrix;
 	consts.prevViewMatrix = commonData->m_prevViewMatrix;
 	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
+	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = data.m_jitter[0];
 	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
@@ -49,14 +48,12 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
 	consts.jitterZ = data.m_jitter[2];
 	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
-	consts.cascadeOffset = static_cast<int32_t>(lightData.m_shadowOffset);
+	consts.directionalLightCount = commonData->m_directionalLightCount;
 	consts.cameraPos = commonData->m_cameraPosition;
-	consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowCount);
-	consts.sunDirection = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(glm::vec3(lightData.m_direction), 0.0f)));
+	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.pointLightCount = commonData->m_pointLightCount;
-	consts.sunLightRadiance = lightData.m_color;
 	consts.spotLightCount = commonData->m_spotLightCount;
-	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
+	
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
@@ -103,6 +100,8 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::storageBuffer(&data.m_spotLightDataBufferInfo, SPOT_LIGHT_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_spotLightZBinsBufferInfo, SPOT_LIGHT_Z_BINS_BUFFER_BINDING),
 					Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_BIT_MASK_BUFFER_BINDING),
+					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHT_DATA_BINDING),
+					Initializers::storageBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

@@ -40,6 +40,9 @@ namespace VEngine
 		uint32_t m_directionalLightCount;
 		uint32_t m_pointLightCount;
 		uint32_t m_spotLightCount;
+		uint32_t m_directionalLightShadowedCount;
+		uint32_t m_pointLightShadowedCount;
+		uint32_t m_spotLightShadowedCount;
 		uint32_t m_curResIdx;
 		uint32_t m_prevResIdx;
 		float m_timeDelta;

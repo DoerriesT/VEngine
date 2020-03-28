@@ -28,6 +28,7 @@ struct PSOutput
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
 Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
@@ -133,13 +134,22 @@ PSOutput main(PSInput psIn)
 	result = lightingParams.albedo * ao;
 	
 	// directional lights
-	for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 	{
-		const DirectionalLight directionalLight = g_DirectionalLights[i];
-		const float3 contribution = evaluateDirectionalLight(lightingParams, directionalLight);
-		// TODO: dont assume that every directional light has a shadow mask
-		result += contribution * (1.0 - g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x);
+		for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
+		{
+			result += evaluateDirectionalLight(lightingParams, g_DirectionalLights[i]);
+		}
 	}
+	
+	// shadowed directional lights
+	{
+		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
+		{
+			const float3 contribution = evaluateDirectionalLight(lightingParams, g_DirectionalLightsShadowed[i]);
+			result += contribution * (1.0 - g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x);
+		}
+	}
+	
 	
 	// point lights
 	uint pointLightCount = g_Constants.pointLightCount & 0xFFFF;

@@ -18,6 +18,8 @@ SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_S
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
 ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
 StructuredBuffer<PointLight> g_PointLights : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
@@ -49,11 +51,12 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	return pos;
 }
 
-float3 getSunLightingRadiance(float3 worldSpacePos)
+float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 worldSpacePos)
 {
 	float4 tc = -1.0;
-	const int cascadeDataOffset = g_Constants.cascadeOffset;
-	for (int i = g_Constants.cascadeCount - 1; i >= 0; --i)
+	const int cascadeDataOffset = directionalLight.shadowOffset;
+	int cascadeCount = directionalLight.shadowCount;
+	for (int i = cascadeCount - 1; i >= 0; --i)
 	{
 		const float4 shadowCoord = float4(mul(g_ShadowMatrices[cascadeDataOffset + i], float4(worldSpacePos, 1.0)).xyz, cascadeDataOffset + i);
 		const bool valid = all(abs(shadowCoord.xy) < 0.97);
@@ -63,7 +66,7 @@ float3 getSunLightingRadiance(float3 worldSpacePos)
 	tc.xy = tc.xy * 0.5 + 0.5;
 	const float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
 	
-	return g_Constants.sunLightRadiance * (1.0 - shadow);
+	return (1.0 - shadow);
 }
 
 float henyeyGreenstein(float3 V, float3 L, float g)
@@ -82,9 +85,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, g_Constants.jitterZ));
 	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
 	
-	// normalized view dir
-	const float3 V = normalize(g_Constants.cameraPos.xyz - worldSpacePos);
-	
 	const float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(int4(froxelID.xyz, 0));
 	const float4 emissivePhase = g_EmissivePhaseImage.Load(int4(froxelID.xyz, 0));
 	
@@ -96,8 +96,25 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// integrate inscattered lighting
 	float3 lighting = emissivePhase.rgb;
 	{
-		// directional light
-		lighting += getSunLightingRadiance(worldSpacePos) * henyeyGreenstein(V, g_Constants.sunDirection.xyz, emissivePhase.w);
+		// directional lights
+		{
+			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
+			{
+				DirectionalLight directionalLight = g_DirectionalLights[i];
+				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w);
+			}
+		}
+		
+		// shadowed directional lights
+		{
+			for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
+			{
+				DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
+				lighting += directionalLight.color
+							* henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w)
+							* getDirectionalLightShadow(directionalLight, worldSpacePos);
+			}
+		}
 		
 		// point lights
 		if (g_Constants.pointLightCount > 0)
