@@ -220,7 +220,7 @@
     <ClInclude Include="src\Graphics\Pass\SSRPass.h" />
     <ClInclude Include="src\Graphics\Pass\SSRResolvePass.h" />
     <ClInclude Include="src\Graphics\Pass\SSRTemporalFilterPass.h" />
-    <ClInclude Include="src\Graphics\Pass\TAAPass.h" />
+    <ClInclude Include="src\Graphics\Pass\TemporalAAPass.h" />
     <ClInclude Include="src\Graphics\Pass\TonemapPass.h" />
     <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h" />
@@ -319,7 +319,7 @@
     <ClCompile Include="src\Graphics\Pass\SSRPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\SSRResolvePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\SSRTemporalFilterPass.cpp" />
-    <ClCompile Include="src\Graphics\Pass\TAAPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\TemporalAAPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp" />

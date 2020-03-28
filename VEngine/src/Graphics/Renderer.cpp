@@ -22,7 +22,7 @@
 #include "Pass/HiZPyramidPass.h"
 #include "Pass/BuildIndexBufferPass.h"
 #include "Pass/SharpenFfxCasPass.h"
-#include "Pass/TAAPass.h"
+#include "Pass/TemporalAAPass.h"
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
 #include "Module/GTAOModule.h"
@@ -656,19 +656,19 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	TAAPass::Data taaPassData;
-	taaPassData.m_passRecordContext = &passRecordContext;
-	taaPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
-	taaPassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
-	taaPassData.m_depthImageHandle = depthImageViewHandle;
-	taaPassData.m_velocityImageHandle = velocityImageViewHandle;
-	taaPassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
-	taaPassData.m_lightImageHandle = lightImageViewHandle;
-	taaPassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
+	TemporalAAPass::Data temporalAAPassData;
+	temporalAAPassData.m_passRecordContext = &passRecordContext;
+	temporalAAPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
+	temporalAAPassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	temporalAAPassData.m_depthImageHandle = depthImageViewHandle;
+	temporalAAPassData.m_velocityImageHandle = velocityImageViewHandle;
+	temporalAAPassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;
+	temporalAAPassData.m_lightImageHandle = lightImageViewHandle;
+	temporalAAPassData.m_taaResolveImageHandle = taaResolveImageViewHandle;
 
 	if (g_TAAEnabled)
 	{
-		TAAPass::addToGraph(graph, taaPassData);
+		TemporalAAPass::addToGraph(graph, temporalAAPassData);
 
 		lightImageViewHandle = taaResolveImageViewHandle;
 	}

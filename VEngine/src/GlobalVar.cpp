@@ -6,10 +6,6 @@ namespace VEngine
 	//GlobalVar<unsigned int> g_windowHeight = 900;
 	GlobalVar<bool> g_TAAEnabled = false;
 	GlobalVar<float> g_TAABicubicSharpness = 0.5f;
-	GlobalVar<float> g_TAATemporalContrastThreshold = 0.15f;
-	GlobalVar<float> g_TAALowStrengthAlpha = 0.6f;
-	GlobalVar<float> g_TAAHighStrengthAlpha = 0.05f;
-	GlobalVar<float> g_TAAAntiFlickeringAlpha = 1e-10f;
 	GlobalVar<bool> g_FXAAEnabled = false;
 	GlobalVar<float> g_FXAAQualitySubpix = 0.75f;
 	GlobalVar<float> g_FXAAQualityEdgeThreshold = 0.166f;

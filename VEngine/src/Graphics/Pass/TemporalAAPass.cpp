@@ -1,4 +1,4 @@
-#include "TAAPass.h"
+#include "TemporalAAPass.h"
 #include "Graphics/RenderResources.h"
 #include "GlobalVar.h"
 #include "Graphics/PipelineCache.h"
@@ -12,11 +12,11 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/taa_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/temporalAA.hlsli"
 }
 
-void VEngine::TAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
+void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	rg::ResourceUsageDescription passUsages[]
 	{
@@ -27,7 +27,7 @@ void VEngine::TAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		{rg::ResourceViewHandle(data.m_taaResolveImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
-	graph.addPass("TAA Resolve", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	graph.addPass("Temporal AA", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
@@ -35,7 +35,7 @@ void VEngine::TAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/taa_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/temporalAA_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -57,12 +57,11 @@ void VEngine::TAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
 					Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
 					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
-					Initializers::sampledImage(&lightImageView, SOURCE_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+					Initializers::sampledImage(&lightImageView, INPUT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(7, updates);
+				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
@@ -71,10 +70,6 @@ void VEngine::TAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 
 			PushConsts pushConsts;
 			pushConsts.bicubicSharpness = g_TAABicubicSharpness;
-			pushConsts.temporalContrastThreshold = g_TAATemporalContrastThreshold;
-			pushConsts.lowStrengthAlpha = g_TAALowStrengthAlpha;
-			pushConsts.highStrengthAlpha = g_TAAHighStrengthAlpha;
-			pushConsts.antiFlickeringAlpha = g_TAAAntiFlickeringAlpha;
 			pushConsts.jitterOffsetWeight = exp(-2.29f * jitterOffsetLength);
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);

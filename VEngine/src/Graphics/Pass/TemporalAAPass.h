@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace TAAPass
+	namespace TemporalAAPass
 	{
 		struct Data
 		{

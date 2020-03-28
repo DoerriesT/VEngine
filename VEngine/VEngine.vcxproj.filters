@@ -348,9 +348,6 @@
     <ClInclude Include="src\Graphics\Pass\SSRTemporalFilterPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\TAAPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Pass\TonemapPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
@@ -379,6 +376,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\ExposurePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\TemporalAAPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -599,9 +599,6 @@
     <ClCompile Include="src\Graphics\Pass\SSRTemporalFilterPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\TAAPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
@@ -633,6 +630,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\TemporalAAPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

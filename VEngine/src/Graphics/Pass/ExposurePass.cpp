@@ -25,7 +25,7 @@ void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
-	graph.addPass("Luminance Histogram Average", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	graph.addPass("Exposure", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 	{
 		const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 		const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;

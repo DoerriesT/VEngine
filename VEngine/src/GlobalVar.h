@@ -90,10 +90,6 @@ namespace VEngine
 	//extern GlobalVar<unsigned int> g_windowHeight;
 	extern GlobalVar<bool> g_TAAEnabled;
 	extern GlobalVar<float> g_TAABicubicSharpness;
-	extern GlobalVar<float> g_TAATemporalContrastThreshold;
-	extern GlobalVar<float> g_TAALowStrengthAlpha;
-	extern GlobalVar<float> g_TAAHighStrengthAlpha;
-	extern GlobalVar<float> g_TAAAntiFlickeringAlpha;
 	extern GlobalVar<bool> g_FXAAEnabled;
 	extern GlobalVar<float> g_FXAAQualitySubpix;
 	extern GlobalVar<float> g_FXAAQualityEdgeThreshold;
