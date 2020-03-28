@@ -34,5 +34,6 @@ namespace VEngine
 		}
 
 		float halton(size_t index, size_t base);
+		void colorTemperatureToColor(float kelvin, float &red, float &green, float &blue);
 	}
 }

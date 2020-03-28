@@ -20,6 +20,7 @@
 #include <Graphics/Camera/Camera.h>
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
+#include <Utility/Utility.h>
 
 extern bool g_albedoExtinctionMode;
 extern float g_fogScattering[3];
@@ -97,8 +98,10 @@ public:
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
 
 		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
+		glm::vec3 sunColor;
+		VEngine::Utility::colorTemperatureToColor(4000.0f, sunColor.r, sunColor.g, sunColor.b);
 		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
-		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, glm::vec3(1.0f), 100.0f, true, 4u, 130.0f, 0.9f);
+		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, sunColor, 100.0f, true, 4u, 130.0f, 0.9f);
 		dlc.m_depthBias[0] = 5.0f;
 		dlc.m_depthBias[1] = 5.0f;
 		dlc.m_depthBias[2] = 5.0f;
