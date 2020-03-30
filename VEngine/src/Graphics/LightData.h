@@ -15,21 +15,7 @@ namespace VEngine
 		uint32_t m_shadowCount;
 	};
 
-	struct PointLight
-	{
-		glm::vec3 m_color;
-		float m_invSqrAttRadius;
-		glm::vec3 m_position;
-		float m_radius;
-	};
-
-	struct PointLightShadowed
-	{
-		PointLight m_pointLight;
-		glm::vec4 m_shadowAtlasParams[6];
-	};
-
-	struct SpotLight
+	struct PunctualLight
 	{
 		glm::vec3 m_color;
 		float m_invSqrAttRadius;
@@ -39,11 +25,16 @@ namespace VEngine
 		float m_angleOffset;
 	};
 
-	struct SpotLightShadowed
+	struct PunctualLightShadowed
 	{
-		SpotLight m_spotLight;
-		glm::vec3 m_shadowAtlasScaleBias;
-		uint32_t m_shadowOffset;
+		PunctualLight m_light;
+		glm::vec4 m_shadowMatrix0;
+		glm::vec4 m_shadowMatrix1;
+		glm::vec4 m_shadowMatrix2;
+		glm::vec4 m_shadowMatrix3;
+		glm::vec4 m_shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: unused
+		glm::vec3 m_positionWS;
+		float m_radius;
 	};
 
 	struct ShadowAtlasDrawInfo
@@ -59,39 +50,29 @@ namespace VEngine
 	{
 		std::vector<ShadowAtlasDrawInfo> m_shadowAtlasDrawInfos;
 		std::vector<DirectionalLight> m_directionalLights;
-		std::vector<PointLight> m_pointLights;
-		std::vector<SpotLight> m_spotLights;
-		std::vector<PointLightShadowed> m_pointLightsShadowed;
 		std::vector<DirectionalLight> m_directionalLightsShadowed;
-		std::vector<SpotLightShadowed> m_spotLightsShadowed;
-		std::vector<glm::mat4> m_pointLightTransforms;
-		std::vector<glm::mat4> m_spotLightTransforms;
-		std::vector<glm::mat4> m_spotLightShadowedTransforms;
-		std::vector<uint32_t> m_pointLightOrder;
-		std::vector<uint32_t> m_spotLightOrder;
-		std::vector<uint32_t> m_spotLightShadowedOrder;
-		std::array<uint32_t, RendererConsts::Z_BINS> m_pointLightDepthBins;
-		std::array<uint32_t, RendererConsts::Z_BINS> m_spotLightDepthBins;
-		std::array<uint32_t, RendererConsts::Z_BINS> m_spotLightShadowedDepthBins;
+		std::vector<PunctualLight> m_punctualLights;
+		std::vector<PunctualLightShadowed> m_punctualLightsShadowed;
+		std::vector<glm::mat4> m_punctualLightTransforms;
+		std::vector<glm::mat4> m_punctualLightShadowedTransforms;
+		std::vector<uint32_t> m_punctualLightOrder;
+		std::vector<uint32_t> m_punctualLightShadowedOrder;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightDepthBins;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightShadowedDepthBins;
 
 		void clear()
 		{
 			m_shadowAtlasDrawInfos.clear();
 			m_directionalLights.clear();
-			m_pointLights.clear();
-			m_spotLights.clear();
-			m_pointLightsShadowed.clear();
 			m_directionalLightsShadowed.clear();
-			m_spotLightsShadowed.clear();
-			m_pointLightTransforms.clear();
-			m_spotLightTransforms.clear();
-			m_spotLightShadowedTransforms.clear();
-			m_pointLightOrder.clear();
-			m_spotLightOrder.clear();
-			m_spotLightShadowedOrder.clear();
-			memset(m_pointLightDepthBins.data(), 0, sizeof(m_pointLightDepthBins));
-			memset(m_spotLightDepthBins.data(), 0, sizeof(m_spotLightDepthBins));
-			memset(m_spotLightShadowedDepthBins.data(), 0, sizeof(m_spotLightShadowedDepthBins));
+			m_punctualLights.clear();
+			m_punctualLightsShadowed.clear();
+			m_punctualLightTransforms.clear();
+			m_punctualLightShadowedTransforms.clear();
+			m_punctualLightOrder.clear();
+			m_punctualLightShadowedOrder.clear();
+			memset(m_punctualLightDepthBins.data(), 0, sizeof(m_punctualLightDepthBins));
+			memset(m_punctualLightShadowedDepthBins.data(), 0, sizeof(m_punctualLightShadowedDepthBins));
 		}
 	};
 }

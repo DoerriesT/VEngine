@@ -198,16 +198,16 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
-		inline rg::BufferViewHandle createPointLightBitMaskBufferViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height, uint32_t pointLightCount)
+		inline rg::BufferViewHandle createTiledLightingBitMaskBufferViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height, uint32_t itemCount)
 		{
-			uint32_t w = width / RendererConsts::LIGHTING_TILE_SIZE + ((width % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
-			uint32_t h = height / RendererConsts::LIGHTING_TILE_SIZE + ((height % RendererConsts::LIGHTING_TILE_SIZE == 0) ? 0 : 1);
+			uint32_t w = (width + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
+			uint32_t h = (height + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
 			uint32_t tileCount = w * h;
-			uint64_t bufferSize = Utility::alignUp(pointLightCount == 0 ? 1 : pointLightCount, uint32_t(32)) / 32 * sizeof(uint32_t) * tileCount;
+			uint64_t bufferSize = Utility::alignUp(itemCount == 0 ? 1 : itemCount, uint32_t(32)) / 32 * sizeof(uint32_t) * tileCount;
 
 			rg::BufferDescription desc = {};
-			desc.m_name = "Point Light Bit Mask Buffer";
-			
+			desc.m_name = "Tiled Lighting Bit Mask Buffer";
+
 			desc.m_clear = true;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = bufferSize;

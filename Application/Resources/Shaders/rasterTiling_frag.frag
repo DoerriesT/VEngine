@@ -4,19 +4,14 @@
 
 #include "rasterTiling_bindings.h"
 
-layout(set = POINT_LIGHT_MASK_SET, binding = POINT_LIGHT_MASK_BINDING) buffer POINT_LIGHT_BITMASK 
+layout(set = PUNCTUAL_LIGHTS_BIT_MASK_SET, binding = PUNCTUAL_LIGHTS_BIT_MASK_BINDING) buffer PUNCTUAL_LIGHTS_BIT_MASK 
 {
-	uint uPointLightBitMask[];
+	uint uPunctualLightsBitMask[];
 };
 
-layout(set = SPOT_LIGHT_MASK_SET, binding = SPOT_LIGHT_MASK_BINDING) buffer SPOT_LIGHT_BITMASK 
+layout(set = PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_SET, binding = PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING) buffer PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK 
 {
-	uint uSpotLightBitMask[];
-};
-
-layout(set = SPOT_LIGHT_SHADOWED_MASK_SET, binding = SPOT_LIGHT_SHADOWED_MASK_BINDING) buffer SPOT_LIGHT_SHADOWED_BITMASK 
-{
-	uint uSpotLightShadowedBitMask[];
+	uint uPunctualLightsShadowedBitMask[];
 };
 
 layout(push_constant) uniform PUSH_CONSTS 
@@ -62,15 +57,11 @@ void main()
 	{
 		if (uPushConsts.targetBuffer == 0)
 		{
-			atomicOr(uPointLightBitMask[wordIndex], lightBit);
+			atomicOr(uPunctualLightsBitMask[wordIndex], lightBit);
 		}
 		else if (uPushConsts.targetBuffer == 1)
 		{
-			atomicOr(uSpotLightBitMask[wordIndex], lightBit);
-		}
-		else if (uPushConsts.targetBuffer == 2)
-		{
-			atomicOr(uSpotLightShadowedBitMask[wordIndex], lightBit);
+			atomicOr(uPunctualLightsShadowedBitMask[wordIndex], lightBit);
 		}
 	}
 }

@@ -16,17 +16,18 @@ namespace VEngine
 			float m_reprojectedTexCoordScaleBias[4];
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
-			gal::DescriptorBufferInfo m_pointLightDataBufferInfo;
-			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
-			gal::DescriptorBufferInfo m_spotLightDataBufferInfo;
-			gal::DescriptorBufferInfo m_spotLightZBinsBufferInfo;
-			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
-			rg::BufferViewHandle m_spotLightBitMaskBufferHandle;
+			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;
+			gal::DescriptorBufferInfo m_punctualLightsZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_punctualLightsShadowedBufferInfo;
+			gal::DescriptorBufferInfo m_punctualLightsShadowedZBinsBufferInfo;
+			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
+			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_prevResultImageViewHandle;
 			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;
 			rg::ImageViewHandle m_emissivePhaseImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
+			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 		};
 

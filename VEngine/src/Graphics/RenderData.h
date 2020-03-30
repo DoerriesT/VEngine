@@ -38,11 +38,9 @@ namespace VEngine
 		uint32_t m_height;
 		uint32_t m_frame;
 		uint32_t m_directionalLightCount;
-		uint32_t m_pointLightCount;
-		uint32_t m_spotLightCount;
 		uint32_t m_directionalLightShadowedCount;
-		uint32_t m_pointLightShadowedCount;
-		uint32_t m_spotLightShadowedCount;
+		uint32_t m_punctualLightCount;
+		uint32_t m_punctualLightShadowedCount;
 		uint32_t m_curResIdx;
 		uint32_t m_prevResIdx;
 		float m_timeDelta;
@@ -83,8 +81,6 @@ namespace VEngine
 		glm::vec4 *m_shadowCascadeParams;
 		uint32_t m_subMeshInstanceDataCount;
 		SubMeshInstanceData *m_subMeshInstanceData;
-		uint32_t m_allInstanceDataCount;
-		SubMeshInstanceData *m_allInstanceData;
 		uint64_t *m_drawCallKeys;
 		uint32_t m_mainViewRenderListIndex;
 		uint32_t m_shadowCascadeViewRenderListOffset;

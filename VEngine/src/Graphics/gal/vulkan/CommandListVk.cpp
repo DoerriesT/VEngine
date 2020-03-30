@@ -554,6 +554,9 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 
 	uint32_t attachmentCount = 0;
 
+	uint32_t framebufferWidth = -1;
+	uint32_t framebufferHeight = -1;
+
 	auto translateLoadOp = [](AttachmentLoadOp loadOp)
 	{
 		switch (loadOp)
@@ -587,11 +590,13 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	{
 		const auto &attachment = colorAttachments[i];
 		const auto *image = attachment.m_imageView->getImage();
+		const auto &imageDesc = image->getDescription();
+
+		framebufferWidth = std::min(framebufferWidth, imageDesc.m_width);
+		framebufferHeight = std::min(framebufferHeight, imageDesc.m_height);
 
 		attachmentViews[i] = (VkImageView)attachment.m_imageView->getNativeHandle();
 		clearValues[i].color = *reinterpret_cast<const VkClearColorValue *>(&attachment.m_clearValue);
-
-		auto &imageDesc = image->getDescription();
 
 		auto &attachmentDesc = colorAttachmentDescsVk[i];
 		attachmentDesc = {};
@@ -608,11 +613,13 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	{
 		const auto &attachment = *depthStencilAttachment;
 		const auto *image = attachment.m_imageView->getImage();
+		auto &imageDesc = image->getDescription();
+
+		framebufferWidth = std::min(framebufferWidth, imageDesc.m_width);
+		framebufferHeight = std::min(framebufferHeight, imageDesc.m_height);
 
 		attachmentViews[attachmentCount] = (VkImageView)attachment.m_imageView->getNativeHandle();
 		clearValues[attachmentCount].depthStencil = *reinterpret_cast<const VkClearDepthStencilValue *>(&attachment.m_clearValue);
-
-		auto &imageDesc = image->getDescription();
 
 		auto &attachmentDesc = depthStencilAttachmentDescVk;
 		attachmentDesc = {};
@@ -642,12 +649,18 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 
 	// create framebuffer
 	{
+		if (framebufferWidth == -1 || framebufferHeight == -1)
+		{
+			framebufferWidth = renderArea.m_offset.m_x + renderArea.m_extent.m_width;
+			framebufferHeight = renderArea.m_offset.m_y + renderArea.m_extent.m_height;
+		}
+
 		VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 		framebufferCreateInfo.renderPass = renderPass;
 		framebufferCreateInfo.attachmentCount = attachmentCount;
 		framebufferCreateInfo.pAttachments = attachmentViews;
-		framebufferCreateInfo.width = renderArea.m_extent.m_width;
-		framebufferCreateInfo.height = renderArea.m_extent.m_height;
+		framebufferCreateInfo.width = framebufferWidth;
+		framebufferCreateInfo.height = framebufferHeight;
 		framebufferCreateInfo.layers = 1;
 
 		UtilityVk::checkResult(vkCreateFramebuffer(m_device->getDevice(), &framebufferCreateInfo, nullptr, &framebuffer), "Failed to create Framebuffer!");

@@ -27,24 +27,26 @@ struct PSOutput
 
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
-StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
-StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
 Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
-ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
-ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<PointLight> g_PointLights : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
-ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
-ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<SpotLight> g_SpotLights : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
-ByteAddressBuffer g_SpotLightShadowedZBins : REGISTER_SRV(SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_SET);
-ByteAddressBuffer g_SpotShadowedBitMask : REGISTER_SRV(SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_SET);
-StructuredBuffer<SpotLightShadowed> g_SpotLightsShadowed : REGISTER_SRV(SPOT_LIGHT_SHADOWED_DATA_BINDING, SPOT_LIGHT_SHADOWED_DATA_SET);
-StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
+
+// directional lights
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
+
+// punctual lights
+StructuredBuffer<PunctualLight> g_PunctualLights : REGISTER_SRV(PUNCTUAL_LIGHTS_BINDING, PUNCTUAL_LIGHTS_SET);
+ByteAddressBuffer g_PunctualLightsBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_BIT_MASK_SET);
+ByteAddressBuffer g_PunctualLightsDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_Z_BINS_BINDING, PUNCTUAL_LIGHTS_Z_BINS_SET);
+
+// punctual lights shadowed
+StructuredBuffer<PunctualLightShadowed> g_PunctualLightsShadowed : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BINDING, PUNCTUAL_LIGHTS_SHADOWED_SET);
+ByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_SET);
+ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_SET);
 
 
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
@@ -160,62 +162,39 @@ PSOutput main(PSInput psIn)
 		}
 	}
 	
-	
-	// point lights
-	uint pointLightCount = g_Constants.pointLightCount & 0xFFFF;
-	if (pointLightCount > 0)
+	// punctual lights
+	uint punctualLightCount = g_Constants.punctualLightCount;
+	if (punctualLightCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_PointLightZBins, pointLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = getLightingBitMask(g_PointBitMask, address, wordIndex, minIndex, maxIndex);
+			uint mask = getLightingBitMask(g_PunctualLightsBitMask, address, wordIndex, minIndex, maxIndex);
 			
 			while (mask != 0)
 			{
 				const uint bitIndex = firstbitlow(mask);
 				const uint index = 32 * wordIndex + bitIndex;
 				mask ^= (1 << bitIndex);
-				result += evaluatePointLight(lightingParams, g_PointLights[index]);
+				result += evaluatePunctualLight(lightingParams, g_PunctualLights[index]);
 			}
 		}
 	}
 	
-	// spot lights
-	uint spotLightCount = (g_Constants.pointLightCount & 0xFFFF0000) >> 16;
-	if (spotLightCount > 0)
+	// punctual lights shadowed
+	uint punctualLightShadowedCount = g_Constants.punctualLightShadowedCount;
+	if (punctualLightShadowedCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_SpotLightZBins, spotLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
-		
+
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = getLightingBitMask(g_SpotBitMask, address, wordIndex, minIndex, maxIndex);
-			
-			while (mask != 0)
-			{
-				const uint bitIndex = firstbitlow(mask);
-				const uint index = 32 * wordIndex + bitIndex;
-				mask ^= (1 << bitIndex);
-				result += evaluateSpotLight(lightingParams, g_SpotLights[index]);
-			}
-		}
-	}
-	
-	// shadowed spot lights
-	uint spotLightShadowedCount = g_Constants.spotLightShadowedCount;
-	if (spotLightShadowedCount > 0)
-	{
-		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_SpotLightShadowedZBins, spotLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
-		
-		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
-		{
-			uint mask = getLightingBitMask(g_SpotShadowedBitMask, address, wordIndex, minIndex, maxIndex);
+			uint mask = getLightingBitMask(g_PunctualLightsShadowedBitMask, address, wordIndex, minIndex, maxIndex);
 			
 			while (mask != 0)
 			{
@@ -223,16 +202,21 @@ PSOutput main(PSInput psIn)
 				const uint index = 32 * wordIndex + bitIndex;
 				mask ^= (1 << bitIndex);
 				
-				SpotLightShadowed spotLightShadowed = g_SpotLightsShadowed[index];
+				PunctualLightShadowed lightShadowed = g_PunctualLightsShadowed[index];
 				
 				// evaluate shadow
-				float4 shadowPos = mul(g_ShadowMatrices[spotLightShadowed.shadowOffset], float4(worldSpacePos + normalWS * 0.05, 1.0));
+				float4 shadowPosWS = float4(worldSpacePos + normalWS * 0.05, 1.0);
+				float4 shadowPos;
+				shadowPos.x = dot(lightShadowed.shadowMatrix0, shadowPosWS);
+				shadowPos.y = dot(lightShadowed.shadowMatrix1, shadowPosWS);
+				shadowPos.z = dot(lightShadowed.shadowMatrix2, shadowPosWS);
+				shadowPos.w = dot(lightShadowed.shadowMatrix3, shadowPosWS);
 				shadowPos.xyz /= shadowPos.w;
 				shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
-				shadowPos.xy = shadowPos.xy * spotLightShadowed.shadowAtlasScaleBias.x + spotLightShadowed.shadowAtlasScaleBias.yz;
+				shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
 				float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 				
-				result += shadow * evaluateSpotLight(lightingParams, spotLightShadowed.spotLight);
+				result += shadow * evaluatePunctualLight(lightingParams, lightShadowed.light);
 			}
 		}
 	}

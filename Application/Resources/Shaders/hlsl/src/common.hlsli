@@ -42,21 +42,7 @@ struct DirectionalLight
 	uint shadowCount;
 };
 
-struct PointLight
-{
-	float3 color;
-	float invSqrAttRadius;
-	float3 position;
-	float radius;
-};
-
-struct PointLightShadowed
-{
-	PointLight pointLight;
-	float4 shadowAtlasParams[6];
-};
-
-struct SpotLight
+struct PunctualLight
 {
 	float3 color;
 	float invSqrAttRadius;
@@ -66,11 +52,16 @@ struct SpotLight
 	float angleOffset;
 };
 
-struct SpotLightShadowed
+struct PunctualLightShadowed
 {
-	SpotLight spotLight;
-	float3 shadowAtlasScaleBias;
-	uint shadowOffset;
+	PunctualLight light;
+	float4 shadowMatrix0;
+	float4 shadowMatrix1;
+	float4 shadowMatrix2;
+	float4 shadowMatrix3;
+	float4 shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: unused
+	float3 positionWS;
+	float radius;
 };
 
 struct MaterialData

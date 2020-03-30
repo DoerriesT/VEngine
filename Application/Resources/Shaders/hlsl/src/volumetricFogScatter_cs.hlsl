@@ -14,18 +14,25 @@ Texture3D<float4> g_PrevResultImage : REGISTER_SRV(PREV_RESULT_IMAGE_BINDING, PR
 Texture3D<float4> g_ScatteringExtinctionImage : REGISTER_SRV(SCATTERING_EXTINCTION_IMAGE_BINDING, SCATTERING_EXTINCTION_IMAGE_SET);
 Texture3D<float4> g_EmissivePhaseImage : REGISTER_SRV(EMISSIVE_PHASE_IMAGE_BINDING, EMISSIVE_PHASE_IMAGE_SET);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, SHADOW_IMAGE_SET);
+Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHT_DATA_BINDING, DIRECTIONAL_LIGHT_DATA_SET);
+
+// directional lights
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
 StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
-ByteAddressBuffer g_PointLightZBins : REGISTER_SRV(POINT_LIGHT_Z_BINS_BUFFER_BINDING, POINT_LIGHT_Z_BINS_BUFFER_SET);
-ByteAddressBuffer g_PointBitMask : REGISTER_SRV(POINT_LIGHT_BIT_MASK_BUFFER_BINDING, POINT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<PointLight> g_PointLights : REGISTER_SRV(POINT_LIGHT_DATA_BINDING, POINT_LIGHT_DATA_SET);
-ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
-ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
-StructuredBuffer<SpotLight> g_SpotLights : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
+
+// punctual lights
+StructuredBuffer<PunctualLight> g_PunctualLights : REGISTER_SRV(PUNCTUAL_LIGHTS_BINDING, PUNCTUAL_LIGHTS_SET);
+ByteAddressBuffer g_PunctualLightsBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_BIT_MASK_SET);
+ByteAddressBuffer g_PunctualLightsDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_Z_BINS_BINDING, PUNCTUAL_LIGHTS_Z_BINS_SET);
+
+// punctual lights shadowed
+StructuredBuffer<PunctualLightShadowed> g_PunctualLightsShadowed : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BINDING, PUNCTUAL_LIGHTS_SHADOWED_SET);
+ByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_SET);
+ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_SET);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -116,16 +123,17 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			}
 		}
 		
-		// point lights
-		if (g_Constants.pointLightCount > 0)
+		// punctual lights
+		uint punctualLightCount = g_Constants.punctualLightCount;
+		if (punctualLightCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_PointLightZBins, g_Constants.pointLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(froxelID.xy * 8, targetImageWidth, wordCount);
-
+	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
-				uint mask = getLightingBitMask(g_PointBitMask, address, wordIndex, minIndex, maxIndex);
+				uint mask = getLightingBitMask(g_PunctualLightsBitMask, address, wordIndex, minIndex, maxIndex);
 				
 				while (mask != 0)
 				{
@@ -133,27 +141,35 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					const uint index = 32 * wordIndex + bitIndex;
 					mask ^= (1 << bitIndex);
 					
-					PointLight pointLight = g_PointLights[index];
-					const float3 unnormalizedLightVector = pointLight.position - viewSpacePos;
+					PunctualLight light = g_PunctualLights[index];
+					
+					const float3 unnormalizedLightVector = light.position - viewSpacePos;
 					const float3 L = normalize(unnormalizedLightVector);
-					const float att = getDistanceAtt(unnormalizedLightVector, pointLight.invSqrAttRadius);
-					const float3 radiance = pointLight.color * att;
+					float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
+					
+					if (light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+					{
+						att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
+					}
+					
+					const float3 radiance = light.color * att;
 					
 					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
 				}
 			}
 		}
 		
-		// spot lights
-		if (g_Constants.spotLightCount > 0)
+		// punctual lights shadowed
+		uint punctualLightShadowedCount = g_Constants.punctualLightShadowedCount;
+		if (punctualLightShadowedCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_SpotLightZBins, g_Constants.spotLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(froxelID.xy * 8, targetImageWidth, wordCount);
-			
+	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
-				uint mask = getLightingBitMask(g_SpotBitMask, address, wordIndex, minIndex, maxIndex);
+				uint mask = getLightingBitMask(g_PunctualLightsShadowedBitMask, address, wordIndex, minIndex, maxIndex);
 				
 				while (mask != 0)
 				{
@@ -161,14 +177,31 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					const uint index = 32 * wordIndex + bitIndex;
 					mask ^= (1 << bitIndex);
 					
-					SpotLight spotLight = g_SpotLights[index];
-					const float3 unnormalizedLightVector = spotLight.position - viewSpacePos;
-					const float3 L = normalize(unnormalizedLightVector);
-					const float att = getDistanceAtt(unnormalizedLightVector, spotLight.invSqrAttRadius)
-									* getAngleAtt(L, spotLight.direction, spotLight.angleScale, spotLight.angleOffset);
-					const float3 radiance = spotLight.color * att;
+					PunctualLightShadowed lightShadowed = g_PunctualLightsShadowed[index];
 					
-					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
+					// evaluate shadow
+					float4 shadowPos;
+					shadowPos.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
+					shadowPos.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
+					shadowPos.z = dot(lightShadowed.shadowMatrix2, float4(worldSpacePos, 1.0));
+					shadowPos.w = dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
+					shadowPos.xyz /= shadowPos.w;
+					shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+					shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
+					float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+					
+					const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos;
+					const float3 L = normalize(unnormalizedLightVector);
+					float att = getDistanceAtt(unnormalizedLightVector, lightShadowed.light.invSqrAttRadius);
+					
+					if (lightShadowed.light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+					{
+						att *= getAngleAtt(L, lightShadowed.light.direction, lightShadowed.light.angleScale, lightShadowed.light.angleOffset);
+					}
+					
+					const float3 radiance = lightShadowed.light.color * att;
+					
+					lighting += shadow * radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
 				}
 			}
 		}

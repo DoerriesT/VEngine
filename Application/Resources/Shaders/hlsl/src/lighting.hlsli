@@ -31,31 +31,25 @@ float getDistanceAtt(float3 unnormalizedLightVector, float invSqrAttRadius)
 
 float getAngleAtt(float3 L, float3 lightDir, float lightAngleScale, float lightAngleOffset)
 {
-	float cd = dot(lightDir, L);
+	float cd = dot(-lightDir, L);
 	float attenuation = saturate(cd * lightAngleScale + lightAngleOffset);
 	attenuation *= attenuation;
 	
 	return attenuation;
 }
 
-float3 evaluatePointLight(const LightingParams params, const PointLight pointLight)
+float3 evaluatePunctualLight(const LightingParams params, const PunctualLight light)
 {
-	const float3 unnormalizedLightVector = pointLight.position - params.viewSpacePosition;
+	const float3 unnormalizedLightVector = light.position - params.viewSpacePosition;
 	const float3 L = normalize(unnormalizedLightVector);
-	const float att = getDistanceAtt(unnormalizedLightVector, pointLight.invSqrAttRadius);
-	const float3 radiance = pointLight.color * att;
-
-	const float3 F0 = lerp(0.04, params.albedo, params.metalness);
-	return Default_Lit(params.albedo, F0, radiance, params.N, params.V, L, params.roughness, params.metalness);
-}
-
-float3 evaluateSpotLight(const LightingParams params, const SpotLight spotLight)
-{
-	const float3 unnormalizedLightVector = spotLight.position - params.viewSpacePosition;
-	const float3 L = normalize(unnormalizedLightVector);
-	const float att = getDistanceAtt(unnormalizedLightVector, spotLight.invSqrAttRadius)
-					* getAngleAtt(L, spotLight.direction, spotLight.angleScale, spotLight.angleOffset);
-	const float3 radiance = spotLight.color * att;
+	float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
+	
+	if (light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+	{
+		att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
+	}
+	
+	const float3 radiance = light.color * att;
 	
 	const float3 F0 = lerp(0.04, params.albedo, params.metalness);
 	return Default_Lit(params.albedo, F0, radiance, params.N, params.V, L, params.roughness, params.metalness);

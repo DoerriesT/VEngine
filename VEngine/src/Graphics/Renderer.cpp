@@ -318,10 +318,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rg::ImageViewHandle indirectSpecularImageViewHandle = ResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle finalImageViewHandle = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle finalImageViewHandle2 = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle uvImageViewHandle = ResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle ddxyLengthImageViewHandle = ResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle ddxyRotMaterialIdImageViewHandle = ResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle tangentSpaceImageViewHandle = ResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
+	//rg::ImageViewHandle uvImageViewHandle = ResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
+	//rg::ImageViewHandle ddxyLengthImageViewHandle = ResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
+	//rg::ImageViewHandle ddxyRotMaterialIdImageViewHandle = ResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
+	//rg::ImageViewHandle tangentSpaceImageViewHandle = ResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle velocityImageViewHandle = ResourceDefinitions::createVelocityImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
@@ -331,9 +331,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
-	rg::BufferViewHandle pointLightBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLights.size()));
-	rg::BufferViewHandle spotLightBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_spotLights.size()));
-	rg::BufferViewHandle spotLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_spotLightsShadowed.size()));
+	rg::BufferViewHandle punctualLightBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
+	rg::BufferViewHandle punctualLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
@@ -373,60 +372,41 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
-	// point light data write
-	DescriptorBufferInfo pointLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_pointLights.size() * sizeof(PointLight), size_t(1)) };
-	DescriptorBufferInfo pointLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_pointLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
+	// punctual light data write
+	DescriptorBufferInfo punctualLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLights.size() * sizeof(PunctualLight), size_t(1)) };
+	DescriptorBufferInfo punctualLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(pointLightDataBufferInfo.m_range, pointLightDataBufferInfo.m_offset, pointLightDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightDataBufferInfo.m_range, punctualLightDataBufferInfo.m_offset, punctualLightDataBufferInfo.m_buffer, dataBufferPtr);
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(pointLightZBinsBufferInfo.m_range, pointLightZBinsBufferInfo.m_offset, pointLightZBinsBufferInfo.m_buffer, zBinsBufferPtr);
-		if (!lightData.m_pointLights.empty())
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightZBinsBufferInfo.m_range, punctualLightZBinsBufferInfo.m_offset, punctualLightZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		if (!lightData.m_punctualLights.empty())
 		{
-			for (size_t i = 0; i < lightData.m_pointLightOrder.size(); ++i)
+			for (size_t i = 0; i < lightData.m_punctualLightOrder.size(); ++i)
 			{
-				((PointLight *)dataBufferPtr)[i] = lightData.m_pointLights[lightData.m_pointLightOrder[i]];
+				((PunctualLight *)dataBufferPtr)[i] = lightData.m_punctualLights[lightData.m_punctualLightOrder[i]];
 			}
 			//memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
-			memcpy(zBinsBufferPtr, lightData.m_pointLightDepthBins.data(), lightData.m_pointLightDepthBins.size() * sizeof(uint32_t));
+			memcpy(zBinsBufferPtr, lightData.m_punctualLightDepthBins.data(), lightData.m_punctualLightDepthBins.size() * sizeof(uint32_t));
 		}
 	}
 
-	// spot light data write
-	DescriptorBufferInfo spotLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_spotLights.size() * sizeof(SpotLight), size_t(1)) };
-	DescriptorBufferInfo spotLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
+	// shadowed punctual light data write
+	DescriptorBufferInfo punctualLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightsShadowed.size() * sizeof(PunctualLightShadowed), size_t(1)) };
+	DescriptorBufferInfo punctualLightShadowedZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightShadowedDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightDataBufferInfo.m_range, spotLightDataBufferInfo.m_offset, spotLightDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightShadowedDataBufferInfo.m_range, punctualLightShadowedDataBufferInfo.m_offset, punctualLightShadowedDataBufferInfo.m_buffer, dataBufferPtr);
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightZBinsBufferInfo.m_range, spotLightZBinsBufferInfo.m_offset, spotLightZBinsBufferInfo.m_buffer, zBinsBufferPtr);
-		if (!lightData.m_spotLights.empty())
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightShadowedZBinsBufferInfo.m_range, punctualLightShadowedZBinsBufferInfo.m_offset, punctualLightShadowedZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		if (!lightData.m_punctualLightsShadowed.empty())
 		{
-			for (size_t i = 0; i < lightData.m_spotLights.size(); ++i)
+			for (size_t i = 0; i < lightData.m_punctualLightShadowedOrder.size(); ++i)
 			{
-				((SpotLight *)dataBufferPtr)[i] = lightData.m_spotLights[lightData.m_spotLightOrder[i]];
+				((PunctualLightShadowed *)dataBufferPtr)[i] = lightData.m_punctualLightsShadowed[lightData.m_punctualLightShadowedOrder[i]];
 			}
-			//memcpy(dataBufferPtr, lightData.m_spotLightData.data(), lightData.m_spotLightData.size() * sizeof(SpotLightData));
-			memcpy(zBinsBufferPtr, lightData.m_spotLightDepthBins.data(), lightData.m_spotLightDepthBins.size() * sizeof(uint32_t));
-		}
-	}
-
-	// shadowed spot light data write
-	DescriptorBufferInfo spotLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightsShadowed.size() * sizeof(SpotLightShadowed), size_t(1)) };
-	DescriptorBufferInfo spotLightShadowedZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightShadowedDepthBins.size() * sizeof(uint32_t), size_t(1)) };
-	{
-		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightShadowedDataBufferInfo.m_range, spotLightShadowedDataBufferInfo.m_offset, spotLightShadowedDataBufferInfo.m_buffer, dataBufferPtr);
-		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightShadowedZBinsBufferInfo.m_range, spotLightShadowedZBinsBufferInfo.m_offset, spotLightShadowedZBinsBufferInfo.m_buffer, zBinsBufferPtr);
-		if (!lightData.m_spotLightsShadowed.empty())
-		{
-			for (size_t i = 0; i < lightData.m_spotLightsShadowed.size(); ++i)
-			{
-				((SpotLightShadowed *)dataBufferPtr)[i] = lightData.m_spotLightsShadowed[lightData.m_spotLightShadowedOrder[i]];
-			}
-			//memcpy(dataBufferPtr, lightData.m_spotLightData.data(), lightData.m_spotLightData.size() * sizeof(SpotLightData));
-			memcpy(zBinsBufferPtr, lightData.m_spotLightShadowedDepthBins.data(), lightData.m_spotLightShadowedDepthBins.size() * sizeof(uint32_t));
+			//memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
+			memcpy(zBinsBufferPtr, lightData.m_punctualLightShadowedDepthBins.data(), lightData.m_punctualLightShadowedDepthBins.size() * sizeof(uint32_t));
 		}
 	}
 
@@ -441,7 +421,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
-	// shadow texel sized write
+	// shadow cascade params write
 	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(glm::vec4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
@@ -526,11 +506,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	RasterTilingPass::Data rasterTilingPassData;
 	rasterTilingPassData.m_passRecordContext = &passRecordContext;
 	rasterTilingPassData.m_lightData = &lightData;
-	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-	rasterTilingPassData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
-	rasterTilingPassData.m_spotLightShadowedBitMaskBufferHandle = spotLightShadowedBitMaskBufferViewHandle;
+	rasterTilingPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
+	rasterTilingPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 
-	if (!lightData.m_pointLights.empty() || !lightData.m_spotLights.empty() || !lightData.m_spotLightsShadowed.empty())
+	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty())
 	{
 		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
@@ -631,15 +610,16 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_passRecordContext = &passRecordContext;
 	volumetricFogModuleData.m_commonData = &commonData;
 	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
-	volumetricFogModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	volumetricFogModuleData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	volumetricFogModuleData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	volumetricFogModuleData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
+	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 	volumetricFogModuleData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	volumetricFogModuleData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
-	volumetricFogModuleData.m_spotLightDataBufferInfo = spotLightDataBufferInfo;
-	volumetricFogModuleData.m_spotLightZBinsBufferInfo = spotLightZBinsBufferInfo;
-	volumetricFogModuleData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	volumetricFogModuleData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
+	volumetricFogModuleData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
+	volumetricFogModuleData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
+	volumetricFogModuleData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
 
 	m_volumetricFogModule->addToGraph(graph, volumetricFogModuleData);
 
@@ -655,18 +635,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 	forwardPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	forwardPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
-	forwardPassData.m_pointLightDataBufferInfo = pointLightDataBufferInfo;
-	forwardPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
-	forwardPassData.m_spotLightDataBufferInfo = spotLightDataBufferInfo;
-	forwardPassData.m_spotLightZBinsBufferInfo = spotLightZBinsBufferInfo;
-	forwardPassData.m_spotLightShadowedDataBufferInfo = spotLightShadowedDataBufferInfo;
-	forwardPassData.m_spotLightShadowedZBinsBufferInfo = spotLightShadowedZBinsBufferInfo;
+	forwardPassData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
+	forwardPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
+	forwardPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
+	forwardPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
 	forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 	forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	forwardPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	forwardPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
-	forwardPassData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
-	forwardPassData.m_spotLightShadowedBitMaskBufferHandle = spotLightShadowedBitMaskBufferViewHandle;
+	forwardPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
+	forwardPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 	forwardPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
