@@ -44,6 +44,7 @@ VEngine::RenderResources::~RenderResources()
 	}
 	
 	// images
+	m_graphicsDevice->destroyImage(m_shadowAtlasImage);
 	m_graphicsDevice->destroyImage(m_imGuiFontsTexture);
 	m_graphicsDevice->destroyImage(m_brdfLUT);
 
@@ -99,6 +100,23 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_brdfLUT);
+	}
+
+	// shadow atlas
+	{
+		ImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.m_width = 8192;
+		imageCreateInfo.m_height = 8192;
+		imageCreateInfo.m_depth = 1;
+		imageCreateInfo.m_levels = 1;
+		imageCreateInfo.m_layers = 1;
+		imageCreateInfo.m_samples = SampleCount::_1;
+		imageCreateInfo.m_imageType = ImageType::_2D;
+		imageCreateInfo.m_format = Format::D32_SFLOAT;
+		imageCreateInfo.m_createFlags = 0;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_shadowAtlasImage);
 	}
 
 	resize(width, height);

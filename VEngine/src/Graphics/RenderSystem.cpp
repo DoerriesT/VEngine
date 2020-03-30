@@ -14,6 +14,7 @@
 #include "Utility/Utility.h"
 #include "Mesh.h"
 #include "ViewRenderList.h"
+#include "Utility/QuadTreeAllocator.h"
 
 VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height)
 	:m_entityRegistry(entityRegistry),
@@ -36,6 +37,9 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 
 void VEngine::RenderSystem::update(float timeDelta)
 {
+	static QuadTreeAllocator quadTreeAllocator(8192, 256, 1024);
+	quadTreeAllocator.freeAll();
+
 	m_transformData.clear();
 	m_subMeshInstanceData.clear();
 	m_shadowMatrices.clear();
@@ -154,102 +158,102 @@ void VEngine::RenderSystem::update(float timeDelta)
 			{
 				auto view = m_entityRegistry.view<TransformationComponent, DirectionalLightComponent, RenderableComponent>();
 
-				view.each([&](TransformationComponent &transformationComponent, DirectionalLightComponent &directionalLightComponent, RenderableComponent&)
-				{
-					assert(directionalLightComponent.m_cascadeCount <= DirectionalLightComponent::MAX_CASCADES);
-
-					const glm::vec3 direction = transformationComponent.m_orientation * glm::vec3(0.0f, 1.0f, 0.0f);
-
-					DirectionalLight directionalLight{};
-					directionalLight.m_color = directionalLightComponent.m_color * directionalLightComponent.m_intensity;
-					directionalLight.m_shadowOffset = static_cast<uint32_t>(m_shadowMatrices.size());
-					directionalLight.m_direction = m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f);
-					directionalLight.m_shadowCount = directionalLightComponent.m_shadows ? directionalLightComponent.m_cascadeCount : 0;
-
-					if (directionalLightComponent.m_shadows)
+				view.each([&](TransformationComponent &transformationComponent, DirectionalLightComponent &directionalLightComponent, RenderableComponent &)
 					{
-						m_lightData.m_directionalLightsShadowed.push_back(directionalLight);
+						assert(directionalLightComponent.m_cascadeCount <= DirectionalLightComponent::MAX_CASCADES);
 
-						// calculate shadow matrices
-						glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
-						glm::vec4 cascadeParams[DirectionalLightComponent::MAX_CASCADES];
+						const glm::vec3 direction = transformationComponent.m_orientation * glm::vec3(0.0f, 1.0f, 0.0f);
 
-						for (uint32_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
+						DirectionalLight directionalLight{};
+						directionalLight.m_color = directionalLightComponent.m_color * directionalLightComponent.m_intensity;
+						directionalLight.m_shadowOffset = static_cast<uint32_t>(m_shadowMatrices.size());
+						directionalLight.m_direction = m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f);
+						directionalLight.m_shadowCount = directionalLightComponent.m_shadows ? directionalLightComponent.m_cascadeCount : 0;
+
+						if (directionalLightComponent.m_shadows)
 						{
-							cascadeParams[i].x = directionalLightComponent.m_depthBias[i];
-							cascadeParams[i].y = directionalLightComponent.m_normalOffsetBias[i];
-						}
+							m_lightData.m_directionalLightsShadowed.push_back(directionalLight);
 
-						calculateCascadeViewProjectionMatrices(direction,
-							directionalLightComponent.m_maxShadowDistance,
-							directionalLightComponent.m_splitLambda,
-							2048.0f,
-							directionalLightComponent.m_cascadeCount,
-							shadowMatrices,
-							cascadeParams);
+							// calculate shadow matrices
+							glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
+							glm::vec4 cascadeParams[DirectionalLightComponent::MAX_CASCADES];
 
-						m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
-						m_shadowCascadeParams.reserve(m_shadowCascadeParams.size() + directionalLightComponent.m_cascadeCount);
-
-						for (size_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
-						{
-							m_shadowMatrices.push_back(shadowMatrices[i]);
-							m_shadowCascadeParams.push_back(cascadeParams[i]);
-
-							// extract view frustum plane equations from matrix
+							for (uint32_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
 							{
-								uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
-									| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
-									| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
-									| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-								CullingData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 300.0f);
+								cascadeParams[i].x = directionalLightComponent.m_depthBias[i];
+								cascadeParams[i].y = directionalLightComponent.m_normalOffsetBias[i];
+							}
 
-								frustumCullData.push_back(cullData);
-								renderLists.push_back({});
+							calculateCascadeViewProjectionMatrices(direction,
+								directionalLightComponent.m_maxShadowDistance,
+								directionalLightComponent.m_splitLambda,
+								2048.0f,
+								directionalLightComponent.m_cascadeCount,
+								shadowMatrices,
+								cascadeParams);
+
+							m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
+							m_shadowCascadeParams.reserve(m_shadowCascadeParams.size() + directionalLightComponent.m_cascadeCount);
+
+							for (size_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
+							{
+								m_shadowMatrices.push_back(shadowMatrices[i]);
+								m_shadowCascadeParams.push_back(cascadeParams[i]);
+
+								// extract view frustum plane equations from matrix
+								{
+									uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
+										| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
+										| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
+										| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+									CullingData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 300.0f);
+
+									frustumCullData.push_back(cullData);
+									renderLists.push_back({});
+								}
 							}
 						}
-					}
-					else
-					{
-						m_lightData.m_directionalLights.push_back(directionalLight);
-					}
-				});
+						else
+						{
+							m_lightData.m_directionalLights.push_back(directionalLight);
+						}
+					});
 			}
 
 			// point lights
 			{
 				auto view = m_entityRegistry.view<TransformationComponent, PointLightComponent, RenderableComponent>();
 
-				view.each([&](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent&)
-				{
-					const float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
-
-					PointLight pointLight{};
-					pointLight.m_color = pointLightComponent.m_color * intensity;
-					pointLight.m_invSqrAttRadius = 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius);
-					pointLight.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
-					pointLight.m_radius = pointLightComponent.m_radius;
-
-					// frustum cull
-					for (size_t i = 0; i < frustumCullData[0].m_planeCount; ++i)
+				view.each([&](TransformationComponent &transformationComponent, PointLightComponent &pointLightComponent, RenderableComponent &)
 					{
-						if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), frustumCullData[0].m_planes[i]) <= -pointLightComponent.m_radius)
-						{
-							return;
-						}
-					}
+						const float intensity = pointLightComponent.m_luminousPower * (1.0f / (4.0f * glm::pi<float>()));
 
-					m_lightData.m_pointLights.push_back(pointLight);
-					m_lightData.m_pointLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
-					m_lightData.m_pointLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_pointLightOrder.size()));
-				});
+						PointLight pointLight{};
+						pointLight.m_color = pointLightComponent.m_color * intensity;
+						pointLight.m_invSqrAttRadius = 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius);
+						pointLight.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
+						pointLight.m_radius = pointLightComponent.m_radius;
+
+						// frustum cull
+						for (size_t i = 0; i < frustumCullData[0].m_planeCount; ++i)
+						{
+							if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), frustumCullData[0].m_planes[i]) <= -pointLightComponent.m_radius)
+							{
+								return;
+							}
+						}
+
+						m_lightData.m_pointLights.push_back(pointLight);
+						m_lightData.m_pointLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
+						m_lightData.m_pointLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_pointLightOrder.size()));
+					});
 
 
 				// sort by distance to camera
 				std::sort(m_lightData.m_pointLightOrder.begin(), m_lightData.m_pointLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
-				{
-					return -m_lightData.m_pointLights[lhs].m_position.z < -m_lightData.m_pointLights[rhs].m_position.z;
-				});
+					{
+						return -m_lightData.m_pointLights[lhs].m_position.z < -m_lightData.m_pointLights[rhs].m_position.z;
+					});
 
 				// clear bins
 				for (size_t i = 0; i < m_lightData.m_pointLightDepthBins.size(); ++i)
@@ -280,17 +284,18 @@ void VEngine::RenderSystem::update(float timeDelta)
 				}
 			}
 
-			// spot point lights
+			// spot lights
 			{
 				auto view = m_entityRegistry.view<TransformationComponent, SpotLightComponent, RenderableComponent>();
-			
+
 				view.each([&](TransformationComponent &transformationComponent, SpotLightComponent &spotLightComponent, RenderableComponent &)
 					{
 						const float intensity = spotLightComponent.m_luminousPower * (1.0f / (glm::pi<float>()));
 						const float angleScale = 1.0f / glm::max(0.001f, glm::cos(spotLightComponent.m_innerAngle * 0.5f) - glm::cos(spotLightComponent.m_outerAngle * 0.5f));
 						const float angleOffset = -glm::cos(spotLightComponent.m_outerAngle * 0.5f) * angleScale;
-						const glm::vec3 direction = glm::normalize(glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_orientation * glm::vec3(0.0f, 0.0f, 1.0f), 0.0f)));
-			
+						const glm::vec3 directionWS = transformationComponent.m_orientation * glm::vec3(0.0f, 0.0f, -1.0f);
+						const glm::vec3 direction = glm::normalize(glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(-directionWS, 0.0f)));
+
 						SpotLight spotLight{};
 						spotLight.m_color = spotLightComponent.m_color * intensity;
 						spotLight.m_invSqrAttRadius = 1.0f / (spotLightComponent.m_radius * spotLightComponent.m_radius);
@@ -298,7 +303,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						spotLight.m_angleScale = angleScale;
 						spotLight.m_direction = direction;
 						spotLight.m_angleOffset = angleOffset;
-			
+
 						// frustum cull
 						// TODO: improve the bounding sphere
 						for (size_t i = 0; i < frustumCullData[0].m_planeCount; ++i)
@@ -308,45 +313,174 @@ void VEngine::RenderSystem::update(float timeDelta)
 								return;
 							}
 						}
-			
-						m_lightData.m_spotLights.push_back(spotLight);
-						m_lightData.m_spotLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));
-						m_lightData.m_spotLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_spotLightOrder.size()));
+
+						uint32_t screenSpaceSize = 1;
+
+						if (spotLightComponent.m_shadows)
+						{
+							glm::vec3 tr = spotLight.m_position + spotLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							tr.z = glm::min(tr.z, -m_commonRenderData.m_nearPlane);
+							glm::vec3 bl = spotLight.m_position - spotLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							bl.z = glm::min(bl.z, -m_commonRenderData.m_nearPlane);
+
+							auto trSS = m_commonRenderData.m_projectionMatrix * glm::vec4(tr, 1.0f);
+							trSS /= trSS.w;
+							trSS.x = trSS.x * 0.5f + 0.5f;
+							trSS.y = trSS.y * 0.5f + 0.5f;
+							auto blSS = m_commonRenderData.m_projectionMatrix * glm::vec4(bl, 1.0f);
+							blSS /= blSS.w;
+							blSS.x = blSS.x * 0.5f + 0.5f;
+							blSS.y = blSS.y * 0.5f + 0.5f;
+
+							float sizeX = trSS.x - blSS.x;
+							float sizeY = blSS.y - trSS.y;
+
+							float scale = 0.5f;
+							sizeX *= m_commonRenderData.m_width * scale;
+							sizeY *= m_commonRenderData.m_height * scale;
+
+							screenSpaceSize = static_cast<uint32_t>(glm::max(sizeX, sizeY, 1.0f));
+							printf("%d\n", screenSpaceSize);
+						}
+
+						uint32_t tileOffsetX, tileOffsetY, tileSize;
+						if (spotLightComponent.m_shadows && quadTreeAllocator.alloc(screenSpaceSize, tileOffsetX, tileOffsetY, tileSize))
+						{
+							SpotLightShadowed spotLightShadowed{ spotLight };
+							spotLightShadowed.m_shadowAtlasScaleBias.x = tileSize * (1.0f / 8192.0f);
+							spotLightShadowed.m_shadowAtlasScaleBias.y = tileOffsetX / tileSize * spotLightShadowed.m_shadowAtlasScaleBias.x;
+							spotLightShadowed.m_shadowAtlasScaleBias.z = tileOffsetY / tileSize * spotLightShadowed.m_shadowAtlasScaleBias.x;
+							spotLightShadowed.m_shadowOffset = static_cast<uint32_t>(m_shadowMatrices.size());
+
+							ShadowAtlasDrawInfo atlasDrawInfo{};
+							atlasDrawInfo.m_shadowMatrixIdx = spotLightShadowed.m_shadowOffset;
+							atlasDrawInfo.m_drawListIdx = static_cast<uint32_t>(renderLists.size());
+							atlasDrawInfo.m_offsetX = tileOffsetX;
+							atlasDrawInfo.m_offsetY = tileOffsetY;
+							atlasDrawInfo.m_size = tileSize;
+
+							m_lightData.m_shadowAtlasDrawInfos.push_back(atlasDrawInfo);
+
+							glm::vec3 upDir(0.0f, 1.0f, 0.0f);
+							// choose different up vector if light direction would be linearly dependent otherwise
+							if (abs(directionWS.x) < 0.001f && abs(directionWS.z) < 0.001f)
+							{
+								upDir = glm::vec3(1.0f, 0.0f, 0.0f);
+							}
+
+							const glm::mat4 vulkanCorrection =
+							{
+								{ 1.0f, 0.0f, 0.0f, 0.0f },
+								{ 0.0f, -1.0f, 0.0f, 0.0f },
+								{ 0.0f, 0.0f, 0.5f, 0.0f },
+								{ 0.0f, 0.0f, 0.5f, 1.0f }
+							};
+
+							glm::mat4 shadowMatrix = vulkanCorrection * glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
+								* glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + directionWS, upDir);
+
+							m_shadowMatrices.push_back(shadowMatrix);
+
+							// extract view frustum plane equations from matrix
+							{
+								uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
+									| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
+									| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
+									| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+								CullingData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, spotLightComponent.m_radius);
+
+								frustumCullData.push_back(cullData);
+								renderLists.push_back({});
+							}
+
+							m_lightData.m_spotLightsShadowed.push_back(spotLightShadowed);
+							m_lightData.m_spotLightShadowedTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));
+							m_lightData.m_spotLightShadowedOrder.push_back(static_cast<uint32_t>(m_lightData.m_spotLightShadowedOrder.size()));
+						}
+						else
+						{
+							m_lightData.m_spotLights.push_back(spotLight);
+							m_lightData.m_spotLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));
+							m_lightData.m_spotLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_spotLightOrder.size()));
+						}
+
 					});
-			
-				// sort by distance to camera
-				std::sort(m_lightData.m_spotLightOrder.begin(), m_lightData.m_spotLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
-					{
-						return -m_lightData.m_spotLights[lhs].m_position.z < -m_lightData.m_spotLights[rhs].m_position.z;
-					});
-			
-				// clear bins
-				for (size_t i = 0; i < m_lightData.m_spotLightDepthBins.size(); ++i)
+
+				// unshadowed
 				{
-					const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
-					m_lightData.m_spotLightDepthBins[i] = emptyBin;
+					// sort by distance to camera
+					std::sort(m_lightData.m_spotLightOrder.begin(), m_lightData.m_spotLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+						{
+							return -m_lightData.m_spotLights[lhs].m_position.z < -m_lightData.m_spotLights[rhs].m_position.z;
+						});
+
+					// clear bins
+					for (size_t i = 0; i < m_lightData.m_spotLightDepthBins.size(); ++i)
+					{
+						const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
+						m_lightData.m_spotLightDepthBins[i] = emptyBin;
+					}
+
+					// assign lights to bins
+					for (size_t i = 0; i < m_lightData.m_spotLights.size(); ++i)
+					{
+						const auto &spotLightData = m_lightData.m_spotLights[m_lightData.m_spotLightOrder[i]];
+						const float posDepth = -spotLightData.m_position.z;
+						const float radius = glm::sqrt(1.0f / spotLightData.m_invSqrAttRadius);
+						float nearestPoint = posDepth - radius;
+						float furthestPoint = posDepth + radius;
+
+						size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+						size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+
+						for (size_t j = minBin; j <= maxBin; ++j)
+						{
+							uint32_t &val = m_lightData.m_spotLightDepthBins[j];
+							uint32_t minIndex = (val & 0xFFFF0000) >> 16;
+							uint32_t maxIndex = val & 0xFFFF;
+							minIndex = std::min(minIndex, static_cast<uint32_t>(i));
+							maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
+							val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+						}
+					}
 				}
-			
-				// assign lights to bins
-				for (size_t i = 0; i < m_lightData.m_spotLights.size(); ++i)
+				
+				// shadowed
 				{
-					const auto &spotLightData = m_lightData.m_spotLights[m_lightData.m_spotLightOrder[i]];
-					const float posDepth = -spotLightData.m_position.z;
-					const float radius = glm::sqrt(1.0f / spotLightData.m_invSqrAttRadius);
-					float nearestPoint = posDepth - radius;
-					float furthestPoint = posDepth + radius;
-			
-					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
-					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
-			
-					for (size_t j = minBin; j <= maxBin; ++j)
+					// sort by distance to camera
+					std::sort(m_lightData.m_spotLightShadowedOrder.begin(), m_lightData.m_spotLightShadowedOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+						{
+							return -m_lightData.m_spotLightsShadowed[lhs].m_spotLight.m_position.z < -m_lightData.m_spotLightsShadowed[rhs].m_spotLight.m_position.z;
+						});
+
+					// clear bins
+					for (size_t i = 0; i < m_lightData.m_spotLightShadowedDepthBins.size(); ++i)
 					{
-						uint32_t &val = m_lightData.m_spotLightDepthBins[j];
-						uint32_t minIndex = (val & 0xFFFF0000) >> 16;
-						uint32_t maxIndex = val & 0xFFFF;
-						minIndex = std::min(minIndex, static_cast<uint32_t>(i));
-						maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
-						val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+						const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
+						m_lightData.m_spotLightShadowedDepthBins[i] = emptyBin;
+					}
+
+					// assign lights to bins
+					for (size_t i = 0; i < m_lightData.m_spotLightsShadowed.size(); ++i)
+					{
+						const auto &spotLightData = m_lightData.m_spotLightsShadowed[m_lightData.m_spotLightShadowedOrder[i]].m_spotLight;
+						const float posDepth = -spotLightData.m_position.z;
+						const float radius = glm::sqrt(1.0f / spotLightData.m_invSqrAttRadius);
+						float nearestPoint = posDepth - radius;
+						float furthestPoint = posDepth + radius;
+
+						size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+						size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+
+						for (size_t j = minBin; j <= maxBin; ++j)
+						{
+							uint32_t &val = m_lightData.m_spotLightShadowedDepthBins[j];
+							uint32_t minIndex = (val & 0xFFFF0000) >> 16;
+							uint32_t maxIndex = val & 0xFFFF;
+							minIndex = std::min(minIndex, static_cast<uint32_t>(i));
+							maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
+							val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+						}
 					}
 				}
 			}
@@ -356,103 +490,104 @@ void VEngine::RenderSystem::update(float timeDelta)
 		{
 			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
 
-			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent&)
-			{
-				const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
-				const glm::mat4 scaleMatrix = glm::scale(glm::vec3(transformationComponent.m_scale));
-				transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
-				transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
-
-				const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
-
-				m_transformData.push_back(transformationComponent.m_transformation);
-
-				for (const auto &p : meshComponent.m_subMeshMaterialPairs)
+			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent &)
 				{
-					SubMeshInstanceData instanceData;
-					instanceData.m_subMeshIndex = p.first;
-					instanceData.m_transformIndex = transformIndex;
-					instanceData.m_materialIndex = p.second;
+					const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
+					const glm::mat4 scaleMatrix = glm::scale(glm::vec3(transformationComponent.m_scale));
+					transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
+					transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
 
-					const bool staticMobility = transformationComponent.m_mobility == TransformationComponent::Mobility::STATIC;
-					uint32_t contentTypeMask = 0;
+					const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
 
-					switch (m_materialBatchAssignment[p.second])
+					m_transformData.push_back(transformationComponent.m_transformation);
+
+					for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 					{
-					case 0: // Opaque
-						contentTypeMask = staticMobility ? CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT : CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT;
-						allInstanceData.push_back(instanceData);
-						break;
-					case 1: // Alpha tested
-						contentTypeMask = staticMobility ? CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT : CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-						allInstanceData.push_back(instanceData);
-						break;
-					case 2: // transparent
-						contentTypeMask = staticMobility ? CullingData::STATIC_TRANSPARENT_CONTENT_TYPE_BIT : CullingData::DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT;
-						break;
-					default:
-						assert(false);
-						break;
-					}
+						SubMeshInstanceData instanceData;
+						instanceData.m_subMeshIndex = p.first;
+						instanceData.m_transformIndex = transformIndex;
+						instanceData.m_materialIndex = p.second;
 
-					const glm::vec4 boundingSphere = m_boundingSpheres[p.first];
-					const glm::vec3 boundingSpherePos = transformationComponent.m_position + transformationComponent.m_orientation * (transformationComponent.m_scale * glm::vec3(boundingSphere));
-					const float boundingSphereRadius = boundingSphere.w * transformationComponent.m_scale;
+						const bool staticMobility = transformationComponent.m_mobility == TransformationComponent::Mobility::STATIC;
+						uint32_t contentTypeMask = 0;
 
-					for (const auto &cullData : frustumCullData)
-					{
-						// only add draw call to list if content type matches
-						if ((cullData.m_contentTypeFlags & contentTypeMask) == contentTypeMask)
+						switch (m_materialBatchAssignment[p.second])
 						{
-							bool culled = false;
-							for (size_t i = 0; i < cullData.m_planeCount; ++i)
+						case 0: // Opaque
+							contentTypeMask = staticMobility ? CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT : CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT;
+							allInstanceData.push_back(instanceData);
+							break;
+						case 1: // Alpha tested
+							contentTypeMask = staticMobility ? CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT : CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+							allInstanceData.push_back(instanceData);
+							break;
+						case 2: // transparent
+							contentTypeMask = staticMobility ? CullingData::STATIC_TRANSPARENT_CONTENT_TYPE_BIT : CullingData::DYNAMIC_TRANSPARENT_CONTENT_TYPE_BIT;
+							break;
+						default:
+							assert(false);
+							break;
+						}
+
+						const glm::vec4 boundingSphere = m_boundingSpheres[p.first];
+						const glm::vec3 boundingSpherePos = transformationComponent.m_position + transformationComponent.m_orientation * (transformationComponent.m_scale * glm::vec3(boundingSphere));
+						const float boundingSphereRadius = boundingSphere.w * transformationComponent.m_scale;
+
+						for (const auto &cullData : frustumCullData)
+						{
+							// only add draw call to list if content type matches
+							if ((cullData.m_contentTypeFlags & contentTypeMask) == contentTypeMask)
 							{
-								if (glm::dot(glm::vec4(boundingSpherePos, 1.0f), cullData.m_planes[i]) <= -boundingSphereRadius)
+								bool culled = false;
+								for (size_t i = 0; i < cullData.m_planeCount; ++i)
 								{
-									culled = true;
+									if (glm::dot(glm::vec4(boundingSpherePos, 1.0f), cullData.m_planes[i]) <= -boundingSphereRadius)
+									{
+										culled = true;
+										break;
+									}
+								}
+
+								if (culled)
+								{
+									continue;
+								}
+
+								switch (m_materialBatchAssignment[p.second])
+								{
+								case 0: // Opaque
+									++renderLists[cullData.m_renderListIndex].m_opaqueCount;
+									break;
+								case 1: // Alpha tested
+									++renderLists[cullData.m_renderListIndex].m_maskedCount;
+									break;
+								case 2: // transparent
+									++renderLists[cullData.m_renderListIndex].m_transparentCount;
+									break;
+								default:
+									assert(false);
 									break;
 								}
+
+								auto createMask = [](uint32_t size) {return size == 64 ? ~uint64_t() : (uint64_t(1) << size) - 1; };
+
+								const uint32_t depth = 0;// (0.0f / planes.m_depthRange) * createMask(22);
+
+								// key:
+								// [drawListIdx 8][type 2][depth 22][instanceIdx 32]
+								uint64_t drawCallKey = 0;
+								drawCallKey |= (cullData.m_renderListIndex & createMask(8)) << 56;
+								drawCallKey |= (m_materialBatchAssignment[p.second] & createMask(2)) << 54;
+								drawCallKey |= (depth & createMask(22)) << 32;
+								drawCallKey |= static_cast<uint32_t>(m_subMeshInstanceData.size());
+
+								drawCallKeys.push_back(drawCallKey);
+
+								m_subMeshInstanceData.push_back(instanceData);
 							}
-							if (culled)
-							{
-								continue;
-							}
-
-							switch (m_materialBatchAssignment[p.second])
-							{
-							case 0: // Opaque
-								++renderLists[cullData.m_renderListIndex].m_opaqueCount;
-								break;
-							case 1: // Alpha tested
-								++renderLists[cullData.m_renderListIndex].m_maskedCount;
-								break;
-							case 2: // transparent
-								++renderLists[cullData.m_renderListIndex].m_transparentCount;
-								break;
-							default:
-								assert(false);
-								break;
-							}
-							
-							auto createMask = [](uint32_t size) {return size == 64 ? ~uint64_t() : (uint64_t(1) << size) - 1; };
-
-							const uint32_t depth = 0;// (0.0f / planes.m_depthRange) * createMask(22);
-
-							// key:
-							// [drawListIdx 8][type 2][depth 22][instanceIdx 32]
-							uint64_t drawCallKey = 0;
-							drawCallKey |= (cullData.m_renderListIndex & createMask(8)) << 56;
-							drawCallKey |= (m_materialBatchAssignment[p.second] & createMask(2)) << 54;
-							drawCallKey |= (depth & createMask(22)) << 32;
-							drawCallKey |= static_cast<uint32_t>(m_subMeshInstanceData.size());
-							
-							drawCallKeys.push_back(drawCallKey);
-
-							m_subMeshInstanceData.push_back(instanceData);
 						}
 					}
-				}
-			});
+				});
 
 			// sort draw call keys
 			std::sort(drawCallKeys.begin(), drawCallKeys.end());
@@ -583,7 +718,7 @@ entt::entity VEngine::RenderSystem::getCameraEntity() const
 	return m_cameraEntity;
 }
 
-const uint32_t * VEngine::RenderSystem::getLuminanceHistogram() const
+const uint32_t *VEngine::RenderSystem::getLuminanceHistogram() const
 {
 	return m_renderer->getLuminanceHistogram();
 }
@@ -613,12 +748,12 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 	}
 }
 
-void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, 
-	float maxShadowDistance, 
-	float splitLambda, 
-	float shadowTextureSize, 
-	size_t cascadeCount, 
-	glm::mat4 *viewProjectionMatrices, 
+void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir,
+	float maxShadowDistance,
+	float splitLambda,
+	float shadowTextureSize,
+	size_t cascadeCount,
+	glm::mat4 *viewProjectionMatrices,
 	glm::vec4 *cascadeParams)
 {
 	float splits[DirectionalLightComponent::MAX_CASCADES];
@@ -655,7 +790,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		const float n = previousSplit;
 		const float f = splits[i];
 		const float k = glm::sqrt(1.0f + aspectRatio * aspectRatio) * glm::tan(m_commonRenderData.m_fovy * 0.5f);
-		
+
 		glm::vec3 center;
 		float radius;
 		const float k2 = k * k;

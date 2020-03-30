@@ -23,6 +23,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 	{
 		{rg::ResourceViewHandle(data.m_pointLightBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_spotLightBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_spotLightShadowedBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
 	graph.addPass("Raster Tiling", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -55,14 +56,16 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 			DescriptorBufferInfo pointLightMaskBufferInfo = registry.getBufferInfo(data.m_pointLightBitMaskBufferHandle);
 			DescriptorBufferInfo spotLightMaskBufferInfo = registry.getBufferInfo(data.m_spotLightBitMaskBufferHandle);
+			DescriptorBufferInfo spotLightShadowedMaskBufferInfo = registry.getBufferInfo(data.m_spotLightShadowedBitMaskBufferHandle);
 
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageBuffer(&pointLightMaskBufferInfo, POINT_LIGHT_MASK_BINDING),
 				Initializers::storageBuffer(&spotLightMaskBufferInfo, SPOT_LIGHT_MASK_BINDING),
+				Initializers::storageBuffer(&spotLightShadowedMaskBufferInfo, SPOT_LIGHT_SHADOWED_MASK_BINDING),
 			};
 
-			descriptorSet->update(2, updates);
+			descriptorSet->update(3, updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
@@ -119,6 +122,22 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		{
 			PushConsts pushConsts;
 			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_spotLightTransforms[lightData.m_spotLightOrder[i]];
+			pushConsts.index = static_cast<uint32_t>(i);
+
+			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
+
+			cmdList->drawIndexed(spotLightProxyMeshIndexCount, 1, spotLightProxyMeshFirstIndex, spotLightProxyMeshVertexOffset, 0);
+		}
+
+		// shadowed spot lights
+		targetBuffer = 2;
+		wordCount = static_cast<uint32_t>((data.m_lightData->m_spotLightsShadowed.size() + 31) / 32);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
+		for (size_t i = 0; i < data.m_lightData->m_spotLightsShadowed.size(); ++i)
+		{
+			PushConsts pushConsts;
+			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_spotLightShadowedTransforms[lightData.m_spotLightShadowedOrder[i]];
 			pushConsts.index = static_cast<uint32_t>(i);
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);

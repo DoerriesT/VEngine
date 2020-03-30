@@ -23,12 +23,16 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_pointLightZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_spotLightDataBufferInfo;
 			gal::DescriptorBufferInfo m_spotLightZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightShadowedDataBufferInfo;
+			gal::DescriptorBufferInfo m_spotLightShadowedZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_materialDataBufferInfo;
 			//gal::DescriptorBufferInfo m_instanceDataBufferInfo;
 			gal::DescriptorBufferInfo m_transformDataBufferInfo;
+			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 			//gal::DescriptorBufferInfo m_subMeshInfoBufferInfo;
 			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
 			rg::BufferViewHandle m_spotLightBitMaskBufferHandle;
+			rg::BufferViewHandle m_spotLightShadowedBitMaskBufferHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			//rg::BufferViewHandle m_indicesBufferHandle;
 			//rg::BufferViewHandle m_indirectBufferHandle;
@@ -39,6 +43,7 @@ namespace VEngine
 			rg::ImageViewHandle m_specularRoughnessImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_ssaoImageViewHandle;
+			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

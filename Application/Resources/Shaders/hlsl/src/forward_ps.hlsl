@@ -38,6 +38,12 @@ StructuredBuffer<PointLight> g_PointLights : REGISTER_SRV(POINT_LIGHT_DATA_BINDI
 ByteAddressBuffer g_SpotLightZBins : REGISTER_SRV(SPOT_LIGHT_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_Z_BINS_BUFFER_SET);
 ByteAddressBuffer g_SpotBitMask : REGISTER_SRV(SPOT_LIGHT_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_BIT_MASK_BUFFER_SET);
 StructuredBuffer<SpotLight> g_SpotLights : REGISTER_SRV(SPOT_LIGHT_DATA_BINDING, SPOT_LIGHT_DATA_SET);
+ByteAddressBuffer g_SpotLightShadowedZBins : REGISTER_SRV(SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_BINDING, SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_SET);
+ByteAddressBuffer g_SpotShadowedBitMask : REGISTER_SRV(SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_BINDING, SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_SET);
+StructuredBuffer<SpotLightShadowed> g_SpotLightsShadowed : REGISTER_SRV(SPOT_LIGHT_SHADOWED_DATA_BINDING, SPOT_LIGHT_SHADOWED_DATA_SET);
+StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
+Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 
@@ -87,9 +93,11 @@ PSOutput main(PSInput psIn)
 		lightingParams.albedo = accurateSRGBToLinear(albedo);
 	}
 	
+	float3 normal = normalize(psIn.normal);
+	float3 normalWS =  mul(g_Constants.invViewMatrix, float4(normal, 0.0)).xyz;
 	// normal
 	{
-		float3 normal = normalize(psIn.normal);
+		
 		uint normalTextureIndex = (materialData.albedoNormalTexture & 0xFFFF);
 		if (normalTextureIndex != 0)
 		{
@@ -123,6 +131,8 @@ PSOutput main(PSInput psIn)
 		}
 		lightingParams.roughness = roughness;
 	}
+	
+	float3 worldSpacePos = mul(g_Constants.invViewMatrix, float4(lightingParams.viewSpacePosition, 1.0)).xyz;
 	
 	
 	float3 result = 0.0;
@@ -191,6 +201,38 @@ PSOutput main(PSInput psIn)
 				const uint index = 32 * wordIndex + bitIndex;
 				mask ^= (1 << bitIndex);
 				result += evaluateSpotLight(lightingParams, g_SpotLights[index]);
+			}
+		}
+	}
+	
+	// shadowed spot lights
+	uint spotLightShadowedCount = g_Constants.spotLightShadowedCount;
+	if (spotLightShadowedCount > 0)
+	{
+		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
+		getLightingMinMaxIndices(g_SpotLightShadowedZBins, spotLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
+		
+		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+		{
+			uint mask = getLightingBitMask(g_SpotShadowedBitMask, address, wordIndex, minIndex, maxIndex);
+			
+			while (mask != 0)
+			{
+				const uint bitIndex = firstbitlow(mask);
+				const uint index = 32 * wordIndex + bitIndex;
+				mask ^= (1 << bitIndex);
+				
+				SpotLightShadowed spotLightShadowed = g_SpotLightsShadowed[index];
+				
+				// evaluate shadow
+				float4 shadowPos = mul(g_ShadowMatrices[spotLightShadowed.shadowOffset], float4(worldSpacePos + normalWS * 0.05, 1.0));
+				shadowPos.xyz /= shadowPos.w;
+				shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+				shadowPos.xy = shadowPos.xy * spotLightShadowed.shadowAtlasScaleBias.x + spotLightShadowed.shadowAtlasScaleBias.yz;
+				float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+				
+				result += shadow * evaluateSpotLight(lightingParams, spotLightShadowed.spotLight);
 			}
 		}
 	}

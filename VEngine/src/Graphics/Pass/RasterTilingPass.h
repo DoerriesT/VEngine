@@ -14,6 +14,7 @@ namespace VEngine
 			const LightData *m_lightData;
 			rg::BufferViewHandle m_pointLightBitMaskBufferHandle;
 			rg::BufferViewHandle m_spotLightBitMaskBufferHandle;
+			rg::BufferViewHandle m_spotLightShadowedBitMaskBufferHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

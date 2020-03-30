@@ -14,6 +14,11 @@ layout(set = SPOT_LIGHT_MASK_SET, binding = SPOT_LIGHT_MASK_BINDING) buffer SPOT
 	uint uSpotLightBitMask[];
 };
 
+layout(set = SPOT_LIGHT_SHADOWED_MASK_SET, binding = SPOT_LIGHT_SHADOWED_MASK_BINDING) buffer SPOT_LIGHT_SHADOWED_BITMASK 
+{
+	uint uSpotLightShadowedBitMask[];
+};
+
 layout(push_constant) uniform PUSH_CONSTS 
 {
 	PushConsts uPushConsts;
@@ -62,6 +67,10 @@ void main()
 		else if (uPushConsts.targetBuffer == 1)
 		{
 			atomicOr(uSpotLightBitMask[wordIndex], lightBit);
+		}
+		else if (uPushConsts.targetBuffer == 2)
+		{
+			atomicOr(uSpotLightShadowedBitMask[wordIndex], lightBit);
 		}
 	}
 }

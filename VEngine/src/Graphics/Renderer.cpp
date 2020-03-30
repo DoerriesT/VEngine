@@ -9,6 +9,7 @@
 #include "Pass/IntegrateBrdfPass.h"
 #include "Pass/GeometryPass.h"
 #include "Pass/ShadowPass.h"
+#include "Pass/ShadowAtlasPass.h"
 #include "Pass/RasterTilingPass.h"
 #include "Pass/LuminanceHistogramPass.h"
 #include "Pass/ExposurePass.h"
@@ -149,6 +150,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// import resources into graph
+
+	rg::ImageViewHandle shadowAtlasImageViewHandle = 0;
+	{
+		rg::ImageHandle imageHandle = graph.importImage(m_renderResources->m_shadowAtlasImage, "Shadow Atlas", false, {}, &m_renderResources->m_shadowAtlasImageState);
+		shadowAtlasImageViewHandle = graph.createImageView({ "Shadow Atlas", imageHandle, { 0, 1, 0, 1 } });
+	}
 
 	rg::ImageViewHandle depthImageViewHandle = 0;
 	{
@@ -326,6 +333,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	rg::BufferViewHandle pointLightBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_pointLights.size()));
 	rg::BufferViewHandle spotLightBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_spotLights.size()));
+	rg::BufferViewHandle spotLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createPointLightBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_spotLightsShadowed.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
@@ -403,6 +411,25 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
+	// shadowed spot light data write
+	DescriptorBufferInfo spotLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightsShadowed.size() * sizeof(SpotLightShadowed), size_t(1)) };
+	DescriptorBufferInfo spotLightShadowedZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_spotLightShadowedDepthBins.size() * sizeof(uint32_t), size_t(1)) };
+	{
+		uint8_t *dataBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightShadowedDataBufferInfo.m_range, spotLightShadowedDataBufferInfo.m_offset, spotLightShadowedDataBufferInfo.m_buffer, dataBufferPtr);
+		uint8_t *zBinsBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(spotLightShadowedZBinsBufferInfo.m_range, spotLightShadowedZBinsBufferInfo.m_offset, spotLightShadowedZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		if (!lightData.m_spotLightsShadowed.empty())
+		{
+			for (size_t i = 0; i < lightData.m_spotLightsShadowed.size(); ++i)
+			{
+				((SpotLightShadowed *)dataBufferPtr)[i] = lightData.m_spotLightsShadowed[lightData.m_spotLightShadowedOrder[i]];
+			}
+			//memcpy(dataBufferPtr, lightData.m_spotLightData.data(), lightData.m_spotLightData.size() * sizeof(SpotLightData));
+			memcpy(zBinsBufferPtr, lightData.m_spotLightShadowedDepthBins.data(), lightData.m_spotLightShadowedDepthBins.size() * sizeof(uint32_t));
+		}
+	}
+
 	// shadow matrices write
 	DescriptorBufferInfo shadowMatricesBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), size_t(1)) };
 	{
@@ -415,13 +442,13 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadow texel sized write
-	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::vec4), size_t(1)) };
+	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(glm::vec4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowCascadeParamsBufferInfo.m_range, shadowCascadeParamsBufferInfo.m_offset, shadowCascadeParamsBufferInfo.m_buffer, bufferPtr);
-		if (renderData.m_shadowMatrixCount)
+		if (!lightData.m_directionalLightsShadowed.empty())
 		{
-			memcpy(bufferPtr, renderData.m_shadowCascadeParams, renderData.m_shadowMatrixCount * sizeof(glm::vec4));
+			memcpy(bufferPtr, renderData.m_shadowCascadeParams, lightData.m_directionalLightsShadowed.size() * sizeof(glm::vec4));
 		}
 	}
 
@@ -501,10 +528,31 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rasterTilingPassData.m_lightData = &lightData;
 	rasterTilingPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 	rasterTilingPassData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
+	rasterTilingPassData.m_spotLightShadowedBitMaskBufferHandle = spotLightShadowedBitMaskBufferViewHandle;
 
-	if (!lightData.m_pointLights.empty() || !lightData.m_spotLights.empty())
+	if (!lightData.m_pointLights.empty() || !lightData.m_spotLights.empty() || !lightData.m_spotLightsShadowed.empty())
 	{
 		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
+	}
+
+
+	// shadow atlas pass
+	ShadowAtlasPass::Data shadowAtlasPassData;
+	shadowAtlasPassData.m_passRecordContext = &passRecordContext;
+	shadowAtlasPassData.m_shadowMapSize = 8192;
+	shadowAtlasPassData.m_drawInfoCount = lightData.m_shadowAtlasDrawInfos.size();
+	shadowAtlasPassData.m_shadowAtlasDrawInfo = lightData.m_shadowAtlasDrawInfos.data();
+	shadowAtlasPassData.m_renderLists = renderData.m_renderLists;
+	shadowAtlasPassData.m_shadowMatrices = renderData.m_shadowMatrices;
+	shadowAtlasPassData.m_instanceData = sortedInstanceData.data();
+	shadowAtlasPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	shadowAtlasPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	shadowAtlasPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	shadowAtlasPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
+
+	if (!lightData.m_shadowAtlasDrawInfos.empty())
+	{
+		ShadowAtlasPass::addToGraph(graph, shadowAtlasPassData);
 	}
 
 
@@ -611,10 +659,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_pointLightZBinsBufferInfo = pointLightZBinsBufferInfo;
 	forwardPassData.m_spotLightDataBufferInfo = spotLightDataBufferInfo;
 	forwardPassData.m_spotLightZBinsBufferInfo = spotLightZBinsBufferInfo;
+	forwardPassData.m_spotLightShadowedDataBufferInfo = spotLightShadowedDataBufferInfo;
+	forwardPassData.m_spotLightShadowedZBinsBufferInfo = spotLightShadowedZBinsBufferInfo;
 	forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 	forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	forwardPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	forwardPassData.m_pointLightBitMaskBufferHandle = pointLightBitMaskBufferViewHandle;
 	forwardPassData.m_spotLightBitMaskBufferHandle = spotLightBitMaskBufferViewHandle;
+	forwardPassData.m_spotLightShadowedBitMaskBufferHandle = spotLightShadowedBitMaskBufferViewHandle;
 	forwardPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
@@ -623,6 +675,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
 	forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
+	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 

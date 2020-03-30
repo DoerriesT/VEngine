@@ -17,6 +17,7 @@ namespace VEngine
 		gal::CommandList *m_commandList = nullptr;
 
 		// images
+		gal::Image *m_shadowAtlasImage = {};
 		gal::Image *m_depthImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_lightImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT] = {};
@@ -52,6 +53,7 @@ namespace VEngine
 		gal::Sampler *m_shadowSampler = {};
 
 		// rendergraph external info
+		rg::ResourceStateData m_shadowAtlasImageState = {};
 		rg::ResourceStateData m_depthImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		rg::ResourceStateData m_lightImageState[RendererConsts::FRAMES_IN_FLIGHT][14] = {};
 		rg::ResourceStateData m_taaHistoryTextureState[RendererConsts::FRAMES_IN_FLIGHT] = {};

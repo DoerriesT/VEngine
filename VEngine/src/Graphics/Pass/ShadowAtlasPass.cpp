@@ -5,6 +5,8 @@
 #include "Graphics/DescriptorSetCache.h"
 #include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/LightData.h"
+#include "Graphics/ViewRenderList.h"
 #include "GlobalVar.h"
 #include <glm/vec3.hpp>
 #include "Graphics/gal/Initializers.h"
@@ -32,7 +34,7 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 			// get pipelines and update descriptor sets
 			gal::GraphicsPipeline *pipelines[2];
-			gal::DescriptorSet *descriptorSets[2];
+			gal::DescriptorSet *sets[2];
 			for (size_t i = 0; i < 2; ++i)
 			{
 				const bool alphaMasked = i == 1;
@@ -44,14 +46,14 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 				builder.setVertexShader(alphaMasked ? "Resources/Shaders/shadows_alpha_mask_vert.spv" : "Resources/Shaders/shadows_vert.spv");
 				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/shadows_frag.spv");
-				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
+				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
 				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
 				builder.setDepthStencilAttachmentFormat(shadowAtlasImageView->getImage()->getDescription().m_format);
 
 				pipelines[i] = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
-				descriptorSets[i] = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelines[i]->getDescriptorSetLayout(0));
+				sets[i] = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipelines[i]->getDescriptorSetLayout(0));
 
 				// update descriptor sets
 				{
@@ -69,7 +71,7 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
 					};
 
-					descriptorSets[i]->update(alphaMasked ? 4 : 2, updates);
+					sets[i]->update(alphaMasked ? 4 : 2, updates);
 				}
 			}
 
@@ -77,7 +79,8 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 			for (size_t i = 0; i < data.m_drawInfoCount; ++i)
 			{
-				const auto &drawInfo = data.m_shadowDrawInfo[i];
+				const auto &drawInfo = data.m_shadowAtlasDrawInfo[i];
+				const auto &renderList = data.m_renderLists[drawInfo.m_drawListIdx];
 
 				Rect renderArea = { {static_cast<int32_t>(drawInfo.m_offsetX), static_cast<int32_t>(drawInfo.m_offsetY)}, {drawInfo.m_size, drawInfo.m_size} };
 
@@ -92,7 +95,7 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 					cmdList->bindPipeline(pipelines[j]);
 
-					DescriptorSet *descriptorSets[] = { descriptorSets[j], data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
+					DescriptorSet *descriptorSets[] = { sets[j], data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
 					cmdList->bindDescriptorSets(pipelines[j], 0, alphaMasked ? 2 : 1, descriptorSets);
 
 					Viewport viewport{ static_cast<float>(drawInfo.m_offsetX), static_cast<float>(drawInfo.m_offsetY), static_cast<float>(drawInfo.m_size), static_cast<float>(drawInfo.m_size), 0.0f, 1.0f };
@@ -101,8 +104,8 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 					cmdList->setScissor(0, 1, &renderArea);
 
 					
-					const uint32_t instanceDataCount = alphaMasked ? data.m_maskedInstanceDataCounts[i] : data.m_opaqueInstanceDataCounts[i];
-					const uint32_t instanceDataOffset = alphaMasked ? data.m_maskedInstanceDataOffsets[i] : data.m_opaqueInstanceDataOffsets[i];
+					const uint32_t instanceDataCount = alphaMasked ? renderList.m_maskedCount : renderList.m_opaqueCount;
+					const uint32_t instanceDataOffset = alphaMasked ? renderList.m_maskedOffset : renderList.m_opaqueOffset;
 
 					for (uint32_t k = 0; k < instanceDataCount; ++k)
 					{

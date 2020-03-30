@@ -38,6 +38,18 @@
 #define EXPOSURE_DATA_BUFFER_BINDING 19
 #define DIRECTIONAL_LIGHTS_SHADOWED_SET 0
 #define DIRECTIONAL_LIGHTS_SHADOWED_BINDING 20
+#define SPOT_LIGHT_SHADOWED_DATA_SET 0
+#define SPOT_LIGHT_SHADOWED_DATA_BINDING 21
+#define SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_SET 0
+#define SPOT_LIGHT_SHADOWED_Z_BINS_BUFFER_BINDING 22
+#define SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_SET 0
+#define SPOT_LIGHT_SHADOWED_BIT_MASK_BUFFER_BINDING 23
+#define SHADOW_ATLAS_IMAGE_SET 0
+#define SHADOW_ATLAS_IMAGE_BINDING 24
+#define SHADOW_SAMPLER_SET 0
+#define SHADOW_SAMPLER_BINDING 25
+#define SHADOW_MATRICES_SET 0
+#define SHADOW_MATRICES_BINDING 26
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -53,12 +65,14 @@ struct PushConsts
 struct Constants
 {
 	float4x4 jitteredViewProjectionMatrix;
+	float4x4 invViewMatrix;
 	float4 viewMatrixRow0;
 	float4 viewMatrixRow1;
 	float4 viewMatrixRow2;
 	uint directionalLightCount;
 	uint directionalLightShadowedCount;
 	uint pointLightCount;
+	uint spotLightShadowedCount;
 	uint ambientOcclusion;
 	uint width;
 };

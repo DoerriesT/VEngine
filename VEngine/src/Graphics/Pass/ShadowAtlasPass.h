@@ -7,16 +7,8 @@ namespace VEngine
 	struct PassRecordContext;
 	struct SubMeshInfo;
 	struct SubMeshInstanceData;
-	struct ShadowDrawInfo;
-
-	struct ShadowDrawInfo
-	{
-		uint32_t m_shadowMatrixIdx;
-		uint32_t m_drawListIdx;
-		uint32_t m_offsetX;
-		uint32_t m_offsetY;
-		uint32_t m_size;
-	};
+	struct ShadowAtlasDrawInfo;
+	struct ViewRenderList;
 
 	namespace ShadowAtlasPass
 	{
@@ -25,11 +17,8 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_shadowMapSize;
 			uint32_t m_drawInfoCount;
-			const ShadowDrawInfo *m_shadowDrawInfo;
-			const uint32_t *m_opaqueInstanceDataCounts;
-			const uint32_t *m_opaqueInstanceDataOffsets;
-			const uint32_t *m_maskedInstanceDataCounts;
-			const uint32_t *m_maskedInstanceDataOffsets;
+			const ShadowAtlasDrawInfo *m_shadowAtlasDrawInfo;
+			const ViewRenderList *m_renderLists;
 			const glm::mat4 *m_shadowMatrices;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;

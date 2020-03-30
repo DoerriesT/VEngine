@@ -10,5 +10,6 @@ namespace VEngine
 		float m_radius;
 		float m_outerAngle;
 		float m_innerAngle;
+		bool m_shadows;
 	};
 }
