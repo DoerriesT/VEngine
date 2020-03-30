@@ -207,13 +207,34 @@ PSOutput main(PSInput psIn)
 				// evaluate shadow
 				float4 shadowPosWS = float4(worldSpacePos + normalWS * 0.05, 1.0);
 				float4 shadowPos;
-				shadowPos.x = dot(lightShadowed.shadowMatrix0, shadowPosWS);
-				shadowPos.y = dot(lightShadowed.shadowMatrix1, shadowPosWS);
-				shadowPos.z = dot(lightShadowed.shadowMatrix2, shadowPosWS);
-				shadowPos.w = dot(lightShadowed.shadowMatrix3, shadowPosWS);
-				shadowPos.xyz /= shadowPos.w;
-				shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
-				shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
+				
+				// spot light
+				if (lightShadowed.light.angleScale != -1.0)
+				{
+					shadowPos.x = dot(lightShadowed.shadowMatrix0, shadowPosWS);
+					shadowPos.y = dot(lightShadowed.shadowMatrix1, shadowPosWS);
+					shadowPos.z = dot(lightShadowed.shadowMatrix2, shadowPosWS);
+					shadowPos.w = dot(lightShadowed.shadowMatrix3, shadowPosWS);
+					shadowPos.xyz /= shadowPos.w;
+					shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+					shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
+				}
+				// point light
+				else
+				{
+					float3 lightToPoint = shadowPosWS.xyz - lightShadowed.positionWS;
+					int faceIdx = 0;
+					shadowPos.xy = sampleCube(lightToPoint, faceIdx);
+					shadowPos.x = 1.0 - shadowPos.x; // correct for handedness (cubemap coordinate system is left-handed, our world space is right-handed)
+					shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[faceIdx].x + lightShadowed.shadowAtlasParams[faceIdx].yz;
+					
+					float dist = faceIdx < 2 ? abs(lightToPoint.x) : faceIdx < 4 ? abs(lightToPoint.y) : abs(lightToPoint.z);
+					const float nearPlane = 0.1f;
+					float param0 = -lightShadowed.radius / (lightShadowed.radius - nearPlane);
+					float param1 = param0 * nearPlane;
+					shadowPos.z = -param0 + param1 / dist;
+				}
+				
 				float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 				
 				result += shadow * evaluatePunctualLight(lightingParams, lightShadowed.light);

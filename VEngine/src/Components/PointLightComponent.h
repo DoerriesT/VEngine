@@ -8,5 +8,6 @@ namespace VEngine
 		glm::vec3 m_color;
 		float m_luminousPower;
 		float m_radius;
+		bool m_shadows;
 	};
 }

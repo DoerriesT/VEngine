@@ -65,6 +65,8 @@ void VEngine::QuadTreeAllocator::free(uint32_t tileOffsetX, uint32_t tileOffsetY
 {
 	assert(tileSize >= m_minAllocSize && tileSize <= m_maxAllocSize);
 	assert(tileOffsetX + tileSize <= m_size && tileOffsetY + tileSize <= m_size);
+	assert(Utility::isPowerOfTwo(tileSize));
+
 	freeNode(m_nodes[0], tileSize, tileOffsetX, tileOffsetY);
 }
 
@@ -164,7 +166,6 @@ void VEngine::QuadTreeAllocator::freeNode(Node &currentNode, uint32_t size, uint
 		childIdx = rightEdgeX > (currentNode.m_positionX + currentHalfSize) ? childIdx + 1 : childIdx;
 
 		freeNode(m_nodes[currentNode.m_childIndices[childIdx]], size, offsetX, offsetY);
-		int a = 5;
 	}
 
 	// recalculate maximum free size
@@ -173,7 +174,8 @@ void VEngine::QuadTreeAllocator::freeNode(Node &currentNode, uint32_t size, uint
 	uint32_t maxFree = 0;
 	for (size_t j = 0; j < 4; ++j)
 	{
-		uint32_t childMaxFree = m_nodes[currentNode.m_childIndices[j]].m_maxFreeSize;
+		uint32_t childIdx = currentNode.m_childIndices[j];
+		uint32_t childMaxFree = childIdx != -1 ? m_nodes[childIdx].m_maxFreeSize : childSize;
 		maxFree = childMaxFree > maxFree ? childMaxFree : maxFree;
 		assert(childMaxFree <= childSize);
 		if (childMaxFree != childSize)

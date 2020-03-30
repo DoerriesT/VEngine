@@ -242,9 +242,111 @@ void VEngine::RenderSystem::update(float timeDelta)
 							}
 						}
 
-						m_lightData.m_punctualLights.push_back(punctualLight);
-						m_lightData.m_punctualLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
-						m_lightData.m_punctualLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_punctualLightOrder.size()));
+						// try to allocate space in the shadow atlas if light is shadowed
+						ShadowAtlasDrawInfo atlasDrawInfo[6];
+						bool shadowMapAllocationSucceeded = true;
+						if ((renderLists.size() + 6) < 256 && pointLightComponent.m_shadows)
+						{
+							glm::vec3 tr = punctualLight.m_position + pointLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							tr.z = glm::min(tr.z, -m_commonRenderData.m_nearPlane);
+							glm::vec3 bl = punctualLight.m_position - pointLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							bl.z = glm::min(bl.z, -m_commonRenderData.m_nearPlane);
+
+							auto trSS = m_commonRenderData.m_projectionMatrix * glm::vec4(tr, 1.0f);
+							trSS /= trSS.w;
+							trSS.x = trSS.x * 0.5f + 0.5f;
+							trSS.y = trSS.y * 0.5f + 0.5f;
+							auto blSS = m_commonRenderData.m_projectionMatrix * glm::vec4(bl, 1.0f);
+							blSS /= blSS.w;
+							blSS.x = blSS.x * 0.5f + 0.5f;
+							blSS.y = blSS.y * 0.5f + 0.5f;
+
+							float sizeX = trSS.x - blSS.x;
+							float sizeY = blSS.y - trSS.y;
+
+							float scale = 0.5f / 6.0f;
+							sizeX *= m_commonRenderData.m_width * scale;
+							sizeY *= m_commonRenderData.m_height * scale;
+
+							uint32_t screenSpaceSize = static_cast<uint32_t>(glm::max(sizeX, sizeY, 1.0f));
+
+							size_t allocatedCount = 0;
+							for (size_t i = 0; i < 6 && shadowMapAllocationSucceeded; ++i)
+							{
+								bool result = quadTreeAllocator.alloc(screenSpaceSize, atlasDrawInfo[allocatedCount].m_offsetX, atlasDrawInfo[allocatedCount].m_offsetY, atlasDrawInfo[allocatedCount].m_size);
+								shadowMapAllocationSucceeded = shadowMapAllocationSucceeded && result;
+								allocatedCount += result ? 1 : 0;
+							}
+
+							if (!shadowMapAllocationSucceeded)
+							{
+								// deallocate tiles
+								for (size_t i = 0; i < allocatedCount; ++i)
+								{
+									quadTreeAllocator.free(atlasDrawInfo[i].m_offsetX, atlasDrawInfo[i].m_offsetY, atlasDrawInfo[i].m_size);
+								}
+							}
+						}
+
+						if ((renderLists.size() + 6) < 256 && pointLightComponent.m_shadows && shadowMapAllocationSucceeded)
+						{
+							const glm::mat4 vulkanCorrection =
+							{
+								{ 1.0f, 0.0f, 0.0f, 0.0f },
+								{ 0.0f, -1.0f, 0.0f, 0.0f },
+								{ 0.0f, 0.0f, 0.5f, 0.0f },
+								{ 0.0f, 0.0f, 0.5f, 1.0f }
+							};
+
+							glm::mat4 projection = vulkanCorrection * glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
+							glm::mat4 shadowMatrices[6];
+							shadowMatrices[0] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							shadowMatrices[1] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							shadowMatrices[2] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+							shadowMatrices[3] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+							shadowMatrices[4] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							shadowMatrices[5] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+							PunctualLightShadowed punctualLightShadowed{ punctualLight };
+							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
+							punctualLightShadowed.m_radius = pointLightComponent.m_radius;
+
+							for (size_t i = 0; i < 6; ++i)
+							{
+								atlasDrawInfo[i].m_shadowMatrixIdx = static_cast<uint32_t>(m_shadowMatrices.size());
+								atlasDrawInfo[i].m_drawListIdx = static_cast<uint32_t>(renderLists.size());
+
+								m_shadowMatrices.push_back(shadowMatrices[i]);
+
+								// extract view frustum plane equations from matrix
+								{
+									uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
+										| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
+										| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
+										| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+									CullingData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, pointLightComponent.m_radius);
+
+									frustumCullData.push_back(cullData);
+									renderLists.push_back({});
+								}
+
+								punctualLightShadowed.m_shadowAtlasParams[i].x = atlasDrawInfo[i].m_size * (1.0f / 8192.0f);
+								punctualLightShadowed.m_shadowAtlasParams[i].y = atlasDrawInfo[i].m_offsetX / atlasDrawInfo[i].m_size * punctualLightShadowed.m_shadowAtlasParams[i].x;
+								punctualLightShadowed.m_shadowAtlasParams[i].z = atlasDrawInfo[i].m_offsetY / atlasDrawInfo[i].m_size * punctualLightShadowed.m_shadowAtlasParams[i].x;
+
+								m_lightData.m_shadowAtlasDrawInfos.push_back(atlasDrawInfo[i]);
+							}
+
+							m_lightData.m_punctualLightsShadowed.push_back(punctualLightShadowed);
+							m_lightData.m_punctualLightShadowedTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
+							m_lightData.m_punctualLightShadowedOrder.push_back(static_cast<uint32_t>(m_lightData.m_punctualLightShadowedOrder.size()));
+						}
+						else
+						{
+							m_lightData.m_punctualLights.push_back(punctualLight);
+							m_lightData.m_punctualLightTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::scale(glm::vec3(pointLightComponent.m_radius)));
+							m_lightData.m_punctualLightOrder.push_back(static_cast<uint32_t>(m_lightData.m_punctualLightOrder.size()));
+						}
 					});
 			}
 
@@ -280,7 +382,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						uint32_t screenSpaceSize = 1;
 
-						if (spotLightComponent.m_shadows)
+						if (renderLists.size() < 256 && spotLightComponent.m_shadows)
 						{
 							glm::vec3 tr = punctualLight.m_position + spotLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
 							tr.z = glm::min(tr.z, -m_commonRenderData.m_nearPlane);
@@ -307,7 +409,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						}
 
 						uint32_t tileOffsetX, tileOffsetY, tileSize;
-						if (spotLightComponent.m_shadows && quadTreeAllocator.alloc(screenSpaceSize, tileOffsetX, tileOffsetY, tileSize))
+						if (renderLists.size() < 256 && spotLightComponent.m_shadows && quadTreeAllocator.alloc(screenSpaceSize, tileOffsetX, tileOffsetY, tileSize))
 						{
 							// create shadow matrix
 							glm::vec3 upDir(0.0f, 1.0f, 0.0f);

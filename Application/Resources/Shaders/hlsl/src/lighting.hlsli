@@ -107,4 +107,31 @@ uint getLightingBitMask(ByteAddressBuffer bitMaskBuffer, uint tileAddress, uint 
 	return mergedMask;
 }
 
+// https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/
+float2 sampleCube(float3 dir, out int faceIndex)
+{
+	float3 absDir = abs(dir);
+	float ma;
+	float2 uv;
+	if (absDir.z >= absDir.x && absDir.z >= absDir.y)
+	{
+		faceIndex = dir.z < 0.0 ? 5 : 4;
+		ma = 0.5 / absDir.z;
+		uv = float2(dir.z < 0.0 ? -dir.x : dir.x, -dir.y);
+	}
+	else if (absDir.y >= absDir.x)
+	{
+		faceIndex = dir.y < 0.0 ? 3 : 2;
+		ma = 0.5 / absDir.y;
+		uv = float2(dir.x, dir.y < 0.0 ? -dir.z : dir.z);
+	}
+	else
+	{
+		faceIndex = dir.x < 0.0 ? 1 : 0;
+		ma = 0.5 / absDir.x;
+		uv = float2(dir.x < 0.0 ? dir.z : -dir.z, -dir.y);
+	}
+	return uv * ma + 0.5;
+}
+
 #endif // LIGHTING_H
