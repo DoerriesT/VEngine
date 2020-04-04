@@ -4,6 +4,7 @@
 #include "common.hlsli"
 #include "lighting.hlsli"
 #include "srgb.hlsli"
+#include "commonFilter.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -249,12 +250,14 @@ PSOutput main(PSInput psIn)
 		
 		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
 		// of the current texel but instead need to scale the uv with respect to the fog image resolution
-		uint3 imageDims;
+		float3 imageDims;
 		g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
-		float2 scaledFogImageTexelSize = 1.0 / (float2(imageDims.xy) * 8.0);
+		float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
 		
 		float3 volumetricFogTexCoord = float3(psIn.position.xy * scaledFogImageTexelSize, d);
-		float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
+		
+		float4 fog = sampleBicubic(g_VolumetricFogImage, g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
+		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}
 	
