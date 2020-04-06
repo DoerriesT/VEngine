@@ -73,7 +73,7 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 	tc.xy = tc.xy * 0.5 + 0.5;
 	const float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
 	
-	return (1.0 - shadow);
+	return shadow;
 }
 
 float henyeyGreenstein(float3 V, float3 L, float g)
@@ -209,7 +209,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						shadowPos.z = -param0 + param1 / dist;
 					}
 					
-					float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+					float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 					
 					const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos;
 					const float3 L = normalize(unnormalizedLightVector);

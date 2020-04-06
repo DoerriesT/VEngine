@@ -159,7 +159,7 @@ PSOutput main(PSInput psIn)
 		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 		{
 			const float3 contribution = evaluateDirectionalLight(lightingParams, g_DirectionalLightsShadowed[i]);
-			result += contribution * (1.0 - g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x);
+			result += contribution * g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x;
 		}
 	}
 	
@@ -236,7 +236,7 @@ PSOutput main(PSInput psIn)
 					shadowPos.z = -param0 + param1 / dist;
 				}
 				
-				float shadow = 1.0 - g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+				float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 				
 				result += shadow * evaluatePunctualLight(lightingParams, lightShadowed.light);
 			}

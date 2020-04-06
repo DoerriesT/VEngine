@@ -283,7 +283,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.m_anisotropyEnable = true;
 		samplerCreateInfo.m_maxAnisotropy = 1.0f;
 		samplerCreateInfo.m_compareEnable = true;
-		samplerCreateInfo.m_compareOp = CompareOp::GREATER;
+		samplerCreateInfo.m_compareOp = CompareOp::LESS_OR_EQUAL;
 		samplerCreateInfo.m_minLod = 0.0f;
 		samplerCreateInfo.m_maxLod = 1;
 		samplerCreateInfo.m_borderColor = BorderColor::FLOAT_OPAQUE_WHITE;

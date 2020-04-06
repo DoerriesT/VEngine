@@ -97,7 +97,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float depth = g_DepthImage.Load(int3(threadID.xy, 0)).x;
 	if (depth == 0.0)
 	{
-		g_ResultImage[threadID.xy] = 0.0;
+		g_ResultImage[threadID.xy] = 1.0;
 		return;
 	}
 	
@@ -124,7 +124,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// skip backfacing fragments
 	if (NdotL <= -0.05)
 	{
-		g_ResultImage[threadID.xy] = 1.0;
+		g_ResultImage[threadID.xy] = 0.0;
 		return;
 	}
 	
