@@ -110,7 +110,7 @@ public:
 		dlc.m_normalOffsetBias[1] = 2.0f;
 		dlc.m_normalOffsetBias[2] = 2.0f;
 		dlc.m_normalOffsetBias[3] = 2.0f;
-		//entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
+		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
 
 		std::default_random_engine e;
 		std::uniform_real_distribution<float> px(-14.0f, 14.0f);
@@ -119,13 +119,13 @@ public:
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
 		std::uniform_real_distribution<float> r(0.0f, glm::two_pi<float>());
 		
-		for (size_t i = 0; i < 16; ++i)
-		{
-			entt::entity lightEntity = entityRegistry.create();
-			entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-			entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
-			entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-		}
+		//for (size_t i = 0; i < 16; ++i)
+		//{
+		//	entt::entity lightEntity = entityRegistry.create();
+		//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
+		//	entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
+		//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
+		//}
 
 		//entt::entity pointLightEntity = entityRegistry.create();
 		//entityRegistry.assign<VEngine::TransformationComponent>(pointLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(10.0f, 1.0f, 0.0f));
@@ -133,12 +133,12 @@ public:
 		//entityRegistry.assign<VEngine::RenderableComponent>(pointLightEntity);
 		entt::entity spotLightEntity = entityRegistry.create();
 		m_spotLightEntity = spotLightEntity;
-		entityRegistry.assign<VEngine::TransformationComponent>(m_spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
-		entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
-		//entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		//entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(1.0f, 0.92f, 0.5725f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
-		//entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
+		//entityRegistry.assign<VEngine::TransformationComponent>(m_spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
+		//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
+		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
+		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(1.0f, 0.92f, 0.5725f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)
 		//{

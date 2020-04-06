@@ -1,6 +1,7 @@
 #include "VolumetricFogModule.h"
 #include "Graphics/Pass/VolumetricFogVBufferPass.h"
 #include "Graphics/Pass/VolumetricFogScatterPass.h"
+#include "Graphics/Pass/VolumetricFogFilterPass.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
@@ -47,6 +48,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	rg::ImageViewHandle vBufferScatteringExtinctionImageViewHandle;
 	rg::ImageViewHandle vbufferEmissivePhasImageViewHandle;
 	rg::ImageViewHandle inscatteringImageViewHandle;
+	rg::ImageViewHandle filteredInscatteringImageViewHandle;
 	rg::ImageViewHandle prevInscatteringImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
@@ -67,8 +69,11 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		desc.m_name = "Volumetric Fog V-Buffer Emissive/Phase Image";
 		vbufferEmissivePhasImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 
-		rg::ImageHandle inscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_curResIdx], "Volumetric Fog In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_curResIdx]);
-		inscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog In-Scattering Image", inscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
+		desc.m_name = "Volumetric Fog In-Scattering Image";
+		inscatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+
+		rg::ImageHandle filteredInscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_curResIdx], "Volumetric Fog Filtered In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_curResIdx]);
+		filteredInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Filtered In-Scattering Image", filteredInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
 
 		rg::ImageHandle prevInscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_prevResIdx], "Volumetric Fog Prev In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_prevResIdx]);
 		prevInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Prev In-Scattering Image", prevInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
@@ -124,7 +129,6 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_jitter[0] = jitterX;
 	volumetricFogScatterPassData.m_jitter[1] = jitterY;
 	volumetricFogScatterPassData.m_jitter[2] = jitterZ;
-	memcpy(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias, &reprojectedTexCoordScaleBias, sizeof(volumetricFogScatterPassData.m_reprojectedTexCoordScaleBias));
 	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
 	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
 	volumetricFogScatterPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
@@ -134,7 +138,6 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_punctualLightsBitMaskBufferHandle = data.m_punctualLightsBitMaskBufferHandle;
 	volumetricFogScatterPassData.m_punctualLightsShadowedBitMaskBufferHandle = data.m_punctualLightsShadowedBitMaskBufferHandle;
 	volumetricFogScatterPassData.m_resultImageViewHandle = inscatteringImageViewHandle;
-	volumetricFogScatterPassData.m_prevResultImageViewHandle = prevInscatteringImageViewHandle;
 	volumetricFogScatterPassData.m_scatteringExtinctionImageViewHandle = vBufferScatteringExtinctionImageViewHandle;
 	volumetricFogScatterPassData.m_emissivePhaseImageViewHandle = vbufferEmissivePhasImageViewHandle;
 	volumetricFogScatterPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
@@ -144,10 +147,21 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 
 
+	VolumetricFogFilterPass::Data volumetricFogFilterPassData;
+	volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	memcpy(volumetricFogFilterPassData.m_reprojectedTexCoordScaleBias, &reprojectedTexCoordScaleBias, sizeof(volumetricFogFilterPassData.m_reprojectedTexCoordScaleBias));
+	volumetricFogFilterPassData.m_resultImageViewHandle = filteredInscatteringImageViewHandle;
+	volumetricFogFilterPassData.m_inputImageViewHandle = inscatteringImageViewHandle;
+	volumetricFogFilterPassData.m_historyImageViewHandle = prevInscatteringImageViewHandle;
+	
+	VolumetricFogFilterPass::addToGraph(graph, volumetricFogFilterPassData);
+
+
 	// volumetric fog integrate
 	VolumetricFogIntegratePass::Data volumetricFogIntegratePassData;
 	volumetricFogIntegratePassData.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogIntegratePassData.m_inputImageViewHandle = inscatteringImageViewHandle;
+	volumetricFogIntegratePassData.m_inputImageViewHandle = filteredInscatteringImageViewHandle;
 	volumetricFogIntegratePassData.m_resultImageViewHandle = m_volumetricScatteringImageViewHandle;
 
 	VolumetricFogIntegratePass::addToGraph(graph, volumetricFogIntegratePassData);

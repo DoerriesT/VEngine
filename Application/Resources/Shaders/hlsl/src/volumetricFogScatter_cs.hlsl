@@ -10,12 +10,10 @@
 #define VOLUME_FAR (64.0)
 
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture3D<float4> g_PrevResultImage : REGISTER_SRV(PREV_RESULT_IMAGE_BINDING, PREV_RESULT_IMAGE_SET);
 Texture3D<float4> g_ScatteringExtinctionImage : REGISTER_SRV(SCATTERING_EXTINCTION_IMAGE_BINDING, SCATTERING_EXTINCTION_IMAGE_SET);
 Texture3D<float4> g_EmissivePhaseImage : REGISTER_SRV(EMISSIVE_PHASE_IMAGE_BINDING, EMISSIVE_PHASE_IMAGE_SET);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, SHADOW_IMAGE_SET);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
@@ -231,24 +229,5 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float3 albedo = scatteringExtinction.rgb / max(scatteringExtinction.w, 1e-7);
 	lighting *= albedo;
 	
-	float4 result = float4(lighting, scatteringExtinction.w);
-	
-	// reproject and combine with previous result from previous frame
-	{
-		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(froxelID + 0.5), 1.0));
-		
-		float z = -prevViewSpacePos.z;
-		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-
-		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
-		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * 0.5 + 0.5, d);
-		prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
-		
-		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
-		float4 prevResult = validCoord ? g_PrevResultImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0) : 0.0;
-		
-		result = lerp(prevResult, result, validCoord ? 0.015 : 1.0);
-	}
-	
-	g_ResultImage[froxelID] = result;
+	g_ResultImage[froxelID] = float4(lighting, scatteringExtinction.w);
 }
