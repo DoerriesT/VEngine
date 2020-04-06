@@ -422,13 +422,13 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadow cascade params write
-	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(glm::vec4), size_t(1)) };
+	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowCascadeParamsBufferInfo.m_range, shadowCascadeParamsBufferInfo.m_offset, shadowCascadeParamsBufferInfo.m_buffer, bufferPtr);
-		if (!lightData.m_directionalLightsShadowed.empty())
+		if (renderData.m_shadowCascadeViewRenderListCount)
 		{
-			memcpy(bufferPtr, renderData.m_shadowCascadeParams, lightData.m_directionalLightsShadowed.size() * sizeof(glm::vec4));
+			memcpy(bufferPtr, renderData.m_shadowCascadeParams, renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4));
 		}
 	}
 
