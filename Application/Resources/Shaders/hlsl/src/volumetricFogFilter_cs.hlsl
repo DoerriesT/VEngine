@@ -34,6 +34,45 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	return pos;
 }
 
+// based on advances.realtimerendering.com/s2016/Filmic%20SMAA%20v7.pptx
+float4 sampleHistory(float2 texCoord, float4 rtMetrics, float d)
+{
+	const float sharpening = 0.5;// [0.0, 1.0]
+
+	float2 samplePos = texCoord * rtMetrics.xy;
+	float2 tc1 = floor(samplePos - 0.5) + 0.5;
+	float2 f = samplePos - tc1;
+	float2 f2 = f * f;
+	float2 f3 = f * f2;
+
+	// Catmull-Rom weights
+	const float c = sharpening;
+	float2 w0 = -(c)       * f3 + (2.0 * c)        * f2 - (c * f);
+	float2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2            + 1.0;
+	float2 w2 = -(2.0 - c) * f3 + (3.0 -  2.0 * c) * f2 + (c * f);
+	float2 w3 =  (c)       * f3 - (c)              * f2;
+
+	float2 w12  = w1 + w2;
+	float2 tc0  = (tc1 - 1.0)      * rtMetrics.zw;
+	float2 tc3  = (tc1 + 2.0)      * rtMetrics.zw;
+	float2 tc12 = (tc1 + w2 / w12) * rtMetrics.zw;
+	
+	// Bicubic filter using bilinear lookups, skipping the 4 corner texels
+	float4 filtered = g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc0.y , d), 0.0) * (w12.x *  w0.y) +
+	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc0.x,  tc12.y, d), 0.0) * ( w0.x * w12.y) +
+	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc12.y, d), 0.0) * (w12.x * w12.y) +  // Center pixel
+	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc3.x,  tc12.y, d), 0.0) * ( w3.x * w12.y) +
+	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc3.y , d), 0.0) * (w12.x *  w3.y);
+	
+	float weightSum = (w12.x *  w0.y) +
+	                  ( w0.x * w12.y) +
+	                  (w12.x * w12.y) +  // Center pixel
+	                  ( w3.x * w12.y) +
+	                  (w12.x *  w3.y);
+	
+	return max(filtered * (1.0 / weightSum), 0.0);
+}
+
 [numthreads(2, 2, 16)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
@@ -53,7 +92,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
-		float4 prevResult = validCoord ? g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0) : 0.0;
+		
+		float3 texSize;
+		g_HistoryImage.GetDimensions(texSize.x, texSize.y, texSize.z);
+		float3 texelSize = 1.0 / texSize;
+		
+		float4 prevResult = validCoord ? sampleHistory(prevTexCoord.xy, float4(texSize.xy, texelSize.xy), prevTexCoord.z) : 0.0;
 		
 		result = lerp(prevResult, result, validCoord ? 0.015 : 1.0);
 	}
