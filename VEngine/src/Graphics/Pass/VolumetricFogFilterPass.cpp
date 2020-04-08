@@ -73,6 +73,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
@@ -87,6 +88,6 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 			uint32_t h = imageDesc.m_height;
 			uint32_t d = imageDesc.m_depth;
 
-			cmdList->dispatch((w + 1) / 2, (h + 1) / 2, (d + 15) / 16);
+			cmdList->dispatch((w + 7) / 8, (h + 7) / 8, d);
 		});
 }

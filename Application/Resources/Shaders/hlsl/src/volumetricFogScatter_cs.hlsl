@@ -86,8 +86,15 @@ float henyeyGreenstein(float3 V, float3 L, float g)
 void main(uint3 threadID : SV_DispatchThreadID)
 {
 	uint3 froxelID = threadID.xyz;
+	
+	float4x4 ditherMatrix = ((float4x4(0, 8, 2, 10,
+									12, 4, 14, 6,
+									3, 11, 1, 9,
+									15, 7, 13, 5) + 1.0) * (1.0 / 16.0));
+	float dither = ditherMatrix[threadID.y % 4][threadID.x % 4];
+	
 	// world-space position of volumetric texture texel
-	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, g_Constants.jitterZ));
+	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
 	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
 	
 	const float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(int4(froxelID.xyz, 0));

@@ -31,7 +31,12 @@ float3 calcWorldSpacePos(float3 texelCoord)
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-	const float3 worldSpacePos = calcWorldSpacePos(threadID + float3(g_PushConsts.jitterX, g_PushConsts.jitterY, g_PushConsts.jitterZ));
+	float4x4 ditherMatrix = ((float4x4(0, 8, 2, 10,
+									12, 4, 14, 6,
+									3, 11, 1, 9,
+									15, 7, 13, 5) + 1.0) * (1.0 / 16.0));
+	float dither = ditherMatrix[threadID.y % 4][threadID.x % 4];
+	const float3 worldSpacePos = calcWorldSpacePos(threadID + float3(g_PushConsts.jitterX, g_PushConsts.jitterY, frac(g_PushConsts.jitterZ + dither)));
 	g_ScatteringExtinctionImage[threadID] = g_PushConsts.scatteringExtinction;
 	g_EmissivePhaseImage[threadID] = g_PushConsts.emissivePhase;
 }
