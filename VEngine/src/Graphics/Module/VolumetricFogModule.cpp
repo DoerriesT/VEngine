@@ -149,6 +149,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 	VolumetricFogFilterPass::Data volumetricFogFilterPassData;
 	volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
+	volumetricFogFilterPassData.m_ignoreHistory = data.m_ignoreHistory;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
 	memcpy(volumetricFogFilterPassData.m_reprojectedTexCoordScaleBias, &reprojectedTexCoordScaleBias, sizeof(volumetricFogFilterPassData.m_reprojectedTexCoordScaleBias));
 	volumetricFogFilterPassData.m_resultImageViewHandle = filteredInscatteringImageViewHandle;

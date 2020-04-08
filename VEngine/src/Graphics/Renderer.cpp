@@ -50,7 +50,8 @@ extern bool g_forceVoxelization;
 extern bool g_voxelizeOnDemand;
 
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
-	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN))
+	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN)),
+	m_framesSinceLastResize()
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);
 
@@ -608,6 +609,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// volumetric fog
 	VolumetricFogModule::Data volumetricFogModuleData;
 	volumetricFogModuleData.m_passRecordContext = &passRecordContext;
+	volumetricFogModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
 	volumetricFogModuleData.m_commonData = &commonData;
 	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
 	volumetricFogModuleData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
@@ -794,6 +796,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	m_swapChain->present(m_semaphores[0], m_semaphoreValues[0]);
 
 	m_graphicsDevice->endFrame();
+
+	++m_framesSinceLastResize;
 }
 
 VEngine::TextureHandle VEngine::Renderer::loadTexture(const char *filepath)
@@ -875,4 +879,5 @@ void VEngine::Renderer::resize(uint32_t width, uint32_t height)
 		m_ssrModule->resize(width, height);
 		m_volumetricFogModule->resize(width, height);
 	}
+	m_framesSinceLastResize = 0;
 }

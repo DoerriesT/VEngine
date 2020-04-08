@@ -77,5 +77,6 @@ namespace VEngine
 		uint32_t m_opaqueDraws;
 		uint32_t m_totalOpaqueDraws;
 		uint32_t m_totalOpaqueDrawsPending[RendererConsts::FRAMES_IN_FLIGHT];
+		uint32_t m_framesSinceLastResize;
 	};
 }

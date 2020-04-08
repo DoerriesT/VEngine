@@ -17,7 +17,7 @@ struct Constants
 	float4x4 prevProjMatrix;
 	float4 reprojectedTexCoordScaleBias;
 	float3 frustumCornerTL;
-	float pad0;
+	uint ignoreHistory;
 	float3 frustumCornerTR;
 	float pad1;
 	float3 frustumCornerBL;

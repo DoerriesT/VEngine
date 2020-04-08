@@ -111,6 +111,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 	result += s_mem[groupThreadID.x + 2][groupThreadID.y + 2] * (1.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 1,  1, 0), 0)) * (1.0 / 16.0);
 	
 	// reproject and combine with previous result from previous frame
+	if (g_Constants.ignoreHistory == 0)
 	{
 		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(froxelID + 0.5), 1.0));
 		
