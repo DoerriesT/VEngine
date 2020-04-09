@@ -46,7 +46,7 @@ void VEngine::gal::SwapChainVk2::resize(uint32_t width, uint32_t height)
 
 void VEngine::gal::SwapChainVk2::getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
 {
-	const uint32_t resIdx = m_frameIndex % 2;
+	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
 
 	if (m_currentImageIndexStale)
 	{
@@ -115,7 +115,7 @@ void VEngine::gal::SwapChainVk2::getCurrentImageIndex(uint32_t &currentImageInde
 
 void VEngine::gal::SwapChainVk2::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue)
 {
-	const uint32_t resIdx = m_frameIndex % 2;
+	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
 
 	// Vulkan swapchains do not support timeline semaphores, so we need to wait on the timeline semaphore and signal the binary semaphore
 	{

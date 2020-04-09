@@ -446,13 +446,6 @@ void VEngine::gal::GraphicsDeviceVk::beginFrame()
 {
 	++m_frameIndex;
 
-	// TODO: currently validation layers dont recognize waiting on semaphores on the host. in order to prevent false positive
-	// validation errors, we force a sync point here. this should be solved another way and removed once validation layers cover this.
-	if (m_debugLayers)
-	{
-		waitIdle();
-	}
-
 	if (m_swapChain)
 	{
 		m_swapChain->setFrameIndex(m_frameIndex);

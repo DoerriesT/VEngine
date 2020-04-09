@@ -123,8 +123,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		return;
 	}
 
-	m_graphicsDevice->beginFrame();
-
 	auto &graph = *m_frameGraphs[commonData.m_curResIdx];
 
 	// reset per frame resources
@@ -132,6 +130,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	m_renderResources->m_mappableUBOBlock[commonData.m_curResIdx]->reset();
 	m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->reset();
 	m_descriptorSetCache->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
+
+	m_graphicsDevice->beginFrame();
 
 	// read back luminance histogram
 	{

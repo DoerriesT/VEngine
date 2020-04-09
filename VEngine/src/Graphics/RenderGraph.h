@@ -152,7 +152,7 @@ namespace VEngine
 			ImageHandle importImage(gal::Image *image, const char *name, bool clear, const ClearValue &clearValue, ResourceStateData *resourceStateData = nullptr);
 			BufferHandle importBuffer(gal::Buffer *buffer, const char *name, bool clear, const ClearValue &clearValue, ResourceStateData *resourceStateData = nullptr);
 			void reset();
-			void execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData);
+			void execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData, bool forceWaitOnSemaphore = false, uint64_t waitValue = 0);
 			void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 
 		private:
@@ -290,7 +290,7 @@ namespace VEngine
 			void forEachSubresource(ResourceViewHandle handle, std::function<void(uint32_t)> func);
 			void createPasses(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceState);
 			void createResources();
-			void createSynchronization(ResourceViewHandle finalResourceHandle);
+			void createSynchronization(ResourceViewHandle finalResourceHandle, bool forceWaitOnSemaphore, uint64_t waitValue);
 			void record();
 		};
 	}

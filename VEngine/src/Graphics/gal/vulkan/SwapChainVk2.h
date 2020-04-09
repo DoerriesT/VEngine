@@ -30,7 +30,7 @@ namespace VEngine
 
 		private:
 			static constexpr uint32_t s_maxImageCount = 8;
-			static constexpr uint32_t s_semaphoreCount = 2;
+			static constexpr uint32_t s_semaphoreCount = 3;
 
 			VkPhysicalDevice m_physicalDevice;
 			VkDevice m_device;
@@ -44,8 +44,8 @@ namespace VEngine
 			Extent2D m_extent;
 			uint32_t m_currentImageIndex;
 			bool m_currentImageIndexStale;
-			VkSemaphore m_acquireSemaphores[2];
-			VkSemaphore m_presentSemaphores[2];
+			VkSemaphore m_acquireSemaphores[s_semaphoreCount];
+			VkSemaphore m_presentSemaphores[s_semaphoreCount];
 			uint64_t m_frameIndex;
 
 			void create(uint32_t width, uint32_t height);

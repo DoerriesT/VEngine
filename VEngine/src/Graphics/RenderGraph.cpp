@@ -500,11 +500,11 @@ void VEngine::rg::RenderGraph::reset()
 	m_commandListFramePool.reset();
 }
 
-void VEngine::rg::RenderGraph::execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData)
+void VEngine::rg::RenderGraph::execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData, bool forceWaitOnSemaphore, uint64_t waitValue)
 {
 	createPasses(finalResourceHandle, finalResourceStateData);
 	createResources();
-	createSynchronization(finalResourceHandle);
+	createSynchronization(finalResourceHandle, forceWaitOnSemaphore, waitValue);
 	record();
 }
 
@@ -899,7 +899,7 @@ void VEngine::rg::RenderGraph::createResources()
 	}
 }
 
-void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalResourceHandle)
+void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalResourceHandle, bool forceWaitOnSemaphore, uint64_t forceWaitValue)
 {
 	struct SemaphoreDependencyInfo
 	{
@@ -908,6 +908,8 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 	};
 
 	std::vector<SemaphoreDependencyInfo> semaphoreDependencies(m_passSubresources.size());
+
+	const uint32_t finalResourceIdx = (uint32_t)m_viewDescriptions[(size_t)finalResourceHandle - 1].m_resourceHandle - 1;
 
 	for (uint32_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 	{
@@ -978,27 +980,36 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 
 				passRecordInfo.m_beforeBarriers.push_back(barrier);
 
+				const size_t prevQueueIdx = prevUsageInfo.m_queue == m_queues[0] ? 0 : prevUsageInfo.m_queue == m_queues[1] ? 1 : 2;
+
+				// add optional forced wait on semaphore for final resource
+				if (forceWaitOnSemaphore && resourceIdx == finalResourceIdx && m_passHandleOrder[m_resourceLifetimes[resourceIdx].first] == subresUsage.m_passHandle)
+				{
+					semaphoreDependencies[curUsageInfo.m_passHandle].m_waitDstStageMasks[prevQueueIdx] |= curUsageInfo.m_stateStageMask.m_stageMask;
+					auto &waitValue = semaphoreDependencies[curUsageInfo.m_passHandle].m_waitValues[prevQueueIdx];
+					waitValue = std::max(forceWaitValue, waitValue);
+				}
+
 				// we just acquired ownership of the resource -> add a release barrier on the previous queue
 				if (barrier.m_queueOwnershipAcquireBarrier)
 				{
 					barrier.m_queueOwnershipAcquireBarrier = false;
 					barrier.m_queueOwnershipReleaseBarrier = true;
 
-					const size_t queueIdx = prevUsageInfo.m_queue == m_queues[0] ? 0 : prevUsageInfo.m_queue == m_queues[1] ? 1 : 2;
-					semaphoreDependencies[curUsageInfo.m_passHandle].m_waitDstStageMasks[queueIdx] |= curUsageInfo.m_stateStageMask.m_stageMask;
-					auto &waitValue = semaphoreDependencies[curUsageInfo.m_passHandle].m_waitValues[queueIdx];
+					semaphoreDependencies[curUsageInfo.m_passHandle].m_waitDstStageMasks[prevQueueIdx] |= curUsageInfo.m_stateStageMask.m_stageMask;
+					auto &waitValue = semaphoreDependencies[curUsageInfo.m_passHandle].m_waitValues[prevQueueIdx];
 
 					// external dependency
 					if (usageIdx == 0)
 					{
 						m_externalReleaseBarriers[prevUsageInfo.m_passHandle].push_back(barrier);
-						waitValue = std::max(*m_semaphoreValues[queueIdx] + 1, waitValue);
+						waitValue = std::max(*m_semaphoreValues[prevQueueIdx] + 1, waitValue);
 					}
 					else
 					{
 						auto &prevPassRecordInfo = m_passRecordInfo[prevUsageInfo.m_passHandle];
 						prevPassRecordInfo.m_afterBarriers.push_back(barrier);
-						waitValue = std::max(*m_semaphoreValues[queueIdx] + 1 + m_passRecordInfo[prevUsageInfo.m_passHandle].m_signalValue, waitValue);
+						waitValue = std::max(*m_semaphoreValues[prevQueueIdx] + 1 + m_passRecordInfo[prevUsageInfo.m_passHandle].m_signalValue, waitValue);
 					}
 				}
 
@@ -1045,13 +1056,15 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 		if (!m_passRecordInfo[passHandle].m_afterBarriers.empty() || i == m_passHandleOrder.size() - 1)
 		{
 			startNewBatch = true;
-			auto &batch = m_batches.back();
-			const size_t queueIdx = curQueue == m_queues[0] ? 0 : curQueue == m_queues[1] ? 1 : 2;
-			batch.m_signalValue = *m_semaphoreValues[queueIdx] + 1 + m_passRecordInfo[passHandle].m_signalValue;
 		}
 
+		// update signal value to current last pass in batch
+		auto &batch = m_batches.back();
+		const size_t queueIdx = curQueue == m_queues[0] ? 0 : curQueue == m_queues[1] ? 1 : 2;
+		batch.m_signalValue = std::max(*m_semaphoreValues[queueIdx] + 1 + m_passRecordInfo[passHandle].m_signalValue, batch.m_signalValue);
+
 		prevQueue = curQueue;
-		++m_batches.back().m_passIndexCount;
+		++batch.m_passIndexCount;
 	}
 }
 
