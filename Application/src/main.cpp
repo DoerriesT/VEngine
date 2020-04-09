@@ -98,10 +98,8 @@ public:
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
 
 		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
-		glm::vec3 sunColor;
-		VEngine::Utility::colorTemperatureToColor(4000.0f, sunColor.r, sunColor.g, sunColor.b);
 		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
-		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, sunColor, 100.0f, true, 4u, 130.0f, 0.9f);
+		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, VEngine::Utility::colorTemperatureToColor(4000.0f), 100.0f, true, 4u, 130.0f, 0.9f);
 		dlc.m_depthBias[0] = 5.0f;
 		dlc.m_depthBias[1] = 5.0f;
 		dlc.m_depthBias[2] = 5.0f;
@@ -137,7 +135,7 @@ public:
 		//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
 		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, glm::vec3(1.0f, 0.92f, 0.5725f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)

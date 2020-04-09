@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <glm/vec3.hpp>
 
 namespace VEngine
 {
@@ -34,6 +35,6 @@ namespace VEngine
 		}
 
 		float halton(size_t index, size_t base);
-		void colorTemperatureToColor(float kelvin, float &red, float &green, float &blue);
+		glm::vec3 colorTemperatureToColor(float kelvin);
 	}
 }

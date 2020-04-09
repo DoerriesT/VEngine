@@ -151,13 +151,13 @@ float VEngine::Utility::halton(size_t index, size_t base)
 }
 
 // https://github.com/neilbartlett/color-temperature
-void VEngine::Utility::colorTemperatureToColor(float kelvin, float &red, float &green, float &blue)
+glm::vec3 VEngine::Utility::colorTemperatureToColor(float kelvin)
 {
 	kelvin = glm::clamp(kelvin, 1000.0f, 15000.0f);
 	float temperature = kelvin * 0.01f;
-	red = 0.0f;
-	green = 0.0f;
-	blue = 0.0f;
+	float red = 0.0f;
+	float green = 0.0f;
+	float blue = 0.0f;
 
 	if (temperature < 66.0f) 
 	{
@@ -229,5 +229,7 @@ void VEngine::Utility::colorTemperatureToColor(float kelvin, float &red, float &
 
 	red *= (1.0f / 255.0f);
 	green *= (1.0f / 255.0f);
-	blue *= (1.0f / 255.0f);;
+	blue *= (1.0f / 255.0f);
+
+	return { red, green, blue };
 }
