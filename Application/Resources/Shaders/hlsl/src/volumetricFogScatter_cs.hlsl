@@ -17,6 +17,7 @@ Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, S
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -235,6 +236,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	const float3 albedo = scatteringExtinction.rgb / max(scatteringExtinction.w, 1e-7);
 	lighting *= albedo;
+	
+	// apply pre-exposure
+	lighting *= asfloat(g_ExposureData.Load(0));
 	
 	g_ResultImage[froxelID] = float4(lighting, scatteringExtinction.w);
 }

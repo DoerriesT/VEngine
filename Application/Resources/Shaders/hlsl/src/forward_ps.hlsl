@@ -243,6 +243,9 @@ PSOutput main(PSInput psIn)
 		}
 	}
 	
+	// apply pre-exposure
+	result *= asfloat(g_ExposureData.Load(0));
+	
 	// apply volumetric fog
 	{
 		float z = -lightingParams.viewSpacePosition.z;
@@ -260,9 +263,6 @@ PSOutput main(PSInput psIn)
 		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
 		result = result * fog.aaa + fog.rgb;
 	}
-	
-	// apply pre-exposure
-	result *= asfloat(g_ExposureData.Load(0));
 
 	PSOutput psOut;
 	

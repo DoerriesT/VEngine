@@ -13,6 +13,7 @@ namespace VEngine
 			bool m_ignoreHistory;
 			float m_frustumCorners[4][3];
 			float m_reprojectedTexCoordScaleBias[4];
+			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_inputImageViewHandle;
 			rg::ImageViewHandle m_historyImageViewHandle;

@@ -23,6 +23,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_inputImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
@@ -67,6 +68,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 				ImageView *historyImageView = registry.getImageView(data.m_historyImageViewHandle);
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
+				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -74,8 +76,8 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

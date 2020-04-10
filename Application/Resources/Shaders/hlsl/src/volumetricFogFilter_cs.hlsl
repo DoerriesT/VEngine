@@ -10,10 +10,8 @@ RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IM
 Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
 Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-
-groupshared float4 s_mem[10][10];
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 float getViewSpaceDistance(float texelDepth)
 {
@@ -85,30 +83,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 	g_HistoryImage.GetDimensions(texSize.x, texSize.y, texSize.z);
 	float3 texelSize = 1.0 / texSize;
 	
-	// load neighborhood into lds
-	{
-		for (uint i = groupIdx; i < (10 * 10); i += (8 * 8))
-		{
-			int2 dstCoord = int2(i % 10, i / 10);
-			int2 srcCoord = dstCoord + (groupID.xy * 8 - 1);
-			s_mem[dstCoord.x][dstCoord.y] = g_InputImage.SampleLevel(g_PointSampler, float3(srcCoord + 0.5, groupID.z) * texelSize, 0.0);
-		}
-		GroupMemoryBarrierWithGroupSync();
-	}
-	
-	//float4 result = g_InputImage.Load(int4(froxelID, 0));
-	float4 result = 0.0;
-	result += s_mem[groupThreadID.x + 0][groupThreadID.y + 0] * (1.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3(-1, -1, 0), 0)) * (1.0 / 16.0);
-	result += s_mem[groupThreadID.x + 1][groupThreadID.y + 0] * (2.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 0, -1, 0), 0)) * (2.0 / 16.0);
-	result += s_mem[groupThreadID.x + 2][groupThreadID.y + 0] * (1.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 1, -1, 0), 0)) * (1.0 / 16.0);
-
-	result += s_mem[groupThreadID.x + 0][groupThreadID.y + 1] * (2.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3(-1,  0, 0), 0)) * (2.0 / 16.0);
-	result += s_mem[groupThreadID.x + 1][groupThreadID.y + 1] * (4.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 0,  0, 0), 0)) * (4.0 / 16.0);
-	result += s_mem[groupThreadID.x + 2][groupThreadID.y + 1] * (2.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 1,  0, 0), 0)) * (2.0 / 16.0);
-
-	result += s_mem[groupThreadID.x + 0][groupThreadID.y + 2] * (1.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3(-1,  1, 0), 0)) * (1.0 / 16.0);
-	result += s_mem[groupThreadID.x + 1][groupThreadID.y + 2] * (2.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 0,  1, 0), 0)) * (2.0 / 16.0);
-	result += s_mem[groupThreadID.x + 2][groupThreadID.y + 2] * (1.0 / 16.0);//g_InputImage.Load(int4(int3(froxelID) + int3( 1,  1, 0), 0)) * (1.0 / 16.0);
+	float4 result = g_InputImage.Load(int4(froxelID, 0));
 	
 	// reproject and combine with previous result from previous frame
 	if (g_Constants.ignoreHistory == 0)
@@ -124,6 +99,9 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
 		float4 prevResult = validCoord ? sampleHistory(prevTexCoord.xy, float4(texSize.xy, texelSize.xy), prevTexCoord.z) : 0.0;
+		
+		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
+		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
 		
 		result = lerp(prevResult, result, validCoord ? 0.015 : 1.0);
 	}
