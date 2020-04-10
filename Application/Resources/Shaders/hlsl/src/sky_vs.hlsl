@@ -16,13 +16,13 @@ PUSH_CONSTS(PushConsts, g_PushConsts);
 
 VSOutput main(uint vertexID : SV_VertexID) 
 {
-	VSOutput vsOut;
+	VSOutput output;
 	
 	float y = -1.0 + float((vertexID & 1) << 2);
 	float x = -1.0 + float((vertexID & 2) << 1);
 	// set depth to 0 because we use an inverted depth buffer
-    vsOut.position = float4(x, y, 0.0, 1.0);
-	vsOut.ray = mul(g_PushConsts.invModelViewProjection, float4(vsOut.position.xy, 0.0,  1.0));
+    output.position = float4(x, y, 0.0, 1.0);
+	output.ray = mul(g_PushConsts.invModelViewProjection, float4(output.position.xy, 0.0,  1.0));
 	
-	return vsOut;
+	return output;
 }

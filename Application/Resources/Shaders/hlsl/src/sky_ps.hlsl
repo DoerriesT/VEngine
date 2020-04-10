@@ -11,13 +11,13 @@ struct PSOutput
 };
 
 [earlydepthstencil]
-PSOutput main(PSInput psIn)
+PSOutput main(PSInput input)
 {
-	PSOutput psOut;
+	PSOutput output;
 	
-	psOut.color = float4(float3(0.529, 0.808, 0.922), 1.0);
-	psOut.normal = 0.0;
-	psOut.specularRoughness = 0.0;
+	output.color = float4(float3(0.529, 0.808, 0.922), 1.0);
+	output.normal = 0.0;
+	output.specularRoughness = 0.0;
 	
-	return psOut;
+	return output;
 }

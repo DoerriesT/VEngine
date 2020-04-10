@@ -11,8 +11,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/depthPrepass_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/depthPrepass.hlsli"
 }
 
 void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -48,10 +48,10 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
 				gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-				builder.setVertexShader(alphaMasked ? "Resources/Shaders/depthPrepass_ALPHA_MASK_ENABLED_vert.spv" : "Resources/Shaders/depthPrepass_vert.spv");
+				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/depthPrepass_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/depthPrepass_vs.spv");
 				if (alphaMasked)
 				{
-					builder.setFragmentShader("Resources/Shaders/depthPrepass_frag.spv");
+					builder.setFragmentShader("Resources/Shaders/hlsl/depthPrepass_ps.spv");
 				}
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);
@@ -72,9 +72,7 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 					DescriptorSetUpdate updates[] =
 					{
 						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-						//Initializers::storageBuffer(&data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
-						//Initializers::storageBuffer(&data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING),
 
 						// if (data.m_alphaMasked)
 						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),

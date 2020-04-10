@@ -1,3 +1,6 @@
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main depthPrepass_vs.hlsl -Fo ./../depthPrepass_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 depthPrepass_vs.hlsl -Fo ./../depthPrepass_ALPHA_MASK_ENABLED_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main depthPrepass_ps.hlsl -Fo ./../depthPrepass_ps.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main forward_vs.hlsl -Fo ./../forward_vs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main forward_ps.hlsl -Fo ./../forward_ps.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main luminanceHistogram_cs.hlsl -Fo ./../luminanceHistogram_cs.spv

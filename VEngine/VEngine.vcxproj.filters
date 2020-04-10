@@ -300,9 +300,6 @@
     <ClInclude Include="src\Graphics\Pass\FXAAPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GeometryPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Pass\GTAOPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
@@ -319,9 +316,6 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\LightingPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h">
@@ -554,9 +548,6 @@
     <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GeometryPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Pass\GTAOPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
@@ -573,9 +564,6 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\LightingPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp">

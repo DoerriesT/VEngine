@@ -10,7 +10,7 @@
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
 
-struct PSInput
+struct inputput
 {
 	float4 position : SV_Position;
 	float2 texCoord : TEXCOORD;
@@ -76,14 +76,14 @@ float3x3 calculateTBN(float3 N, float3 p, float2 uv)
 
 
 [earlydepthstencil]
-PSOutput main(PSInput psIn)
+PSOutput main(inputput input)
 {
-	const MaterialData materialData = g_MaterialData[psIn.materialIndex];
+	const MaterialData materialData = g_MaterialData[input.materialIndex];
 	
 	LightingParams lightingParams;
-	lightingParams.viewSpacePosition = psIn.worldPos.xyz / psIn.worldPos.w;
+	lightingParams.viewSpacePosition = input.worldPos.xyz / input.worldPos.w;
 	lightingParams.V = -normalize(lightingParams.viewSpacePosition);
-	float4 derivatives = float4(ddx(psIn.texCoord), ddy(psIn.texCoord));
+	float4 derivatives = float4(ddx(input.texCoord), ddy(input.texCoord));
 	
 	// albedo
 	{
@@ -91,12 +91,12 @@ PSOutput main(PSInput psIn)
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			albedo = g_Textures[NonUniformResourceIndex(albedoTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], psIn.texCoord, derivatives.xy, derivatives.zw).rgb;
+			albedo = g_Textures[NonUniformResourceIndex(albedoTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).rgb;
 		}
 		lightingParams.albedo = accurateSRGBToLinear(albedo);
 	}
 	
-	float3 normal = normalize(psIn.normal);
+	float3 normal = normalize(input.normal);
 	float3 normalWS =  mul(g_Constants.invViewMatrix, float4(normal, 0.0)).xyz;
 	// normal
 	{
@@ -105,9 +105,9 @@ PSOutput main(PSInput psIn)
 		if (normalTextureIndex != 0)
 		{
 			float3 tangentSpaceNormal;
-			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], psIn.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
+			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1.0 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			normal = mul(tangentSpaceNormal, calculateTBN(normal, lightingParams.viewSpacePosition, float2(psIn.texCoord.x, -psIn.texCoord.y)));
+			normal = mul(tangentSpaceNormal, calculateTBN(normal, lightingParams.viewSpacePosition, float2(input.texCoord.x, -input.texCoord.y)));
 			normal = normalize(normal);
 		}
 		lightingParams.N = normal;
@@ -119,7 +119,7 @@ PSOutput main(PSInput psIn)
 		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
 		if (metalnessTextureIndex != 0)
 		{
-			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], psIn.texCoord, derivatives.xy, derivatives.zw).z;
+			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).z;
 		}
 		lightingParams.metalness = metalness;
 	}
@@ -130,7 +130,7 @@ PSOutput main(PSInput psIn)
 		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
 		if (roughnessTextureIndex != 0)
 		{
-			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], psIn.texCoord, derivatives.xy, derivatives.zw).y;
+			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).y;
 		}
 		lightingParams.roughness = roughness;
 	}
@@ -142,7 +142,7 @@ PSOutput main(PSInput psIn)
 	float ao = 1.0;
 	if (g_Constants.ambientOcclusion != 0)
 	{
-		ao = g_AmbientOcclusionImage.Load(int3((int2)psIn.position.xy, 0)).x;
+		ao = g_AmbientOcclusionImage.Load(int3((int2)input.position.xy, 0)).x;
 	}
 	result = lightingParams.albedo * ao;
 	
@@ -159,7 +159,7 @@ PSOutput main(PSInput psIn)
 		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 		{
 			const float3 contribution = evaluateDirectionalLight(lightingParams, g_DirectionalLightsShadowed[i]);
-			result += contribution * g_DeferredShadowImage.Load(int4((int2)psIn.position.xy, i, 0)).x;
+			result += contribution * g_DeferredShadowImage.Load(int4((int2)input.position.xy, i, 0)).x;
 		}
 	}
 	
@@ -169,7 +169,7 @@ PSOutput main(PSInput psIn)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
+		const uint address = getTileAddress(uint2(input.position.xy), g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -191,7 +191,7 @@ PSOutput main(PSInput psIn)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(uint2(psIn.position.xy), g_Constants.width, wordCount);
+		const uint address = getTileAddress(uint2(input.position.xy), g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -257,7 +257,7 @@ PSOutput main(PSInput psIn)
 		g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 		float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
 		
-		float3 volumetricFogTexCoord = float3(psIn.position.xy * scaledFogImageTexelSize, d);
+		float3 volumetricFogTexCoord = float3(input.position.xy * scaledFogImageTexelSize, d);
 		
 		float4 fog = sampleBicubic(g_VolumetricFogImage, g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
 		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
@@ -266,11 +266,11 @@ PSOutput main(PSInput psIn)
 		result = result * fog.aaa + fog.rgb;
 	}
 
-	PSOutput psOut;
+	PSOutput output;
 	
-	psOut.color = float4(result, 1.0);
-	psOut.normal = float4(lightingParams.N, 1.0);
-	psOut.specularRoughness = accurateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
+	output.color = float4(result, 1.0);
+	output.normal = float4(lightingParams.N, 1.0);
+	output.specularRoughness = accurateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
 	
-	return psOut;
+	return output;
 }
