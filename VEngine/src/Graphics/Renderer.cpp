@@ -791,7 +791,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	ImGuiPass::addToGraph(graph, imGuiPassData);
 
-	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() });
+	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() }, true, m_semaphoreValues[0]);
 
 	m_swapChain->present(m_semaphores[0], m_semaphoreValues[0]);
 

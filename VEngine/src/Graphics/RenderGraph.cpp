@@ -1043,7 +1043,7 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 			m_batches.push_back({});
 			auto &batch = m_batches.back();
 			batch.m_passIndexOffset = i;
-			batch.m_cmdListOffset = 3 + i;
+			batch.m_cmdListOffset = 3 + m_batches.size() - 1;
 			batch.m_queue = curQueue;
 			for (size_t j = 0; j < 3; ++j)
 			{
@@ -1070,7 +1070,7 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 
 void VEngine::rg::RenderGraph::record()
 {
-	m_commandLists.resize(m_passHandleOrder.size() + 3);
+	m_commandLists.resize(m_batches.size() + 3);
 
 	// release passes for external resources
 	const char *releasePassNames[]
@@ -1102,16 +1102,16 @@ void VEngine::rg::RenderGraph::record()
 	// record passes
 	for (const auto &batch : m_batches)
 	{
+		// get command list
+		CommandList *cmdList = m_commandLists[batch.m_cmdListOffset] = m_commandListFramePool.acquire(batch.m_queue);
+
+		// start recording
+		cmdList->begin();
+
 		for (uint16_t i = 0; i < batch.m_passIndexCount; ++i)
 		{
 			const uint16_t passHandle = m_passHandleOrder[i + batch.m_passIndexOffset];
 			const auto &pass = m_passRecordInfo[passHandle];
-
-			// get command list
-			CommandList *cmdList = m_commandLists[batch.m_cmdListOffset + i] = m_commandListFramePool.acquire(batch.m_queue);
-
-			// start recording
-			cmdList->begin();
 
 			cmdList->beginDebugLabel(m_passNames[passHandle]);
 
@@ -1166,10 +1166,10 @@ void VEngine::rg::RenderGraph::record()
 			}
 
 			cmdList->endDebugLabel();
-
-			// end recording
-			cmdList->end();
 		}
+
+		// end recording
+		cmdList->end();
 	}
 
 	// insert external resource release batches
@@ -1217,7 +1217,7 @@ void VEngine::rg::RenderGraph::record()
 		submitInfo.m_waitSemaphores = semaphores;
 		submitInfo.m_waitValues = waitValues;
 		submitInfo.m_waitDstStageMask = waitDstStageMasks;
-		submitInfo.m_commandListCount = batch.m_passIndexCount;
+		submitInfo.m_commandListCount = 1;// batch.m_passIndexCount;
 		submitInfo.m_commandLists = m_commandLists.data() + batch.m_cmdListOffset;
 		submitInfo.m_signalSemaphoreCount = 1;
 		submitInfo.m_signalSemaphores = &m_semaphores[queueIdx];
