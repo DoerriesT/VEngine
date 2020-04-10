@@ -1,5 +1,6 @@
 #include "bindingHelper.hlsli"
 #include "volumetricFogIntegrate.hlsli"
+#include "commonFilter.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -41,6 +42,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		int4 pos = int4(threadID.xy, z, 0);
 		float4 slice = g_InputImage.Load(pos);
 		accum = scatterStep(accum.rgb, accum.a, slice.rgb, slice.a, getStepLength(z));
-		g_ResultImage[pos.xyz] = accum;
+		float4 result = accum;
+		result.rgb = simpleTonemap(result.rgb);
+		g_ResultImage[pos.xyz] = result;
 	}
 }

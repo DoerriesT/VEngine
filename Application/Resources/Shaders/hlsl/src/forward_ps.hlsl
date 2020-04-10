@@ -261,6 +261,8 @@ PSOutput main(PSInput psIn)
 		
 		float4 fog = sampleBicubic(g_VolumetricFogImage, g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
 		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
+		
+		fog.rgb = inverseSimpleTonemap(fog.rgb);
 		result = result * fog.aaa + fog.rgb;
 	}
 

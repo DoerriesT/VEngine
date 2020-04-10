@@ -77,4 +77,16 @@ float4 sampleBicubic(Texture3D<float4> tex, SamplerState linearSampler, float2 t
 		+ tex.SampleLevel(linearSampler, float3(t[1].x, t[1].y, d), 0.0) * g[1].x * g[1].y;
 }
 
+float3 simpleTonemap(float3 color)
+{
+	float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+	return color / max(1.0 + luma, 1e-6);
+}
+
+float3 inverseSimpleTonemap(float3 color)
+{
+	float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+	return color / max(1.0 - luma, 1e-6);
+}
+
 #endif // FILTER_H

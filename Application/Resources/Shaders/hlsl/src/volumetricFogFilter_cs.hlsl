@@ -1,5 +1,6 @@
 #include "bindingHelper.hlsli"
 #include "volumetricFogFilter.hlsli"
+#include "commonFilter.hlsli"
 
 
 #define VOLUME_DEPTH (64)
@@ -103,7 +104,12 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
 		
+		//prevResult.rgb = simpleTonemap(prevResult.rgb);
+		//result.rgb = simpleTonemap(result.rgb);
+		
 		result = lerp(prevResult, result, validCoord ? 0.015 : 1.0);
+		
+		//result.rgb = inverseSimpleTonemap(result.rgb);
 	}
 	
 	g_ResultImage[froxelID] = result;
