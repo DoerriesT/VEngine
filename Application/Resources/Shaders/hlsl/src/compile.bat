@@ -31,4 +31,7 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main velocityInitializati
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main fullscreenTriangle_vs.hlsl -Fo ./../fullscreenTriangle_vs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main -D REDUCE=min hiZPyramid_cs.hlsl -Fo ./../hiZPyramid_MIN_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main -D REDUCE=max hiZPyramid_cs.hlsl -Fo ./../hiZPyramid_MAX_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssr_cs.hlsl -Fo ./../ssr_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssrResolve_cs.hlsl -Fo ./../ssrResolve_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssrTemporalFilter_cs.hlsl -Fo ./../ssrTemporalFilter_cs.spv
 pause

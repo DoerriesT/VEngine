@@ -9,9 +9,9 @@ float3 Default_Lit(float3 baseColor, float3 F0, float3 radiance, float3 N, float
 	roughness = max(roughness, 0.04);
 	float NdotV = abs(dot(N, V)) + 1e-5;
 	float3 H = normalize(V + L);
-	float VdotH = max(dot(V, H), 0.0);
-	float NdotH = max(dot(N, H), 0.0);
-	float NdotL = max(dot(N, L), 0.0);
+	float VdotH = saturate(dot(V, H));
+	float NdotH = saturate(dot(N, H));
+	float NdotL = saturate(dot(N, L));
 	
 	float a = roughness * roughness;
 	float a2 = a * a;
@@ -31,7 +31,7 @@ float3 Default_Lit(float3 baseColor, float3 F0, float3 radiance, float3 N, float
 float3 Diffuse_Lit(float3 baseColor, float3 radiance, float3 N, float3 L)
 {
 	float3 diffuse = Diffuse_Lambert(baseColor);
-	float NdotL = max(dot(N, L), 0.0);
+	float NdotL = saturate(dot(N, L));
 	return diffuse * radiance * NdotL;
 }
 

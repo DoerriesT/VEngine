@@ -14,6 +14,7 @@ namespace VEngine
 			uint32_t m_noiseTextureHandle;
 			rg::ImageViewHandle m_hiZPyramidImageHandle;
 			rg::ImageViewHandle m_normalImageHandle;
+			rg::ImageViewHandle m_specularRoughnessImageHandle;
 			rg::ImageViewHandle m_rayHitPDFImageHandle;
 			rg::ImageViewHandle m_maskImageHandle;
 		};

@@ -16,8 +16,8 @@ namespace
 	float haltonX[numHaltonSamples];
 	float haltonY[numHaltonSamples];
 
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/ssr_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/ssr.hlsli"
 }
 
 void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -33,12 +33,55 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		}
 	}
 
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	const uint32_t imageWidth = data.m_passRecordContext->m_commonRenderData->m_width;
+	const uint32_t imageHeight = data.m_passRecordContext->m_commonRenderData->m_height;
+
+	uint32_t maxLevel = 1;
+	{
+		uint32_t w = imageWidth;
+		uint32_t h = imageHeight;
+		while (w > 1 || h > 1)
+		{
+			++maxLevel;
+			w /= 2;
+			h /= 2;
+		}
+	}
+
+	const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+
+	Constants consts;
+	consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
+	consts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix;
+	// hiZMaxLevel needs to be clamped to some resolution dependent upper bound in order to avoid artifacts in the right screen corner
+	// TODO: figure out why the artifacts appear and find a better fix
+	consts.hiZMaxLevel = static_cast<float>(glm::min(maxLevel, 7u));
+	consts.noiseScale = glm::vec2(1.0f / 64.0f);
+	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
+	consts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
+	consts.width = imageWidth;
+	consts.height = imageHeight;
+	consts.texelWidth = 1.0f / consts.width;
+	consts.texelHeight = 1.0f / consts.height;
+	consts.noiseTexId = data.m_noiseTextureHandle - 1;
+	consts.bias = data.m_bias;
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_rayHitPDFImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_maskImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_hiZPyramidImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_normalImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_specularRoughnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("SSR", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -49,7 +92,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/ssr_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/ssr_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -63,49 +106,24 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				ImageView *maskImageView = registry.getImageView(data.m_maskImageHandle);
 				ImageView *hiZImageView = registry.getImageView(data.m_hiZPyramidImageHandle);
 				ImageView *normalImageView = registry.getImageView(data.m_normalImageHandle);
+				ImageView *specularRoughnessImageView = registry.getImageView(data.m_specularRoughnessImageHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
+					
 					Initializers::storageImage(&rayHitPDFImageView, RAY_HIT_PDF_IMAGE_BINDING),
 					Initializers::storageImage(&maskImageView, MASK_IMAGE_BINDING),
 					Initializers::sampledImage(&hiZImageView, HIZ_PYRAMID_IMAGE_BINDING),
 					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+					Initializers::sampledImage(&specularRoughnessImageView, SPEC_ROUGHNESS_IMAGE_BINDING),
+					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
-				descriptorSet->update(5, updates);
+				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 			}
 
 			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
 			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
-
-			uint32_t maxLevel = 1;
-			{
-				uint32_t w = width;
-				uint32_t h = height;
-				while (w > 1 || h > 1)
-				{
-					++maxLevel;
-					w /= 2;
-					h /= 2;
-				}
-			}
-
-			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
-
-			PushConsts pushConsts;
-			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-			pushConsts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix;
-			// hiZMaxLevel needs to be clamped to some resolution dependent upper bound in order to avoid artifacts in the right screen corner
-			// TODO: figure out why the artifacts appear and find a better fix
-			pushConsts.hiZMaxLevel = static_cast<float>(glm::min(maxLevel, 7u));
-			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
-			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
-			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
-			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
-			pushConsts.bias = data.m_bias;
-
-			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 		});

@@ -102,6 +102,7 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	ssrPassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
 	ssrPassData.m_hiZPyramidImageHandle = data.m_hiZPyramidImageViewHandle;
 	ssrPassData.m_normalImageHandle = data.m_normalImageViewHandle;
+	ssrPassData.m_specularRoughnessImageHandle = data.m_specularRoughnessImageViewHandle;
 	ssrPassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
 	ssrPassData.m_maskImageHandle = ssrMaskImageViewHandle;
 
@@ -113,11 +114,12 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	ssrResolvePassData.m_passRecordContext = data.m_passRecordContext;
 	ssrResolvePassData.m_bias = g_ssrBias;
 	ssrResolvePassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
+	ssrResolvePassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
 	ssrResolvePassData.m_rayHitPDFImageHandle = ssrRayHitPdfImageViewHandle;
 	ssrResolvePassData.m_maskImageHandle = ssrMaskImageViewHandle;
 	ssrResolvePassData.m_depthImageHandle = data.m_depthImageViewHandle;
 	ssrResolvePassData.m_normalImageHandle = data.m_normalImageViewHandle;
-	ssrResolvePassData.m_albedoImageHandle = data.m_albedoImageViewHandle;
+	ssrResolvePassData.m_specularRoughnessImageHandle = data.m_specularRoughnessImageViewHandle;
 	ssrResolvePassData.m_prevColorImageHandle = data.m_prevColorImageViewHandle;
 	ssrResolvePassData.m_velocityImageHandle = data.m_velocityImageViewHandle;
 	ssrResolvePassData.m_resultImageHandle = resolvedColorRayDepthImageViewHandle;

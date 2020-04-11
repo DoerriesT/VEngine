@@ -115,9 +115,10 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					{
 						Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
+						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(2, updates);
+					descriptorSet->update(3, updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}

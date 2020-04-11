@@ -11,12 +11,31 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/ssrTemporalFilter_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/ssrTemporalFilter.hlsli"
 }
 
 void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+	const auto &projMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredProjectionMatrix;
+
+	Constants consts;
+	consts.reprojectionMatrix = data.m_passRecordContext->m_commonRenderData->m_prevViewProjectionMatrix * data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
+	consts.width = static_cast<float>(data.m_passRecordContext->m_commonRenderData->m_width);
+	consts.height = static_cast<float>(data.m_passRecordContext->m_commonRenderData->m_height);
+	consts.texelWidth = 1.0f / consts.width;
+	consts.texelHeight = 1.0f / consts.height;
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -33,7 +52,7 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/ssrTemporalFilter_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/ssrTemporalFilter_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -54,25 +73,14 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::sampledImage(&colorRayDepthImageView, COLOR_RAY_DEPTH_IMAGE_BINDING),
 					Initializers::sampledImage(&maskImageView, MASK_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
-				descriptorSet->update(6, updates);
+				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
-
-			const glm::mat4 reprojectionMatrix = data.m_passRecordContext->m_commonRenderData->m_prevViewProjectionMatrix * data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
-
-			PushConsts pushConsts;
-			pushConsts.reprojectionMatrix = reprojectionMatrix;
-			pushConsts.width = static_cast<float>(width);
-			pushConsts.height = static_cast<float>(height);
-			pushConsts.texelWidth = 1.0f / pushConsts.width;
-			pushConsts.texelHeight = 1.0f / pushConsts.height;
-
-			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 		});

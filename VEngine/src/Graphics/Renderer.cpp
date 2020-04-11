@@ -658,11 +658,42 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
 
-	// apply volumetric fog to scene
+	// Hi-Z nearest depth pyramid
+	HiZPyramidPass::OutData hiZMaxPyramidPassOutData;
+	HiZPyramidPass::Data hiZMaxPyramidPassData;
+	hiZMaxPyramidPassData.m_passRecordContext = &passRecordContext;
+	hiZMaxPyramidPassData.m_inputImageViewHandle = depthImageViewHandle;
+	hiZMaxPyramidPassData.m_maxReduction = true;
+	hiZMaxPyramidPassData.m_copyFirstLevel = true;
+	hiZMaxPyramidPassData.m_forceExecution = false;
+
+	HiZPyramidPass::addToGraph(graph, hiZMaxPyramidPassData, hiZMaxPyramidPassOutData);
+
+
+	// screen space reflections
+	SSRModule::Data ssrModuleData;
+	ssrModuleData.m_passRecordContext = &passRecordContext;
+	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
+	ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
+	ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	ssrModuleData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle; 
+	ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
+	ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
+	
+	m_ssrModule->addToGraph(graph, ssrModuleData);
+
+
+	// apply volumetric fog and indirect specular light to scene
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
+	volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
+	volumetricFogApplyPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+	volumetricFogApplyPassData.m_normalImageViewHandle = normalImageViewHandle;
 	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);

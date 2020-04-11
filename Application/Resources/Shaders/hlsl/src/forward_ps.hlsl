@@ -143,7 +143,7 @@ PSOutput main(inputput input)
 	{
 		ao = g_AmbientOcclusionImage.Load(int3((int2)input.position.xy, 0)).x;
 	}
-	result = lightingParams.albedo * ao;
+	result = 0.01 * (1.0 - lightingParams.metalness) * lightingParams.albedo * ao;
 	
 	// directional lights
 	{
@@ -249,7 +249,7 @@ PSOutput main(inputput input)
 	
 	output.color = float4(result, 1.0);
 	output.normal = float4(lightingParams.N, 1.0);
-	output.specularRoughness = accurateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
+	output.specularRoughness = approximateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
 	
 	return output;
 }

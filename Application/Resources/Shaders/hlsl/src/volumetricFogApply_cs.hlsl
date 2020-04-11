@@ -1,6 +1,7 @@
 #include "bindingHelper.hlsli"
 #include "volumetricFogApply.hlsli"
 #include "commonFilter.hlsli"
+#include "srgb.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -9,6 +10,10 @@
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture2D<float4> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
+Texture2D<float4> g_IndirectSpecularLightImage : REGISTER_SRV(INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING, INDIRECT_SPECULAR_LIGHT_IMAGE_SET);
+Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT_IMAGE_SET);
+Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
+Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -27,6 +32,21 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 viewSpacePosition = viewSpacePosition4.xyz / viewSpacePosition4.w;
 	
 	float3 result = g_ResultImage[threadID.xy].rgb;
+	
+	// skip sky pixels
+	if (depth != 0.0)
+	{
+		const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(threadID.xy, 0)));
+		const float3 F0 = specularRoughness.xyz;
+		const float roughness = max(specularRoughness.w, 0.04); // avoid precision problems
+		const float3 V = -normalize(viewSpacePosition.xyz);
+		const float3 N = g_NormalImage.Load(int3(threadID.xy, 0)).xyz;
+		float4 indirectSpecular = g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0));
+		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(roughness, saturate(dot(N, V))), 0.0).xy;
+		indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
+		
+		result += indirectSpecular.rgb * indirectSpecular.a;
+	}
 	
 	// volumetric fog
 	{

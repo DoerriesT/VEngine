@@ -12,11 +12,12 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			float m_bias;
 			uint32_t m_noiseTextureHandle;
+			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_rayHitPDFImageHandle;
 			rg::ImageViewHandle m_maskImageHandle;
 			rg::ImageViewHandle m_depthImageHandle;
 			rg::ImageViewHandle m_normalImageHandle;
-			rg::ImageViewHandle m_albedoImageHandle;
+			rg::ImageViewHandle m_specularRoughnessImageHandle;
 			rg::ImageViewHandle m_prevColorImageHandle;
 			rg::ImageViewHandle m_velocityImageHandle;
 			rg::ImageViewHandle m_resultImageHandle;

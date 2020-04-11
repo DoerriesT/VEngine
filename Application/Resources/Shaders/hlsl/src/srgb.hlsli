@@ -1,6 +1,26 @@
 #ifndef SRGB_H
 #define SRGB_H
 
+float3 approximateSRGBToLinear(in float3 sRGBCol)
+{
+	return pow(sRGBCol, 2.2);
+}
+
+float4 approximateSRGBToLinear(in float4 sRGBCol)
+{
+	return pow(sRGBCol, 2.2);
+}
+
+float3 approximateLinearToSRGB(in float3 linearCol)
+{
+	return pow(linearCol, 1.0 / 2.2);
+}
+
+float4 approximateLinearToSRGB(in float4 linearCol)
+{
+	return pow(linearCol, 1.0 / 2.2);
+}
+
 float3 accurateSRGBToLinear(in float3 sRGBCol)
 {
 	float3 linearRGBLo = sRGBCol * (1.0 / 12.92);
