@@ -10,8 +10,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/bloomDownsample_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/bloomDownsample.hlsli"
 }
 
 void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -37,7 +37,7 @@ void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/bloomDownsample_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/bloomDownsample_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -78,8 +78,8 @@ void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 
 				cmdList->dispatch((mipWidth + 15) / 16, (mipHeight + 15) / 16, 1);
 
-				mipWidth = max(mipWidth / 2u, 1u);
-				mipHeight = max(mipHeight / 2u, 1u);
+				mipWidth = glm::max(mipWidth / 2u, 1u);
+				mipHeight = glm::max(mipHeight / 2u, 1u);
 				
 
 				// dont insert a barrier after the last iteration: we dont know the next resource state, so let the RenderGraph figure it out

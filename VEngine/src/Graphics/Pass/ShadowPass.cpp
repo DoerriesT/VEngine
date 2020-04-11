@@ -15,8 +15,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/shadows_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/shadows.hlsli"
 }
 
 void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -48,8 +48,8 @@ void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 
 				gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 
-				builder.setVertexShader(alphaMasked ? "Resources/Shaders/shadows_alpha_mask_vert.spv" : "Resources/Shaders/shadows_vert.spv");
-				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/shadows_frag.spv");
+				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/shadows_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/shadows_vs.spv");
+				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/hlsl/shadows_ps.spv");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
 				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);

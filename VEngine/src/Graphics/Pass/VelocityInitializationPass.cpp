@@ -10,10 +10,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using vec4 = glm::vec4;
-	using mat4 = glm::mat4;
-	using uint = uint32_t;
-#include "../../../../Application/Resources/Shaders/velocityInitialization_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/velocityInitialization.hlsli"
 }
 
 void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -33,8 +31,8 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
 		gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-		builder.setVertexShader("Resources/Shaders/fullscreenTriangle_vert.spv");
-		builder.setFragmentShader("Resources/Shaders/velocityInitialization_frag.spv");
+		builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
+		builder.setFragmentShader("Resources/Shaders/hlsl/velocityInitialization_ps.spv");
 		builder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
 		builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
 		builder.setColorAttachmentFormat(registry.getImageView(data.m_velocityImageHandle)->getImage()->getDescription().m_format);
@@ -58,10 +56,9 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(2, updates);
+			descriptorSet->update(1, updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

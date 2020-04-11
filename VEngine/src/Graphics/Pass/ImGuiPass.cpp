@@ -83,8 +83,8 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		colorBlendAttachment.m_alphaBlendOp = BlendOp::ADD;
 		colorBlendAttachment.m_colorWriteMask = ColorComponentFlagBits::R_BIT | ColorComponentFlagBits::G_BIT | ColorComponentFlagBits::B_BIT | ColorComponentFlagBits::A_BIT;
 
-		builder.setVertexShader("Resources/Shaders/imgui_vert.spv");
-		builder.setFragmentShader("Resources/Shaders/imgui_frag.spv");
+		builder.setVertexShader("Resources/Shaders/hlsl/imgui_vs.spv");
+		builder.setFragmentShader("Resources/Shaders/hlsl/imgui_ps.spv");
 		builder.setVertexBindingDescription({ 0, sizeof(ImDrawVert), VertexInputRate::VERTEX });
 		builder.setVertexAttributeDescriptions(sizeof(attributeDescs) / sizeof(attributeDescs[0]), attributeDescs);
 		builder.setColorBlendAttachment(colorBlendAttachment);

@@ -9,7 +9,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-#include "../../../../Application/Resources/Shaders/integrateBrdf_bindings.h"
+//#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/integrateBrdf.hlsli"
 }
 
 void VEngine::IntegrateBrdfPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -27,7 +28,7 @@ void VEngine::IntegrateBrdfPass::addToGraph(rg::RenderGraph &graph, const Data &
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/integrateBrdf_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/integrateBrdf_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

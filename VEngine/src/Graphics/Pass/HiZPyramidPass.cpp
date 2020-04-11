@@ -10,8 +10,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/hiZPyramid_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hiZPyramid.hlsli"
 }
 
 void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &data, OutData &outData)
@@ -92,7 +92,7 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader(data.m_maxReduction ? "Resources/Shaders/hiZPyramid_MAX_comp.spv" : "Resources/Shaders/hiZPyramid_MIN_comp.spv");
+			builder.setComputeShader(data.m_maxReduction ? "Resources/Shaders/hlsl/hiZPyramid_MAX_cs.spv" : "Resources/Shaders/hlsl/hiZPyramid_MIN_cs.spv");
 			
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -115,10 +115,9 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					{
 						Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(3, updates);
+					descriptorSet->update(2, updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}

@@ -10,8 +10,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/bloomUpsample_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/bloomUpsample.hlsli"
 }
 
 void VEngine::BloomUpsamplePass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -40,7 +40,7 @@ void VEngine::BloomUpsamplePass::addToGraph(rg::RenderGraph &graph, const Data &
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/bloomUpsample_comp.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/bloomUpsample_cs.spv");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

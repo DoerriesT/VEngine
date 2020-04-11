@@ -13,8 +13,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/rasterTiling_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/rasterTiling.hlsli"
 }
 
 void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -34,8 +34,8 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
 		gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-		builder.setVertexShader("Resources/Shaders/rasterTiling_vert.spv");
-		builder.setFragmentShader("Resources/Shaders/rasterTiling_frag.spv");
+		builder.setVertexShader("Resources/Shaders/hlsl/rasterTiling_vs.spv");
+		builder.setFragmentShader("Resources/Shaders/hlsl/rasterTiling_ps.spv");
 		builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 		builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
 		builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);

@@ -12,8 +12,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using vec2 = glm::vec2;
-#include "../../../../Application/Resources/Shaders/fxaa_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/fxaa.hlsli"
 }
 
 void VEngine::FXAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -32,7 +32,7 @@ void VEngine::FXAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/fxaa_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/fxaa_cs.spv");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
