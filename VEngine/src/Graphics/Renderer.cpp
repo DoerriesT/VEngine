@@ -24,6 +24,7 @@
 #include "Pass/TemporalAAPass.h"
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
+#include "Pass/VolumetricFogApplyPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -650,11 +651,21 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
 	forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
 	forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
-	forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	//forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
+
+
+	// apply volumetric fog to scene
+	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
+	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
+	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
+
+	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
 
 	// calculate luminance histograms

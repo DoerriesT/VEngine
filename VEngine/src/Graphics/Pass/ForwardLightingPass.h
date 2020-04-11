@@ -37,7 +37,7 @@ namespace VEngine
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_normalImageViewHandle;
 			rg::ImageViewHandle m_specularRoughnessImageViewHandle;
-			rg::ImageViewHandle m_volumetricFogImageViewHandle;
+			//rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_ssaoImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 		};

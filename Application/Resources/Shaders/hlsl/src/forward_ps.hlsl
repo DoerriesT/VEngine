@@ -30,7 +30,6 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CO
 StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
 Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
-Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
@@ -245,26 +244,6 @@ PSOutput main(inputput input)
 	
 	// apply pre-exposure
 	result *= asfloat(g_ExposureData.Load(0));
-	
-	// apply volumetric fog
-	{
-		float z = -lightingParams.viewSpacePosition.z;
-		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-		
-		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
-		// of the current texel but instead need to scale the uv with respect to the fog image resolution
-		float3 imageDims;
-		g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
-		float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
-		
-		float3 volumetricFogTexCoord = float3(input.position.xy * scaledFogImageTexelSize, d);
-		
-		float4 fog = sampleBicubic(g_VolumetricFogImage, g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
-		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
-		
-		fog.rgb = inverseSimpleTonemap(fog.rgb);
-		result = result * fog.aaa + fog.rgb;
-	}
 
 	PSOutput output;
 	
