@@ -82,9 +82,14 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	float2 prevTexCoord = current.a == 0.0 ? texCoord : reprojectedCoord.xy;
 	
-	float4 history = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
-	history.rgb = clipAABB(history.rgb, neighborhoodMin.rgb, neighborhoodMax.rgb);
-	history.a = clamp(history.a, neighborhoodMin.a, neighborhoodMax.a);
+	float4 history = current;
+	
+	if (g_Constants.ignoreHistory == 0)
+	{
+		history = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+		history.rgb = clipAABB(history.rgb, neighborhoodMin.rgb, neighborhoodMax.rgb);
+		history.a = clamp(history.a, neighborhoodMin.a, neighborhoodMax.a);
+	}
 	
 	float4 result = lerp(history, current, 0.02);
 	result = isnan(result) || isinf(result) ? 0.0 : result;

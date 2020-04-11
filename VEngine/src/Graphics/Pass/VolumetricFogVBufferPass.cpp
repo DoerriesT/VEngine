@@ -10,7 +10,7 @@
 bool g_albedoExtinctionMode = true;
 float g_fogScattering[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogAbsorption[3] = { 1.0f, 1.0f, 1.0f };
-float g_fogAlbedo[3] = { 1.0f, 1.0f, 1.0f };
+float g_fogAlbedo[3] = { 0.01f, 0.01f, 0.01f };
 float g_fogExtinction = 0.01f;
 float g_fogEmissiveColor[3] = {};
 float g_fogEmissiveIntensity = 0.0f;

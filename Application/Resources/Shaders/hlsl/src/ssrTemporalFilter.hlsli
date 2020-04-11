@@ -18,4 +18,5 @@ struct Constants
 	float height;
 	float texelWidth;
 	float texelHeight;
+	uint ignoreHistory;
 };

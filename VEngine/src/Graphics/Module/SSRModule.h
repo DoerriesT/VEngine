@@ -12,6 +12,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_ignoreHistory;
 			uint32_t m_noiseTextureHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_hiZPyramidImageViewHandle;

@@ -673,6 +673,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// screen space reflections
 	SSRModule::Data ssrModuleData;
 	ssrModuleData.m_passRecordContext = &passRecordContext;
+	ssrModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
 	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;

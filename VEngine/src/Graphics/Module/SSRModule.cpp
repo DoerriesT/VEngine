@@ -112,6 +112,7 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	// resolve color
 	SSRResolvePass::Data ssrResolvePassData;
 	ssrResolvePassData.m_passRecordContext = data.m_passRecordContext;
+	ssrResolvePassData.m_ignoreHistory = data.m_ignoreHistory;
 	ssrResolvePassData.m_bias = g_ssrBias;
 	ssrResolvePassData.m_noiseTextureHandle = data.m_noiseTextureHandle;
 	ssrResolvePassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
@@ -133,6 +134,7 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	// temporal filter
 	SSRTemporalFilterPass::Data ssrTemporalFilterPassData;
 	ssrTemporalFilterPassData.m_passRecordContext = data.m_passRecordContext;
+	ssrTemporalFilterPassData.m_ignoreHistory = data.m_ignoreHistory;
 	ssrTemporalFilterPassData.m_resultImageViewHandle = m_ssrImageViewHandle;
 	ssrTemporalFilterPassData.m_historyImageViewHandle = ssrPreviousImageViewHandle;
 	ssrTemporalFilterPassData.m_colorRayDepthImageViewHandle = resolvedColorRayDepthImageViewHandle;

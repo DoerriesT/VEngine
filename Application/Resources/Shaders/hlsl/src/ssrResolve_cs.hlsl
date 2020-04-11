@@ -96,6 +96,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float totalWeight = 0.0;
 	float4 result = 0.0;
 	float avgRayDepth = 0.0;
+	float totalDepthWeight = 0.0;
 	for (int i = 0; i < 4; ++i)
 	{
 		int2 coord = offsets[i] + int2(threadID.xy);
@@ -110,8 +111,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		L *= 1.0 / hitDist;
 		
 		float weight = localBrdf(N, V, L, F0, roughness) / max(rayHitPdf.w, 1e-6);
+		weight *= mask > 0.0 ? 1.0 : 0.0;
 		float4 sampleColor = float4(0.0, 0.0, 0.0, mask);
-		if (sampleColor.a > 0.0)
+		if (g_Constants.ignoreHistory == 0 && sampleColor.a > 0.0)
 		{
 			// reproject into last frame
 			float2 velocity = g_VelocityImage.SampleLevel(g_LinearSampler, rayHitPdf.xy, 0.0).xy;
@@ -129,14 +131,16 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		
 		result += sampleColor * weight;// vec4(sampleColor.rgb * weight, sampleColor.a);
 		totalWeight += weight;
-		avgRayDepth += rayHitPdf.z * weight;//viewSpaceHitPos.z;
+		float rayDepthWeight = mask > 0.0 ? 1.0 : 0.0;
+		avgRayDepth += viewSpaceHitPos.z * rayDepthWeight;
+		totalDepthWeight += rayDepthWeight;
 	}
 	
 	result *= 1.0 / max(totalWeight, float(1e-6));
-	avgRayDepth *= 1.0 / max(totalWeight, float(1e-6));
+	avgRayDepth *= 1.0 / max(totalDepthWeight, float(1e-6));
 	
 	// project to screen space depth
-	//avgRayDepth = (g_Constants.depthProjectParams.x * avgRayDepth + g_Constants.depthProjectParams.y) / -avgRayDepth;
+	avgRayDepth = (g_Constants.depthProjectParams.x * avgRayDepth + g_Constants.depthProjectParams.y) / -avgRayDepth;
 	
 	float resultMask = result.a;
 	result.a = avgRayDepth;

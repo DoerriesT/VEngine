@@ -33,6 +33,7 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 	consts.height = static_cast<float>(data.m_passRecordContext->m_commonRenderData->m_height);
 	consts.texelWidth = 1.0f / consts.width;
 	consts.texelHeight = 1.0f / consts.height;
+	consts.ignoreHistory = data.m_ignoreHistory;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 

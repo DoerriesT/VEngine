@@ -37,6 +37,7 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 	consts.texelHeight = 1.0f / consts.height;
 	consts.diameterToScreen = 0.5f / tanf(glm::radians(data.m_passRecordContext->m_commonRenderData->m_fovy) * 0.5f) * glm::min(consts.width, consts.height);
 	consts.bias = data.m_bias * 0.5f;
+	consts.ignoreHistory = data.m_ignoreHistory;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 

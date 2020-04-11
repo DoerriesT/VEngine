@@ -35,4 +35,5 @@ struct Constants
 	float texelHeight;
 	float diameterToScreen;
 	float bias;
+	uint ignoreHistory;
 };
