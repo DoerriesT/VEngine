@@ -25,6 +25,7 @@
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
 #include "Pass/VolumetricFogApplyPass.h"
+#include "Pass/GaussianDownsamplePass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -169,10 +170,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		prevDepthImageViewHandle = graph.createImageView({ "Prev Depth Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
+	rg::ImageHandle lightImageHandle = 0;
 	rg::ImageViewHandle lightImageViewHandle = 0;
 	{
-		rg::ImageHandle imageHandle = graph.importImage(m_renderResources->m_lightImages[commonData.m_curResIdx], "Light Image", false, {}, m_renderResources->m_lightImageState[commonData.m_curResIdx]);
-		lightImageViewHandle = graph.createImageView({ "Light Image", imageHandle, {  0, 1, 0, 1 } });
+		lightImageHandle = graph.importImage(m_renderResources->m_lightImages[commonData.m_curResIdx], "Light Image", false, {}, m_renderResources->m_lightImageState[commonData.m_curResIdx]);
+		lightImageViewHandle = graph.createImageView({ "Light Image", lightImageHandle, {  0, 1, 0, 1 } });
 	}
 
 	rg::ImageHandle prevLightImageHandle = 0;
@@ -698,6 +700,17 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
+
+
+	GaussianDownsamplePass::Data gaussianDownsamplePassData;
+	gaussianDownsamplePassData.m_passRecordContext = &passRecordContext;
+	gaussianDownsamplePassData.m_width = m_width;
+	gaussianDownsamplePassData.m_height = m_height;
+	gaussianDownsamplePassData.m_levels = m_renderResources->m_lightImages[0]->getDescription().m_levels;
+	gaussianDownsamplePassData.m_format = m_renderResources->m_lightImages[0]->getDescription().m_format;
+	gaussianDownsamplePassData.m_resultImageHandle = lightImageHandle;
+
+	GaussianDownsamplePass::addToGraph(graph, gaussianDownsamplePassData);
 
 
 	// calculate luminance histograms

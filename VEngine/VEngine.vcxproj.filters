@@ -381,6 +381,9 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GaussianDownsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -633,6 +636,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GaussianDownsamplePass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

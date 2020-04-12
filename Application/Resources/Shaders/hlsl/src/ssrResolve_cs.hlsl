@@ -122,7 +122,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			// is the uv coord still valid?
 			sampleColor.a *= (rayHitPdf.x > 0.0 && rayHitPdf.y > 0.0 && rayHitPdf.x < 1.0 && rayHitPdf.y < 1.0) ? 1.0 : 0.0;
 			
-			float mipLevel = 0.0;//calculateMipLevel(P.z, hitDist, roughness, filterShrinkCompensation);
+			float mipLevel = calculateMipLevel(P.z, hitDist, roughness, filterShrinkCompensation);
 			sampleColor.rgb = sampleColor.a > 0.0 ? g_PrevColorImage.SampleLevel(g_LinearSampler, rayHitPdf.xy, mipLevel).rgb : 0.0;
 			
 			// sampleColor.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure

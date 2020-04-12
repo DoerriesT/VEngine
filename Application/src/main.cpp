@@ -31,6 +31,8 @@ extern float g_fogEmissiveColor[3];
 extern float g_fogEmissiveIntensity;
 extern float g_fogPhase;
 
+extern float g_ssrBias;
+
 uint32_t g_dirLightEntity;
 uint32_t g_debugVoxelCascadeIndex = 0;
 uint32_t g_giVoxelDebugMode = 0;
@@ -207,6 +209,8 @@ public:
 
 		ImGui::Begin("Volumetric Fog");
 		{
+			ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
+
 			ImGui::Checkbox("Albedo/Extinction Mode", &g_albedoExtinctionMode);
 			ImGui::NewLine();
 			ImGui::Separator();
