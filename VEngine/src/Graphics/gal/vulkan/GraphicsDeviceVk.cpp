@@ -595,13 +595,27 @@ void VEngine::gal::GraphicsDeviceVk::createBuffer(const BufferCreateInfo &buffer
 		m_transferQueue.getFamilyIndex()
 	};
 
+	uint32_t queueFamilyIndexCount = 0;
+	uint32_t uniqueQueueFamilyIndices[3];
+
+	uniqueQueueFamilyIndices[queueFamilyIndexCount++] = queueFamilyIndices[0];
+
+	if (queueFamilyIndices[1] != queueFamilyIndices[0])
+	{
+		uniqueQueueFamilyIndices[queueFamilyIndexCount++] = queueFamilyIndices[1];
+	}
+	if (queueFamilyIndices[2] != queueFamilyIndices[0])
+	{
+		uniqueQueueFamilyIndices[queueFamilyIndexCount++] = queueFamilyIndices[2];
+	}
+
 	VkBufferCreateInfo createInfo{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	createInfo.flags = bufferCreateInfo.m_createFlags;
 	createInfo.size = bufferCreateInfo.m_size;
 	createInfo.usage = bufferCreateInfo.m_usageFlags;
 	createInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-	createInfo.queueFamilyIndexCount = 3;
-	createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
+	createInfo.pQueueFamilyIndices = uniqueQueueFamilyIndices;
 
 	VkBuffer nativeHandle = VK_NULL_HANDLE;
 	AllocationHandleVk allocHandle = 0;

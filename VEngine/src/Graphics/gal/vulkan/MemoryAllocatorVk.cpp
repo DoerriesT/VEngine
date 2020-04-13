@@ -22,7 +22,8 @@ void VEngine::gal::MemoryAllocatorVk::init(VkDevice device, VkPhysicalDevice phy
 
 	for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
 	{
-		m_pools[i].init(m_device, i, m_bufferImageGranularity, MAX_BLOCK_SIZE);
+		const auto& heap = m_memoryProperties.memoryHeaps[m_memoryProperties.memoryTypes[i].heapIndex];
+		m_pools[i].init(m_device, i, m_bufferImageGranularity, heap.size < MAX_BLOCK_SIZE ? heap.size : MAX_BLOCK_SIZE);
 	}
 }
 
