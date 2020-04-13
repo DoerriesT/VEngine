@@ -162,6 +162,20 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
 		vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices.data());
 
+		struct DeviceInfo
+		{
+			VkPhysicalDevice m_physicalDevice;
+			VkPhysicalDeviceProperties m_properties;
+			VkPhysicalDeviceFeatures m_features;
+			VkPhysicalDeviceVulkan12Features m_vulkan12Features;
+			uint32_t m_graphicsQueueFamily;
+			uint32_t m_computeQueueFamily;
+			uint32_t m_transferQueueFamily;
+			bool m_computeQueuePresentable;
+		};
+
+		std::vector<DeviceInfo> suitableDevices;
+
 		for (const auto &physicalDevice : physicalDevices)
 		{
 			// find queue indices
@@ -266,9 +280,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				swapChainAdequate = formatCount != 0 && presentModeCount != 0;
 			}
 
-			VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES };
-			VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, &timelineSemaphoreFeatures };
-			VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &descriptorIndexingFeatures };
+			VkPhysicalDeviceVulkan12Features vulkan12Features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+			VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &vulkan12Features };
 
 			vkGetPhysicalDeviceFeatures2(physicalDevice, &supportedFeatures2);
 
@@ -287,33 +300,80 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				&& supportedFeatures.fragmentStoresAndAtomics
 				&& supportedFeatures.shaderStorageImageExtendedFormats
 				&& supportedFeatures.shaderStorageImageWriteWithoutFormat
-				&& descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing
-				&& timelineSemaphoreFeatures.timelineSemaphore)
+				&& vulkan12Features.shaderSampledImageArrayNonUniformIndexing
+				&& vulkan12Features.timelineSemaphore)
 			{
-				m_physicalDevice = physicalDevice;
+				DeviceInfo deviceInfo{};
+				deviceInfo.m_physicalDevice = physicalDevice;
+				vkGetPhysicalDeviceProperties(physicalDevice, &deviceInfo.m_properties);
+				deviceInfo.m_features = supportedFeatures;
+				deviceInfo.m_vulkan12Features = vulkan12Features;
+				deviceInfo.m_graphicsQueueFamily = static_cast<uint32_t>(graphicsFamilyIndex);
+				deviceInfo.m_computeQueueFamily = static_cast<uint32_t>(computeFamilyIndex);
+				deviceInfo.m_transferQueueFamily = static_cast<uint32_t>(transferFamilyIndex);
+				deviceInfo.m_computeQueuePresentable = static_cast<bool>(computeFamilyPresentable);
 
-				m_graphicsQueue.m_queueFamily = static_cast<uint32_t>(graphicsFamilyIndex);
-				m_graphicsQueue.m_queue = VK_NULL_HANDLE;
-				m_graphicsQueue.m_presentable = static_cast<bool>(graphicsFamilyPresentable);
-
-				m_computeQueue.m_queueFamily = static_cast<uint32_t>(computeFamilyIndex);
-				m_computeQueue.m_queue = VK_NULL_HANDLE;
-				m_computeQueue.m_presentable = static_cast<bool>(computeFamilyPresentable);
-
-				m_transferQueue.m_queueFamily = static_cast<uint32_t>(transferFamilyIndex);
-				m_transferQueue.m_queue = VK_NULL_HANDLE;
-				m_transferQueue.m_presentable = false;
-
-				vkGetPhysicalDeviceProperties(physicalDevice, &m_properties);
-				m_features = supportedFeatures;
-				break;
+				suitableDevices.push_back(deviceInfo);
 			}
 		}
 
-		if (m_physicalDevice == VK_NULL_HANDLE)
+		std::cout << "Found " << suitableDevices.size() << " suitable device(s):" << std::endl;
+
+		size_t deviceIndex = -1;
+
+		if (suitableDevices.empty())
 		{
 			Utility::fatalExit("Failed to find a suitable GPU!", EXIT_FAILURE);
 		}
+
+		for (size_t i = 0; i < suitableDevices.size(); ++i)
+		{
+			std::cout <<"["<< i << "] " << suitableDevices[i].m_properties.deviceName << std::endl;
+		}
+
+		// select first device if there is only a single one
+		if (suitableDevices.size() == 1)
+		{
+			deviceIndex = 0;
+		}
+		// let the user select a device
+		else
+		{
+			std::cout << "Select a device:" << std::endl;
+
+			do
+			{
+				std::cin >> deviceIndex;
+
+				if (std::cin.fail() || deviceIndex >= suitableDevices.size())
+				{
+					std::cout << "Invalid Index!" << std::endl;
+					deviceIndex = -1;
+					std::cin.clear();
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				}
+
+			} while (deviceIndex >= suitableDevices.size());
+		}
+
+		const auto &selectedDevice = suitableDevices[deviceIndex];
+		
+		m_physicalDevice = selectedDevice.m_physicalDevice;
+
+		m_graphicsQueue.m_queueFamily = selectedDevice.m_graphicsQueueFamily;
+		m_graphicsQueue.m_queue = VK_NULL_HANDLE;
+		m_graphicsQueue.m_presentable = true;
+
+		m_computeQueue.m_queueFamily = selectedDevice.m_computeQueueFamily;
+		m_computeQueue.m_queue = VK_NULL_HANDLE;
+		m_computeQueue.m_presentable = selectedDevice.m_computeQueuePresentable;
+
+		m_transferQueue.m_queueFamily = selectedDevice.m_transferQueueFamily;
+		m_transferQueue.m_queue = VK_NULL_HANDLE;
+		m_transferQueue.m_presentable = false;
+
+		m_properties = selectedDevice.m_properties;
+		m_features = selectedDevice.m_features;
 	}
 
 	// create logical device and retrieve queues
