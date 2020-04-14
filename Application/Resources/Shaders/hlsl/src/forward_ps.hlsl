@@ -143,7 +143,7 @@ PSOutput main(inputput input)
 	{
 		ao = g_AmbientOcclusionImage.Load(int3((int2)input.position.xy, 0)).x;
 	}
-	result = 0.01 * (1.0 - lightingParams.metalness) * lightingParams.albedo * ao;
+	result = 1.0 * (1.0 - lightingParams.metalness) * lightingParams.albedo * ao;
 	
 	// directional lights
 	{

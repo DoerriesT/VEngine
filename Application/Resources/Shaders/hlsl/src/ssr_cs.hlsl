@@ -50,7 +50,7 @@ float getMinimumDepthPlane(float2 ray, float level, float2 cellCount)
 
 float3 hiZTrace(float3 p, float3 v)
 {
-	float level = 0.0;
+	float level = 1.0;
 	float iterations = 0.0;
 	float3 vZ = v / v.z;
 	vZ = -vZ;
@@ -111,12 +111,14 @@ float3 hiZTrace(float3 p, float3 v)
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-	if (threadID.x >= g_Constants.width || threadID.y >= g_Constants.height)
+	if (threadID.x / 2 >= g_Constants.width || threadID.y / 2 >= g_Constants.height)
 	{
 		return;
 	}
+	
+	const int2 fullResCoord = int2(threadID.xy) * 2 + g_Constants.subsample;
 
-	const float depth = g_HiZPyramidImage.Load(int3(threadID.xy, 0)).x;
+	const float depth = g_HiZPyramidImage.Load(int3(fullResCoord, 0)).x;
 	if (depth == 0.0)
 	{
 		g_RayHitPdfImage[threadID.xy] = float4(-1.0, -1.0, -1.0, 1.0);
@@ -124,15 +126,15 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	const float2 clipSpacePosition = float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
+	const float2 clipSpacePosition = float2(fullResCoord + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	viewSpacePosition.xyz /= viewSpacePosition.w;
 	
 	const float3 P = viewSpacePosition.xyz;
 	const float3 V = -normalize(viewSpacePosition.xyz);
-	const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(threadID.xy, 0)));
+	const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(fullResCoord, 0)));
 	const float roughness = max(specularRoughness.w, 0.04); // avoid precision problems
-	const float3 N = g_NormalImage.Load(int3(threadID.xy, 0)).xyz;
+	const float3 N = g_NormalImage.Load(int3(fullResCoord, 0)).xyz;
 	
 	float3 H = N;
 	float3 R = N;
@@ -153,7 +155,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		}
 	}
 	
-	float3 pSS = float3(float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight), depth);
+	float3 pSS = float3(float2(fullResCoord + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight), depth);
 	float4 reflectSS = mul(g_Constants.projectionMatrix, float4(P + R, 1.0));
 	reflectSS.xyz /= reflectSS.w;
 	reflectSS.xy = reflectSS.xy * 0.5 + 0.5;

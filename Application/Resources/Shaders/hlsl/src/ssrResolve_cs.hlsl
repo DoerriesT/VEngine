@@ -100,8 +100,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	for (int i = 0; i < 4; ++i)
 	{
 		int2 coord = offsets[i] + int2(threadID.xy);
-		float4 rayHitPdf = g_RayHitPdfImage.Load(int3(coord, 0));
-		float mask = g_MaskImage.Load(int3(coord, 0)).x;
+		float4 rayHitPdf = g_RayHitPdfImage.Load(int3(coord / 2, 0));
+		float mask = g_MaskImage.Load(int3(coord / 2, 0)).x;
 		
 		float4 viewSpaceHitPos = float4(g_Constants.unprojectParams.xy * (rayHitPdf.xy * 2.0 - 1.0), -1.0, g_Constants.unprojectParams.z * rayHitPdf.z + g_Constants.unprojectParams.w);
 		viewSpaceHitPos.xyz /= viewSpaceHitPos.w;

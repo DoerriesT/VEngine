@@ -20,6 +20,7 @@ struct Constants
 {
 	float4x4 projectionMatrix;
 	float4 unprojectParams;
+	int2 subsample;
 	float2 noiseScale;
 	float2 noiseJitter;
 	uint width;

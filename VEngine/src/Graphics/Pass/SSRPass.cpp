@@ -56,15 +56,19 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 	}
 
 	const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+	const auto frameIdx = data.m_passRecordContext->m_commonRenderData->m_frame;
+
+	glm::ivec2 subsamples[] = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
 
 	Constants consts;
 	consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 	consts.projectionMatrix = data.m_passRecordContext->m_commonRenderData->m_projectionMatrix;
+	consts.subsample = subsamples[frameIdx % 4];
 	// hiZMaxLevel needs to be clamped to some resolution dependent upper bound in order to avoid artifacts in the right screen corner
 	// TODO: figure out why the artifacts appear and find a better fix
 	consts.hiZMaxLevel = static_cast<float>(glm::min(maxLevel, 7u));
 	consts.noiseScale = glm::vec2(1.0f / 64.0f);
-	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
+	const size_t haltonIdx = frameIdx % numHaltonSamples;
 	consts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
 	consts.width = imageWidth;
 	consts.height = imageHeight;
@@ -125,6 +129,6 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
 			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
 
-			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
+			cmdList->dispatch((width / 2 + 7) / 8, (height / 2 + 7) / 8, 1);
 		});
 }
