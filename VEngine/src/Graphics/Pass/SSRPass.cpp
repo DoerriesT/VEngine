@@ -58,7 +58,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 	const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 	const auto frameIdx = data.m_passRecordContext->m_commonRenderData->m_frame;
 
-	glm::ivec2 subsamples[] = {{0, 0}, {1, 1}, {1, 0}, {0, 1}};
+	glm::ivec2 subsamples[] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
 
 	Constants consts;
 	consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);

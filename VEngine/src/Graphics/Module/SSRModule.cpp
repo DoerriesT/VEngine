@@ -48,8 +48,8 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 		desc.m_name = "SSR RayHit/PDF Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
+		desc.m_width = m_width / 2;
+		desc.m_height = m_height / 2;
 		desc.m_layers = 1;
 		desc.m_levels = 1;
 		desc.m_samples = SampleCount::_1;
@@ -65,8 +65,8 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 		desc.m_name = "SSR Mask Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
+		desc.m_width = m_width / 2;
+		desc.m_height = m_height / 2;
 		desc.m_layers = 1;
 		desc.m_levels = 1;
 		desc.m_samples = SampleCount::_1;
@@ -75,6 +75,8 @@ void VEngine::SSRModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 		ssrMaskImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 
 		desc.m_name = "SSR Resolved Mask Image";
+		desc.m_width = m_width;
+		desc.m_height = m_height;
 		resolvedMaskImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}
 
