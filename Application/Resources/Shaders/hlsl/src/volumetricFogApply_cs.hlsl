@@ -2,6 +2,7 @@
 #include "volumetricFogApply.hlsli"
 #include "commonFilter.hlsli"
 #include "srgb.hlsli"
+#include "common.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -15,6 +16,9 @@ Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT
 Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
 Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+
+Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -60,6 +64,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
 		
 		float3 volumetricFogTexCoord = float3((threadID.xy + 0.5) * scaledFogImageTexelSize, d);
+		
+		float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
+		float3 noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
+		
+		volumetricFogTexCoord += (noise * 2.0 - 1.0) * 1.5 / imageDims;
 		
 		float4 fog = sampleBicubic(g_VolumetricFogImage, g_LinearSampler, volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
 		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);

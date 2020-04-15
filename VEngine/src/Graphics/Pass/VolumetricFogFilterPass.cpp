@@ -42,7 +42,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
 	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
 	consts.cameraPos = commonData->m_cameraPosition;
-	consts.ignoreHistory = data.m_ignoreHistory;
+	consts.ignoreHistory = true;// data.m_ignoreHistory;
 
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));

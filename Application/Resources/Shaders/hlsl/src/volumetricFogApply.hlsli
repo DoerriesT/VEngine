@@ -15,9 +15,17 @@
 #define LINEAR_SAMPLER_SET 0
 #define LINEAR_SAMPLER_BINDING 7
 
+#define TEXTURES_SET 1
+#define TEXTURES_BINDING 0
+#define SAMPLERS_SET 1
+#define SAMPLERS_BINDING 1
+
 struct PushConsts
 {
 	float4 unprojectParams;
+	float2 noiseScale;
+	float2 noiseJitter;
+	uint noiseTexId;
 	uint width;
 	uint height;
 	float texelWidth;

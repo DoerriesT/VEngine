@@ -83,9 +83,9 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	}
 
 	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % s_haltonSampleCount;
-	const float jitterX = m_haltonJitter[haltonIdx * 3 + 0];
-	const float jitterY = m_haltonJitter[haltonIdx * 3 + 1];
-	const float jitterZ = m_haltonJitter[haltonIdx * 3 + 2];
+	const float jitterX = (m_haltonJitter[haltonIdx * 3 + 0] - 0.5f) * 0.5f + 0.25f;
+	const float jitterY = (m_haltonJitter[haltonIdx * 3 + 1] - 0.5f) * 0.5f + 0.25f;
+	const float jitterZ = (m_haltonJitter[haltonIdx * 3 + 2] - 0.5f) * 0.5f + 0.25f;
 
 	// we may need to expand the frustum a little to the right and a little downwards, so that each froxel corresponds
 	// exactly to a single tile from the tiled lighting setup

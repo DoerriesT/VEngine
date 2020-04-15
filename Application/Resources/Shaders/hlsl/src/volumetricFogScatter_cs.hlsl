@@ -88,11 +88,14 @@ void main(uint3 threadID : SV_DispatchThreadID)
 {
 	uint3 froxelID = threadID.xyz;
 	
-	float4x4 ditherMatrix = ((float4x4(0, 8, 2, 10,
-									12, 4, 14, 6,
-									3, 11, 1, 9,
-									15, 7, 13, 5) + 1.0) * (1.0 / 16.0));
-	float dither = ditherMatrix[threadID.y % 4][threadID.x % 4];
+	//float4x4 ditherMatrix = ((float4x4(0, 8, 2, 10,
+	//								12, 4, 14, 6,
+	//								3, 11, 1, 9,
+	//								15, 7, 13, 5) + 1.0) * (1.0 / 16.0));
+	//float dither = ditherMatrix[threadID.y % 4][threadID.x % 4];
+	
+	float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
+	float dither = ditherMatrix[threadID.y % 2][threadID.x % 2];
 	
 	// world-space position of volumetric texture texel
 	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));

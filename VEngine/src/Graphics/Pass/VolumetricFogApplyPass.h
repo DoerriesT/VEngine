@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			uint32_t m_noiseTextureHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;

@@ -43,7 +43,7 @@ namespace VEngine
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
 
 	private:
-		static constexpr size_t s_haltonSampleCount = 64;
+		static constexpr size_t s_haltonSampleCount = 32;
 		gal::GraphicsDevice *m_graphicsDevice;
 		uint32_t m_width = 1;
 		uint32_t m_height = 1;

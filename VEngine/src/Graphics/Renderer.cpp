@@ -691,6 +691,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// apply volumetric fog and indirect specular light to scene
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
