@@ -89,4 +89,53 @@ float3 inverseSimpleTonemap(float3 color)
 	return color / max(1.0 - luma, 1e-6);
 }
 
+
+void neighborHoodVarianceAABB(Texture2D<float4> inputImage, int2 coord, float wideningFactor, out float4 minColor, out float4 maxColor, out float4 centerColor)
+{
+	float4 m1 = 0.0;
+	float4 m2 = 0.0;
+	for (int y = 0; y < 3; ++y)
+	{
+		for (int x = 0; x < 3; ++x)
+		{
+			float4 tap = inputImage.Load(int3(coord + int2(x, y) - 1, 0));
+			
+			m1 += tap;
+			m2 += tap * tap;
+			centerColor = x == 1 && y == 1 ? tap : centerColor;
+		}
+	}	
+	
+	float4 mean = m1 * (1.0 / 9.0);
+	float4 stddev = sqrt(max((m2  * (1.0 / 9.0) - mean * mean), 1e-7));
+	
+	minColor = -stddev * wideningFactor + mean;
+	maxColor = stddev * wideningFactor + mean;
+}
+
+float3 clipAABB(float3 p, float3 aabbMin, float3 aabbMax)
+{
+    //Clips towards AABB center for better perfomance
+    float3 center   = 0.5 * (aabbMax + aabbMin);
+    float3 halfSize = 0.5 * (aabbMax - aabbMin) + 1e-5;
+    //Relative position from the center
+    float3 clip     = p - center;
+    //Normalize relative position
+    float3 unit     = clip / halfSize;
+    float3 absUnit  = abs(unit);
+    float maxUnit = max(absUnit.x, max(absUnit.y, absUnit.z));
+	
+	return (maxUnit > 1.0) ? clip * (1.0 / maxUnit) + center : p;
+}
+
+float2 weightedLerpFactors(float weightA, float weightB, float blend)
+{
+	float blendA = (1.0 - blend) * weightA;
+	float blendB = blend * weightB;
+	float invBlend = 1.0 / (blendA + blendB);
+	blendA *= invBlend;
+	blendB *= invBlend;
+	return float2(blendA, blendB);
+}
+
 #endif // FILTER_H
