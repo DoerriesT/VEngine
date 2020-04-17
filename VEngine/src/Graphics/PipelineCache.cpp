@@ -44,7 +44,7 @@ VEngine::PipelineCache::~PipelineCache()
 VEngine::gal::GraphicsPipeline *VEngine::PipelineCache::getPipeline(const gal::GraphicsPipelineCreateInfo &createInfo)
 {
 	size_t hashValue = 0;
-	for (size_t i = 0; i < sizeof(*this); ++i)
+	for (size_t i = 0; i < sizeof(createInfo); ++i)
 	{
 		Utility::hashCombine(hashValue, reinterpret_cast<const char *>(&createInfo)[i]);
 	}
@@ -63,7 +63,7 @@ VEngine::gal::GraphicsPipeline *VEngine::PipelineCache::getPipeline(const gal::G
 VEngine::gal::ComputePipeline *VEngine::PipelineCache::getPipeline(const gal::ComputePipelineCreateInfo &createInfo)
 {
 	size_t hashValue = 0;
-	for (size_t i = 0; i < sizeof(*this); ++i)
+	for (size_t i = 0; i < sizeof(createInfo); ++i)
 	{
 		Utility::hashCombine(hashValue, reinterpret_cast<const char *>(&createInfo)[i]);
 	}

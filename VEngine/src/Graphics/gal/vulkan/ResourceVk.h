@@ -72,11 +72,12 @@ namespace VEngine
 			~ImageViewVk();
 			void *getNativeHandle() const override;
 			const Image *getImage() const override;
+			const ImageViewCreateInfo &getDescription() const override;
 
 		private:
 			VkDevice m_device;
 			VkImageView m_imageView;
-			const ImageVk *m_image;
+			ImageViewCreateInfo m_description;
 		};
 
 		class BufferViewVk : public BufferView
@@ -90,11 +91,12 @@ namespace VEngine
 			~BufferViewVk();
 			void *getNativeHandle() const override;
 			const Buffer *getBuffer() const override;
+			const BufferViewCreateInfo &getDescription() const override;
 
 		private:
 			VkDevice m_device;
 			VkBufferView m_bufferView;
-			const BufferVk *m_buffer;
+			BufferViewCreateInfo m_description;
 		};
 	}
 }

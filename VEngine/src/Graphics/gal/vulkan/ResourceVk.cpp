@@ -152,12 +152,10 @@ VkDeviceSize VEngine::gal::BufferVk::getOffset() const
 VEngine::gal::ImageViewVk::ImageViewVk(VkDevice device, const ImageViewCreateInfo &createInfo)
 	:m_device(device),
 	m_imageView(VK_NULL_HANDLE),
-	m_image()
+	m_description(createInfo)
 {
 	const auto *imageVk = dynamic_cast<const ImageVk *>(createInfo.m_image);
 	assert(imageVk);
-
-	m_image = imageVk;
 
 	VkImageViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfoVk.image = (VkImage)imageVk->getNativeHandle();
@@ -188,18 +186,21 @@ void *VEngine::gal::ImageViewVk::getNativeHandle() const
 
 const VEngine::gal::Image *VEngine::gal::ImageViewVk::getImage() const
 {
-	return m_image;
+	return m_description.m_image;
+}
+
+const VEngine::gal::ImageViewCreateInfo &VEngine::gal::ImageViewVk::getDescription() const
+{
+	return m_description;
 }
 
 VEngine::gal::BufferViewVk::BufferViewVk(VkDevice device, const BufferViewCreateInfo &createInfo)
 	:m_device(device),
 	m_bufferView(VK_NULL_HANDLE),
-	m_buffer()
+	m_description(createInfo)
 {
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(createInfo.m_buffer);
 	assert(bufferVk);
-
-	m_buffer = bufferVk;
 
 	VkBufferViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	createInfoVk.buffer = (VkBuffer)bufferVk->getNativeHandle();
@@ -222,5 +223,10 @@ void *VEngine::gal::BufferViewVk::getNativeHandle() const
 
 const VEngine::gal::Buffer *VEngine::gal::BufferViewVk::getBuffer() const
 {
-	return m_buffer;
+	return m_description.m_buffer;
+}
+
+const VEngine::gal::BufferViewCreateInfo &VEngine::gal::BufferViewVk::getDescription() const
+{
+	return m_description;
 }

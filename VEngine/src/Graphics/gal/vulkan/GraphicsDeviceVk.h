@@ -15,9 +15,11 @@ namespace VEngine
 	{
 		class SwapChainVk;
 		class RenderPassCacheVk;
+		class FramebufferCacheVk;
 		class MemoryAllocatorVk;
 		class DeletionQueueVk;
 		struct RenderPassDescriptionVk;
+		struct FramebufferDescriptionVk;
 
 		class GraphicsDeviceVk : public GraphicsDevice
 		{
@@ -70,6 +72,7 @@ namespace VEngine
 			VkDevice getDevice() const;
 			void addToDeletionQueue(VkFramebuffer framebuffer);
 			VkRenderPass getRenderPass(const RenderPassDescriptionVk &renderPassDescription);
+			VkFramebuffer getFramebuffer(const FramebufferDescriptionVk &framebufferDescription);
 			const VkPhysicalDeviceProperties &getDeviceProperties() const;
 
 		private:
@@ -86,6 +89,7 @@ namespace VEngine
 			VkSurfaceKHR m_surface;
 			VkDebugUtilsMessengerEXT m_debugUtilsMessenger;
 			RenderPassCacheVk *m_renderPassCache;
+			FramebufferCacheVk *m_framebufferCache;
 			MemoryAllocatorVk *m_gpuMemoryAllocator;
 			DeletionQueueVk *m_deletionQueue;
 			SwapChainVk *m_swapChain;

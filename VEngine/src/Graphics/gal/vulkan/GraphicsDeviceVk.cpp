@@ -6,6 +6,7 @@
 #include <iostream>
 #include <set>
 #include "RenderPassCacheVk.h"
+#include "FramebufferCacheVk.h"
 #include "MemoryAllocatorVk.h"
 #include "UtilityVk.h"
 #include "DeletionQueueVk.h"
@@ -302,7 +303,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				&& supportedFeatures.shaderStorageImageExtendedFormats
 				&& supportedFeatures.shaderStorageImageWriteWithoutFormat
 				&& vulkan12Features.shaderSampledImageArrayNonUniformIndexing
-				&& vulkan12Features.timelineSemaphore)
+				&& vulkan12Features.timelineSemaphore
+				&& vulkan12Features.imagelessFramebuffer)
 			{
 				DeviceInfo deviceInfo{};
 				deviceInfo.m_physicalDevice = physicalDevice;
@@ -329,7 +331,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		for (size_t i = 0; i < suitableDevices.size(); ++i)
 		{
-			std::cout <<"["<< i << "] " << suitableDevices[i].m_properties.deviceName << std::endl;
+			std::cout << "[" << i << "] " << suitableDevices[i].m_properties.deviceName << std::endl;
 		}
 
 		// select first device if there is only a single one
@@ -358,7 +360,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		//}
 
 		const auto &selectedDevice = suitableDevices[deviceIndex];
-		
+
 		m_physicalDevice = selectedDevice.m_physicalDevice;
 
 		m_graphicsQueue.m_queueFamily = selectedDevice.m_graphicsQueueFamily;
@@ -403,13 +405,12 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		m_enabledFeatures = deviceFeatures;
 
-		VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES };
-		timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
-		VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, &timelineSemaphoreFeatures };
-		descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		VkPhysicalDeviceVulkan12Features vulkan12Features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+		vulkan12Features.timelineSemaphore = VK_TRUE;
+		vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		vulkan12Features.imagelessFramebuffer = VK_TRUE;
 
-
-		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &descriptorIndexingFeatures };
+		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &vulkan12Features };
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.enabledLayerCount = 0;
@@ -471,6 +472,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	}
 
 	m_renderPassCache = new RenderPassCacheVk(m_device);
+	m_framebufferCache = new FramebufferCacheVk(m_device);
 	m_gpuMemoryAllocator = new MemoryAllocatorVk();
 	m_gpuMemoryAllocator->init(m_device, m_physicalDevice);
 	m_deletionQueue = new DeletionQueueVk(m_device, 2);
@@ -483,6 +485,7 @@ VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
 	m_gpuMemoryAllocator->destroy();
 	delete m_gpuMemoryAllocator;
 	delete m_renderPassCache;
+	delete m_framebufferCache;
 	delete m_deletionQueue;
 	if (m_swapChain)
 	{
@@ -1086,6 +1089,11 @@ void VEngine::gal::GraphicsDeviceVk::addToDeletionQueue(VkFramebuffer framebuffe
 VkRenderPass VEngine::gal::GraphicsDeviceVk::getRenderPass(const RenderPassDescriptionVk &renderPassDescription)
 {
 	return m_renderPassCache->getRenderPass(renderPassDescription);
+}
+
+VkFramebuffer VEngine::gal::GraphicsDeviceVk::getFramebuffer(const FramebufferDescriptionVk &framebufferDescription)
+{
+	return m_framebufferCache->getFramebuffer(framebufferDescription);
 }
 
 const VkPhysicalDeviceProperties &VEngine::gal::GraphicsDeviceVk::getDeviceProperties() const

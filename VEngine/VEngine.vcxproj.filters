@@ -384,6 +384,12 @@
     <ClInclude Include="src\Graphics\gal\vulkan\SwapChainVk.h">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\gal\vulkan\FramebufferCacheVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\gal\vulkan\FramebufferDescriptionVk.h">
+      <Filter>src\Graphics\gal\vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -639,6 +645,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\SwapChainVk.cpp">
+      <Filter>src\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\gal\vulkan\FramebufferCacheVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
   </ItemGroup>

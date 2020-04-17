@@ -1211,6 +1211,7 @@ namespace VEngine
 			virtual ~ImageView() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual const Image *getImage() const = 0;
+			virtual const ImageViewCreateInfo &getDescription() const = 0;
 		};
 
 		class BufferView
@@ -1219,6 +1220,7 @@ namespace VEngine
 			virtual ~BufferView() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual const Buffer *getBuffer() const = 0;
+			virtual const BufferViewCreateInfo &getDescription() const = 0;
 		};
 
 		class Semaphore

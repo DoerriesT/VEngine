@@ -6,6 +6,7 @@
 #include <cassert>
 #include "GraphicsDeviceVk.h"
 #include "RenderPassDescriptionVk.h"
+#include "FramebufferDescriptionVk.h"
 #include "UtilityVk.h"
 #include "GlobalVar.h"
 
@@ -551,6 +552,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	VkImageView attachmentViews[9] = {};
 	RenderPassDescriptionVk::ColorAttachmentDescriptionVk colorAttachmentDescsVk[8] = {};
 	RenderPassDescriptionVk::DepthStencilAttachmentDescriptionVk depthStencilAttachmentDescVk = {};
+	FramebufferDescriptionVk::AttachmentInfoVk fbAttachmentInfoVk[9] = {};
 
 	uint32_t attachmentCount = 0;
 
@@ -605,6 +607,17 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 		attachmentDesc.m_loadOp = translateLoadOp(attachment.m_loadOp);
 		attachmentDesc.m_storeOp = translateStoreOp(attachment.m_storeOp);
 
+		const auto &viewDesc = attachment.m_imageView->getDescription();
+
+		auto &fbAttachInfo = fbAttachmentInfoVk[i];
+		fbAttachInfo = {};
+		fbAttachInfo.m_flags = static_cast<VkImageCreateFlags>(imageDesc.m_createFlags);
+		fbAttachInfo.m_usage = static_cast<VkImageUsageFlags>(imageDesc.m_usageFlags);
+		fbAttachInfo.m_width = imageDesc.m_width;
+		fbAttachInfo.m_height = imageDesc.m_height;
+		fbAttachInfo.m_layerCount = viewDesc.m_layerCount;
+		fbAttachInfo.m_format = attachmentDesc.m_format;
+
 		++attachmentCount;
 	}
 
@@ -613,7 +626,7 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	{
 		const auto &attachment = *depthStencilAttachment;
 		const auto *image = attachment.m_imageView->getImage();
-		auto &imageDesc = image->getDescription();
+		const auto &imageDesc = image->getDescription();
 
 		framebufferWidth = std::min(framebufferWidth, imageDesc.m_width);
 		framebufferHeight = std::min(framebufferHeight, imageDesc.m_height);
@@ -631,6 +644,17 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 		attachmentDesc.m_stencilStoreOp = translateStoreOp(attachment.m_stencilStoreOp);
 		attachmentDesc.m_layout = attachment.m_readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		const auto &viewDesc = attachment.m_imageView->getDescription();
+
+		auto &fbAttachInfo = fbAttachmentInfoVk[attachmentCount];
+		fbAttachInfo = {};
+		fbAttachInfo.m_flags = static_cast<VkImageCreateFlags>(imageDesc.m_createFlags);
+		fbAttachInfo.m_usage = static_cast<VkImageUsageFlags>(imageDesc.m_usageFlags);
+		fbAttachInfo.m_width = imageDesc.m_width;
+		fbAttachInfo.m_height = imageDesc.m_height;
+		fbAttachInfo.m_layerCount = viewDesc.m_layerCount;
+		fbAttachInfo.m_format = attachmentDesc.m_format;
+
 		++attachmentCount;
 	}
 
@@ -647,27 +671,28 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 		renderPass = m_device->getRenderPass(renderPassDescription);
 	}
 
-	// create framebuffer
+	// get framebuffer
 	{
 		if (framebufferWidth == -1 || framebufferHeight == -1)
 		{
 			framebufferWidth = renderArea.m_offset.m_x + renderArea.m_extent.m_width;
 			framebufferHeight = renderArea.m_offset.m_y + renderArea.m_extent.m_height;
 		}
-
-		VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-		framebufferCreateInfo.renderPass = renderPass;
-		framebufferCreateInfo.attachmentCount = attachmentCount;
-		framebufferCreateInfo.pAttachments = attachmentViews;
-		framebufferCreateInfo.width = framebufferWidth;
-		framebufferCreateInfo.height = framebufferHeight;
-		framebufferCreateInfo.layers = 1;
-
-		UtilityVk::checkResult(vkCreateFramebuffer(m_device->getDevice(), &framebufferCreateInfo, nullptr, &framebuffer), "Failed to create Framebuffer!");
-		m_device->addToDeletionQueue(framebuffer);
+	
+		FramebufferDescriptionVk framebufferDescription;
+		framebufferDescription.setRenderPass(renderPass);
+		framebufferDescription.setAttachments(attachmentCount, fbAttachmentInfoVk);
+		framebufferDescription.setExtent(framebufferWidth, framebufferHeight, 1);
+		framebufferDescription.finalize();
+	
+		framebuffer = m_device->getFramebuffer(framebufferDescription);
 	}
 
-	VkRenderPassBeginInfo renderPassBeginInfoVk{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+	VkRenderPassAttachmentBeginInfo attachmentBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO };
+	attachmentBeginInfo.attachmentCount = attachmentCount;
+	attachmentBeginInfo.pAttachments = attachmentViews;
+
+	VkRenderPassBeginInfo renderPassBeginInfoVk{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, &attachmentBeginInfo };
 	renderPassBeginInfoVk.renderPass = renderPass;
 	renderPassBeginInfoVk.framebuffer = framebuffer;
 	renderPassBeginInfoVk.renderArea = *reinterpret_cast<const VkRect2D *>(&renderArea);

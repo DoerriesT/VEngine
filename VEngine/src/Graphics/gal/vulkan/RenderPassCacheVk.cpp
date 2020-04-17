@@ -12,7 +12,7 @@ VEngine::gal::RenderPassDescriptionVk::RenderPassDescriptionVk()
 
 void VEngine::gal::RenderPassDescriptionVk::setColorAttachments(uint32_t count, const ColorAttachmentDescriptionVk *colorAttachments)
 {
-	assert(count < 8);
+	assert(count <= 8);
 	memcpy(m_colorAttachments, colorAttachments, sizeof(colorAttachments[0]) * count);
 	m_colorAttachmentCount = count;
 }
@@ -26,9 +26,12 @@ void VEngine::gal::RenderPassDescriptionVk::setDepthStencilAttachment(const Dept
 void VEngine::gal::RenderPassDescriptionVk::finalize()
 {
 	m_hashValue = 0;
-	for (size_t i = 0; i < sizeof(*this); ++i)
+	// since m_hashValue is the last member and always 0 before hashing and >= 4 byte,
+	// we can just ignore the last 3 byte if the sizeof(*this) is not divisible by 4.
+	for (size_t i = 0; (i + 4) <= sizeof(*this); i += 4)
 	{
-		Utility::hashCombine(m_hashValue, reinterpret_cast<const char *>(this)[i]);
+		uint32_t word = *reinterpret_cast<const uint32_t *>(reinterpret_cast<const char *>(this) + i);
+		Utility::hashCombine(m_hashValue, word);
 	}
 }
 
