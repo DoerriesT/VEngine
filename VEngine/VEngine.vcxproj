@@ -162,7 +162,6 @@
     <ClInclude Include="src\Graphics\gal\Initializers.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\CommandListPoolVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\CommandListVk.h" />
-    <ClInclude Include="src\Graphics\gal\vulkan\DeletionQueueVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\DescriptorSetVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\FramebufferCacheVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\FramebufferDescriptionVk.h" />
@@ -271,7 +270,6 @@
     <ClCompile Include="src\Graphics\gal\Initializers.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\CommandListPoolVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\CommandListVk.cpp" />
-    <ClCompile Include="src\Graphics\gal\vulkan\DeletionQueueVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\DescriptorSetVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\FramebufferCacheVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\MemoryAllocatorVk.cpp" />

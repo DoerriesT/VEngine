@@ -1239,8 +1239,8 @@ namespace VEngine
 			virtual ~SwapChain() = default;
 			virtual void *getNativeHandle() const = 0;
 			virtual void resize(uint32_t width, uint32_t height) = 0;
-			virtual void getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) = 0;
-			virtual void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue) = 0;
+			virtual uint32_t getCurrentImageIndex() = 0;
+			virtual void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) = 0;
 			virtual Extent2D getExtent() const = 0;
 			virtual Extent2D getRecreationExtent() const = 0;
 			virtual Format getImageFormat() const = 0;
@@ -1254,8 +1254,6 @@ namespace VEngine
 			static GraphicsDevice *create(void *windowHandle, bool debugLayer, GraphicsBackendType backend);
 			static void destroy(const GraphicsDevice *device);
 			virtual ~GraphicsDevice() = default;
-			virtual void beginFrame() = 0;
-			virtual void endFrame() = 0;
 			virtual void createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines) = 0;
 			virtual void createComputePipelines(uint32_t count, const ComputePipelineCreateInfo *createInfo, ComputePipeline **pipelines) = 0;
 			virtual void destroyGraphicsPipeline(GraphicsPipeline *pipeline) = 0;

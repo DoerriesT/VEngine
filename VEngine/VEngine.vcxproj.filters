@@ -216,9 +216,6 @@
     <ClInclude Include="src\Graphics\gal\vulkan\DescriptorSetVk.h">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\gal\vulkan\DeletionQueueVk.h">
-      <Filter>src\Graphics\gal\vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\gal\Initializers.h">
       <Filter>src\Graphics\gal</Filter>
     </ClInclude>
@@ -489,9 +486,6 @@
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\DescriptorSetVk.cpp">
-      <Filter>src\Graphics\gal\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\gal\vulkan\DeletionQueueVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\Initializers.cpp">

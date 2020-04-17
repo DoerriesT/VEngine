@@ -9,7 +9,6 @@
 #include "FramebufferCacheVk.h"
 #include "MemoryAllocatorVk.h"
 #include "UtilityVk.h"
-#include "DeletionQueueVk.h"
 #include "SwapChainVk.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -41,7 +40,6 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_debugUtilsMessenger(),
 	m_renderPassCache(),
 	m_gpuMemoryAllocator(),
-	m_deletionQueue(),
 	m_swapChain(),
 	m_graphicsPipelineMemoryPool(64),
 	m_computePipelineMemoryPool(64),
@@ -55,7 +53,6 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_queryPoolMemoryPool(16),
 	m_descriptorPoolMemoryPool(16),
 	m_descriptorSetLayoutMemoryPool(8),
-	m_frameIndex(uint64_t() - 1),
 	m_debugLayers(debugLayer)
 {
 	if (volkInitialize() != VK_SUCCESS)
@@ -475,7 +472,6 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_framebufferCache = new FramebufferCacheVk(m_device);
 	m_gpuMemoryAllocator = new MemoryAllocatorVk();
 	m_gpuMemoryAllocator->init(m_device, m_physicalDevice);
-	m_deletionQueue = new DeletionQueueVk(m_device, 2);
 }
 
 VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
@@ -486,7 +482,6 @@ VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
 	delete m_gpuMemoryAllocator;
 	delete m_renderPassCache;
 	delete m_framebufferCache;
-	delete m_deletionQueue;
 	if (m_swapChain)
 	{
 		delete m_swapChain;
@@ -504,21 +499,6 @@ VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()
 
 	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 	vkDestroyInstance(m_instance, nullptr);
-}
-
-void VEngine::gal::GraphicsDeviceVk::beginFrame()
-{
-	++m_frameIndex;
-
-	if (m_swapChain)
-	{
-		m_swapChain->setFrameIndex(m_frameIndex);
-	}
-	m_deletionQueue->update(m_frameIndex);
-}
-
-void VEngine::gal::GraphicsDeviceVk::endFrame()
-{
 }
 
 void VEngine::gal::GraphicsDeviceVk::createGraphicsPipelines(uint32_t count, const GraphicsPipelineCreateInfo *createInfo, GraphicsPipeline **pipelines)
@@ -1079,11 +1059,6 @@ float VEngine::gal::GraphicsDeviceVk::getMaxSamplerAnisotropy() const
 VkDevice VEngine::gal::GraphicsDeviceVk::getDevice() const
 {
 	return m_device;
-}
-
-void VEngine::gal::GraphicsDeviceVk::addToDeletionQueue(VkFramebuffer framebuffer)
-{
-	m_deletionQueue->add(framebuffer);
 }
 
 VkRenderPass VEngine::gal::GraphicsDeviceVk::getRenderPass(const RenderPassDescriptionVk &renderPassDescription)

@@ -19,14 +19,13 @@ namespace VEngine
 			~SwapChainVk();
 			void *getNativeHandle() const override;
 			void resize(uint32_t width, uint32_t height) override;
-			void getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) override;
-			void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue) override;
+			uint32_t getCurrentImageIndex() override;
+			void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) override;
 			Extent2D getExtent() const override;
 			Extent2D getRecreationExtent() const override;
 			Format getImageFormat() const override;
 			Image *getImage(size_t index) const override;
 			Queue *getPresentQueue() const override;
-			void setFrameIndex(uint64_t frameIndex);
 
 		private:
 			static constexpr uint32_t s_maxImageCount = 8;
@@ -43,13 +42,14 @@ namespace VEngine
 			Format m_imageFormat;
 			Extent2D m_extent;
 			uint32_t m_currentImageIndex;
-			bool m_currentImageIndexStale;
 			VkSemaphore m_acquireSemaphores[s_semaphoreCount];
 			VkSemaphore m_presentSemaphores[s_semaphoreCount];
 			uint64_t m_frameIndex;
 
 			void create(uint32_t width, uint32_t height);
 			void destroy();
+			void resize(uint32_t width, uint32_t height, bool acquireImage);
+			uint32_t acquireImageIndex(VkSemaphore semaphore);
 		};
 	}
 }

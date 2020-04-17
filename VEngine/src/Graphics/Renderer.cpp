@@ -131,8 +131,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->reset();
 	m_descriptorSetCache->update(commonData.m_frame, commonData.m_frame - RendererConsts::FRAMES_IN_FLIGHT);
 
-	m_graphicsDevice->beginFrame();
-
 	// read back luminance histogram
 	{
 		auto *buffer = m_renderResources->m_luminanceHistogramReadBackBuffers[commonData.m_curResIdx];
@@ -151,6 +149,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// import resources into graph
+
+	// get swapchain image
+	rg::ResourceStateData swapChainState{ {}, m_graphicsDevice->getGraphicsQueue() };
+	rg::ImageViewHandle swapchainImageViewHandle = 0;
+	{
+		auto imageHandle = graph.importImage(m_swapChain->getImage(m_swapChain->getCurrentImageIndex()), "Swapchain Image", false, {}, &swapChainState);
+		swapchainImageViewHandle = graph.createImageView({ "Swapchain Image", imageHandle, { 0, 1, 0, 1 } });
+	}
 
 	rg::ImageViewHandle shadowAtlasImageViewHandle = 0;
 	{
@@ -744,18 +750,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	ReadBackCopyPass::addToGraph(graph, luminanceHistogramReadBackCopyPassData);
 
 
-	// get swapchain image
-	rg::ResourceStateData swapChainState{ {}, m_graphicsDevice->getGraphicsQueue() };
-	rg::ImageViewHandle swapchainImageViewHandle = 0;
-	{
-		uint32_t swapChainImageIndex;
-		m_swapChain->getCurrentImageIndex(swapChainImageIndex, m_semaphores[0], ++m_semaphoreValues[0]);
-
-		auto imageHandle = graph.importImage(m_swapChain->getImage(swapChainImageIndex), "Swapchain Image", false, {}, &swapChainState);
-		swapchainImageViewHandle = graph.createImageView({ "Swapchain Image", imageHandle, { 0, 1, 0, 1 } });
-	}
-
-
 	TemporalAAPass::Data temporalAAPassData;
 	temporalAAPassData.m_passRecordContext = &passRecordContext;
 	temporalAAPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
@@ -849,9 +843,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() }, true, m_semaphoreValues[0]);
 
-	m_swapChain->present(m_semaphores[0], m_semaphoreValues[0]);
-
-	m_graphicsDevice->endFrame();
+	auto waitValue = m_semaphoreValues[0];
+	auto signalValue = ++m_semaphoreValues[0];
+	m_swapChain->present(m_semaphores[0], waitValue, m_semaphores[0], signalValue);
 
 	++m_framesSinceLastResize;
 }

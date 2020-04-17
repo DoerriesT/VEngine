@@ -18,11 +18,10 @@ VEngine::gal::SwapChainVk::SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice
 	m_imageMemoryPool(),
 	m_imageFormat(),
 	m_extent(),
-	m_currentImageIndex(),
-	m_currentImageIndexStale(true),
+	m_currentImageIndex(-1),
 	m_acquireSemaphores(),
 	m_presentSemaphores(),
-	m_frameIndex(uint64_t() - 1)
+	m_frameIndex(0)
 {
 	create(width, height);
 }
@@ -39,52 +38,67 @@ void *VEngine::gal::SwapChainVk::getNativeHandle() const
 
 void VEngine::gal::SwapChainVk::resize(uint32_t width, uint32_t height)
 {
-	vkDeviceWaitIdle(m_device);
-	destroy();
-	create(width, height);
+	resize(width, height, true);
 }
 
-void VEngine::gal::SwapChainVk::getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
+uint32_t VEngine::gal::SwapChainVk::getCurrentImageIndex()
 {
-	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
-
-	if (m_currentImageIndexStale)
+	// no present has occured yet, so we dont have a valid m_currentImageIndex.
+	// try to acquire an image and wait on a fence, so we can immediately start using the image
+	if (m_frameIndex == 0 && m_currentImageIndex == -1)
 	{
-		m_currentImageIndexStale = false;
-
-		// try to acquire the next image index.
-		bool tryAgain = false;
-		int remainingAttempts = 3;
-		do
-		{
-			--remainingAttempts;
-			VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(), m_acquireSemaphores[resIdx], VK_NULL_HANDLE, &m_currentImageIndex);
-
-			switch (result)
-			{
-			case VK_SUCCESS:
-				break;
-			case VK_SUBOPTIMAL_KHR:
-			case VK_ERROR_OUT_OF_DATE_KHR:
-				resize(m_extent.m_width, m_extent.m_height);
-				tryAgain = true;
-				break;
-			case VK_ERROR_SURFACE_LOST_KHR:
-				Utility::fatalExit("Failed to acquire swap chain image! VK_ERROR_SURFACE_LOST_KHR", EXIT_FAILURE);
-				break;
-
-			default:
-				break;
-			}
-		} while (tryAgain && remainingAttempts > 0);
-
-		if (remainingAttempts <= 0)
-		{
-			Utility::fatalExit("Failed to acquire swap chain image! Too many failed attempts at swapchain recreation.", EXIT_FAILURE);
-		}
+		m_currentImageIndex = acquireImageIndex(VK_NULL_HANDLE);
 	}
 
-	currentImageIndex = m_currentImageIndex;
+	return m_currentImageIndex;
+}
+
+void VEngine::gal::SwapChainVk::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
+{
+	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
+	VkQueue presentQueueVk = (VkQueue)m_presentQueue->getNativeHandle();
+
+	// Vulkan swapchains do not support timeline semaphores, so we need to wait on the timeline semaphore and signal the binary semaphore
+	{
+		VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		VkSemaphore waitSemaphoreVk = (VkSemaphore)waitSemaphore->getNativeHandle();
+
+		uint64_t dummyValue = 0;
+
+		VkTimelineSemaphoreSubmitInfo timelineSubmitInfo{ VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO };
+		timelineSubmitInfo.waitSemaphoreValueCount = 1;
+		timelineSubmitInfo.pWaitSemaphoreValues = &semaphoreWaitValue;
+		timelineSubmitInfo.signalSemaphoreValueCount = 1;
+		timelineSubmitInfo.pSignalSemaphoreValues = &dummyValue;
+
+		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineSubmitInfo };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &waitSemaphoreVk;
+		submitInfo.pWaitDstStageMask = &waitDstStageMask;
+		submitInfo.commandBufferCount = 0;
+		submitInfo.pCommandBuffers = nullptr;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &m_presentSemaphores[resIdx];
+
+		UtilityVk::checkResult(vkQueueSubmit(presentQueueVk, 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit to Queue!");
+	}
+
+	// present
+	{
+		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &m_presentSemaphores[resIdx];
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &m_swapChain;
+		presentInfo.pImageIndices = &m_currentImageIndex;
+
+		UtilityVk::checkResult(vkQueuePresentKHR(presentQueueVk, &presentInfo), "Failed to present!");
+	}
+
+	// try to acquire the next image index.
+	{
+		m_currentImageIndex = acquireImageIndex(m_acquireSemaphores[resIdx]);
+	}
 
 	// Vulkan swapchains do not support timeline semaphores, so we need to wait on a binary semaphore and signal the timeline semaphore
 	{
@@ -109,49 +123,10 @@ void VEngine::gal::SwapChainVk::getCurrentImageIndex(uint32_t &currentImageIndex
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &signalSemaphoreVk;
 
-		UtilityVk::checkResult(vkQueueSubmit((VkQueue)m_presentQueue->getNativeHandle(), 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit to Queue!");
+		UtilityVk::checkResult(vkQueueSubmit(presentQueueVk, 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit to Queue!");
 	}
-}
 
-void VEngine::gal::SwapChainVk::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue)
-{
-	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
-
-	// Vulkan swapchains do not support timeline semaphores, so we need to wait on the timeline semaphore and signal the binary semaphore
-	{
-		VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		VkSemaphore waitSemaphoreVk = (VkSemaphore)waitSemaphore->getNativeHandle();
-
-		uint64_t dummyValue = 0;
-
-		VkTimelineSemaphoreSubmitInfo timelineSubmitInfo{ VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO };
-		timelineSubmitInfo.waitSemaphoreValueCount = 1;
-		timelineSubmitInfo.pWaitSemaphoreValues = &semaphoreWaitValue;
-		timelineSubmitInfo.signalSemaphoreValueCount = 1;
-		timelineSubmitInfo.pSignalSemaphoreValues = &dummyValue;
-
-		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineSubmitInfo };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &waitSemaphoreVk;
-		submitInfo.pWaitDstStageMask = &waitDstStageMask;
-		submitInfo.commandBufferCount = 0;
-		submitInfo.pCommandBuffers = nullptr;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &m_presentSemaphores[resIdx];
-
-		UtilityVk::checkResult(vkQueueSubmit((VkQueue)m_presentQueue->getNativeHandle(), 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit to Queue!");
-	}
-	
-	VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &m_presentSemaphores[resIdx];
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &m_swapChain;
-	presentInfo.pImageIndices = &m_currentImageIndex;
-
-	UtilityVk::checkResult(vkQueuePresentKHR((VkQueue)m_presentQueue->getNativeHandle(), &presentInfo), "Failed to present!");
-
-	m_currentImageIndexStale = true;
+	++m_frameIndex;
 }
 
 VEngine::gal::Extent2D VEngine::gal::SwapChainVk::getExtent() const
@@ -182,11 +157,6 @@ VEngine::gal::Image *VEngine::gal::SwapChainVk::getImage(size_t index) const
 VEngine::gal::Queue *VEngine::gal::SwapChainVk::getPresentQueue() const
 {
 	return m_presentQueue;
-}
-
-void VEngine::gal::SwapChainVk::setFrameIndex(uint64_t frameIndex)
-{
-	m_frameIndex = frameIndex;
 }
 
 void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
@@ -366,4 +336,73 @@ void VEngine::gal::SwapChainVk::destroy()
 		m_images[i]->~ImageVk();
 		m_imageMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageVk)> *>(m_images[i]));
 	}
+}
+
+void VEngine::gal::SwapChainVk::resize(uint32_t width, uint32_t height, bool acquireImage)
+{
+	vkDeviceWaitIdle(m_device);
+	destroy();
+	create(width, height);
+	if (acquireImage)
+	{
+		m_currentImageIndex = acquireImageIndex(VK_NULL_HANDLE);
+	}
+}
+
+uint32_t VEngine::gal::SwapChainVk::acquireImageIndex(VkSemaphore semaphore)
+{
+	uint32_t imageIndex;
+
+	VkFence fence = VK_NULL_HANDLE;
+	if (semaphore == VK_NULL_HANDLE)
+	{
+		VkFenceCreateInfo fenceCreateInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+		UtilityVk::checkResult(vkCreateFence(m_device, &fenceCreateInfo, nullptr, &fence), "Failed to create Fence!");
+	}
+
+	bool tryAgain = false;
+	int remainingAttempts = 3;
+	do
+	{
+		--remainingAttempts;
+		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(), semaphore, fence, &imageIndex);
+
+		switch (result)
+		{
+		case VK_SUCCESS:
+			if (semaphore == VK_NULL_HANDLE)
+			{
+				UtilityVk::checkResult(vkWaitForFences(m_device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()), "Failed to wait on Fence!");
+			}
+			break;
+		case VK_SUBOPTIMAL_KHR:
+			if (semaphore == VK_NULL_HANDLE)
+			{
+				UtilityVk::checkResult(vkWaitForFences(m_device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()), "Failed to wait on Fence!");
+			}
+		case VK_ERROR_OUT_OF_DATE_KHR:
+			resize(m_extent.m_width, m_extent.m_height, false);
+			tryAgain = true;
+			break;
+		case VK_ERROR_SURFACE_LOST_KHR:
+			Utility::fatalExit("Failed to acquire swap chain image! VK_ERROR_SURFACE_LOST_KHR", EXIT_FAILURE);
+			break;
+
+		default:
+			break;
+		}
+	} while (tryAgain && remainingAttempts > 0);
+
+	if (semaphore == VK_NULL_HANDLE)
+	{
+		// destroy fence, we no longer need it
+		vkDestroyFence(m_device, fence, nullptr);
+	}
+
+	if (remainingAttempts <= 0)
+	{
+		Utility::fatalExit("Failed to acquire swap chain image! Too many failed attempts at swapchain recreation.", EXIT_FAILURE);
+	}
+
+	return imageIndex;
 }
