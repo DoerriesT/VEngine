@@ -173,7 +173,7 @@
     <ClInclude Include="src\Graphics\gal\vulkan\RenderPassDescriptionVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\ResourceVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\SemaphoreVk.h" />
-    <ClInclude Include="src\Graphics\gal\vulkan\SwapChainVk2.h" />
+    <ClInclude Include="src\Graphics\gal\vulkan\SwapChainVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\UtilityVk.h" />
     <ClInclude Include="src\Graphics\gal\vulkan\volk.h" />
     <ClInclude Include="src\Graphics\imgui\imconfig.h" />
@@ -279,7 +279,7 @@
     <ClCompile Include="src\Graphics\gal\vulkan\RenderPassCacheVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\ResourceVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\SemaphoreVk.cpp" />
-    <ClCompile Include="src\Graphics\gal\vulkan\SwapChainVk2.cpp" />
+    <ClCompile Include="src\Graphics\gal\vulkan\SwapChainVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\UtilityVk.cpp" />
     <ClCompile Include="src\Graphics\gal\vulkan\volk.c" />
     <ClCompile Include="src\Graphics\imgui\imgui.cpp" />

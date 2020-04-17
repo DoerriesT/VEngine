@@ -8,12 +8,12 @@
 #include "SemaphoreVk.h"
 #include "QueryPoolVk.h"
 #include "DescriptorSetVk.h"
-#include "SwapChainVk2.h"
 
 namespace VEngine
 {
 	namespace gal
 	{
+		class SwapChainVk;
 		class RenderPassCacheVk;
 		class MemoryAllocatorVk;
 		class DeletionQueueVk;
@@ -88,7 +88,7 @@ namespace VEngine
 			RenderPassCacheVk *m_renderPassCache;
 			MemoryAllocatorVk *m_gpuMemoryAllocator;
 			DeletionQueueVk *m_deletionQueue;
-			SwapChainVk2 *m_swapChain;
+			SwapChainVk *m_swapChain;
 			DynamicObjectPool<ByteArray<sizeof(GraphicsPipelineVk)>> m_graphicsPipelineMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(ComputePipelineVk)>> m_computePipelineMemoryPool;
 			DynamicObjectPool<ByteArray<sizeof(CommandListPoolVk)>> m_commandListPoolMemoryPool;

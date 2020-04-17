@@ -1,4 +1,4 @@
-#include "SwapChainVk2.h"
+#include "SwapChainVk.h"
 #include <limits>
 #include "Utility/Utility.h"
 #include "UtilityVk.h"
@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-VEngine::gal::SwapChainVk2::SwapChainVk2(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height)
+VEngine::gal::SwapChainVk::SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height)
 	:m_physicalDevice(physicalDevice),
 	m_device(device),
 	m_surface(surface),
@@ -27,24 +27,24 @@ VEngine::gal::SwapChainVk2::SwapChainVk2(VkPhysicalDevice physicalDevice, VkDevi
 	create(width, height);
 }
 
-VEngine::gal::SwapChainVk2::~SwapChainVk2()
+VEngine::gal::SwapChainVk::~SwapChainVk()
 {
 	destroy();
 }
 
-void *VEngine::gal::SwapChainVk2::getNativeHandle() const
+void *VEngine::gal::SwapChainVk::getNativeHandle() const
 {
 	return m_swapChain;
 }
 
-void VEngine::gal::SwapChainVk2::resize(uint32_t width, uint32_t height)
+void VEngine::gal::SwapChainVk::resize(uint32_t width, uint32_t height)
 {
 	vkDeviceWaitIdle(m_device);
 	destroy();
 	create(width, height);
 }
 
-void VEngine::gal::SwapChainVk2::getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
+void VEngine::gal::SwapChainVk::getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
 {
 	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
 
@@ -113,7 +113,7 @@ void VEngine::gal::SwapChainVk2::getCurrentImageIndex(uint32_t &currentImageInde
 	}
 }
 
-void VEngine::gal::SwapChainVk2::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue)
+void VEngine::gal::SwapChainVk::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue)
 {
 	const uint32_t resIdx = m_frameIndex % s_semaphoreCount;
 
@@ -154,12 +154,12 @@ void VEngine::gal::SwapChainVk2::present(Semaphore *waitSemaphore, uint64_t sema
 	m_currentImageIndexStale = true;
 }
 
-VEngine::gal::Extent2D VEngine::gal::SwapChainVk2::getExtent() const
+VEngine::gal::Extent2D VEngine::gal::SwapChainVk::getExtent() const
 {
 	return m_extent;
 }
 
-VEngine::gal::Extent2D VEngine::gal::SwapChainVk2::getRecreationExtent() const
+VEngine::gal::Extent2D VEngine::gal::SwapChainVk::getRecreationExtent() const
 {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilities);
@@ -168,28 +168,28 @@ VEngine::gal::Extent2D VEngine::gal::SwapChainVk2::getRecreationExtent() const
 	return { extentVk.width, extentVk.height };
 }
 
-VEngine::gal::Format VEngine::gal::SwapChainVk2::getImageFormat() const
+VEngine::gal::Format VEngine::gal::SwapChainVk::getImageFormat() const
 {
 	return m_imageFormat;
 }
 
-VEngine::gal::Image *VEngine::gal::SwapChainVk2::getImage(size_t index) const
+VEngine::gal::Image *VEngine::gal::SwapChainVk::getImage(size_t index) const
 {
 	assert(index < m_imageCount);
 	return m_images[index];
 }
 
-VEngine::gal::Queue *VEngine::gal::SwapChainVk2::getPresentQueue() const
+VEngine::gal::Queue *VEngine::gal::SwapChainVk::getPresentQueue() const
 {
 	return m_presentQueue;
 }
 
-void VEngine::gal::SwapChainVk2::setFrameIndex(uint64_t frameIndex)
+void VEngine::gal::SwapChainVk::setFrameIndex(uint64_t frameIndex)
 {
 	m_frameIndex = frameIndex;
 }
 
-void VEngine::gal::SwapChainVk2::create(uint32_t width, uint32_t height)
+void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
 {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
@@ -351,7 +351,7 @@ void VEngine::gal::SwapChainVk2::create(uint32_t width, uint32_t height)
 	}
 }
 
-void VEngine::gal::SwapChainVk2::destroy()
+void VEngine::gal::SwapChainVk::destroy()
 {
 	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 	for (size_t i = 0; i < s_semaphoreCount; ++i)

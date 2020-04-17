@@ -9,6 +9,7 @@
 #include "MemoryAllocatorVk.h"
 #include "UtilityVk.h"
 #include "DeletionQueueVk.h"
+#include "SwapChainVk.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -319,7 +320,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		std::cout << "Found " << suitableDevices.size() << " suitable device(s):" << std::endl;
 
-		size_t deviceIndex = -1;
+		size_t deviceIndex = 1;
 
 		if (suitableDevices.empty())
 		{
@@ -337,24 +338,24 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 			deviceIndex = 0;
 		}
 		// let the user select a device
-		else
-		{
-			std::cout << "Select a device:" << std::endl;
-
-			do
-			{
-				std::cin >> deviceIndex;
-
-				if (std::cin.fail() || deviceIndex >= suitableDevices.size())
-				{
-					std::cout << "Invalid Index!" << std::endl;
-					deviceIndex = -1;
-					std::cin.clear();
-					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				}
-
-			} while (deviceIndex >= suitableDevices.size());
-		}
+		//else
+		//{
+		//	std::cout << "Select a device:" << std::endl;
+		//
+		//	do
+		//	{
+		//		std::cin >> deviceIndex;
+		//
+		//		if (std::cin.fail() || deviceIndex >= suitableDevices.size())
+		//		{
+		//			std::cout << "Invalid Index!" << std::endl;
+		//			deviceIndex = -1;
+		//			std::cin.clear();
+		//			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		//		}
+		//
+		//	} while (deviceIndex >= suitableDevices.size());
+		//}
 
 		const auto &selectedDevice = suitableDevices[deviceIndex];
 		
@@ -936,7 +937,7 @@ void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, 
 	queue = presentQueue == &m_graphicsQueue ? &m_graphicsQueue : queue;
 	queue = presentQueue == &m_computeQueue ? &m_computeQueue : queue;
 	assert(queue);
-	*swapChain = m_swapChain = new SwapChainVk2(m_physicalDevice, m_device, m_surface, queue, width, height);
+	*swapChain = m_swapChain = new SwapChainVk(m_physicalDevice, m_device, m_surface, queue, width, height);
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroySwapChain()

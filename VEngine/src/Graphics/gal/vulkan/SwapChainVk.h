@@ -8,15 +8,15 @@ namespace VEngine
 {
 	namespace gal
 	{
-		class SwapChainVk2 : public SwapChain
+		class SwapChainVk : public SwapChain
 		{
 		public:
-			explicit SwapChainVk2(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height);
-			SwapChainVk2(SwapChainVk2 &) = delete;
-			SwapChainVk2(SwapChainVk2 &&) = delete;
-			SwapChainVk2 &operator=(const SwapChainVk2 &) = delete;
-			SwapChainVk2 &operator=(const SwapChainVk2 &&) = delete;
-			~SwapChainVk2();
+			explicit SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height);
+			SwapChainVk(SwapChainVk &) = delete;
+			SwapChainVk(SwapChainVk &&) = delete;
+			SwapChainVk &operator=(const SwapChainVk &) = delete;
+			SwapChainVk &operator=(const SwapChainVk &&) = delete;
+			~SwapChainVk();
 			void *getNativeHandle() const override;
 			void resize(uint32_t width, uint32_t height) override;
 			void getCurrentImageIndex(uint32_t &currentImageIndex, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) override;
