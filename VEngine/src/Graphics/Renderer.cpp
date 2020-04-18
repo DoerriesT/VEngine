@@ -222,23 +222,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// create graph managed resources
 
-
-	rg::ImageViewHandle albedoImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Albedo Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R8G8B8A8_UNORM;
-
-		albedoImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-	}
-
 	rg::ImageViewHandle normalImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
@@ -271,39 +254,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		specularRoughnessImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}
 
-	rg::ImageViewHandle ssrRayHitPdfImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "SSR RayHit/PDF Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
-
-		ssrRayHitPdfImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-	}
-
-
-	rg::ImageViewHandle ssrMaskImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "SSR Mask Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R8_UNORM;
-
-		ssrMaskImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-	}
-
 	rg::ImageHandle deferredShadowsImageHandle;
 	rg::ImageViewHandle deferredShadowsImageViewHandle;
 	{
@@ -322,8 +272,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		deferredShadowsImageViewHandle = graph.createImageView({ desc.m_name, deferredShadowsImageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
 	}
 
-	rg::ImageViewHandle indirectDiffuseImageViewHandle = ResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle indirectSpecularImageViewHandle = ResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle finalImageViewHandle = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle finalImageViewHandle2 = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
 	//rg::ImageViewHandle uvImageViewHandle = ResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);

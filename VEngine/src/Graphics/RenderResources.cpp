@@ -561,7 +561,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_layers = 1;
 		imageCreateInfo.m_samples = SampleCount::_1;
 		imageCreateInfo.m_imageType = ImageType::_2D;
-		imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
+		imageCreateInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
