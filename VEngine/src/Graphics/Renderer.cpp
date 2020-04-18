@@ -250,7 +250,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_layers = 1;
 		desc.m_levels = 1;
 		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
+		desc.m_format = Format::R16G16_SFLOAT;
 
 		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}

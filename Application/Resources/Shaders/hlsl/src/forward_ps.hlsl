@@ -5,6 +5,7 @@
 #include "lighting.hlsli"
 #include "srgb.hlsli"
 #include "commonFilter.hlsli"
+#include "commonEncoding.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -250,7 +251,7 @@ PSOutput main(inputput input)
 	PSOutput output;
 	
 	output.color = float4(result, 1.0);
-	output.normal = float4(lightingParams.N, 1.0);
+	output.normal = float4(encodeOctahedron(lightingParams.N), 1.0, 1.0);
 	output.specularRoughness = approximateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
 	
 	return output;

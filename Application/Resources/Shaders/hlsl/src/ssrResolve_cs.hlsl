@@ -3,11 +3,12 @@
 #include "srgb.hlsli"
 #include "brdf.hlsli"
 #include "common.hlsli"
+#include "commonEncoding.hlsli"
 
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 RWTexture2D<float> g_ResultMaskImage : REGISTER_UAV(RESULT_MASK_IMAGE_BINDING, RESULT_MASK_IMAGE_SET);
 Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
-Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
+Texture2D<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 Texture2D<float4> g_RayHitPdfImage : REGISTER_SRV(RAY_HIT_PDF_IMAGE_BINDING, RAY_HIT_PDF_IMAGE_SET);
 Texture2D<float> g_MaskImage : REGISTER_SRV(MASK_IMAGE_BINDING, MASK_IMAGE_SET);
 Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
@@ -86,7 +87,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(threadID.xy, 0)));
 	const float3 F0 = specularRoughness.xyz;
 	const float roughness = max(specularRoughness.w, 0.04); // avoid precision problems
-	const float3 N = g_NormalImage.Load(int3(threadID.xy, 0)).xyz;
+	const float3 N = decodeOctahedron(g_NormalImage.Load(int3(threadID.xy, 0)).xy);
 	
 	const float filterShrinkCompensation = lerp(saturate(dot(N, V) * 2.0), 1.0, sqrt(max(roughness, 1e-7)));
 	

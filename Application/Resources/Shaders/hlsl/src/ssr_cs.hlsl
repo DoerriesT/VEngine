@@ -3,11 +3,12 @@
 #include "srgb.hlsli"
 #include "monteCarlo.hlsli"
 #include "common.hlsli"
+#include "commonEncoding.hlsli"
 
 RWTexture2D<float4> g_RayHitPdfImage : REGISTER_UAV(RAY_HIT_PDF_IMAGE_BINDING, RAY_HIT_PDF_IMAGE_SET);
 RWTexture2D<float> g_MaskImage : REGISTER_UAV(MASK_IMAGE_BINDING, MASK_IMAGE_SET);
 Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
-Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
+Texture2D<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 Texture2D<float> g_HiZPyramidImage : REGISTER_SRV(HIZ_PYRAMID_IMAGE_BINDING, HIZ_PYRAMID_IMAGE_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 
@@ -134,7 +135,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float3 V = -normalize(viewSpacePosition.xyz);
 	const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(fullResCoord, 0)));
 	const float roughness = max(specularRoughness.w, 0.04); // avoid precision problems
-	const float3 N = g_NormalImage.Load(int3(fullResCoord, 0)).xyz;
+	const float3 N = decodeOctahedron(g_NormalImage.Load(int3(fullResCoord, 0)).xy);
 	
 	float3 H = N;
 	float3 R = N;
