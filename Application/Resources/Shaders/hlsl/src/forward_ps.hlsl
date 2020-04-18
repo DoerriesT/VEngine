@@ -119,6 +119,7 @@ PSOutput main(inputput input)
 		if (metalnessTextureIndex != 0)
 		{
 			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).z;
+			metalness = accurateSRGBToLinear(metalness.xxx).x;
 		}
 		lightingParams.metalness = metalness;
 	}
@@ -130,6 +131,7 @@ PSOutput main(inputput input)
 		if (roughnessTextureIndex != 0)
 		{
 			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).y;
+			roughness = accurateSRGBToLinear(roughness.xxx).x;
 		}
 		lightingParams.roughness = roughness;
 	}
