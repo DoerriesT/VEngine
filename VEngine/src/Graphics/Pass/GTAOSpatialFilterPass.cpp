@@ -10,7 +10,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-#include "../../../../Application/Resources/Shaders/gtaoSpatialFilter_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/gtaoSpatialFilter.hlsli"
 }
 
 
@@ -30,7 +31,7 @@ void VEngine::GTAOSpatialFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/gtaoSpatialFilter_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/gtaoSpatialFilter_cs.spv");
 		
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -50,10 +51,17 @@ void VEngine::GTAOSpatialFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(3, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
+
+		PushConsts pushConsts;
+		pushConsts.texelSize = 1.0f / glm::vec2(width, height);
+		pushConsts.width = width;
+		pushConsts.height = height;
+
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 	});

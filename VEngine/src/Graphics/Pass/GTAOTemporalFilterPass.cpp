@@ -11,12 +11,31 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/gtaoTemporalFilter_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/gtaoTemporalFilter.hlsli"
 }
 
 void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	Constants consts;
+	consts.invViewProjection = data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
+	consts.prevInvViewProjection = data.m_passRecordContext->m_commonRenderData->m_prevInvViewProjectionMatrix;
+	consts.width = commonData->m_width;
+	consts.height = commonData->m_height;
+	consts.texelSize = 1.0f / glm::vec2(consts.width, consts.height);
+	consts.nearPlane = commonData->m_nearPlane;
+	consts.farPlane = commonData->m_farPlane;
+	consts.ignoreHistory = data.m_ignoreHistory;
+	
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -33,7 +52,7 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/gtaoTemporalFilter_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/gtaoTemporalFilter_cs.spv");
 		
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -52,34 +71,16 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 			{
 				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 				Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
-				Initializers::sampledImage(&prevImageView, PREVIOUS_IMAGE_BINDING),
+				Initializers::sampledImage(&prevImageView, HISTORY_IMAGE_BINDING),
 				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+				Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 			};
 
-			descriptorSet->update(6, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
-
-		glm::mat4 invViewProjection = data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
-		//assert(invViewProjection[0][3] == 0.0f);
-		//assert(invViewProjection[1][3] == 0.0f);
-		//invViewProjection[0][3] = data.m_nearPlane;
-		//invViewProjection[1][3] = data.m_farPlane;
-
-		glm::mat4 prevInvViewProjection = data.m_passRecordContext->m_commonRenderData->m_prevInvViewProjectionMatrix;
-		//assert(prevInvViewProjection[0][3] == 0.0f);
-		//assert(prevInvViewProjection[1][3] == 0.0f);
-		//prevInvViewProjection[0][3] = data.m_nearPlane;
-		//prevInvViewProjection[1][3] = data.m_farPlane;
-
-		PushConsts pushConsts;
-		pushConsts.invViewProjectionNearFar = invViewProjection;
-		pushConsts.prevInvViewProjectionNearFar = prevInvViewProjection;
-
-		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 		cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 	});

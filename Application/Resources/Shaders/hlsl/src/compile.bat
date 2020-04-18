@@ -35,5 +35,8 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssr_cs.hlsl -Fo ./..
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssrResolve_cs.hlsl -Fo ./../ssrResolve_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main ssrTemporalFilter_cs.hlsl -Fo ./../ssrTemporalFilter_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gaussianPyramid_cs.hlsl -Fo ./../gaussianPyramid_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtao_cs.hlsl -Fo ./../gtao_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtaoSpatialFilter_cs.hlsl -Fo ./../gtaoSpatialFilter_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtaoTemporalFilter_cs.hlsl -Fo ./../gtaoTemporalFilter_cs.spv
 
 pause

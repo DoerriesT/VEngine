@@ -12,8 +12,8 @@ using namespace VEngine::gal;
 
 namespace
 {
-	using namespace glm;
-#include "../../../../Application/Resources/Shaders/gtao_bindings.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
+#include "../../../../Application/Resources/Shaders/hlsl/src/gtao.hlsli"
 }
 
 void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
@@ -33,7 +33,7 @@ void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/gtao_comp.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/gtao_cs.spv");
 		
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -50,12 +50,11 @@ void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-				//Initializers::sampledImage(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
 				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(3, updates);
+			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

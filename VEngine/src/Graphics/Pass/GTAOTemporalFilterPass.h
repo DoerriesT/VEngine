@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_ignoreHistory;
 			rg::ImageViewHandle m_inputImageHandle;
 			rg::ImageViewHandle m_velocityImageHandle;
 			rg::ImageViewHandle m_previousImageHandle;

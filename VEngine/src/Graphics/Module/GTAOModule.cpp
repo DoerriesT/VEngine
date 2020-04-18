@@ -64,7 +64,6 @@ void VEngine::GTAOModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	GTAOPass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassData.m_depthImageHandle = data.m_depthImageViewHandle;
-	//gtaoPassData.m_tangentSpaceImageHandle = data.m_tangentSpaceImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
 	GTAOPass::addToGraph(graph, gtaoPassData);
@@ -82,6 +81,7 @@ void VEngine::GTAOModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	// gtao temporal filter
 	GTAOTemporalFilterPass::Data gtaoPassTemporalFilterPassData;
 	gtaoPassTemporalFilterPassData.m_passRecordContext = data.m_passRecordContext;
+	gtaoPassTemporalFilterPassData.m_ignoreHistory = data.m_ignoreHistory;
 	gtaoPassTemporalFilterPassData.m_inputImageHandle = gtaoSpatiallyFilteredImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_velocityImageHandle = data.m_velocityImageViewHandle;
 	gtaoPassTemporalFilterPassData.m_previousImageHandle = gtaoPreviousImageViewHandle;

@@ -551,6 +551,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// gtao
 	GTAOModule::Data gtaoModuleData;
 	gtaoModuleData.m_passRecordContext = &passRecordContext;
+	gtaoModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
 	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
 	//gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
