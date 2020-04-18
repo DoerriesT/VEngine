@@ -11,6 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			bool m_ignoreHistory;
+			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_historyImageViewHandle;
 			rg::ImageViewHandle m_colorRayDepthImageViewHandle;

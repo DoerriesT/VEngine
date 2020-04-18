@@ -700,8 +700,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	TemporalAAPass::Data temporalAAPassData;
 	temporalAAPassData.m_passRecordContext = &passRecordContext;
+	temporalAAPassData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
 	temporalAAPassData.m_jitterOffsetX = commonData.m_jitteredProjectionMatrix[2][0];
 	temporalAAPassData.m_jitterOffsetY = commonData.m_jitteredProjectionMatrix[2][1];
+	temporalAAPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	temporalAAPassData.m_depthImageHandle = depthImageViewHandle;
 	temporalAAPassData.m_velocityImageHandle = velocityImageViewHandle;
 	temporalAAPassData.m_taaHistoryImageHandle = taaHistoryImageViewHandle;

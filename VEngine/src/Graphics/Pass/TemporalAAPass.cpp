@@ -25,6 +25,7 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 		{rg::ResourceViewHandle(data.m_taaHistoryImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_lightImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_taaResolveImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Temporal AA", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -50,6 +51,7 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 				ImageView *velocityImageView = registry.getImageView(data.m_velocityImageHandle);
 				ImageView *historyImageView = registry.getImageView(data.m_taaHistoryImageHandle);
 				ImageView *lightImageView = registry.getImageView(data.m_lightImageHandle);
+				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -59,6 +61,7 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::sampledImage(&lightImageView, INPUT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -69,8 +72,11 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 			const float jitterOffsetLength = glm::length(glm::vec2(data.m_jitterOffsetX * width, data.m_jitterOffsetY * height));
 
 			PushConsts pushConsts;
+			pushConsts.width = width;
+			pushConsts.height = height;
 			pushConsts.bicubicSharpness = g_TAABicubicSharpness;
 			pushConsts.jitterOffsetWeight = exp(-2.29f * jitterOffsetLength);
+			pushConsts.ignoreHistory = data.m_ignoreHistory;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

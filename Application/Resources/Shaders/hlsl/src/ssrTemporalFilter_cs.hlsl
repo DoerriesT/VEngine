@@ -7,6 +7,7 @@ Texture2D<float> g_MaskImage : REGISTER_SRV(MASK_IMAGE_BINDING, MASK_IMAGE_SET);
 Texture2D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 float3 clipAABB(float3 p, float3 aabbMin, float3 aabbMax)
 {
@@ -86,7 +87,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	if (g_Constants.ignoreHistory == 0)
 	{
+		// history is pre-exposed -> convert from previous frame exposure to current frame exposure
+		float exposureConversionFactor = asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
+	
 		history = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+		history.rgb *= exposureConversionFactor;
 		history.rgb = clipAABB(history.rgb, neighborhoodMin.rgb, neighborhoodMax.rgb);
 		history.a = clamp(history.a, neighborhoodMin.a, neighborhoodMax.a);
 	}

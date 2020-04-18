@@ -7,6 +7,7 @@ Texture2D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_I
 Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
 Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, VELOCITY_IMAGE_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -95,6 +96,17 @@ float2 weightedLerpFactors(float weightA, float weightB, float blend)
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
+	if (threadID.x >= g_PushConsts.width || threadID.y >= g_PushConsts.height)
+	{
+		return;
+	}
+	
+	if (g_PushConsts.ignoreHistory != 0)
+	{
+		g_ResultImage[threadID.xy] = float4(g_InputImage.Load(int3(threadID.xy, 0)).rgb, 1.0);
+		return;
+	}
+	
 	// find frontmost velocity in neighborhood
 	int2 velocityCoordOffset = 0;
 	{
@@ -134,7 +146,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		}
 	}
 	
-	
 	neighborhoodMin = lerp(neighborhoodMin, neighborhoodMinPlus, 0.5);
 	neighborhoodMax = lerp(neighborhoodMax, neighborhoodMaxPlus, 0.5);
 	
@@ -145,7 +156,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 texCoord = (float2(threadID.xy) + 0.5) * texelSize;
 	float2 prevTexCoord = texCoord - velocity;
 	
-	float3 historyColor = rgbToYcocg(max(sampleHistory(prevTexCoord, float4(texSize, texelSize)).rgb, 0.0));
+	// history is pre-exposed -> convert from previous frame exposure to current frame exposure
+	float exposureConversionFactor = asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
+	
+	float3 historyColor = rgbToYcocg(max(sampleHistory(prevTexCoord, float4(texSize, texelSize)).rgb, 0.0) * exposureConversionFactor);
 	historyColor = clipAABB(historyColor, neighborhoodMin, neighborhoodMax);
 	
 	float subpixelCorrection = abs(frac(max(abs(prevTexCoord.x) * texSize.x, abs(prevTexCoord.y) * texSize.y)) * 2.0 - 1.0);

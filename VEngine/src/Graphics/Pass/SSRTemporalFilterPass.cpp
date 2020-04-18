@@ -43,6 +43,7 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 		{rg::ResourceViewHandle(data.m_historyImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_colorRayDepthImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_maskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("SSR Temporal Filter", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -67,6 +68,7 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 				ImageView *historyImageView = registry.getImageView(data.m_historyImageViewHandle);
 				ImageView *colorRayDepthImageView = registry.getImageView(data.m_colorRayDepthImageViewHandle);
 				ImageView *maskImageView = registry.getImageView(data.m_maskImageViewHandle);
+				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -76,6 +78,7 @@ void VEngine::SSRTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 					Initializers::sampledImage(&maskImageView, MASK_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
