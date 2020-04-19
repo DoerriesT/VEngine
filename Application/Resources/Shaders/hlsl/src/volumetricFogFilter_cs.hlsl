@@ -107,7 +107,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		//prevResult.rgb = simpleTonemap(prevResult.rgb);
 		//result.rgb = simpleTonemap(result.rgb);
 		
-		result = lerp(prevResult, result, validCoord ? 0.3 : 1.0);
+		result = lerp(prevResult, result, validCoord ? 0.05 : 1.0);
 		
 		//result.rgb = inverseSimpleTonemap(result.rgb);
 	}
