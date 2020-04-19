@@ -14,6 +14,10 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			float m_frustumCorners[4][3];
 			float m_jitter[3];
+			gal::DescriptorBufferInfo m_localMediaBufferInfo;
+			gal::DescriptorBufferInfo m_localMediaZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_globalMediaBufferInfo;
+			rg::BufferViewHandle m_localMediaBitMaskBufferHandle;
 			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;
 			rg::ImageViewHandle m_emissivePhaseImageViewHandle;
 		};

@@ -30,7 +30,6 @@ namespace VEngine
 		// buffers
 		gal::Buffer *m_lightProxyVertexBuffer = {};
 		gal::Buffer *m_lightProxyIndexBuffer = {};
-		gal::Buffer *m_boxIndexBuffer = {};
 		gal::Buffer *m_avgLuminanceBuffer = {};
 		gal::Buffer *m_exposureDataBuffer = {};
 		gal::Buffer *m_luminanceHistogramReadBackBuffers[RendererConsts::FRAMES_IN_FLIGHT] = {};
@@ -76,6 +75,9 @@ namespace VEngine
 		uint32_t m_spotLightProxyMeshIndexCount;
 		uint32_t m_spotLightProxyMeshFirstIndex;
 		uint32_t m_spotLightProxyMeshVertexOffset;
+		uint32_t m_boxProxyMeshIndexCount;
+		uint32_t m_boxProxyMeshFirstIndex;
+		uint32_t m_boxProxyMeshVertexOffset;
 
 		explicit RenderResources(gal::GraphicsDevice *graphicsDevice);
 		RenderResources(const RenderResources &) = delete;

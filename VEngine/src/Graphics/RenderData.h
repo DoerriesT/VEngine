@@ -41,6 +41,8 @@ namespace VEngine
 		uint32_t m_directionalLightShadowedCount;
 		uint32_t m_punctualLightCount;
 		uint32_t m_punctualLightShadowedCount;
+		uint32_t m_globalParticipatingMediaCount;
+		uint32_t m_localParticipatingMediaCount;
 		uint32_t m_curResIdx;
 		uint32_t m_prevResIdx;
 		float m_timeDelta;

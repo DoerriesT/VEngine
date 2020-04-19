@@ -22,6 +22,7 @@ namespace VEngine
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
 			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
+			rg::BufferViewHandle m_localMediaBitMaskBufferHandle;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
@@ -29,6 +30,9 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_punctualLightsZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsShadowedZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_localMediaBufferInfo;
+			gal::DescriptorBufferInfo m_localMediaZBinsBufferInfo;
+			gal::DescriptorBufferInfo m_globalMediaBufferInfo;
 		};
 
 		explicit VolumetricFogModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height);

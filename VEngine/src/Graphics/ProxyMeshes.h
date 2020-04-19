@@ -268,4 +268,39 @@ namespace VEngine
 		constexpr size_t indexDataSize = sizeof(indexData);
 		constexpr size_t indexCount = indexDataSize / sizeof(indexData[0]);
 	}
+
+	namespace BoxProxyMesh
+	{
+		constexpr float vertexData[] =
+		{
+			-1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f, 1.0f,
+			1.0f, -1.0f, 1.0f,
+			-1.0f, 1.0f, -1.0f,
+			1.0f, 1.0f, -1.0f,
+			-1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+		};
+
+		constexpr uint16_t indexData[] =
+		{
+			0, 1, 3,
+			0, 3, 2,
+			3, 7, 6,
+			3, 6, 2,
+			1, 5, 7,
+			1, 7, 3,
+			5, 4, 6,
+			5, 6, 7,
+			0, 4, 5,
+			0, 5, 1,
+			2, 6, 4,
+			2, 4, 0
+		};
+
+		constexpr size_t vertexDataSize = sizeof(vertexData);
+		constexpr size_t indexDataSize = sizeof(indexData);
+		constexpr size_t indexCount = indexDataSize / sizeof(indexData[0]);
+	}
 }

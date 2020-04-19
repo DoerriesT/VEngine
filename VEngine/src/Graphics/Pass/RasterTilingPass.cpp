@@ -23,6 +23,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 	{
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_participatingMediaBitMaskBufferHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
 	graph.addPass("Raster Tiling", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -55,14 +56,16 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 			DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 			DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
+			DescriptorBufferInfo participatingMediaMaskBufferInfo = registry.getBufferInfo(data.m_participatingMediaBitMaskBufferHandle);
 
 			DescriptorSetUpdate updates[] =
 			{
 				Initializers::storageBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
 				Initializers::storageBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+				Initializers::storageBuffer(&participatingMediaMaskBufferInfo, PARTICIPATING_MEDIA_BIT_MASK_BINDING),
 			};
 
-			descriptorSet->update(2, updates);
+			descriptorSet->update(3, updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
@@ -90,6 +93,9 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		const uint32_t spotLightProxyMeshIndexCount = renderResource.m_spotLightProxyMeshIndexCount;
 		const uint32_t spotLightProxyMeshFirstIndex = renderResource.m_spotLightProxyMeshFirstIndex;
 		const uint32_t spotLightProxyMeshVertexOffset = renderResource.m_spotLightProxyMeshVertexOffset;
+		const uint32_t boxProxyMeshIndexCount = renderResource.m_boxProxyMeshIndexCount;
+		const uint32_t boxProxyMeshFirstIndex = renderResource.m_boxProxyMeshFirstIndex;
+		const uint32_t boxProxyMeshVertexOffset = renderResource.m_boxProxyMeshVertexOffset;
 		
 		auto &commonData = *data.m_passRecordContext->m_commonRenderData;
 		auto &lightData = *data.m_lightData;
@@ -134,6 +140,21 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			uint32_t vertexOffset = spotLight ? spotLightProxyMeshVertexOffset : pointLightProxyMeshVertexOffset;
 
 			cmdList->drawIndexed(indexCount, 1, firstIndex, vertexOffset, 0);
+		}
+
+		// participating media
+		targetBuffer = 2;
+		wordCount = static_cast<uint32_t>((data.m_lightData->m_localParticipatingMedia.size() + 31) / 32);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, targetBuffer), sizeof(targetBuffer), &targetBuffer);
+		cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, offsetof(PushConsts, wordCount), sizeof(wordCount), &wordCount);
+		for (size_t i = 0; i < lightData.m_localParticipatingMedia.size(); ++i)
+		{
+			PushConsts pushConsts;
+			pushConsts.transform = commonData.m_jitteredViewProjectionMatrix * lightData.m_localMediaTransforms[lightData.m_localMediaOrder[i]];
+			pushConsts.index = static_cast<uint32_t>(i);
+
+			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
+			cmdList->drawIndexed(boxProxyMeshIndexCount, 1, boxProxyMeshFirstIndex, boxProxyMeshVertexOffset, 0);
 		}
 
 		cmdList->endRenderPass();

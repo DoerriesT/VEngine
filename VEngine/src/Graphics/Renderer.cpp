@@ -289,6 +289,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	rg::BufferViewHandle punctualLightBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
 	rg::BufferViewHandle punctualLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
+	rg::BufferViewHandle localMediaBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localParticipatingMedia.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
@@ -363,6 +364,36 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			}
 			//memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
 			memcpy(zBinsBufferPtr, lightData.m_punctualLightShadowedDepthBins.data(), lightData.m_punctualLightShadowedDepthBins.size() * sizeof(uint32_t));
+		}
+	}
+
+	// local participating media data write
+	DescriptorBufferInfo localMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_localParticipatingMedia.size() * sizeof(LocalParticipatingMedium), size_t(1)) };
+	DescriptorBufferInfo localMediaZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localMediaDepthBins.size() * sizeof(uint32_t), size_t(1)) };
+	{
+		uint8_t *dataBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localMediaDataBufferInfo.m_range, localMediaDataBufferInfo.m_offset, localMediaDataBufferInfo.m_buffer, dataBufferPtr);
+		uint8_t *zBinsBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localMediaZBinsBufferInfo.m_range, localMediaZBinsBufferInfo.m_offset, localMediaZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		if (!lightData.m_localParticipatingMedia.empty())
+		{
+			for (size_t i = 0; i < lightData.m_localMediaOrder.size(); ++i)
+			{
+				((LocalParticipatingMedium *)dataBufferPtr)[i] = lightData.m_localParticipatingMedia[lightData.m_localMediaOrder[i]];
+			}
+			//memcpy(dataBufferPtr, lightData.m_pointLightData.data(), lightData.m_pointLightData.size() * sizeof(PointLightData));
+			memcpy(zBinsBufferPtr, lightData.m_localMediaDepthBins.data(), lightData.m_localMediaDepthBins.size() * sizeof(uint32_t));
+		}
+	}
+
+	// global participating media data write
+	DescriptorBufferInfo globalMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(globalMediaDataBufferInfo.m_range, globalMediaDataBufferInfo.m_offset, globalMediaDataBufferInfo.m_buffer, bufferPtr);
+		if (!lightData.m_globalParticipatingMedia.empty())
+		{
+			memcpy(bufferPtr, lightData.m_globalParticipatingMedia.data(), lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium));
 		}
 	}
 
@@ -464,8 +495,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rasterTilingPassData.m_lightData = &lightData;
 	rasterTilingPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	rasterTilingPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	rasterTilingPassData.m_participatingMediaBitMaskBufferHandle = localMediaBitMaskBufferViewHandle;
 
-	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty())
+	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty() || !lightData.m_localParticipatingMedia.empty())
 	{
 		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
@@ -572,6 +604,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_localMediaBitMaskBufferHandle = localMediaBitMaskBufferViewHandle;
 	volumetricFogModuleData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	volumetricFogModuleData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
 	volumetricFogModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
@@ -579,6 +612,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
 	volumetricFogModuleData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
 	volumetricFogModuleData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
+	volumetricFogModuleData.m_localMediaBufferInfo = localMediaDataBufferInfo;
+	volumetricFogModuleData.m_localMediaZBinsBufferInfo = localMediaZBinsBufferInfo;
+	volumetricFogModuleData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
 
 	m_volumetricFogModule->addToGraph(graph, volumetricFogModuleData);
 

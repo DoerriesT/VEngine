@@ -15,7 +15,10 @@ VEngine::RenderResources::RenderResources(gal::GraphicsDevice *graphicsDevice)
 	m_pointLightProxyMeshVertexOffset(0),
 	m_spotLightProxyMeshIndexCount(SpotLightProxyMesh::indexCount),
 	m_spotLightProxyMeshFirstIndex(PointLightProxyMesh::indexCount),
-	m_spotLightProxyMeshVertexOffset(PointLightProxyMesh::vertexDataSize / (3 * sizeof(float)))
+	m_spotLightProxyMeshVertexOffset(PointLightProxyMesh::vertexDataSize / (3 * sizeof(float))),
+	m_boxProxyMeshIndexCount(BoxProxyMesh::indexCount),
+	m_boxProxyMeshFirstIndex(PointLightProxyMesh::indexCount + SpotLightProxyMesh::indexCount),
+	m_boxProxyMeshVertexOffset((PointLightProxyMesh::vertexDataSize + SpotLightProxyMesh::vertexDataSize) / (3 * sizeof(float)))
 {
 	m_graphicsDevice->createCommandListPool(m_graphicsDevice->getGraphicsQueue(), &m_commandListPool);
 	m_commandListPool->allocate(1, &m_commandList);
@@ -54,7 +57,6 @@ VEngine::RenderResources::~RenderResources()
 	// buffers
 	m_graphicsDevice->destroyBuffer(m_lightProxyVertexBuffer);
 	m_graphicsDevice->destroyBuffer(m_lightProxyIndexBuffer);
-	m_graphicsDevice->destroyBuffer(m_boxIndexBuffer);
 	m_graphicsDevice->destroyBuffer(m_avgLuminanceBuffer);
 	m_graphicsDevice->destroyBuffer(m_exposureDataBuffer);
 	
@@ -411,14 +413,14 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	// light proxy vertex/index buffer
 	{
 		BufferCreateInfo vertexBufferInfo{};
-		vertexBufferInfo.m_size = PointLightProxyMesh::vertexDataSize + SpotLightProxyMesh::vertexDataSize;
+		vertexBufferInfo.m_size = PointLightProxyMesh::vertexDataSize + SpotLightProxyMesh::vertexDataSize + BoxProxyMesh::vertexDataSize;
 		vertexBufferInfo.m_createFlags = 0;
 		vertexBufferInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::VERTEX_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(vertexBufferInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_lightProxyVertexBuffer);
 
 		BufferCreateInfo indexBufferInfo{};
-		indexBufferInfo.m_size = PointLightProxyMesh::indexDataSize + SpotLightProxyMesh::indexDataSize;
+		indexBufferInfo.m_size = PointLightProxyMesh::indexDataSize + SpotLightProxyMesh::indexDataSize + BoxProxyMesh::indexDataSize;
 		indexBufferInfo.m_createFlags = 0;
 		indexBufferInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT;
 
@@ -443,6 +445,12 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		srcOffset += SpotLightProxyMesh::vertexDataSize;
 		vertexDstOffset += SpotLightProxyMesh::vertexDataSize;
 
+		// box vertex buffer
+		memcpy(data + srcOffset, BoxProxyMesh::vertexData, BoxProxyMesh::vertexDataSize);
+		BufferCopy copyRegionBoxVertex = { srcOffset, vertexDstOffset, BoxProxyMesh::vertexDataSize };
+		srcOffset += BoxProxyMesh::vertexDataSize;
+		vertexDstOffset += BoxProxyMesh::vertexDataSize;
+
 		// point light index buffer
 		memcpy(data + srcOffset, PointLightProxyMesh::indexData, PointLightProxyMesh::indexDataSize);
 		BufferCopy copyRegionPointLightIndex = { srcOffset, indexDstOffset, PointLightProxyMesh::indexDataSize };
@@ -455,57 +463,23 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		srcOffset += SpotLightProxyMesh::indexDataSize;
 		indexDstOffset += SpotLightProxyMesh::indexDataSize;
 
+		// box index buffer
+		memcpy(data + srcOffset, BoxProxyMesh::indexData, BoxProxyMesh::indexDataSize);
+		BufferCopy copyRegionBoxIndex = { srcOffset, indexDstOffset, BoxProxyMesh::indexDataSize };
+		srcOffset += BoxProxyMesh::indexDataSize;
+		indexDstOffset += BoxProxyMesh::indexDataSize;
+
 		m_stagingBuffer->unmap();
 
 
 		m_commandListPool->reset();
 		m_commandList->begin();
 		{
-			BufferCopy vertexCopies[] = { copyRegionPointLightVertex, copyRegionSpotLightVertex };
-			m_commandList->copyBuffer(m_stagingBuffer, m_lightProxyVertexBuffer, 2, vertexCopies);
+			BufferCopy vertexCopies[] = { copyRegionPointLightVertex, copyRegionSpotLightVertex, copyRegionBoxVertex };
+			m_commandList->copyBuffer(m_stagingBuffer, m_lightProxyVertexBuffer, 3, vertexCopies);
 
-			BufferCopy indexCopies[] = { copyRegionPointLightIndex, copyRegionSpotLightIndex };
-			m_commandList->copyBuffer(m_stagingBuffer, m_lightProxyIndexBuffer, 2, indexCopies);
-		}
-		m_commandList->end();
-		Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);
-	}
-
-	// box index buffer
-	{
-		uint16_t indices[] =
-		{
-			0, 1, 3,
-			0, 3, 2,
-			3, 7, 6,
-			3, 6, 2,
-			1, 5, 7,
-			1, 7, 3,
-			5, 4, 6,
-			5, 6, 7,
-			0, 4, 5,
-			0, 5, 1,
-			2, 6, 4,
-			2, 4, 0
-		};
-
-		BufferCreateInfo indexBufferInfo{};
-		indexBufferInfo.m_size = sizeof(indices);
-		indexBufferInfo.m_createFlags = 0;
-		indexBufferInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT;
-
-		m_graphicsDevice->createBuffer(indexBufferInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_boxIndexBuffer);
-
-		void *data;
-		m_stagingBuffer->map(&data);
-		memcpy(data, indices, sizeof(indices));
-		m_stagingBuffer->unmap();
-
-		m_commandListPool->reset();
-		m_commandList->begin();
-		{
-			BufferCopy copyRegionIndex = { 0, 0, sizeof(indices) };
-			m_commandList->copyBuffer(m_stagingBuffer, m_boxIndexBuffer, 1, &copyRegionIndex);
+			BufferCopy indexCopies[] = { copyRegionPointLightIndex, copyRegionSpotLightIndex, copyRegionBoxIndex };
+			m_commandList->copyBuffer(m_stagingBuffer, m_lightProxyIndexBuffer, 3, indexCopies);
 		}
 		m_commandList->end();
 		Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);

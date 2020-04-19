@@ -11,7 +11,7 @@
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Editor/Editor.h"
 
-float g_ssrBias = 0.0f;
+float g_ssrBias = 0.7f;
 
 VEngine::Engine::Engine(const char *title, IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),

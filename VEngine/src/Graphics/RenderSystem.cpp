@@ -6,6 +6,8 @@
 #include "Components/SpotLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/CameraComponent.h"
+#include "Components/ParticipatingMediumComponent.h"
+#include "Components/BoundingBoxComponent.h"
 #include "Graphics/Renderer.h"
 #include "GlobalVar.h"
 #include <glm/ext.hpp>
@@ -556,6 +558,85 @@ void VEngine::RenderSystem::update(float timeDelta)
 					}
 				}
 			}
+
+			// global participating media
+			{
+				auto view = m_entityRegistry.view<GlobalParticipatingMediumComponent, RenderableComponent>();
+
+				view.each([&](GlobalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
+					{
+						GlobalParticipatingMedium medium{};
+						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
+						medium.m_extinction = mediumComponent.m_extinction;
+						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
+						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+
+						m_lightData.m_globalParticipatingMedia.push_back(medium);
+					});
+			}
+
+			// local participating media
+			{
+				auto view = m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, BoundingBoxComponent, RenderableComponent>();
+
+				view.each([&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, BoundingBoxComponent &bboxComponent, RenderableComponent &)
+					{
+						glm::mat3 rotationMatrix = glm::inverse(glm::mat3(glm::mat4_cast(transformationComponent.m_orientation))) * glm::mat3(m_commonRenderData.m_invViewMatrix);
+
+						LocalParticipatingMedium medium{};
+						medium.m_obbAxis0 = rotationMatrix[0];
+						medium.m_obbAxis1 = rotationMatrix[1];
+						medium.m_obbAxis2 = rotationMatrix[2];
+						medium.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
+						medium.m_extentX = bboxComponent.m_extent.x;
+						medium.m_extentY = bboxComponent.m_extent.y;
+						medium.m_extentZ = bboxComponent.m_extent.z;
+						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
+						medium.m_extinction = mediumComponent.m_extinction;
+						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
+						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+
+						m_lightData.m_localParticipatingMedia.push_back(medium);
+
+						m_lightData.m_localMediaTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(bboxComponent.m_extent));
+						m_lightData.m_localMediaOrder.push_back(static_cast<uint32_t>(m_lightData.m_localMediaOrder.size()));
+					});
+
+				// sort by distance to camera
+				std::sort(m_lightData.m_localMediaOrder.begin(), m_lightData.m_localMediaOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+					{
+						return -m_lightData.m_localParticipatingMedia[lhs].m_position.z < -m_lightData.m_localParticipatingMedia[rhs].m_position.z;
+					});
+
+				// clear bins
+				for (size_t i = 0; i < m_lightData.m_localMediaDepthBins.size(); ++i)
+				{
+					const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
+					m_lightData.m_localMediaDepthBins[i] = emptyBin;
+				}
+
+				// assign lights to bins
+				for (size_t i = 0; i < m_lightData.m_localParticipatingMedia.size(); ++i)
+				{
+					const auto &media = m_lightData.m_localParticipatingMedia[m_lightData.m_localMediaOrder[i]];
+					const float radius = glm::length(glm::vec3(media.m_extentX, media.m_extentY, media.m_extentZ));
+					float nearestPoint = -media.m_position.z - radius;
+					float furthestPoint = -media.m_position.z + radius;
+
+					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
+
+					for (size_t j = minBin; j <= maxBin; ++j)
+					{
+						uint32_t &val = m_lightData.m_localMediaDepthBins[j];
+						uint32_t minIndex = (val & 0xFFFF0000) >> 16;
+						uint32_t maxIndex = val & 0xFFFF;
+						minIndex = std::min(minIndex, static_cast<uint32_t>(i));
+						maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
+						val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+					}
+				}
+			}
 		}
 
 		// update all transformations and generate draw lists
@@ -681,6 +762,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 		m_commonRenderData.m_directionalLightShadowedCount = static_cast<uint32_t>(m_lightData.m_directionalLightsShadowed.size());
 		m_commonRenderData.m_punctualLightCount = static_cast<uint32_t>(m_lightData.m_punctualLights.size());
 		m_commonRenderData.m_punctualLightShadowedCount = static_cast<uint32_t>(m_lightData.m_punctualLightsShadowed.size());
+		m_commonRenderData.m_globalParticipatingMediaCount = static_cast<uint32_t>(m_lightData.m_globalParticipatingMedia.size());
+		m_commonRenderData.m_localParticipatingMediaCount = static_cast<uint32_t>(m_lightData.m_localParticipatingMedia.size());
 
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());

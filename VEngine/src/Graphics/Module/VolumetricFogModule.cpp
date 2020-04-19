@@ -116,6 +116,10 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogVBufferPassData.m_jitter[0] = jitterX;
 	volumetricFogVBufferPassData.m_jitter[1] = jitterY;
 	volumetricFogVBufferPassData.m_jitter[2] = jitterZ;
+	volumetricFogVBufferPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
+	volumetricFogVBufferPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
+	volumetricFogVBufferPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
+	volumetricFogVBufferPassData.m_localMediaBitMaskBufferHandle = data.m_localMediaBitMaskBufferHandle;
 	volumetricFogVBufferPassData.m_scatteringExtinctionImageViewHandle = vBufferScatteringExtinctionImageViewHandle;
 	volumetricFogVBufferPassData.m_emissivePhaseImageViewHandle = vbufferEmissivePhasImageViewHandle;
 

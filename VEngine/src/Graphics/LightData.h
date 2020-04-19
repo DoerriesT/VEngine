@@ -46,6 +46,30 @@ namespace VEngine
 		uint32_t m_size;
 	};
 
+	struct GlobalParticipatingMedium
+	{
+		glm::vec3 m_emissive;
+		float m_extinction;
+		glm::vec3 m_scattering;
+		float m_phase;
+	};
+
+	struct LocalParticipatingMedium
+	{
+		glm::vec3 m_obbAxis0;
+		float m_extentX;
+		glm::vec3 m_obbAxis1;
+		float m_extentY;
+		glm::vec3 m_obbAxis2;
+		float m_extentZ;
+		glm::vec3 m_position;
+		float m_phase;
+		glm::vec3 m_emissive;
+		float m_extinction;
+		glm::vec3 m_scattering;
+		float m_pad0;
+	};
+
 	struct LightData
 	{
 		std::vector<ShadowAtlasDrawInfo> m_shadowAtlasDrawInfos;
@@ -53,12 +77,17 @@ namespace VEngine
 		std::vector<DirectionalLight> m_directionalLightsShadowed;
 		std::vector<PunctualLight> m_punctualLights;
 		std::vector<PunctualLightShadowed> m_punctualLightsShadowed;
+		std::vector<GlobalParticipatingMedium> m_globalParticipatingMedia;
+		std::vector<LocalParticipatingMedium> m_localParticipatingMedia;
 		std::vector<glm::mat4> m_punctualLightTransforms;
 		std::vector<glm::mat4> m_punctualLightShadowedTransforms;
+		std::vector<glm::mat4> m_localMediaTransforms;
 		std::vector<uint32_t> m_punctualLightOrder;
 		std::vector<uint32_t> m_punctualLightShadowedOrder;
+		std::vector<uint32_t> m_localMediaOrder;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightDepthBins;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightShadowedDepthBins;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_localMediaDepthBins;
 
 		void clear()
 		{
@@ -67,12 +96,17 @@ namespace VEngine
 			m_directionalLightsShadowed.clear();
 			m_punctualLights.clear();
 			m_punctualLightsShadowed.clear();
+			m_globalParticipatingMedia.clear();
+			m_localParticipatingMedia.clear();
 			m_punctualLightTransforms.clear();
 			m_punctualLightShadowedTransforms.clear();
+			m_localMediaTransforms.clear();
 			m_punctualLightOrder.clear();
 			m_punctualLightShadowedOrder.clear();
+			m_localMediaOrder.clear();
 			memset(m_punctualLightDepthBins.data(), 0, sizeof(m_punctualLightDepthBins));
 			memset(m_punctualLightShadowedDepthBins.data(), 0, sizeof(m_punctualLightShadowedDepthBins));
+			memset(m_localMediaDepthBins.data(), 0, sizeof(m_localMediaDepthBins));
 		}
 	};
 }

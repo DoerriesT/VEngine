@@ -7,15 +7,6 @@
 #include "Graphics/gal/Initializers.h"
 #include <glm/gtc/type_ptr.hpp>
 
-bool g_albedoExtinctionMode = true;
-float g_fogScattering[3] = { 1.0f, 1.0f, 1.0f };
-float g_fogAbsorption[3] = { 1.0f, 1.0f, 1.0f };
-float g_fogAlbedo[3] = { 0.01f, 0.01f, 0.01f };
-float g_fogExtinction = 0.01f;
-float g_fogEmissiveColor[3] = {};
-float g_fogEmissiveIntensity = 0.0f;
-float g_fogPhase = 0.0f;
-
 using namespace VEngine::gal;
 
 namespace
@@ -26,10 +17,34 @@ namespace
 
 void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	Constants consts;
+	consts.viewMatrix = commonData->m_viewMatrix;
+	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
+	consts.jitterX = data.m_jitter[0];
+	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
+	consts.jitterY = data.m_jitter[1];
+	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
+	consts.jitterZ = data.m_jitter[2];
+	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
+	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
+	consts.cameraPos = commonData->m_cameraPosition;
+	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
+
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_scatteringExtinctionImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_emissivePhaseImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_localMediaBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Volumetric Fog VBuffer", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -52,11 +67,17 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 
 				ImageView *scatteringExtinctionImageView = registry.getImageView(data.m_scatteringExtinctionImageViewHandle);
 				ImageView *emissivePhaseImageView = registry.getImageView(data.m_emissivePhaseImageViewHandle);
+				DescriptorBufferInfo localMediaMaskBufferInfo = registry.getBufferInfo(data.m_localMediaBitMaskBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::storageImage(&scatteringExtinctionImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
 					Initializers::storageImage(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
+					Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+					Initializers::storageBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+					Initializers::storageBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
+					Initializers::storageBuffer(&localMediaMaskBufferInfo, LOCAL_MEDIA_BIT_MASK_BINDING),
+					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -64,28 +85,11 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
 
-			const auto *commonData = data.m_passRecordContext->m_commonRenderData;
-
-			PushConsts pushConsts;
-			pushConsts.scatteringExtinction = glm::vec4(glm::make_vec3(g_fogScattering), g_fogExtinction);
-			pushConsts.emissivePhase = glm::vec4(glm::make_vec3(g_fogEmissiveColor) * g_fogEmissiveIntensity, g_fogPhase);
-			pushConsts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
-			pushConsts.jitterX = data.m_jitter[0];
-			pushConsts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
-			pushConsts.jitterY = data.m_jitter[1];
-			pushConsts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
-			pushConsts.jitterZ = data.m_jitter[2];
-			pushConsts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
-			pushConsts.cameraPos = commonData->m_cameraPosition;
-
-
-			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
-
 			const auto &imageDesc = registry.getImage(data.m_scatteringExtinctionImageViewHandle)->getDescription();
 			uint32_t w = imageDesc.m_width;
 			uint32_t h = imageDesc.m_height;
 			uint32_t d = imageDesc.m_depth;
 
-			cmdList->dispatch((w + 7) / 8, (h + 7) / 8, d);
+			cmdList->dispatch((w + 1) / 2, (h + 1) / 2, (d + 15) / 16);
 		});
 }

@@ -142,9 +142,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Components\BoundingBoxComponent.h" />
+    <ClInclude Include="src\Components\BoundingSphereComponent.h" />
     <ClInclude Include="src\Components\CameraComponent.h" />
     <ClInclude Include="src\Components\DirectionalLightComponent.h" />
     <ClInclude Include="src\Components\MeshComponent.h" />
+    <ClInclude Include="src\Components\ParticipatingMediumComponent.h" />
     <ClInclude Include="src\Components\PointLightComponent.h" />
     <ClInclude Include="src\Components\RenderableComponent.h" />
     <ClInclude Include="src\Components\SpotLightComponent.h" />

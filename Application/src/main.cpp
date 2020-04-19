@@ -10,6 +10,8 @@
 #include <Components/PointLightComponent.h>
 #include <Components/SpotLightComponent.h>
 #include <Components/DirectionalLightComponent.h>
+#include <Components/ParticipatingMediumComponent.h>
+#include <Components/BoundingBoxComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
 #include <Scene.h>
@@ -22,14 +24,11 @@
 #include <Graphics/imgui/imgui.h>
 #include <Utility/Utility.h>
 
-extern bool g_albedoExtinctionMode;
-extern float g_fogScattering[3];
-extern float g_fogAbsorption[3];
-extern float g_fogAlbedo[3];
-extern float g_fogExtinction;
-extern float g_fogEmissiveColor[3];
-extern float g_fogEmissiveIntensity;
-extern float g_fogPhase;
+float g_fogAlbedo[3] = {0.01f, 0.01f, 0.01f};
+float g_fogExtinction = 0.01f;
+float g_fogEmissiveColor[3] = {1.0f, 1.0f, 1.0f};
+float g_fogEmissiveIntensity = 0.0f;
+float g_fogPhase = 0.0f;
 
 extern float g_ssrBias;
 
@@ -39,6 +38,9 @@ uint32_t g_giVoxelDebugMode = 0;
 uint32_t g_allocatedBricks = 0;
 bool g_forceVoxelization = false;
 bool g_voxelizeOnDemand = false;
+
+entt::entity g_globalFogEntity = 0;
+entt::entity g_localFogEntity = 0;
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -99,6 +101,18 @@ public:
 		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
 
+		g_globalFogEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f);
+		entityRegistry.assign<VEngine::RenderableComponent>(g_globalFogEntity);
+
+
+		g_localFogEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(45.0f), 0.0f)));
+		entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1.0f, 1.0f, 1.0f));
+		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 0.0f);
+		entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
+
+
 		g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
 		auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, VEngine::Utility::colorTemperatureToColor(4000.0f), 100.0f, true, 4u, 130.0f, 0.9f);
@@ -137,7 +151,7 @@ public:
 		//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
 		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 1000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)
@@ -160,7 +174,7 @@ public:
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_spotLightEntity);
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(g_localFogEntity);
 
 		auto &io = ImGui::GetIO();
 
@@ -211,21 +225,11 @@ public:
 		{
 			ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
 
-			ImGui::Checkbox("Albedo/Extinction Mode", &g_albedoExtinctionMode);
 			ImGui::NewLine();
 			ImGui::Separator();
 			ImGui::NewLine();
-			if (g_albedoExtinctionMode)
-			{
-				ImGui::ColorPicker3("Albedo", g_fogAlbedo);
-				ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			}
-			else
-			{
-				ImGui::DragFloat3("Scattering", g_fogScattering, 0.001f, 0.0f, FLT_MAX, "%.7f");
-				ImGui::DragFloat3("Absorption", g_fogAbsorption, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			}
-
+			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
+			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
 			ImGui::NewLine();
 			ImGui::Separator();
 			ImGui::NewLine();
@@ -234,24 +238,12 @@ public:
 			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
 			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.999f, 0.99f, "%.7f");
 
-			if (g_albedoExtinctionMode)
-			{
-				g_fogScattering[0] = g_fogAlbedo[0] * g_fogExtinction;
-				g_fogScattering[1] = g_fogAlbedo[1] * g_fogExtinction;
-				g_fogScattering[2] = g_fogAlbedo[2] * g_fogExtinction;
-				g_fogAbsorption[0] = g_fogExtinction - g_fogScattering[0];
-				g_fogAbsorption[1] = g_fogExtinction - g_fogScattering[1];
-				g_fogAbsorption[2] = g_fogExtinction - g_fogScattering[2];
-			}
-			else
-			{
-				g_fogAlbedo[0] = g_fogScattering[0] > 0.0 ? g_fogScattering[0] / (g_fogScattering[0] + g_fogAbsorption[0]) : 0.0f;
-				g_fogAlbedo[1] = g_fogScattering[1] > 0.0 ? g_fogScattering[1] / (g_fogScattering[1] + g_fogAbsorption[1]) : 0.0f;
-				g_fogAlbedo[2] = g_fogScattering[2] > 0.0 ? g_fogScattering[2] / (g_fogScattering[2] + g_fogAbsorption[2]) : 0.0f;
-				g_fogExtinction = (g_fogScattering[0] + g_fogAbsorption[0]) * 0.2126f
-					+ (g_fogScattering[1] + g_fogAbsorption[1]) * 0.7152f
-					+ (g_fogScattering[2] + g_fogAbsorption[2]) * 0.0722f;
-			}
+			auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
+			mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);
+			mediaC.m_extinction = g_fogExtinction;
+			mediaC.m_emissiveColor = glm::vec3(g_fogEmissiveColor[0], g_fogEmissiveColor[1], g_fogEmissiveColor[2]);
+			mediaC.m_emissiveIntensity = g_fogEmissiveIntensity;
+			mediaC.m_phaseAnisotropy = g_fogPhase;
 		}
 		ImGui::End();
 	};

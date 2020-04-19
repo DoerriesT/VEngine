@@ -10,6 +10,7 @@ struct PSInput
 
 RWByteAddressBuffer g_PunctualLightsBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_BIT_MASK_SET);
 RWByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_SET);
+RWByteAddressBuffer g_ParticipatingMediaBitMask : REGISTER_UAV(PARTICIPATING_MEDIA_BIT_MASK_BINDING, PARTICIPATING_MEDIA_BIT_MASK_SET);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -58,6 +59,10 @@ void main(PSInput input)
 		else if (g_PushConsts.targetBuffer == 1)
 		{
 			g_PunctualLightsShadowedBitMask.InterlockedOr(wordIndex, lightBit);
+		}
+		else if (g_PushConsts.targetBuffer == 2)
+		{
+			g_ParticipatingMediaBitMask.InterlockedOr(wordIndex, lightBit);
 		}
 	}
 }

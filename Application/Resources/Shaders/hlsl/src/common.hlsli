@@ -76,6 +76,30 @@ struct MaterialData
 	uint padding;
 };
 
+struct GlobalParticipatingMedium
+{
+	float3 emissive;
+	float extinction;
+	float3 scattering;
+	float phase;
+};
+
+struct LocalParticipatingMedium
+{
+	float3 obbAxis0;
+	float extentX;
+	float3 obbAxis1;
+	float extentY;
+	float3 obbAxis2;
+	float extentZ;
+	float3 position;
+	float phase;
+	float3 emissive;
+	float extinction;
+	float3 scattering;
+	float pad0;
+};
+
 struct SubMeshInstanceData
 {
 	uint subMeshIndex;

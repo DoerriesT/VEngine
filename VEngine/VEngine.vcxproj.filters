@@ -387,6 +387,15 @@
     <ClInclude Include="src\Graphics\gal\vulkan\FramebufferDescriptionVk.h">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="src\Components\ParticipatingMediumComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Components\BoundingBoxComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Components\BoundingSphereComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
