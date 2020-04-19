@@ -7,7 +7,7 @@
 
 struct PushConsts
 {
-	float4x4 invProjection;
+	float4 unprojectParams;
 	float4 resolution;
 	float focalLength;
 	float radius;

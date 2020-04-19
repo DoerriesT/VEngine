@@ -59,8 +59,10 @@ void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}
 
+		const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
+
 		PushConsts pushConsts;
-		pushConsts.invProjection = data.m_passRecordContext->m_commonRenderData->m_invProjectionMatrix;
+		pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 		pushConsts.resolution = glm::vec4(width, height, 1.0f / width, 1.0f / height);
 		pushConsts.focalLength = 1.0f / tanf(glm::radians(data.m_passRecordContext->m_commonRenderData->m_fovy) * 0.5f) * (height / static_cast<float>(width));
 		pushConsts.radius = g_gtaoRadius;

@@ -13,11 +13,9 @@ float3 getViewSpacePos(float2 uv)
 {
 	uv *= g_PushConsts.resolution.zw;
 	float depth = g_DepthImage.SampleLevel(g_PointSampler, uv, 0.0).x;
-	float4 clipSpacePosition = float4(uv * 2.0 - 1.0, depth, 1.0);
-	float4 viewSpacePosition = mul(g_PushConsts.invProjection, clipSpacePosition);
-	viewSpacePosition /= viewSpacePosition.w;
-	//viewSpacePosition.z = -viewSpacePosition.z;
-	return viewSpacePosition.xyz;
+	float2 clipSpacePosition = float2(uv * 2.0 - 1.0);
+	float4 viewSpacePosition = float4(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0, g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
+	return viewSpacePosition.xyz / viewSpacePosition.w;
 }
 
 float3 minDiff(float3 P, float3 Pr, float3 Pl)
@@ -58,9 +56,34 @@ float square(float x)
 
 float falloff(float dist2)
 {
-	float start = square(g_PushConsts.radius * 0.2);
+	float start = square(g_PushConsts.radius * 0.8);
 	float end = square(g_PushConsts.radius);
-	return 2.0 * clamp((dist2 - start) / (end - start), 0.0, 1.0);
+	return 2.0 * saturate((dist2 - start) / (end - start));
+}
+
+float fastSqrt(float x)
+{
+	// [Drobot2014a] Low Level Optimizations for GCN
+	return asfloat(0x1FBD1DF5 + (asint(x) >> 1));
+}
+
+float fastAcos(float x)
+{
+	// [Eberly2014] GPGPU Programming for Games and Science
+	float res = -0.156583 * abs(x) + PI / 2.0;
+	res *= fastSqrt(1.0 - abs(x));
+	return x >= 0 ? res : PI - res;
+}
+
+float integrateArcCosineWeighted(float h1, float h2, float gamma, float cosGamma)
+{
+	float sinGamma = sin(gamma);
+	
+	h1 *= 2.0;
+	h2 *= 2.0;
+	float a = (-cos(h1 - gamma) + (h1 * sinGamma + cosGamma));
+	float b = (-cos(h2 - gamma) + (h2 * sinGamma + cosGamma));
+	return (a + b) * 0.25;
 }
 
 [numthreads(8, 8, 1)]
@@ -129,9 +152,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			}
 		}
 		
-		horizons = acos(horizons);
-		horizons.x = -horizons.x;
-		
 		// Sample neighboring pixels
 		const float3 Pr = getViewSpacePos(float2(threadID.xy + 0.5) + float2(1.0, 0.0));
 		const float3 Pl = getViewSpacePos(float2(threadID.xy + 0.5) + float2(-1.0, 0.0));
@@ -142,8 +162,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		const float3 dPdu = minDiff(P, Pr, Pl);
 		const float3 dPdv = minDiff(P, Pt, Pb);
 		
-		//const uvec2 encodedTBN = texelFetch(usampler2D(uTangentSpaceImage,  uPointSampler), ivec2(gl_GlobalInvocationID.xy), 0).xy;
-		const float3 N = normalize(cross(dPdu, dPdv));//decodeNormal((encodedTBN.xy * (1.0 / 1023.0)) * 2.0 - 1.0);//normalize(cross(dPdu, dPdv));
+		const float3 N = normalize(cross(dPdu, dPdv));
 		
 		// project normal onto slice plane
 		// invert dir.y because screen space y axis points down, but view space y axis points up
@@ -151,28 +170,26 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float3 projectedN = N - dot(N, planeN) * planeN;
 		
 		float projectedNLength = length(projectedN);
-		float invLength = 1.0 / (projectedNLength + 1e-6);
-		projectedN *= invLength;
+		projectedN = normalize(projectedN);
 		
 		// calculate gamma
 		float3 tangent = cross(V, planeN);
 		float cosGamma	= dot(projectedN, V);
-		float gamma = acos(cosGamma) * sign(-dot(projectedN, tangent));
-		float sinGamma2	= 2.0 * sin(gamma);
+		float gamma = fastAcos(cosGamma);
+		// reconstruct the sign
+		gamma = dot(projectedN, tangent) < 0.0 ? gamma : -gamma;
 		
+		float h1 = -fastAcos(horizons.x);
+		float h2 = fastAcos(horizons.y);
 		
 		// clamp horizons
-		horizons.x = gamma + max(horizons.x - gamma, -PI * 0.5);
-		horizons.y = gamma + min(horizons.y - gamma, PI * 0.5);
+		h1 = gamma + max(h1 - gamma, -PI * 0.5);
+		h2 = gamma + min(h2 - gamma, PI * 0.5);
 		
-		float2 horizonCosTerm = (sinGamma2 * horizons - cos(2.0 * horizons - gamma)) + cosGamma;
-		
-		// premultiply
-		projectedNLength *= 0.25;
-		
-		ao += projectedNLength * horizonCosTerm.x;
-		ao += projectedNLength * horizonCosTerm.y;
+		ao += projectedNLength * integrateArcCosineWeighted(h1, h2, gamma, cosGamma);
 	}
+	
+	ao = saturate(ao);
 
 	g_ResultImage[threadID.xy] = float2(ao, -P.z);
 }
