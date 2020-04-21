@@ -139,12 +139,12 @@ void resolverAABB(int3 coord, inout float4 minColor, inout float4 maxColor)
 	float4 mean = m1 * (1.0 / 8.0);
 	float4 stddev = sqrt(max((m2  * (1.0 / 8.0) - mean * mean), 1e-7));
 	
-	float wideningFactor = 10.0;
+	float wideningFactor = 20.0;
 	
 	minColor = -stddev * wideningFactor + mean;
 	maxColor = stddev * wideningFactor + mean;
-	minColor = 0.0;
-	maxColor = maxValue * 4.0;
+	//minColor = 0.0;
+	//maxColor = maxValue * 4.0;
 }
 
 [numthreads(8, 8, 1)]
