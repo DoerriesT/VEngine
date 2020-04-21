@@ -14,6 +14,8 @@ SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_S
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 
+PUSH_CONSTS(PushConsts, g_PushConsts);
+
 float getViewSpaceDistance(float texelDepth)
 {
 	float d = texelDepth * (1.0 / VOLUME_DEPTH);
@@ -75,6 +77,76 @@ float4 sampleHistory(float2 texCoord, float4 rtMetrics, float d)
 	return max(filtered * (1.0 / weightSum), 0.0);
 }
 
+void resolverAABB(int3 coord, inout float4 minColor, inout float4 maxColor)
+{
+	float3 texSize;
+	g_HistoryImage.GetDimensions(texSize.x, texSize.y, texSize.z);
+	float3 texelSize = 1.0 / texSize;
+	
+	float4 m1 = 0.0;
+	float4 m2 = 0.0;
+	float4 maxValue = 0.0;
+	
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75, -0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75, -0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75, -0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75, -0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75,  0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75,  0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75,  0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}
+	{
+		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75,  0.75)), 0.0);
+		m1 += tap;
+		m2 += tap * tap;
+		maxValue = max(maxValue, tap);
+	}	
+	
+	float4 mean = m1 * (1.0 / 8.0);
+	float4 stddev = sqrt(max((m2  * (1.0 / 8.0) - mean * mean), 1e-7));
+	
+	float wideningFactor = 10.0;
+	
+	minColor = -stddev * wideningFactor + mean;
+	maxColor = stddev * wideningFactor + mean;
+	minColor = 0.0;
+	maxColor = maxValue * 4.0;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID, uint groupIdx : SV_GroupIndex, uint3 groupID : SV_GroupID)
 {
@@ -99,15 +171,29 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
-		float4 prevResult = validCoord ? sampleHistory(prevTexCoord.xy, float4(texSize.xy, texelSize.xy), prevTexCoord.z) : 0.0;
+		float4 prevResult = 0.0;
+		if (validCoord)
+		{
+			prevResult = g_PushConsts.advancedFilter ? 
+							sampleHistory(prevTexCoord.xy, float4(texSize.xy, texelSize.xy), prevTexCoord.z) :
+							g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+		}
 		
 		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
 		
+		if (g_PushConsts.neighborHoodClamping != 0)
+		{
+			float4 minColor, maxColor;
+			resolverAABB(froxelID, minColor, maxColor);
+			prevResult.rgb = clipAABB(prevResult.rgb, minColor.rgb, maxColor.rgb);
+			prevResult.a = clamp(prevResult.a, minColor.a, maxColor.a);
+		}
+		
 		//prevResult.rgb = simpleTonemap(prevResult.rgb);
 		//result.rgb = simpleTonemap(result.rgb);
 		
-		result = lerp(prevResult, result, validCoord ? 0.05 : 1.0);
+		result = lerp(prevResult, result, validCoord ? g_PushConsts.alpha : 1.0);
 		
 		//result.rgb = inverseSimpleTonemap(result.rgb);
 	}

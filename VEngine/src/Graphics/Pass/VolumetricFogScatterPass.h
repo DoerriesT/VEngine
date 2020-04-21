@@ -12,7 +12,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			float m_frustumCorners[4][3];
-			float m_jitter[3];
+			float m_jitter[6];
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;

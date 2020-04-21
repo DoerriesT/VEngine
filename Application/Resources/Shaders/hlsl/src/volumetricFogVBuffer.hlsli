@@ -26,4 +26,5 @@ struct Constants
 	uint globalMediaCount;
 	float3 cameraPos;
 	uint localMediaCount;
+	float3 jitter1;
 };

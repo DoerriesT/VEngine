@@ -89,6 +89,27 @@ void getLightingMinMaxIndices(ByteAddressBuffer zBinBuffer, uint itemCount, floa
 	maxIdx = maxIndex;
 }
 
+void getLightingMinMaxIndicesRange(ByteAddressBuffer zBinBuffer, uint itemCount, float linearDepth0, float linearDepth1, out uint minIdx, out uint maxIdx, out uint wordMin, out uint wordMax, out uint wordCount)
+{
+	float firstDepth = min(linearDepth0, linearDepth1);
+	float secondDepth = max(linearDepth0, linearDepth1);
+	wordMin = 0;
+	wordCount = (itemCount + 31) / 32;
+	wordMax = wordCount - 1;
+	
+	const uint minIndex = zBinBuffer.Load(min(uint(linearDepth0), 8191u) * 4) >> 16;
+	const uint maxIndex = zBinBuffer.Load(min(uint(linearDepth1), 8191u) * 4) & uint(0xFFFF);
+	// mergedMin scalar from this point
+	const uint mergedMin = WaveReadLaneFirst(WaveActiveMin(minIndex)); 
+	// mergedMax scalar from this point
+	const uint mergedMax = WaveReadLaneFirst(WaveActiveMax(maxIndex)); 
+	wordMin = max(mergedMin / 32, wordMin);
+	wordMax = min(mergedMax / 32, wordMax);
+	
+	minIdx = minIndex;
+	maxIdx = maxIndex;
+}
+
 uint getLightingBitMask(ByteAddressBuffer bitMaskBuffer, uint tileAddress, uint wordIndex, uint minIndex, uint maxIndex)
 {
 	uint mask = bitMaskBuffer.Load((tileAddress + wordIndex) * 4);

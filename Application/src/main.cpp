@@ -174,7 +174,7 @@ public:
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(g_localFogEntity);
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_spotLightEntity);
 
 		auto &io = ImGui::GetIO();
 

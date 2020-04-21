@@ -52,6 +52,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.punctualLightCount = commonData->m_punctualLightCount;
 	consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
+	consts.jitter1 = { data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] };
 
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));

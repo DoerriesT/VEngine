@@ -50,8 +50,13 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
 	float dither = ditherMatrix[threadID.y % 2][threadID.x % 2];
 	
-	const float3 worldSpacePos = calcWorldSpacePos(threadID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
-	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
+	const float3 worldSpacePos0 = calcWorldSpacePos(threadID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
+	const float3 viewSpacePos0 = mul(g_Constants.viewMatrix, float4(worldSpacePos0, 1.0)).xyz;
+	
+	const float3 worldSpacePos1 = calcWorldSpacePos(threadID + float3(g_Constants.jitter1.x, g_Constants.jitter1.y, frac(g_Constants.jitter1.z + dither)));
+	const float3 viewSpacePos1 = mul(g_Constants.viewMatrix, float4(worldSpacePos1, 1.0)).xyz;
+
+	const float3 viewSpacePos[] = { viewSpacePos0, viewSpacePos1 };
 
 	uint3 imageDims;
 	g_ScatteringExtinctionImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
@@ -81,7 +86,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	if (localMediaCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndicesRange(g_LocalMediaDepthBins, localMediaCount, -viewSpacePos[0].z, -viewSpacePos[1].z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(threadID.xy * 8, targetImageWidth, wordCount);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -96,17 +101,21 @@ void main(uint3 threadID : SV_DispatchThreadID)
 				
 				LocalParticipatingMedium medium = g_LocalMedia[index];
 				
-				float3 localPos = mul(viewSpacePos - medium.position, float3x3(medium.obbAxis0, medium.obbAxis1, medium.obbAxis2));
-				
-				bool insideMedium = all(abs(localPos) <= float3(medium.extentX, medium.extentY, medium.extentZ));
-				
-				if (insideMedium)
+				[unroll]
+				for (int i = 0; i < 2; ++i)
 				{
-					scattering += medium.scattering;
-					extinction += medium.extinction;
-					emissive += medium.emissive;
-					phase += medium.phase;
-					++accumulatedMediaCount;
+					float3 localPos = mul(viewSpacePos[i] - medium.position, float3x3(medium.obbAxis0, medium.obbAxis1, medium.obbAxis2));
+				
+					bool insideMedium = all(abs(localPos) <= float3(medium.extentX, medium.extentY, medium.extentZ));
+					
+					if (insideMedium)
+					{
+						scattering += medium.scattering;
+						extinction += medium.extinction;
+						emissive += medium.emissive;
+						phase += medium.phase;
+						++accumulatedMediaCount;
+					}
 				}
 			}
 		}

@@ -17,6 +17,7 @@ namespace VEngine
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_inputImageViewHandle;
 			rg::ImageViewHandle m_historyImageViewHandle;
+			rg::ImageViewHandle m_prevImageViewHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

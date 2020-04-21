@@ -36,6 +36,7 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.cameraPos = commonData->m_cameraPosition;
 	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
+	consts.jitter1 = { data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] };
 
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));

@@ -98,13 +98,19 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float dither = ditherMatrix[threadID.y % 2][threadID.x % 2];
 	
 	// world-space position of volumetric texture texel
-	const float3 worldSpacePos = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
-	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
+	const float3 worldSpacePos0 = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
+	const float3 viewSpacePos0 = mul(g_Constants.viewMatrix, float4(worldSpacePos0, 1.0)).xyz;
+	
+	const float3 worldSpacePos1 = calcWorldSpacePos(froxelID + float3(g_Constants.jitter1.x, g_Constants.jitter1.y, frac(g_Constants.jitter1.z + dither)));
+	const float3 viewSpacePos1 = mul(g_Constants.viewMatrix, float4(worldSpacePos1, 1.0)).xyz;
+	
+	const float3 worldSpacePos[] = { worldSpacePos0, worldSpacePos1 };
+	const float3 viewSpacePos[] = { viewSpacePos0, viewSpacePos1 };
 	
 	const float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(int4(froxelID.xyz, 0));
 	const float4 emissivePhase = g_EmissivePhaseImage.Load(int4(froxelID.xyz, 0));
 	
-	const float3 viewSpaceV = normalize(-viewSpacePos);
+	const float3 viewSpaceV[] = { normalize(-viewSpacePos[0]), normalize(-viewSpacePos[1]) };
 	uint3 imageDims;
 	g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 	uint targetImageWidth = imageDims.x * 8;
@@ -117,7 +123,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLights[i];
-				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w);
+				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[0], directionalLight.direction, emissivePhase.w) * 0.5;
+				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[1], directionalLight.direction, emissivePhase.w) * 0.5;
 			}
 		}
 		
@@ -126,9 +133,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
-				lighting += directionalLight.color
-							* henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w)
-							* getDirectionalLightShadow(directionalLight, worldSpacePos);
+				for (int j = 0; j < 2; ++j)
+				{
+					float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos[j]);
+					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[j], directionalLight.direction, emissivePhase.w) * shadow * 0.5;
+				}
 			}
 		}
 		
@@ -137,7 +146,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		if (punctualLightCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndicesRange(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos[0].z, -viewSpacePos[1].z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(froxelID.xy * 8, targetImageWidth, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -152,18 +161,22 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					PunctualLight light = g_PunctualLights[index];
 					
-					const float3 unnormalizedLightVector = light.position - viewSpacePos;
-					const float3 L = normalize(unnormalizedLightVector);
-					float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
-					
-					if (light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+					[unroll]
+					for (int i = 0; i < 2; ++i)
 					{
-						att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
+						const float3 unnormalizedLightVector = light.position - viewSpacePos[i];
+						const float3 L = normalize(unnormalizedLightVector);
+						float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
+						
+						if (light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+						{
+							att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
+						}
+						
+						const float3 radiance = light.color * att;
+						
+						lighting += radiance * henyeyGreenstein(viewSpaceV[i], L, emissivePhase.w);
 					}
-					
-					const float3 radiance = light.color * att;
-					
-					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
 				}
 			}
 		}
@@ -173,7 +186,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		if (punctualLightShadowedCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndicesRange(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos[0].z, -viewSpacePos[1].z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(froxelID.xy * 8, targetImageWidth, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -188,50 +201,54 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					PunctualLightShadowed lightShadowed = g_PunctualLightsShadowed[index];
 					
-					// evaluate shadow
-					float4 shadowPos;
-					
-					// spot light
-					if (lightShadowed.light.angleScale != -1.0)
+					[unroll]
+					for (int i = 0; i < 2; ++i)
 					{
-						shadowPos.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
-						shadowPos.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
-						shadowPos.z = dot(lightShadowed.shadowMatrix2, float4(worldSpacePos, 1.0));
-						shadowPos.w = dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
-						shadowPos.xyz /= shadowPos.w;
-						shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
-						shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
-					}
-					// point light
-					else
-					{
-						float3 lightToPoint = worldSpacePos - lightShadowed.positionWS;
-						int faceIdx = 0;
-						shadowPos.xy = sampleCube(lightToPoint, faceIdx);
-						shadowPos.x = 1.0 - shadowPos.x; // correct for handedness (cubemap coordinate system is left-handed, our world space is right-handed)
-						shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[faceIdx].x + lightShadowed.shadowAtlasParams[faceIdx].yz;
+						// evaluate shadow
+						float4 shadowPos;
 						
-						float dist = faceIdx < 2 ? abs(lightToPoint.x) : faceIdx < 4 ? abs(lightToPoint.y) : abs(lightToPoint.z);
-						const float nearPlane = 0.1f;
-						float param0 = -lightShadowed.radius / (lightShadowed.radius - nearPlane);
-						float param1 = param0 * nearPlane;
-						shadowPos.z = -param0 + param1 / dist;
+						// spot light
+						if (lightShadowed.light.angleScale != -1.0)
+						{
+							shadowPos.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos[i], 1.0));
+							shadowPos.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos[i], 1.0));
+							shadowPos.z = dot(lightShadowed.shadowMatrix2, float4(worldSpacePos[i], 1.0));
+							shadowPos.w = dot(lightShadowed.shadowMatrix3, float4(worldSpacePos[i], 1.0));
+							shadowPos.xyz /= shadowPos.w;
+							shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+							shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
+						}
+						// point light
+						else
+						{
+							float3 lightToPoint = worldSpacePos[i] - lightShadowed.positionWS;
+							int faceIdx = 0;
+							shadowPos.xy = sampleCube(lightToPoint, faceIdx);
+							shadowPos.x = 1.0 - shadowPos.x; // correct for handedness (cubemap coordinate system is left-handed, our world space is right-handed)
+							shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[faceIdx].x + lightShadowed.shadowAtlasParams[faceIdx].yz;
+							
+							float dist = faceIdx < 2 ? abs(lightToPoint.x) : faceIdx < 4 ? abs(lightToPoint.y) : abs(lightToPoint.z);
+							const float nearPlane = 0.1f;
+							float param0 = -lightShadowed.radius / (lightShadowed.radius - nearPlane);
+							float param1 = param0 * nearPlane;
+							shadowPos.z = -param0 + param1 / dist;
+						}
+						
+						float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+						
+						const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos[i];
+						const float3 L = normalize(unnormalizedLightVector);
+						float att = getDistanceAtt(unnormalizedLightVector, lightShadowed.light.invSqrAttRadius);
+						
+						if (lightShadowed.light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
+						{
+							att *= getAngleAtt(L, lightShadowed.light.direction, lightShadowed.light.angleScale, lightShadowed.light.angleOffset);
+						}
+						
+						const float3 radiance = lightShadowed.light.color * att;
+						
+						lighting += shadow * radiance * henyeyGreenstein(viewSpaceV[i], L, emissivePhase.w) * 0.5;
 					}
-					
-					float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
-					
-					const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos;
-					const float3 L = normalize(unnormalizedLightVector);
-					float att = getDistanceAtt(unnormalizedLightVector, lightShadowed.light.invSqrAttRadius);
-					
-					if (lightShadowed.light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
-					{
-						att *= getAngleAtt(L, lightShadowed.light.direction, lightShadowed.light.angleScale, lightShadowed.light.angleOffset);
-					}
-					
-					const float3 radiance = lightShadowed.light.color * att;
-					
-					lighting += shadow * radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
 				}
 			}
 		}

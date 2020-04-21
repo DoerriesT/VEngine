@@ -46,6 +46,7 @@ struct Constants
 	uint directionalLightCount;
 	float3 cameraPos;
 	uint directionalLightShadowedCount;
+	float3 jitter1;
 	uint punctualLightCount;
 	uint punctualLightShadowedCount;
 	

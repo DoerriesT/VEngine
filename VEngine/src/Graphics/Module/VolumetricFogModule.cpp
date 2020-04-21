@@ -33,6 +33,7 @@ VEngine::VolumetricFogModule::~VolumetricFogModule()
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_graphicsDevice->destroyImage(m_inScatteringHistoryImages[i]);
+		m_graphicsDevice->destroyImage(m_inScatteringImages[i]);
 	}
 	delete[] m_haltonJitter;
 }
@@ -48,6 +49,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	rg::ImageViewHandle vBufferScatteringExtinctionImageViewHandle;
 	rg::ImageViewHandle vbufferEmissivePhasImageViewHandle;
 	rg::ImageViewHandle inscatteringImageViewHandle;
+	rg::ImageViewHandle prevFilteredInscatteringImageViewHandle;
 	rg::ImageViewHandle filteredInscatteringImageViewHandle;
 	rg::ImageViewHandle prevInscatteringImageViewHandle;
 	{
@@ -72,20 +74,30 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		desc.m_name = "Volumetric Fog In-Scattering Image";
 		inscatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 
+		rg::ImageHandle inscatteringImageHandle = graph.importImage(m_inScatteringImages[commonData.m_curResIdx], "Volumetric Fog In-Scattering Image", false, {}, &m_inScatteringImageState[commonData.m_curResIdx]);
+		inscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog In-Scattering Image", inscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
+
+		rg::ImageHandle prevInscatteringImageHandle = graph.importImage(m_inScatteringImages[commonData.m_prevResIdx], "Volumetric Fog Prev In-Scattering Image", false, {}, &m_inScatteringImageState[commonData.m_prevResIdx]);
+		prevInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Prev In-Scattering Image", prevInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
+
 		rg::ImageHandle filteredInscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_curResIdx], "Volumetric Fog Filtered In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_curResIdx]);
 		filteredInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Filtered In-Scattering Image", filteredInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
 
-		rg::ImageHandle prevInscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_prevResIdx], "Volumetric Fog Prev In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_prevResIdx]);
-		prevInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Prev In-Scattering Image", prevInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
+		rg::ImageHandle prevFilteredInscatteringImageHandle = graph.importImage(m_inScatteringHistoryImages[commonData.m_prevResIdx], "Volumetric Fog Prev Filtered In-Scattering Image", false, {}, &m_inScatteringHistoryImageState[commonData.m_prevResIdx]);
+		prevFilteredInscatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Prev Filtered In-Scattering Image", prevFilteredInscatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
 
 		desc.m_name = "Volumetric Fog Scattering Image";
 		m_volumetricScatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 	}
 
-	const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % s_haltonSampleCount;
-	const float jitterX = (m_haltonJitter[haltonIdx * 3 + 0]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterY = (m_haltonJitter[haltonIdx * 3 + 1]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterZ = (m_haltonJitter[haltonIdx * 3 + 2]);// - 0.5f) * 0.5f + 0.25f;
+	const size_t haltonIdx0 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2) % s_haltonSampleCount;
+	const size_t haltonIdx1 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2 + 1) % s_haltonSampleCount;
+	const float jitterX0 = (m_haltonJitter[haltonIdx0 * 3 + 0]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterY0 = (m_haltonJitter[haltonIdx0 * 3 + 1]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterZ0 = (m_haltonJitter[haltonIdx0 * 3 + 2]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterX1 = (m_haltonJitter[haltonIdx1 * 3 + 0]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterY1 = (m_haltonJitter[haltonIdx1 * 3 + 1]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterZ1 = (m_haltonJitter[haltonIdx1 * 3 + 2]);// - 0.5f) * 0.5f + 0.25f;
 
 	// we may need to expand the frustum a little to the right and a little downwards, so that each froxel corresponds
 	// exactly to a single tile from the tiled lighting setup
@@ -113,9 +125,12 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogVBufferPass::Data volumetricFogVBufferPassData;
 	volumetricFogVBufferPassData.m_passRecordContext = data.m_passRecordContext;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogVBufferPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogVBufferPassData.m_jitter[0] = jitterX;
-	volumetricFogVBufferPassData.m_jitter[1] = jitterY;
-	volumetricFogVBufferPassData.m_jitter[2] = jitterZ;
+	volumetricFogVBufferPassData.m_jitter[0] = jitterX0;
+	volumetricFogVBufferPassData.m_jitter[1] = jitterY0;
+	volumetricFogVBufferPassData.m_jitter[2] = jitterZ0;
+	volumetricFogVBufferPassData.m_jitter[3] = jitterX1;
+	volumetricFogVBufferPassData.m_jitter[4] = jitterY1;
+	volumetricFogVBufferPassData.m_jitter[5] = jitterZ1;
 	volumetricFogVBufferPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
 	volumetricFogVBufferPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
 	volumetricFogVBufferPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
@@ -130,9 +145,12 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogScatterPassData.m_jitter[0] = jitterX;
-	volumetricFogScatterPassData.m_jitter[1] = jitterY;
-	volumetricFogScatterPassData.m_jitter[2] = jitterZ;
+	volumetricFogVBufferPassData.m_jitter[0] = jitterX0;
+	volumetricFogVBufferPassData.m_jitter[1] = jitterY0;
+	volumetricFogVBufferPassData.m_jitter[2] = jitterZ0;
+	volumetricFogVBufferPassData.m_jitter[3] = jitterX1;
+	volumetricFogVBufferPassData.m_jitter[4] = jitterY1;
+	volumetricFogVBufferPassData.m_jitter[5] = jitterZ1;
 	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
 	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
 	volumetricFogScatterPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
@@ -152,6 +170,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 
 
+	// volumetric fog temporal filter
 	VolumetricFogFilterPass::Data volumetricFogFilterPassData;
 	volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
 	volumetricFogFilterPassData.m_ignoreHistory = data.m_ignoreHistory;
@@ -160,7 +179,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogFilterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
 	volumetricFogFilterPassData.m_resultImageViewHandle = filteredInscatteringImageViewHandle;
 	volumetricFogFilterPassData.m_inputImageViewHandle = inscatteringImageViewHandle;
-	volumetricFogFilterPassData.m_historyImageViewHandle = prevInscatteringImageViewHandle;
+	volumetricFogFilterPassData.m_historyImageViewHandle = prevFilteredInscatteringImageViewHandle;
+	volumetricFogFilterPassData.m_prevImageViewHandle = prevInscatteringImageViewHandle;
 	
 	VolumetricFogFilterPass::addToGraph(graph, volumetricFogFilterPassData);
 
@@ -184,6 +204,10 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 		if (m_inScatteringHistoryImages[i])
 		{
 			m_graphicsDevice->destroyImage(m_inScatteringHistoryImages[i]);
+		}
+		if (m_inScatteringImages[i])
+		{
+			m_graphicsDevice->destroyImage(m_inScatteringImages[i]);
 		}
 	}
 
@@ -209,6 +233,10 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_inScatteringHistoryImages[i]);
 
 		m_inScatteringHistoryImageState[i] = {};
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_inScatteringImages[i]);
+
+		m_inScatteringImageState[i] = {};
 	}
 }
 
