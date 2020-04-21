@@ -28,10 +28,16 @@ float3 Default_Lit(float3 baseColor, float3 F0, float3 radiance, float3 N, float
 	return (specular + diffuse) * radiance * NdotL;
 }
 
-float3 Diffuse_Lit(float3 baseColor, float3 radiance, float3 N, float3 L)
+float3 Diffuse_Lit(float3 baseColor, float3 radiance, float3 N, float3 V, float3 L, float roughness)
 {
-	float3 diffuse = Diffuse_Lambert(baseColor);
+	// avoid precision problems
+	roughness = max(roughness, 0.04);
+	float NdotV = abs(dot(N, V)) + 1e-5;
+	float3 H = normalize(V + L);
+	float VdotH = saturate(dot(V, H));
 	float NdotL = saturate(dot(N, L));
+	
+	float3 diffuse = Diffuse_Disney(NdotV, NdotL, VdotH, roughness, baseColor);
 	return diffuse * radiance * NdotL;
 }
 

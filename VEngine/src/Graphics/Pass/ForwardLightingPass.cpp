@@ -56,6 +56,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		//{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_probeImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
@@ -109,11 +110,30 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 
 				cmdList->bindPipeline(pipeline);
 
+				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
+
+				// update descriptor sets
+				{
+					ImageView *probeImageViewHandle = registry.getImageView(data.m_probeImageViewHandle);
+
+					DescriptorSetUpdate updates[] =
+					{
+						Initializers::sampledImage(&probeImageViewHandle, 0),
+						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], 1),
+					};
+
+					descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);
+				}
+
+				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+
 				Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 				Rect scissor{ { 0, 0 }, { width, height } };
 
 				cmdList->setViewport(0, 1, &viewport);
 				cmdList->setScissor(0, 1, &scissor);
+
+				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(glm::mat4), &data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix);
 
 				cmdList->draw(3, 1, 0, 0);
 			}

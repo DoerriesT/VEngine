@@ -50,6 +50,9 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyImage(m_shadowAtlasImage);
 	m_graphicsDevice->destroyImage(m_imGuiFontsTexture);
 	m_graphicsDevice->destroyImage(m_brdfLUT);
+	m_graphicsDevice->destroyImage(m_probeDepthImage);
+	m_graphicsDevice->destroyImage(m_probeAlbedoRoughnessImage);
+	m_graphicsDevice->destroyImage(m_probeNormalImage);
 
 	// views
 	m_graphicsDevice->destroyImageView(m_imGuiFontsTextureView);
@@ -119,6 +122,34 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_shadowAtlasImage);
+	}
+
+	// probe
+	{
+		ImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.m_width = 256;
+		imageCreateInfo.m_height = 256;
+		imageCreateInfo.m_depth = 1;
+		imageCreateInfo.m_levels = 1;
+		imageCreateInfo.m_layers = 6;
+		imageCreateInfo.m_samples = SampleCount::_1;
+		imageCreateInfo.m_imageType = ImageType::_2D;
+		imageCreateInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
+
+		imageCreateInfo.m_format = Format::D32_SFLOAT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeDepthImage);
+
+		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeAlbedoRoughnessImage);
+
+		imageCreateInfo.m_format = Format::R16G16_SFLOAT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeNormalImage);
 	}
 
 	resize(width, height);

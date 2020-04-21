@@ -38,5 +38,8 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gaussianPyramid_cs.h
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtao_cs.hlsl -Fo ./../gtao_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtaoSpatialFilter_cs.hlsl -Fo ./../gtaoSpatialFilter_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtaoTemporalFilter_cs.hlsl -Fo ./../gtaoTemporalFilter_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main probeGBuffer_vs.hlsl -Fo ./../probeGBuffer_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main probeGBuffer_ps.hlsl -Fo ./../probeGBuffer_ps.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main -D ALPHA_MASK_ENABLED=1 probeGBuffer_ps.hlsl -Fo ./../probeGBuffer_ALPHA_MASK_ENABLED_ps.spv
 
 pause

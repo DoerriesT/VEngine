@@ -23,6 +23,9 @@ namespace VEngine
 		gal::Image *m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_imGuiFontsTexture = {};
 		gal::Image *m_brdfLUT = {};
+		gal::Image *m_probeDepthImage = {};
+		gal::Image *m_probeAlbedoRoughnessImage = {};
+		gal::Image *m_probeNormalImage = {};
 
 		// views
 		gal::ImageView *m_imGuiFontsTextureView = {};
@@ -59,6 +62,9 @@ namespace VEngine
 		rg::ResourceStateData m_avgLuminanceBufferState = {};
 		rg::ResourceStateData m_exposureDataBufferState = {};
 		rg::ResourceStateData m_brdfLutImageState = {};
+		rg::ResourceStateData m_probeDepthImageState[6] = {};
+		rg::ResourceStateData m_probeAlbedoRoughnessImageState[6] = {};
+		rg::ResourceStateData m_probeNormalImageState[6] = {};
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};

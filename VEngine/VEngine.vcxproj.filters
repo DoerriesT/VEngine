@@ -396,6 +396,9 @@
     <ClInclude Include="src\Components\BoundingSphereComponent.h">
       <Filter>src\Component</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -652,6 +655,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\FramebufferCacheVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -215,6 +215,7 @@
     <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h" />
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h" />
     <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
+    <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h" />
     <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h" />
     <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h" />
@@ -315,6 +316,7 @@
     <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp" />
