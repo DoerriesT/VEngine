@@ -69,6 +69,6 @@ void VEngine::SharpenFfxCasPass::addToGraph(rg::RenderGraph &graph, const Data &
 			pushConsts.gammaSpaceInput = data.m_gammaSpaceInput;
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
+			cmdList->dispatch((width + 15) / 16, (height + 15) / 16, 1);
 		});
 }
