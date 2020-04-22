@@ -642,41 +642,41 @@ void VEngine::RenderSystem::update(float timeDelta)
 		// reflection probe
 		glm::mat4 probeMatrices[6];
 		uint32_t probeDrawListOffset = 0; 
-		{
-			probeDrawListOffset = static_cast<uint32_t>(renderLists.size());
-
-			const glm::mat4 vulkanCorrection =
-			{
-				{ 1.0f, 0.0f, 0.0f, 0.0f },
-				{ 0.0f, -1.0f, 0.0f, 0.0f },
-				{ 0.0f, 0.0f, 0.5f, 0.0f },
-				{ 0.0f, 0.0f, 0.5f, 1.0f }
-			};
-			glm::vec3 position{ 0.0f, 2.0f, 0.0f };
-			glm::mat4 projection = vulkanCorrection * glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
-
-			probeMatrices[0] = projection * glm::lookAtLH(position, position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			probeMatrices[1] = projection * glm::lookAtLH(position, position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			probeMatrices[2] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-			probeMatrices[3] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			probeMatrices[4] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			probeMatrices[5] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-			for (size_t i = 0; i < 6; ++i)
-			{
-				// extract view frustum plane equations from matrix
-				{
-					uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
-						| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
-						| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
-						| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-					CullingData cullData(probeMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 20.0f);
-
-					frustumCullData.push_back(cullData);
-					renderLists.push_back({});
-				}
-			}
-		}
+		//{
+		//	probeDrawListOffset = static_cast<uint32_t>(renderLists.size());
+		//
+		//	const glm::mat4 vulkanCorrection =
+		//	{
+		//		{ 1.0f, 0.0f, 0.0f, 0.0f },
+		//		{ 0.0f, -1.0f, 0.0f, 0.0f },
+		//		{ 0.0f, 0.0f, 0.5f, 0.0f },
+		//		{ 0.0f, 0.0f, 0.5f, 1.0f }
+		//	};
+		//	glm::vec3 position{ 0.0f, 2.0f, 0.0f };
+		//	glm::mat4 projection = vulkanCorrection * glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
+		//
+		//	probeMatrices[0] = projection * glm::lookAtLH(position, position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//	probeMatrices[1] = projection * glm::lookAtLH(position, position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//	probeMatrices[2] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+		//	probeMatrices[3] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//	probeMatrices[4] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//	probeMatrices[5] = projection * glm::lookAtLH(position, position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//
+		//	for (size_t i = 0; i < 6; ++i)
+		//	{
+		//		// extract view frustum plane equations from matrix
+		//		{
+		//			uint32_t contentTypeFlags = CullingData::STATIC_OPAQUE_CONTENT_TYPE_BIT
+		//				| CullingData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
+		//				| CullingData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
+		//				| CullingData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
+		//			CullingData cullData(probeMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 20.0f);
+		//
+		//			frustumCullData.push_back(cullData);
+		//			renderLists.push_back({});
+		//		}
+		//	}
+		//}
 
 		// update all transformations and generate draw lists
 		{
@@ -810,7 +810,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_shadowMatrixCount = static_cast<uint32_t>(m_shadowMatrices.size());
 		renderData.m_shadowMatrices = m_shadowMatrices.data();
 		renderData.m_shadowCascadeParams = m_shadowCascadeParams.data();
-		renderData.m_probeRenderCount = 1;
+		renderData.m_probeRenderCount = 0;
 		renderData.m_probeViewProjectionMatrices = probeMatrices;
 		renderData.m_probeDrawListOffset = probeDrawListOffset;
 		renderData.m_subMeshInstanceDataCount = static_cast<uint32_t>(m_subMeshInstanceData.size());
