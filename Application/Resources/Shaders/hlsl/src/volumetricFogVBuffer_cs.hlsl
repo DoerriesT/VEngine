@@ -50,6 +50,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
 	float dither = ditherMatrix[threadID.y % 2][threadID.x % 2];
 	
+	dither = g_Constants.useDithering != 0 ? dither : 0.0;
+	
 	const float3 worldSpacePos0 = calcWorldSpacePos(threadID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
 	const float3 viewSpacePos0 = mul(g_Constants.viewMatrix, float4(worldSpacePos0, 1.0)).xyz;
 	
@@ -101,8 +103,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 				
 				LocalParticipatingMedium medium = g_LocalMedia[index];
 				
-				[unroll]
-				for (int i = 0; i < 2; ++i)
+				int count = g_Constants.sampleCount;
+				for (int i = 0; i < count; ++i)
 				{
 					float3 localPos = mul(viewSpacePos[i] - medium.position, float3x3(medium.obbAxis0, medium.obbAxis1, medium.obbAxis2));
 				
@@ -110,9 +112,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					if (insideMedium)
 					{
-						scattering += medium.scattering;
-						extinction += medium.extinction;
-						emissive += medium.emissive;
+						float multiplier = (count == 2) ? 0.5 : 1.0;
+						scattering += medium.scattering * multiplier;
+						extinction += medium.extinction * multiplier;
+						emissive += medium.emissive * multiplier;
 						phase += medium.phase;
 						++accumulatedMediaCount;
 					}

@@ -8,6 +8,8 @@
 #include "Utility/Utility.h"
 #include "Graphics/gal/Initializers.h"
 
+extern bool g_fogLookupDithering;
+
 using namespace VEngine::gal;
 
 namespace
@@ -99,6 +101,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			pushConsts.height = height;
 			pushConsts.texelWidth = 1.0f / width;
 			pushConsts.texelHeight = 1.0f / height;
+			pushConsts.useNoise = g_fogLookupDithering;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

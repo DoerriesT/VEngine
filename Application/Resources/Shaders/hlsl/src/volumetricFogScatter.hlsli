@@ -49,5 +49,6 @@ struct Constants
 	float3 jitter1;
 	uint punctualLightCount;
 	uint punctualLightShadowedCount;
-	
+	uint useDithering;
+	uint sampleCount;
 };

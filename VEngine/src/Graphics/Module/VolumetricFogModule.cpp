@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
+extern bool g_fogLookupDithering;
 using namespace VEngine::gal;
 
 VEngine::VolumetricFogModule::VolumetricFogModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
@@ -92,12 +93,12 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 	const size_t haltonIdx0 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2) % s_haltonSampleCount;
 	const size_t haltonIdx1 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2 + 1) % s_haltonSampleCount;
-	const float jitterX0 = (m_haltonJitter[haltonIdx0 * 3 + 0]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterY0 = (m_haltonJitter[haltonIdx0 * 3 + 1]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterZ0 = (m_haltonJitter[haltonIdx0 * 3 + 2]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterX1 = (m_haltonJitter[haltonIdx1 * 3 + 0]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterY1 = (m_haltonJitter[haltonIdx1 * 3 + 1]);// - 0.5f) * 0.5f + 0.25f;
-	const float jitterZ1 = (m_haltonJitter[haltonIdx1 * 3 + 2]);// - 0.5f) * 0.5f + 0.25f;
+	const float jitterX0 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx0 * 3 + 0] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx0 * 3 + 0];
+	const float jitterY0 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx0 * 3 + 1] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx0 * 3 + 1];
+	const float jitterZ0 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx0 * 3 + 2] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx0 * 3 + 2];
+	const float jitterX1 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx1 * 3 + 0] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx1 * 3 + 0];
+	const float jitterY1 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx1 * 3 + 1] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx1 * 3 + 1];
+	const float jitterZ1 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx1 * 3 + 2] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx1 * 3 + 2];
 
 	// we may need to expand the frustum a little to the right and a little downwards, so that each froxel corresponds
 	// exactly to a single tile from the tiled lighting setup

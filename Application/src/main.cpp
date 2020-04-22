@@ -30,6 +30,15 @@ float g_fogEmissiveColor[3] = {1.0f, 1.0f, 1.0f};
 float g_fogEmissiveIntensity = 0.0f;
 float g_fogPhase = 0.0f;
 
+bool g_fogJittering = false;
+bool g_fogDithering = false;
+bool g_fogLookupDithering = false;
+bool g_fogClamping = false;
+bool g_fogPrevFrameCombine = false;
+bool g_fogHistoryCombine = false;
+bool g_fogDoubleSample = false;
+float g_fogHistoryAlpha = 0.05f;
+
 extern float g_ssrBias;
 
 uint32_t g_dirLightEntity;
@@ -176,6 +185,17 @@ public:
 			ImGui::RadioButton("Spot Light", &entityIdx, 0); ImGui::SameLine();
 			ImGui::RadioButton("Sun Light", &entityIdx, 1); ImGui::SameLine();
 			ImGui::RadioButton("Local Fog Volume", &entityIdx, 2);
+
+			ImGui::NewLine();
+
+			ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
+			ImGui::Checkbox("Fog Lookup Dithering", &g_fogLookupDithering);
+			ImGui::Checkbox("Fog Volume Dithering", &g_fogDithering);
+			ImGui::Checkbox("Fog Neighborhood Clamping", &g_fogClamping);
+			ImGui::Checkbox("Fog Prev Frame Combine", &g_fogPrevFrameCombine);
+			ImGui::Checkbox("Fog History Combine", &g_fogHistoryCombine);
+			ImGui::Checkbox("Fog 2x Sample", &g_fogDoubleSample);
+			ImGui::DragFloat("Fog History Alpha", &g_fogHistoryAlpha, 0.01f, 0.0f, 1.0f, "%.7f");
 
 			ImGui::NewLine();
 			ImGui::Separator();

@@ -10,6 +10,11 @@
 
 using namespace VEngine::gal;
 
+extern bool g_fogClamping;
+extern bool g_fogPrevFrameCombine;
+extern bool g_fogHistoryCombine;
+extern float g_fogHistoryAlpha;
+
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
@@ -111,7 +116,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 				}
 
 				PushConsts pushConsts;
-				pushConsts.alpha = 0.5f;
+				pushConsts.alpha = g_fogPrevFrameCombine ? 0.5f : 1.0f;
 				pushConsts.neighborHoodClamping = 0;
 				pushConsts.advancedFilter = 0;
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
@@ -158,8 +163,8 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 				}
 
 				PushConsts pushConsts;
-				pushConsts.alpha = 0.05f;
-				pushConsts.neighborHoodClamping = 1;
+				pushConsts.alpha = g_fogHistoryCombine ? g_fogHistoryAlpha : 1.0f;
+				pushConsts.neighborHoodClamping = g_fogClamping;
 				pushConsts.advancedFilter = 1;
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

@@ -97,6 +97,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
 	float dither = ditherMatrix[threadID.y % 2][threadID.x % 2];
 	
+	dither = g_Constants.useDithering != 0 ? dither : 0.0;
+	
 	// world-space position of volumetric texture texel
 	const float3 worldSpacePos0 = calcWorldSpacePos(froxelID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
 	const float3 viewSpacePos0 = mul(g_Constants.viewMatrix, float4(worldSpacePos0, 1.0)).xyz;
@@ -123,8 +125,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLights[i];
-				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[0], directionalLight.direction, emissivePhase.w) * 0.5;
-				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[1], directionalLight.direction, emissivePhase.w) * 0.5;
+				int count = g_Constants.sampleCount;
+				for (int j = 0; j < count; ++j)
+				{
+					float multiplier = (count == 2) ? 0.5 : 1.0;
+					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[j], directionalLight.direction, emissivePhase.w) * multiplier;
+				}
 			}
 		}
 		
@@ -133,10 +139,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
-				for (int j = 0; j < 2; ++j)
+				int count = g_Constants.sampleCount;
+				for (int j = 0; j < count; ++j)
 				{
+					float multiplier = (count == 2) ? 0.5 : 1.0;
 					float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos[j]);
-					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[j], directionalLight.direction, emissivePhase.w) * shadow * 0.5;
+					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV[j], directionalLight.direction, emissivePhase.w) * shadow * multiplier;
 				}
 			}
 		}
@@ -161,8 +169,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					PunctualLight light = g_PunctualLights[index];
 					
-					[unroll]
-					for (int i = 0; i < 2; ++i)
+					int count = g_Constants.sampleCount;
+					for (int i = 0; i < count; ++i)
 					{
 						const float3 unnormalizedLightVector = light.position - viewSpacePos[i];
 						const float3 L = normalize(unnormalizedLightVector);
@@ -201,8 +209,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					PunctualLightShadowed lightShadowed = g_PunctualLightsShadowed[index];
 					
-					[unroll]
-					for (int i = 0; i < 2; ++i)
+					int count = g_Constants.sampleCount;
+					for (int i = 0; i < count; ++i)
 					{
 						// evaluate shadow
 						float4 shadowPos;

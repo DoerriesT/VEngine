@@ -30,4 +30,5 @@ struct PushConsts
 	uint height;
 	float texelWidth;
 	float texelHeight;
+	uint useNoise;
 };

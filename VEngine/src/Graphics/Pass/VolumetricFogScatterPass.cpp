@@ -9,6 +9,10 @@
 #include "Graphics/gal/Initializers.h"
 #include "Graphics/MappableBufferBlock.h"
 
+extern bool g_fogDithering;
+extern bool g_fogDoubleSample;
+extern bool g_fogJittering;
+
 using namespace VEngine::gal;
 
 namespace
@@ -41,18 +45,20 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	Constants consts;
 	consts.viewMatrix = commonData->m_viewMatrix;
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
-	consts.jitterX = data.m_jitter[0];
+	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;
 	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
-	consts.jitterY = data.m_jitter[1];
+	consts.jitterY = g_fogJittering ? data.m_jitter[1] : 0.5f;
 	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
-	consts.jitterZ = data.m_jitter[2];
+	consts.jitterZ = g_fogJittering ? data.m_jitter[2] : 0.5f;
 	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
 	consts.directionalLightCount = commonData->m_directionalLightCount;
 	consts.cameraPos = commonData->m_cameraPosition;
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.punctualLightCount = commonData->m_punctualLightCount;
 	consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
-	consts.jitter1 = { data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] };
+	consts.jitter1 = g_fogJittering ? glm::vec3{ data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] } : glm::vec3(0.5f);
+	consts.useDithering = g_fogDithering;
+	consts.sampleCount = g_fogDoubleSample ? 2 : 1;
 
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));

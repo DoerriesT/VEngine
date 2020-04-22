@@ -69,7 +69,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
 		float3 noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
 		
-		if (depth == -1.0)
+		if (g_PushConsts.useNoise != 0)
 		{
 			volumetricFogTexCoord += (noise * 2.0 - 1.0) * 1.5 / imageDims;
 		}
