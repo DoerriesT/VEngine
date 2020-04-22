@@ -69,9 +69,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
 		float3 noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
 		
-		noise = depth == -1.0 ? noise : 0.0;
-		
-		volumetricFogTexCoord += (noise * 2.0 - 1.0) * 1.5 / imageDims;
+		if (depth == -1.0)
+		{
+			volumetricFogTexCoord += (noise * 2.0 - 1.0) * 1.5 / imageDims;
+		}
 		
 		float4 fog = sampleBicubic(g_VolumetricFogImage, g_LinearSampler, volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
 		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
