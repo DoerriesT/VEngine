@@ -167,6 +167,40 @@ public:
 	{
 		auto &entityRegistry = m_engine->getEntityRegistry();
 
+		static int entityIdx = 0;
+
+		ImGui::Begin("Volumetric Fog");
+		{
+			//ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
+			
+			ImGui::RadioButton("Spot Light", &entityIdx, 0); ImGui::SameLine();
+			ImGui::RadioButton("Sun Light", &entityIdx, 1); ImGui::SameLine();
+			ImGui::RadioButton("Local Fog Volume", &entityIdx, 2);
+
+			ImGui::NewLine();
+			ImGui::Separator();
+			ImGui::NewLine();
+			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
+			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			ImGui::NewLine();
+			ImGui::Separator();
+			ImGui::NewLine();
+
+			ImGui::ColorPicker3("Emissive Color", g_fogEmissiveColor);
+			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.999f, 0.99f, "%.7f");
+
+			auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
+			mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);
+			mediaC.m_extinction = g_fogExtinction;
+			mediaC.m_emissiveColor = glm::vec3(g_fogEmissiveColor[0], g_fogEmissiveColor[1], g_fogEmissiveColor[2]);
+			mediaC.m_emissiveIntensity = g_fogEmissiveIntensity;
+			mediaC.m_phaseAnisotropy = g_fogPhase;
+		}
+		ImGui::End();
+
+		entt::entity entities[] = { m_spotLightEntity, m_sunLightEntity, g_localFogEntity };
+
 		auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
 		auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
 		VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
@@ -174,7 +208,7 @@ public:
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(m_spotLightEntity);
+		auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(entities[entityIdx]);
 
 		auto &io = ImGui::GetIO();
 
@@ -219,33 +253,6 @@ public:
 		{
 			tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
 		}
-		
-
-		ImGui::Begin("Volumetric Fog");
-		{
-			ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
-
-			ImGui::NewLine();
-			ImGui::Separator();
-			ImGui::NewLine();
-			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
-			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			ImGui::NewLine();
-			ImGui::Separator();
-			ImGui::NewLine();
-
-			ImGui::ColorPicker3("Emissive Color", g_fogEmissiveColor);
-			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.999f, 0.99f, "%.7f");
-
-			auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
-			mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);
-			mediaC.m_extinction = g_fogExtinction;
-			mediaC.m_emissiveColor = glm::vec3(g_fogEmissiveColor[0], g_fogEmissiveColor[1], g_fogEmissiveColor[2]);
-			mediaC.m_emissiveIntensity = g_fogEmissiveIntensity;
-			mediaC.m_phaseAnisotropy = g_fogPhase;
-		}
-		ImGui::End();
 	};
 
 	void shutdown() override

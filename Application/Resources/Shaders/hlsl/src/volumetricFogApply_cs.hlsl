@@ -39,7 +39,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 result = g_ResultImage[threadID.xy].rgb;
 	
 	// skip sky pixels
-	if (depth != 0.0)
+	if (depth == -10.0)
 	{
 		const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(threadID.xy, 0)));
 		const float3 F0 = specularRoughness.xyz;
