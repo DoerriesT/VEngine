@@ -483,73 +483,77 @@ void VEngine::RenderSystem::update(float timeDelta)
 					});
 			}
 
-			// unshadowed punctual lights
+			// sort lights and assign to depth bins
+			for (int shadowed = 0; shadowed < 2; ++shadowed)
 			{
+				auto &lightOrder = (shadowed == 0) ? m_lightData.m_punctualLightOrder : m_lightData.m_punctualLightShadowedOrder;
+				auto &depthBins = (shadowed == 0) ? m_lightData.m_punctualLightDepthBins : m_lightData.m_punctualLightShadowedDepthBins;
+
 				// sort by distance to camera
-				std::sort(m_lightData.m_punctualLightOrder.begin(), m_lightData.m_punctualLightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
-					{
-						return -m_lightData.m_punctualLights[lhs].m_position.z < -m_lightData.m_punctualLights[rhs].m_position.z;
-					});
+				if (shadowed == 0)
+				{
+					std::sort(lightOrder.begin(), lightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+						{
+							return -m_lightData.m_punctualLights[lhs].m_position.z < -m_lightData.m_punctualLights[rhs].m_position.z;
+						});
+				}
+				else
+				{
+					std::sort(lightOrder.begin(), lightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+						{
+							return -m_lightData.m_punctualLightsShadowed[lhs].m_light.m_position.z < -m_lightData.m_punctualLightsShadowed[rhs].m_light.m_position.z;
+						});
+				}
+				
 
 				// clear bins
-				for (size_t i = 0; i < m_lightData.m_punctualLightDepthBins.size(); ++i)
+				for (size_t i = 0; i < depthBins.size(); ++i)
 				{
 					const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
-					m_lightData.m_punctualLightDepthBins[i] = emptyBin;
+					depthBins[i] = emptyBin;
 				}
 
 				// assign lights to bins
-				for (size_t i = 0; i < m_lightData.m_punctualLights.size(); ++i)
+				for (size_t i = 0; i < lightOrder.size(); ++i)
 				{
-					const auto &light = m_lightData.m_punctualLights[m_lightData.m_punctualLightOrder[i]];
+					const auto &light = shadowed == 0 ? m_lightData.m_punctualLights[lightOrder[i]] : m_lightData.m_punctualLightsShadowed[lightOrder[i]].m_light;
 					const float radius = glm::sqrt(1.0f / light.m_invSqrAttRadius);
-					float nearestPoint = -light.m_position.z - radius;
-					float furthestPoint = -light.m_position.z + radius;
+					float nearestPoint = 0.0f;
+					float furthestPoint = 0.0f;
 
-					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
-					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
-
-					for (size_t j = minBin; j <= maxBin; ++j)
+					// spot light
+					if (light.m_angleScale != -1.0f)
 					{
-						uint32_t &val = m_lightData.m_punctualLightDepthBins[j];
-						uint32_t minIndex = (val & 0xFFFF0000) >> 16;
-						uint32_t maxIndex = val & 0xFFFF;
-						minIndex = std::min(minIndex, static_cast<uint32_t>(i));
-						maxIndex = std::max(maxIndex, static_cast<uint32_t>(i));
-						val = ((minIndex & 0xFFFF) << 16) | (maxIndex & 0xFFFF);
+						float cosAngle = -light.m_angleOffset / light.m_angleScale;
+						float sinAngle = glm::sqrt(1.0f - cosAngle * cosAngle);
+
+						//const glm::vec3 v1 = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), light.m_direction);
+						//const glm::vec3 v2 = glm::cross(v1, light.m_direction);
+						// optimized the obove lines into the following expression:
+						const float v2 = light.m_direction.x * light.m_direction.x + light.m_direction.y * light.m_direction.y;
+						// cone vertex
+						const float p0 = light.m_position.z;
+						// first point on cone cap rim
+						const float p1 = light.m_position.z + radius * (cosAngle * light.m_direction.z + sinAngle * v2);
+						// second point on cone cap rim
+						const float p2 = light.m_position.z + radius * (cosAngle * light.m_direction.z + sinAngle * -v2);
+
+						nearestPoint = -glm::max(p0, p1, p2);
+						furthestPoint = -glm::min(p0, p1, p2);
 					}
-				}
-			}
-
-			// shadowed punctual lights
-			{
-				// sort by distance to camera
-				std::sort(m_lightData.m_punctualLightShadowedOrder.begin(), m_lightData.m_punctualLightShadowedOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
+					// point light
+					else
 					{
-						return -m_lightData.m_punctualLightsShadowed[lhs].m_light.m_position.z < -m_lightData.m_punctualLightsShadowed[rhs].m_light.m_position.z;
-					});
-
-				// clear bins
-				for (size_t i = 0; i < m_lightData.m_punctualLightShadowedDepthBins.size(); ++i)
-				{
-					const uint32_t emptyBin = ((~0u & 0xFFFFu) << 16u);
-					m_lightData.m_punctualLightShadowedDepthBins[i] = emptyBin;
-				}
-
-				// assign lights to bins
-				for (size_t i = 0; i < m_lightData.m_punctualLightsShadowed.size(); ++i)
-				{
-					const auto &light = m_lightData.m_punctualLightsShadowed[m_lightData.m_punctualLightShadowedOrder[i]].m_light;
-					const float radius = glm::sqrt(1.0f / light.m_invSqrAttRadius);
-					float nearestPoint = -light.m_position.z - radius;
-					float furthestPoint = -light.m_position.z + radius;
+						nearestPoint = -light.m_position.z - radius;
+						furthestPoint = -light.m_position.z + radius;
+					}
 
 					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
 					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
 
 					for (size_t j = minBin; j <= maxBin; ++j)
 					{
-						uint32_t &val = m_lightData.m_punctualLightShadowedDepthBins[j];
+						uint32_t &val = depthBins[j];
 						uint32_t minIndex = (val & 0xFFFF0000) >> 16;
 						uint32_t maxIndex = val & 0xFFFF;
 						minIndex = std::min(minIndex, static_cast<uint32_t>(i));
@@ -641,7 +645,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		// reflection probe
 		glm::mat4 probeMatrices[6];
-		uint32_t probeDrawListOffset = 0; 
+		uint32_t probeDrawListOffset = 0;
 		//{
 		//	probeDrawListOffset = static_cast<uint32_t>(renderLists.size());
 		//
