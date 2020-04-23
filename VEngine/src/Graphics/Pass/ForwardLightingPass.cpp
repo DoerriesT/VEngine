@@ -24,14 +24,10 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
-	const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
-
 	Constants consts;
 	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
 	consts.invViewMatrix = commonData->m_invViewMatrix;
-	consts.viewMatrixRow0 = rowMajorViewMatrix[0];
-	consts.viewMatrixRow1 = rowMajorViewMatrix[1];
-	consts.viewMatrixRow2 = rowMajorViewMatrix[2];
+	consts.viewMatrix = data.m_passRecordContext->m_commonRenderData->m_viewMatrix;
 	consts.directionalLightCount = commonData->m_directionalLightCount;
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.punctualLightCount = commonData->m_punctualLightCount;

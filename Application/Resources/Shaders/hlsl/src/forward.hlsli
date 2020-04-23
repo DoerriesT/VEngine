@@ -58,9 +58,7 @@ struct Constants
 {
 	float4x4 jitteredViewProjectionMatrix;
 	float4x4 invViewMatrix;
-	float4 viewMatrixRow0;
-	float4 viewMatrixRow1;
-	float4 viewMatrixRow2;
+	float4x4 viewMatrix;
 	uint directionalLightCount;
 	uint directionalLightShadowedCount;
 	uint punctualLightCount;

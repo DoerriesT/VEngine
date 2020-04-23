@@ -139,7 +139,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\allocator.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\clusterizer.cpp" />
-    <ClCompile Include="src\meshoptimizer-0.12\indexsrcc.cpp" />
+    <ClCompile Include="src\meshoptimizer-0.12\indexcodec.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\indexgenerator.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\overdrawanalyzer.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\overdrawoptimizer.cpp" />
@@ -147,7 +147,7 @@
     <ClCompile Include="src\meshoptimizer-0.12\stripifier.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vcacheanalyzer.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vcacheoptimizer.cpp" />
-    <ClCompile Include="src\meshoptimizer-0.12\vertexsrcc.cpp" />
+    <ClCompile Include="src\meshoptimizer-0.12\vertexcodec.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vfetchanalyzer.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vfetchoptimizer.cpp" />
   </ItemGroup>
