@@ -372,11 +372,29 @@ void VEngine::RenderSystem::update(float timeDelta)
 						punctualLight.m_direction = direction;
 						punctualLight.m_angleOffset = angleOffset;
 
+						// construct bounding sphere
+						// https://bartwronski.com/2017/04/13/cull-that-cone/
+						glm::vec4 boundingSphere = glm::vec4(0.0f);
+						{
+							const float angle = spotLightComponent.m_outerAngle;
+							const float cosAngle = glm::cos(angle);
+							const float radius = spotLightComponent.m_radius;
+							const auto &origin = transformationComponent.m_position;
+							if (angle > glm::pi<float>() * 0.25f)
+							{
+								const float sinAngle = glm::sqrt(1.0f - cosAngle * cosAngle);
+								boundingSphere = glm::vec4(origin + cosAngle * radius * directionWS, sinAngle * radius);
+							}
+							else
+							{
+								boundingSphere = glm::vec4(origin + radius / (2.0f * cosAngle) * directionWS, radius / (2.0f * cosAngle));
+							}
+						}
+
 						// frustum cull
-						// TODO: improve the bounding sphere
 						for (size_t i = 0; i < frustumCullData[0].m_planeCount; ++i)
 						{
-							if (glm::dot(glm::vec4(transformationComponent.m_position, 1.0f), frustumCullData[0].m_planes[i]) <= -spotLightComponent.m_radius)
+							if (glm::dot(glm::vec4(glm::vec3(boundingSphere), 1.0f), frustumCullData[0].m_planes[i]) <= -boundingSphere.w)
 							{
 								return;
 							}
@@ -386,9 +404,10 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						if (renderLists.size() < 256 && spotLightComponent.m_shadows)
 						{
-							glm::vec3 tr = punctualLight.m_position + spotLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							glm::vec3 bSphereVSPos = m_commonRenderData.m_viewMatrix * glm::vec4(glm::vec3(boundingSphere), 1.0f);
+							glm::vec3 tr = bSphereVSPos + boundingSphere.w * glm::vec3(1.0f, 1.0f, 0.0f);
 							tr.z = glm::min(tr.z, -m_commonRenderData.m_nearPlane);
-							glm::vec3 bl = punctualLight.m_position - spotLightComponent.m_radius * glm::vec3(1.0f, 1.0f, 0.0f);
+							glm::vec3 bl = bSphereVSPos - boundingSphere.w * glm::vec3(1.0f, 1.0f, 0.0f);
 							bl.z = glm::min(bl.z, -m_commonRenderData.m_nearPlane);
 
 							auto trSS = m_commonRenderData.m_projectionMatrix * glm::vec4(tr, 1.0f);
