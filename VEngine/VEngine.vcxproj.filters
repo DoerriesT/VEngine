@@ -399,6 +399,9 @@
     <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -657,6 +660,9 @@
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

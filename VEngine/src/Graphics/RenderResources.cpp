@@ -53,6 +53,7 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyImage(m_probeDepthImage);
 	m_graphicsDevice->destroyImage(m_probeAlbedoRoughnessImage);
 	m_graphicsDevice->destroyImage(m_probeNormalImage);
+	m_graphicsDevice->destroyImage(m_probeImage);
 
 	// views
 	m_graphicsDevice->destroyImageView(m_imGuiFontsTextureView);
@@ -150,6 +151,11 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeNormalImage);
+
+		imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeImage);
 	}
 
 	resize(width, height);

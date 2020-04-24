@@ -20,7 +20,7 @@ PSOutput main(PSInput input)
 {
 	PSOutput output = (PSOutput)0;
 	
-	output.color = /*float4(g_SkyImage.SampleLevel(g_LinearSampler, input.ray.xyz, 0.0).rgb, 1.0);//*/float4(float3(0.529, 0.808, 0.922), 1.0);
+	output.color = float4(g_SkyImage.SampleLevel(g_LinearSampler, input.ray.xyz, 0.0).rgb, 1.0);//float4(float3(0.529, 0.808, 0.922), 1.0);
 	output.normal = 0.0;
 	output.specularRoughness = 0.0;
 	

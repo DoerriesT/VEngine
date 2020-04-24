@@ -26,6 +26,7 @@ namespace VEngine
 		gal::Image *m_probeDepthImage = {};
 		gal::Image *m_probeAlbedoRoughnessImage = {};
 		gal::Image *m_probeNormalImage = {};
+		gal::Image *m_probeImage = {};
 
 		// views
 		gal::ImageView *m_imGuiFontsTextureView = {};
@@ -65,6 +66,7 @@ namespace VEngine
 		rg::ResourceStateData m_probeDepthImageState[6] = {};
 		rg::ResourceStateData m_probeAlbedoRoughnessImageState[6] = {};
 		rg::ResourceStateData m_probeNormalImageState[6] = {};
+		rg::ResourceStateData m_probeImageState[6] = {};
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};

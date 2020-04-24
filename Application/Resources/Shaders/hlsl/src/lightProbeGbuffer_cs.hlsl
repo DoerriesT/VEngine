@@ -2,7 +2,8 @@
 #include "lightProbeGBuffer.hlsli"
 #include "srgb.hlsli"
 #include "commonEncoding.hlsli"
-#include "lighting.hlsl"
+#include "common.hlsli"
+#include "brdf.hlsli"
 
 RWTexture2D<float4> g_ResultImage[6] : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture2D<float> g_DepthImage[6] : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
@@ -10,13 +11,9 @@ Texture2D<float4> g_AlbedoRoughnessImage[6] : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAG
 Texture2D<float2> g_NormalImage[6] : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 
-RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2DArray<float> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, SHADOW_IMAGE_SET);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
-StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
-StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, CASCADE_PARAMS_BUFFER_SET);  // X: depth bias Y: normal bias Z: texelsPerMeter
+// directional lights
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
 
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -32,7 +29,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 
 	float depth = g_DepthImage[groupID.z].Load(int3(threadID.xy, 0)).x;
 	
-	if (depth == 0.0)
+	if (depth == 1.0)
 	{
 		g_ResultImage[groupID.z][threadID.xy] = float4(0.529, 0.808, 0.922, 1.0);
 		return;
@@ -40,17 +37,32 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 	
 	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * 2.0 - 1.0, depth, 1.0));
 	float3 viewSpacePos = viewSpacePos4.xyz / viewSpacePos4.w;
-	float3 V = -normalize(viewSpacePos);
 	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage[groupID.z].Load(int3(threadID.xy, 0)));
 	float3 albedo = albedoRoughness.rgb;
 	float roughness = albedoRoughness.a;
-	float3 N = decodeOctahedron(g_NormalImage[groupID.z].Load(int3(threadID.xy, 0)).xy);
+	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage[groupID.z].Load(int3(threadID.xy, 0)).xy), 0.0)).xyz;
 	
 	float3 result = 0.0;
 	
 	result += 1.0 * albedo;
+
+	// directional lights
+	{
+		for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
+		{
+			DirectionalLight light = g_DirectionalLights[i];
+			result += Diffuse_Lambert(albedo) * light.color * saturate(dot(N, light.direction));
+		}
+	}
 	
-	result += Diffuse_Lit(albedo, float3 radiance, N, V, float3 L, roughness);
+	// shadowed directional lights
+	{
+		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
+		{
+			DirectionalLight light = g_DirectionalLightsShadowed[i];
+			result += Diffuse_Lambert(albedo) * light.color * saturate(dot(N, light.direction));
+		}
+	}
 	
 	g_ResultImage[groupID.z][threadID.xy] = float4(result, 1.0);
 }

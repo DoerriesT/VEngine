@@ -8,6 +8,7 @@
 #include "GlobalVar.h"
 #include "Pass/IntegrateBrdfPass.h"
 #include "Pass/ProbeGBufferPass.h"
+#include "Pass/LightProbeGBufferPass.h"
 #include "Pass/ShadowPass.h"
 #include "Pass/ShadowAtlasPass.h"
 #include "Pass/RasterTilingPass.h"
@@ -221,38 +222,49 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		brdfLUTImageViewHandle = graph.createImageView({ "BRDF LUT Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
-	//rg::ImageHandle probeDepthImageHandle = graph.importImage(m_renderResources->m_probeDepthImage, "Probe Depth Image", false, {}, m_renderResources->m_probeDepthImageState);
-	//rg::ImageViewHandle probeDepthCubeImageViewHandle = 0;
-	//rg::ImageViewHandle probeDepthImageViewHandles[6] = {};
-	//{
-	//	probeDepthCubeImageViewHandle = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
-	//	for (uint32_t i = 0; i < 6; ++i)
-	//	{
-	//		probeDepthImageViewHandles[i] = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
-	//	}
-	//}
-	//
-	//rg::ImageHandle probeAlbedoRoughnessImageHandle = graph.importImage(m_renderResources->m_probeAlbedoRoughnessImage, "Probe Albedo/Roughness Image", false, {}, m_renderResources->m_probeAlbedoRoughnessImageState);
-	//rg::ImageViewHandle probeAlbedoRoughnessCubeImageViewHandle = 0;
-	//rg::ImageViewHandle probeAlbedoRoughnessImageViewHandles[6] = {};
-	//{
-	//	probeAlbedoRoughnessCubeImageViewHandle = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
-	//	for (uint32_t i = 0; i < 6; ++i)
-	//	{
-	//		probeAlbedoRoughnessImageViewHandles[i] = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
-	//	}
-	//}
-	//
-	//rg::ImageHandle probeNormalImageHandle = graph.importImage(m_renderResources->m_probeNormalImage, "Probe Normal Image", false, {}, m_renderResources->m_probeNormalImageState);
-	//rg::ImageViewHandle probeNormalCubeImageViewHandle = 0;
-	//rg::ImageViewHandle probeNormalImageViewHandles[6] = {};
-	//{
-	//	probeNormalCubeImageViewHandle = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
-	//	for (uint32_t i = 0; i < 6; ++i)
-	//	{
-	//		probeNormalImageViewHandles[i] = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
-	//	}
-	//}
+	rg::ImageHandle probeDepthImageHandle = graph.importImage(m_renderResources->m_probeDepthImage, "Probe Depth Image", false, {}, m_renderResources->m_probeDepthImageState);
+	rg::ImageViewHandle probeDepthCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeDepthImageViewHandles[6] = {};
+	{
+		probeDepthCubeImageViewHandle = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < 6; ++i)
+		{
+			probeDepthImageViewHandles[i] = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+		}
+	}
+	
+	rg::ImageHandle probeAlbedoRoughnessImageHandle = graph.importImage(m_renderResources->m_probeAlbedoRoughnessImage, "Probe Albedo/Roughness Image", false, {}, m_renderResources->m_probeAlbedoRoughnessImageState);
+	rg::ImageViewHandle probeAlbedoRoughnessCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeAlbedoRoughnessImageViewHandles[6] = {};
+	{
+		probeAlbedoRoughnessCubeImageViewHandle = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < 6; ++i)
+		{
+			probeAlbedoRoughnessImageViewHandles[i] = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+		}
+	}
+	
+	rg::ImageHandle probeNormalImageHandle = graph.importImage(m_renderResources->m_probeNormalImage, "Probe Normal Image", false, {}, m_renderResources->m_probeNormalImageState);
+	rg::ImageViewHandle probeNormalCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeNormalImageViewHandles[6] = {};
+	{
+		probeNormalCubeImageViewHandle = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < 6; ++i)
+		{
+			probeNormalImageViewHandles[i] = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+		}
+	}
+
+	rg::ImageHandle probeImageHandle = graph.importImage(m_renderResources->m_probeImage, "Probe Image", false, {}, m_renderResources->m_probeImageState);
+	rg::ImageViewHandle probeCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeImageViewHandles[6] = {};
+	{
+		probeCubeImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < 6; ++i)
+		{
+			probeImageViewHandles[i] = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+		}
+	}
 
 
 	// create graph managed resources
@@ -486,29 +498,47 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// probe gbuffer pass
-	//for (size_t i = 0; i < renderData.m_probeRenderCount; ++i)
-	//{
-	//	ProbeGBufferPass::Data probeGBufferPassData;
-	//	probeGBufferPassData.m_passRecordContext = &passRecordContext;
-	//	memcpy(probeGBufferPassData.m_viewProjectionMatrices, renderData.m_probeViewProjectionMatrices + 6 * i, sizeof(glm::mat4) * 6);
-	//	for (size_t j = 0; j < 6; ++j)
-	//	{
-	//		probeGBufferPassData.m_opaqueInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueCount;
-	//		probeGBufferPassData.m_opaqueInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueOffset;
-	//		probeGBufferPassData.m_maskedInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedCount;
-	//		probeGBufferPassData.m_maskedInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedOffset;
-	//		probeGBufferPassData.m_depthImageHandles[j] = probeDepthImageViewHandles[j];
-	//		probeGBufferPassData.m_albedoRoughnessImageHandles[j] = probeAlbedoRoughnessImageViewHandles[j];
-	//		probeGBufferPassData.m_normalImageHandles[j] = probeNormalImageViewHandles[j];
-	//	}
-	//	probeGBufferPassData.m_instanceData = sortedInstanceData.data();
-	//	probeGBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-	//	probeGBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-	//	probeGBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//
-	//	ProbeGBufferPass::addToGraph(graph, probeGBufferPassData);
-	//}
+	for (size_t i = 0; i < renderData.m_probeRenderCount; ++i)
+	{
+		ProbeGBufferPass::Data probeGBufferPassData;
+		probeGBufferPassData.m_passRecordContext = &passRecordContext;
+		memcpy(probeGBufferPassData.m_viewProjectionMatrices, renderData.m_probeViewProjectionMatrices + 6 * i, sizeof(glm::mat4) * 6);
+		for (size_t j = 0; j < 6; ++j)
+		{
+			probeGBufferPassData.m_opaqueInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueCount;
+			probeGBufferPassData.m_opaqueInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueOffset;
+			probeGBufferPassData.m_maskedInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedCount;
+			probeGBufferPassData.m_maskedInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedOffset;
+			probeGBufferPassData.m_depthImageHandles[j] = probeDepthImageViewHandles[j];
+			probeGBufferPassData.m_albedoRoughnessImageHandles[j] = probeAlbedoRoughnessImageViewHandles[j];
+			probeGBufferPassData.m_normalImageHandles[j] = probeNormalImageViewHandles[j];
+		}
+		probeGBufferPassData.m_instanceData = sortedInstanceData.data();
+		probeGBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		probeGBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+		probeGBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	
+		ProbeGBufferPass::addToGraph(graph, probeGBufferPassData);
+	}
+	
+
+	LightProbeGBufferPass::Data lightProbeGBufferPassData;
+	lightProbeGBufferPassData.m_passRecordContext = &passRecordContext;
+	lightProbeGBufferPassData.m_probePosition = { 0.0f, 2.0f, 0.0f };
+	lightProbeGBufferPassData.m_probeNearPlane = 0.1f;
+	lightProbeGBufferPassData.m_probeFarPlane = 20.0f;
+	lightProbeGBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
+	lightProbeGBufferPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
+	for (size_t j = 0; j < 6; ++j)
+	{
+		lightProbeGBufferPassData.m_depthImageHandles[j] = probeDepthImageViewHandles[j];
+		lightProbeGBufferPassData.m_albedoRoughnessImageHandles[j] = probeAlbedoRoughnessImageViewHandles[j];
+		lightProbeGBufferPassData.m_normalImageHandles[j] = probeNormalImageViewHandles[j];
+		lightProbeGBufferPassData.m_resultImageHandles[j] = probeImageViewHandles[j];
+	}
+
+	LightProbeGBufferPass::addToGraph(graph, lightProbeGBufferPassData);
+
 
 
 	// Hi-Z furthest depth pyramid
@@ -709,7 +739,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
-	//forwardPassData.m_probeImageViewHandle = probeAlbedoRoughnessCubeImageViewHandle;
+	forwardPassData.m_probeImageViewHandle = probeCubeImageViewHandle;
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
