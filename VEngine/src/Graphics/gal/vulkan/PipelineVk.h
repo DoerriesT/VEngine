@@ -14,7 +14,7 @@ namespace VEngine
 
 		struct DescriptorSetLayoutsVk
 		{
-			enum { MAX_SET_COUNT = 8 };
+			enum { MAX_SET_COUNT = 4 };
 			StaticObjectPool<ByteArray<sizeof(DescriptorSetLayoutVk)>, MAX_SET_COUNT> m_descriptorSetLayoutMemoryPool;
 			DescriptorSetLayoutVk *m_descriptorSetLayouts[MAX_SET_COUNT];
 			uint32_t m_layoutCount;
@@ -35,8 +35,8 @@ namespace VEngine
 			GraphicsPipelineVk &operator= (const GraphicsPipelineVk &&) = delete;
 			~GraphicsPipelineVk();
 			void *getNativeHandle() const override;
-			uint32_t getDescriptorSetLayoutCount() const;
-			const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const;
+			uint32_t getDescriptorSetLayoutCount() const override;
+			const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const override;
 			VkPipelineLayout getLayout() const;
 		private:
 			VkPipeline m_pipeline;
@@ -55,8 +55,8 @@ namespace VEngine
 			ComputePipelineVk &operator= (const ComputePipelineVk &&) = delete;
 			~ComputePipelineVk();
 			void *getNativeHandle() const override;
-			uint32_t getDescriptorSetLayoutCount() const;
-			const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const;
+			uint32_t getDescriptorSetLayoutCount() const override;
+			const DescriptorSetLayout *getDescriptorSetLayout(uint32_t index) const override;
 			VkPipelineLayout getLayout() const;
 		private:
 			enum { MAX_SET_COUNT };

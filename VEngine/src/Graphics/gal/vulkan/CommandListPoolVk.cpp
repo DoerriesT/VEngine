@@ -17,7 +17,7 @@ VEngine::gal::CommandListPoolVk::~CommandListPoolVk()
 	vkDestroyCommandPool(m_device->getDevice(), m_commandPool, nullptr);
 
 	// normally we would have to manually call the destructor on all currently allocated command lists,
-	// which would require keeping a list of all sets. since CommandListVk is a POD, we can
+	// which would require keeping a list of all lists. since CommandListVk is a POD, we can
 	// simply let the DynamicObjectPool destructor scrap the backing memory without first doing this.
 }
 

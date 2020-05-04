@@ -756,12 +756,12 @@ void VEngine::gal::GraphicsDeviceVk::destroyBufferView(BufferView *bufferView)
 	}
 }
 
-void VEngine::gal::GraphicsDeviceVk::createSampler(const SamplerCreateInfo &samplerbufferViewCreateInfo, Sampler **sampler)
+void VEngine::gal::GraphicsDeviceVk::createSampler(const SamplerCreateInfo &samplerCreateInfo, Sampler **sampler)
 {
 	auto *memory = m_samplerMemoryPool.alloc();
 	assert(memory);
 
-	*sampler = new(memory) SamplerVk(m_device, samplerbufferViewCreateInfo);
+	*sampler = new(memory) SamplerVk(m_device, samplerCreateInfo);
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroySampler(Sampler *sampler)

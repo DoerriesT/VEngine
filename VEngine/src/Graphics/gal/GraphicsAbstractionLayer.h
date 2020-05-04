@@ -87,6 +87,20 @@ namespace VEngine
 			RANGE_SIZE = STORAGE_BUFFER + 1
 		};
 
+		enum class DescriptorType2
+		{
+			SAMPLER = 0,
+			TEXTURE = 1,
+			RW_TEXTURE = 2,
+			TYPED_BUFFER = 3,
+			RW_TYPED_BUFFER = 4,
+			CONSTANT_BUFFER = 5,
+			BYTE_BUFFER = 6,
+			RW_BYTE_BUFFER = 7,
+			STRUCTURED_BUFFER = 8,
+			RW_STRUCTURED_BUFFER = 9
+		};
+
 		enum class IndexType
 		{
 			UINT16 = 0,
@@ -614,6 +628,21 @@ namespace VEngine
 
 		// STRUCTS
 
+		struct DispatchIndirectCommand
+		{
+			uint32_t m_groupCountX;
+			uint32_t m_groupCountY;
+			uint32_t m_groupCountZ;
+		};
+
+		struct DrawIndirectCommand
+		{
+			uint32_t m_vertexCount;
+			uint32_t m_instanceCount;
+			uint32_t m_firstVertex;
+			uint32_t m_firstInstance;
+		};
+
 		struct DrawIndexedIndirectCommand
 		{
 			uint32_t m_indexCount;
@@ -993,6 +1022,18 @@ namespace VEngine
 			uint32_t m_dstArrayElement;
 			uint32_t m_descriptorCount;
 			DescriptorType m_descriptorType;
+			const Sampler *const *m_samplers;
+			const ImageView *const *m_imageViews;
+			const BufferView *const *m_bufferViews;
+			const DescriptorBufferInfo *m_bufferInfo;
+		};
+
+		struct DescriptorSetUpdate2
+		{
+			uint32_t m_dstBinding;
+			uint32_t m_dstArrayElement;
+			uint32_t m_descriptorCount;
+			DescriptorType2 m_descriptorType;
 			const Sampler *const *m_samplers;
 			const ImageView *const *m_imageViews;
 			const BufferView *const *m_bufferViews;
