@@ -30,13 +30,13 @@ float g_fogEmissiveColor[3] = {1.0f, 1.0f, 1.0f};
 float g_fogEmissiveIntensity = 0.0f;
 float g_fogPhase = 0.0f;
 
-bool g_fogJittering = false;
-bool g_fogDithering = false;
+bool g_fogJittering = true;
+bool g_fogDithering = true;
 bool g_fogLookupDithering = false;
-bool g_fogClamping = false;
-bool g_fogPrevFrameCombine = false;
-bool g_fogHistoryCombine = false;
-bool g_fogDoubleSample = false;
+bool g_fogClamping = true;
+bool g_fogPrevFrameCombine = true;
+bool g_fogHistoryCombine = true;
+bool g_fogDoubleSample = true;
 float g_fogHistoryAlpha = 0.05f;
 
 extern float g_ssrBias;
@@ -70,6 +70,12 @@ public:
 		entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
+
+		scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
+		entt::entity orbEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), 3.0f);
+		entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
+		entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
 
 		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 		entt::entity giHouseEntity = entityRegistry.create();
@@ -118,7 +124,7 @@ public:
 		g_localFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(45.0f), 0.0f)));
 		entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1.0f, 1.0f, 1.0f));
-		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 1.0f, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 0.0f);
+		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, glm::vec3(1.0f), 0.0f, 0.0f);
 		entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 
 
