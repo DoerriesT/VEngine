@@ -124,7 +124,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 	
 	ID3D12Resource *resource = (ID3D12Resource *)createInfo.m_image->getNativeHandle();
 
-	DXGI_FORMAT format = (DXGI_FORMAT)createInfo.m_format;
+	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
 
 	// SRV
 	if (imageDesc.m_usageFlags & ImageUsageFlagBits::SAMPLED_BIT)
@@ -420,14 +420,14 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 
 	ID3D12Resource *resource = (ID3D12Resource *)createInfo.m_buffer->getNativeHandle();
 
-	DXGI_FORMAT format = (DXGI_FORMAT)createInfo.m_format;
+	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
 
 	// CBV
 	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::UNIFORM_BUFFER_BIT)
 	{
 		D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc{};
 		viewDesc.BufferLocation = resource->GetGPUVirtualAddress() + createInfo.m_offset;
-		viewDesc.SizeInBytes = createInfo.m_range;
+		viewDesc.SizeInBytes = static_cast<UINT>(createInfo.m_range);
 
 		device->CreateConstantBufferView(&viewDesc, m_cbv);
 	}

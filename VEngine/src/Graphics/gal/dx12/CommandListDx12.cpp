@@ -247,7 +247,7 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 		dstCpyLoc.SubresourceIndex = regions[i].m_imageMipLevel + (regions[i].m_imageBaseLayer * dstImage->getDescription().m_levels);
 
 		D3D12_SUBRESOURCE_FOOTPRINT srcFootprint{};
-		srcFootprint.Format = (DXGI_FORMAT)dstImage->getDescription().m_format;
+		srcFootprint.Format = UtilityDx12::translate(dstImage->getDescription().m_format);
 		srcFootprint.Width = regions[i].m_extent.m_width;
 		srcFootprint.Height = regions[i].m_extent.m_height;
 		srcFootprint.Depth = regions[i].m_extent.m_depth;
@@ -265,7 +265,7 @@ void VEngine::gal::CommandListDx12::copyImageToBuffer(const Image *srcImage, con
 	for (size_t i = 0; i < regionCount; ++i)
 	{
 		D3D12_SUBRESOURCE_FOOTPRINT dstFootprint{};
-		dstFootprint.Format = (DXGI_FORMAT)srcImage->getDescription().m_format;
+		dstFootprint.Format = UtilityDx12::translate(srcImage->getDescription().m_format);
 		dstFootprint.Width = regions[i].m_extent.m_width;
 		dstFootprint.Height = regions[i].m_extent.m_height;
 		dstFootprint.Depth = regions[i].m_extent.m_depth;
@@ -602,7 +602,7 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		desc = {};
 		desc.cpuDescriptor = imageViewDx->getRTV();
 		desc.BeginningAccess.Type = translateLoadOp(attachment.m_loadOp);
-		desc.BeginningAccess.Clear.ClearValue.Format = (DXGI_FORMAT)attachment.m_imageView->getDescription().m_format; // TODO
+		desc.BeginningAccess.Clear.ClearValue.Format = UtilityDx12::translate(attachment.m_imageView->getDescription().m_format);
 		desc.BeginningAccess.Clear.ClearValue.Color[0] = attachment.m_clearValue.m_float32[0];
 		desc.BeginningAccess.Clear.ClearValue.Color[1] = attachment.m_clearValue.m_float32[1];
 		desc.BeginningAccess.Clear.ClearValue.Color[2] = attachment.m_clearValue.m_float32[2];
@@ -620,7 +620,7 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 
 		depthStencilDesc.cpuDescriptor = imageViewDx->getDSV();
 		depthStencilDesc.DepthBeginningAccess.Type = translateLoadOp(attachment.m_loadOp);
-		depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.Format = (DXGI_FORMAT)imageViewDx->getDescription().m_format; // TODO
+		depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.Format = UtilityDx12::translate(imageViewDx->getDescription().m_format);
 		depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil = { attachment.m_clearValue.m_depth, static_cast<UINT8>(attachment.m_clearValue.m_stencil) };
 		depthStencilDesc.StencilBeginningAccess.Type = translateLoadOp(attachment.m_stencilLoadOp);
 		depthStencilDesc.StencilBeginningAccess.Clear.ClearValue.Format = depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.Format;

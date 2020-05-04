@@ -122,7 +122,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 		descDx = {};
 		descDx.SemanticName; // TODO
 		descDx.SemanticIndex = 0;
-		descDx.Format = (DXGI_FORMAT)desc.m_format;
+		descDx.Format = UtilityDx12::translate(desc.m_format);
 		descDx.InputSlot = desc.m_binding;
 		descDx.AlignedByteOffset = desc.m_offset;
 		descDx.InputSlotClass = createInfo.m_vertexInputState.m_vertexBindingDescriptions[desc.m_binding].m_inputRate == VertexInputRate::VERTEX ? D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA : D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
@@ -139,9 +139,9 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	stateDesc.NumRenderTargets = createInfo.m_attachmentFormats.m_colorAttachmentCount;
 	for (size_t i = 0; i < 8; ++i)
 	{
-		stateDesc.RTVFormats[i] = (DXGI_FORMAT)createInfo.m_attachmentFormats.m_colorAttachmentFormats[i];
+		stateDesc.RTVFormats[i] = UtilityDx12::translate(createInfo.m_attachmentFormats.m_colorAttachmentFormats[i]);
 	}
-	stateDesc.DSVFormat = (DXGI_FORMAT)createInfo.m_attachmentFormats.m_depthStencilFormat;
+	stateDesc.DSVFormat = UtilityDx12::translate(createInfo.m_attachmentFormats.m_depthStencilFormat);
 
 	stateDesc.SampleDesc.Count = static_cast<UINT>(createInfo.m_multiSampleState.m_rasterizationSamples);
 	stateDesc.SampleDesc.Quality = createInfo.m_multiSampleState.m_rasterizationSamples != SampleCount::_1 ? 1 : 0;
