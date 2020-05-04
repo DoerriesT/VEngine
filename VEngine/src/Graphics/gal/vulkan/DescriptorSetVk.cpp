@@ -3,6 +3,9 @@
 #include <new>
 #include "UtilityVk.h"
 #include "ResourceVk.h"
+#include <cassert>
+#include <vector>
+#include "Utility/Utility.h"
 
 VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint32_t bindingCount, const VkDescriptorSetLayoutBinding *bindings)
 	:m_device(device),
@@ -14,25 +17,25 @@ VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint
 		switch (bindings[i].descriptorType)
 		{
 		case VK_DESCRIPTOR_TYPE_SAMPLER:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLER)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLER)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLED_IMAGE)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLED_IMAGE)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_IMAGE)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_IMAGE)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_TEXEL_BUFFER)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_TEXEL_BUFFER)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_TEXEL_BUFFER)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_TEXEL_BUFFER)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_BUFFER)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_BUFFER)] += bindings[i].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			m_typeCounts.m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_BUFFER)] += bindings[i].descriptorCount;
+			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_BUFFER)] += bindings[i].descriptorCount;
 			break;
 		default:
 			// unsupported descriptor type
@@ -58,7 +61,7 @@ void *VEngine::gal::DescriptorSetLayoutVk::getNativeHandle() const
 	return m_descriptorSetLayout;
 }
 
-const VEngine::gal::DescriptorSetLayoutTypeCounts &VEngine::gal::DescriptorSetLayoutVk::getTypeCounts() const
+const uint32_t *VEngine::gal::DescriptorSetLayoutVk::getTypeCounts() const
 {
 	return m_typeCounts;
 }
@@ -228,14 +231,19 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 	}
 }
 
-VEngine::gal::DescriptorPoolVk::DescriptorPoolVk(VkDevice device, uint32_t maxSets, const uint32_t typeCounts[VK_DESCRIPTOR_TYPE_RANGE_SIZE])
+VEngine::gal::DescriptorSetPoolVk::DescriptorSetPoolVk(VkDevice device, uint32_t maxSets, const DescriptorSetLayoutVk *layout)
 	:m_device(device),
 	m_descriptorPool(VK_NULL_HANDLE),
-	m_descriptorSetMemoryPool(maxSets)
+	m_layout(layout),
+	m_poolSize(maxSets),
+	m_currentOffset(),
+	m_descriptorSetMemory()
 {
 	VkDescriptorPoolSize poolSizes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 
 	uint32_t poolSizeCount = 0;
+
+	const uint32_t *typeCounts = layout->getTypeCounts();
 
 	for (size_t i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
 	{
@@ -255,24 +263,37 @@ VEngine::gal::DescriptorPoolVk::DescriptorPoolVk(VkDevice device, uint32_t maxSe
 	poolCreateInfo.pPoolSizes = poolSizes;
 
 	UtilityVk::checkResult(vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &m_descriptorPool), "Failed to create DescriptorPool!");
+
+	// allocate memory to placement new DescriptorSetVk
+	m_descriptorSetMemory = new char[sizeof(DescriptorSetVk) * m_poolSize];
 }
 
-VEngine::gal::DescriptorPoolVk::~DescriptorPoolVk()
+VEngine::gal::DescriptorSetPoolVk::~DescriptorSetPoolVk()
 {
 	vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
 	// normally we would have to manually call the destructor on all currently allocated sets,
 	// which would require keeping a list of all sets. since DescriptorSetVk is a POD, we can
-	// simply let the DynamicObjectPool destructor scrap the backing memory without first doing this.
+	// simply scrap the backing memory without first doing this.
+
+	delete[] m_descriptorSetMemory;
+	m_descriptorSetMemory = nullptr;
 }
 
-void *VEngine::gal::DescriptorPoolVk::getNativeHandle() const
+void *VEngine::gal::DescriptorSetPoolVk::getNativeHandle() const
 {
 	return m_descriptorPool;
 }
 
-void VEngine::gal::DescriptorPoolVk::allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets)
+void VEngine::gal::DescriptorSetPoolVk::allocateDescriptorSets(uint32_t count, DescriptorSet **sets)
 {
+	if (m_currentOffset + count > m_poolSize)
+	{
+		Utility::fatalExit("Tried to allocate more descriptor sets from descriptor set pool than available!", EXIT_FAILURE);
+	}
+
+	VkDescriptorSetLayout layoutVk = (VkDescriptorSetLayout)m_layout->getNativeHandle();
+
 	constexpr uint32_t batchSize = 8;
 	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
@@ -281,7 +302,7 @@ void VEngine::gal::DescriptorPoolVk::allocateDescriptorSets(uint32_t count, cons
 		VkDescriptorSetLayout layoutsVk[batchSize];
 		for (uint32_t j = 0; j < countVk; ++j)
 		{
-			layoutsVk[j] = (VkDescriptorSetLayout)layouts[i * batchSize + j]->getNativeHandle();
+			layoutsVk[j] = layoutVk;
 		}
 
 		VkDescriptorSetAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
@@ -295,35 +316,17 @@ void VEngine::gal::DescriptorPoolVk::allocateDescriptorSets(uint32_t count, cons
 
 		for (uint32_t j = 0; j < countVk; ++j)
 		{
-			auto *memory = m_descriptorSetMemoryPool.alloc();
-			assert(memory);
-			sets[i * batchSize + j] = new(memory) DescriptorSetVk(m_device, setsVk[j]);
+			sets[i * batchSize + j] = new(m_descriptorSetMemory + sizeof(DescriptorSetVk) * m_currentOffset) DescriptorSetVk(m_device, setsVk[j]);
+			++m_currentOffset;
 		}
 	}
 }
 
-void VEngine::gal::DescriptorPoolVk::freeDescriptorSets(uint32_t count, DescriptorSet **sets)
+void VEngine::gal::DescriptorSetPoolVk::reset()
 {
-	constexpr uint32_t batchSize = 8;
-	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;
-	for (uint32_t i = 0; i < iterations; ++i)
-	{
-		const uint32_t countVk = std::min(batchSize, count - i * batchSize);
-		VkDescriptorSet setsVk[batchSize];
-		for (uint32_t j = 0; j < countVk; ++j)
-		{
-			setsVk[j] = (VkDescriptorSet)sets[i * batchSize + j]->getNativeHandle();
-		}
-		// we dont use VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, so we cant actually free the set from the pool
-		//UtilityVk::checkResult(vkFreeDescriptorSets(m_device, m_descriptorPool, countVk, setsVk), "Failed to free Descriptor Sets!");
-		for (uint32_t j = 0; j < countVk; ++j)
-		{
-			auto *descriptorSetVk = dynamic_cast<DescriptorSetVk *>(sets[i * batchSize + j]);
-			assert(descriptorSetVk);
+	UtilityVk::checkResult(vkResetDescriptorPool(m_device, m_descriptorPool, 0), "Failed to reset descriptor pool!");
 
-			// call destructor and free backing memory
-			descriptorSetVk->~DescriptorSetVk();
-			m_descriptorSetMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorSetVk)> *>(descriptorSetVk));
-		}
-	}
+	// DescriptorSetVk is a POD class, so we can simply reset the allocator offset of the backing memory
+	// and dont need to call the destructors
+	m_currentOffset = 0;
 }

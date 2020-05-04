@@ -1,7 +1,6 @@
 #pragma once
 #include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include "volk.h"
-#include "Utility/ObjectPool.h"
 
 namespace VEngine
 {
@@ -17,11 +16,11 @@ namespace VEngine
 			DescriptorSetLayoutVk &operator= (const DescriptorSetLayoutVk &&) = delete;
 			~DescriptorSetLayoutVk();
 			void *getNativeHandle() const override;
-			const DescriptorSetLayoutTypeCounts &getTypeCounts() const override;
+			const uint32_t *getTypeCounts() const;
 		private:
 			VkDevice m_device;
 			VkDescriptorSetLayout m_descriptorSetLayout;
-			DescriptorSetLayoutTypeCounts m_typeCounts;
+			uint32_t m_typeCounts[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 		};
 
 		class DescriptorSetVk : public DescriptorSet
@@ -35,22 +34,25 @@ namespace VEngine
 			VkDescriptorSet m_descriptorSet;
 		};
 
-		class DescriptorPoolVk : public DescriptorPool
+		class DescriptorSetPoolVk : public DescriptorSetPool
 		{
 		public:
-			explicit DescriptorPoolVk(VkDevice device, uint32_t maxSets, const uint32_t typeCounts[VK_DESCRIPTOR_TYPE_RANGE_SIZE]);
-			DescriptorPoolVk(DescriptorPoolVk &) = delete;
-			DescriptorPoolVk(DescriptorPoolVk &&) = delete;
-			DescriptorPoolVk &operator= (const DescriptorPoolVk &) = delete;
-			DescriptorPoolVk &operator= (const DescriptorPoolVk &&) = delete;
-			~DescriptorPoolVk();
+			explicit DescriptorSetPoolVk(VkDevice device, uint32_t maxSets, const DescriptorSetLayoutVk *layout);
+			DescriptorSetPoolVk(DescriptorSetPoolVk &) = delete;
+			DescriptorSetPoolVk(DescriptorSetPoolVk &&) = delete;
+			DescriptorSetPoolVk &operator= (const DescriptorSetPoolVk &) = delete;
+			DescriptorSetPoolVk &operator= (const DescriptorSetPoolVk &&) = delete;
+			~DescriptorSetPoolVk();
 			void *getNativeHandle() const override;
-			void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets) override;
-			void freeDescriptorSets(uint32_t count, DescriptorSet **sets) override;
+			void allocateDescriptorSets(uint32_t count, DescriptorSet **sets)  override;
+			void reset()  override;
 		private:
 			VkDevice m_device;
 			VkDescriptorPool m_descriptorPool;
-			DynamicObjectPool<ByteArray<sizeof(DescriptorSetVk)>> m_descriptorSetMemoryPool;
+			const DescriptorSetLayoutVk *m_layout;
+			uint32_t m_poolSize;
+			uint32_t m_currentOffset;
+			char *m_descriptorSetMemory;
 		};
 	}
 }

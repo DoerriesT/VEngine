@@ -47,8 +47,8 @@ namespace VEngine
 			void destroySampler(Sampler *sampler) override;
 			void createSemaphore(uint64_t initialValue, Semaphore **semaphore) override;
 			void destroySemaphore(Semaphore *semaphore) override;
-			void createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool) override;
-			void destroyDescriptorPool(DescriptorPool *descriptorPool) override;
+			void createDescriptorSetPool(uint32_t maxSets, const DescriptorSetLayout *descriptorSetLayout, DescriptorSetPool **descriptorSetPool)  override;
+			void destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool)  override;
 			void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) override;
 			void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) override;
 			void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) override;

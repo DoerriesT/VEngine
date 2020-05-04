@@ -28,7 +28,7 @@ namespace VEngine
 			COMPUTE_PIPELINE,
 			DESCRIPTOR_SET_LAYOUT,
 			SAMPLER,
-			DESCRIPTOR_POOL,
+			DESCRIPTOR_SET_POOL,
 			DESCRIPTOR_SET,
 			COMMAND_LIST_POOL,
 			SWAPCHAIN,
@@ -1088,11 +1088,6 @@ namespace VEngine
 			uint64_t m_range;
 		};
 
-		struct DescriptorSetLayoutTypeCounts
-		{
-			uint32_t m_typeCounts[(size_t)DescriptorType::RANGE_SIZE];
-		};
-
 
 
 		// INTERFACES
@@ -1102,7 +1097,6 @@ namespace VEngine
 		public:
 			virtual ~DescriptorSetLayout() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual const DescriptorSetLayoutTypeCounts &getTypeCounts() const = 0;
 		};
 
 		class DescriptorSet
@@ -1113,13 +1107,13 @@ namespace VEngine
 			virtual void update(uint32_t count, const DescriptorSetUpdate *updates) = 0;
 		};
 
-		class DescriptorPool
+		class DescriptorSetPool
 		{
 		public:
-			virtual ~DescriptorPool() = default;
+			virtual ~DescriptorSetPool() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual void allocateDescriptorSets(uint32_t count, const DescriptorSetLayout *const *layouts, DescriptorSet **sets) = 0;
-			virtual void freeDescriptorSets(uint32_t count, DescriptorSet **sets) = 0;
+			virtual void allocateDescriptorSets(uint32_t count, DescriptorSet **sets) = 0;
+			virtual void reset() = 0;
 		};
 
 		class GraphicsPipeline
@@ -1317,8 +1311,8 @@ namespace VEngine
 			virtual void destroySampler(Sampler *sampler) = 0;
 			virtual void createSemaphore(uint64_t initialValue, Semaphore **semaphore) = 0;
 			virtual void destroySemaphore(Semaphore *semaphore) = 0;
-			virtual void createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool) = 0;
-			virtual void destroyDescriptorPool(DescriptorPool *descriptorPool) = 0;
+			virtual void createDescriptorSetPool(uint32_t maxSets, const DescriptorSetLayout *descriptorSetLayout, DescriptorSetPool **descriptorSetPool) = 0;
+			virtual void destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool) = 0;
 			virtual void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) = 0;
 			virtual void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) = 0;
 			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;

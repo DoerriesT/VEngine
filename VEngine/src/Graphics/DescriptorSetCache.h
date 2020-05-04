@@ -34,11 +34,10 @@ namespace VEngine
 				gal::DescriptorSet *m_sets[SETS_PER_POOL];
 				uint64_t m_frameIndices[SETS_PER_POOL];
 				std::bitset<SETS_PER_POOL> m_freeSetsMask;
-				gal::DescriptorPool *m_pool = nullptr;
+				gal::DescriptorSetPool *m_pool = nullptr;
 			};
 
 			gal::GraphicsDevice *m_graphicsDevice;
-			uint32_t m_typeCounts[(size_t)gal::DescriptorType::RANGE_SIZE];
 			const gal::DescriptorSetLayout *m_layout;
 			std::vector<Pool> m_pools;
 

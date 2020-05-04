@@ -6,7 +6,7 @@ namespace VEngine
 	{
 		class DescriptorSetLayout;
 		class DescriptorSet;
-		class DescriptorPool;
+		class DescriptorSetPool;
 		class GraphicsPipeline;
 		class ComputePipeline;
 		class QueryPool;

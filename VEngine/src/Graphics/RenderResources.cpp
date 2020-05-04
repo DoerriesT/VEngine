@@ -77,16 +77,14 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroySampler(m_samplers[2]);
 	m_graphicsDevice->destroySampler(m_samplers[3]);
 	m_graphicsDevice->destroySampler(m_shadowSampler);
+
+	m_graphicsDevice->destroyDescriptorSetPool(m_textureDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_computeTextureDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_imguiDescriptorSetPool);
 	
 	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTextureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_imGuiDescriptorSetLayout);
-
-	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_textureDescriptorSet);
-	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_computeTextureDescriptorSet);
-	m_textureDescriptorSetPool->freeDescriptorSets(1, &m_imGuiDescriptorSet);
-
-	m_graphicsDevice->destroyDescriptorPool(m_textureDescriptorSetPool);
 }
 
 void VEngine::RenderResources::init(uint32_t width, uint32_t height)
@@ -393,15 +391,6 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_graphicsDevice->createSampler(samplerCreateInfo, &m_samplers[RendererConsts::SAMPLER_POINT_REPEAT_IDX]);
 	}
 
-	// create texture descriptor pool
-	{
-		uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE] = {};
-		typeCounts[static_cast<size_t>(DescriptorType::SAMPLED_IMAGE)] = RendererConsts::TEXTURE_ARRAY_SIZE * 2 + 1 /*ImGui Fonts texture*/;
-		typeCounts[static_cast<size_t>(DescriptorType::SAMPLER)] = 4 * 3;
-
-		m_graphicsDevice->createDescriptorPool(3, typeCounts, &m_textureDescriptorSetPool);
-	}
-
 	// create texture descriptor set
 	{
 		DescriptorSetLayoutBinding bindings[]
@@ -412,7 +401,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_textureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout");
-		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSetLayout, &m_textureDescriptorSet);
+		m_graphicsDevice->createDescriptorSetPool(1, m_textureDescriptorSetLayout, &m_textureDescriptorSetPool);
+		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSet);
 	}
 
 	// create compute texture descriptor set
@@ -425,7 +415,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_computeTextureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout (Compute)");
-		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSet);
+		m_graphicsDevice->createDescriptorSetPool(1, m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSetPool);
+		m_computeTextureDescriptorSetPool->allocateDescriptorSets(1, &m_computeTextureDescriptorSet);
 	}
 
 	// create ImGui descriptor set
@@ -438,7 +429,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_imGuiDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "ImGui DSet Layout");
-		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSetLayout, &m_imGuiDescriptorSet);
+		m_graphicsDevice->createDescriptorSetPool(1, m_imGuiDescriptorSetLayout, &m_computeTextureDescriptorSetPool);
+		m_computeTextureDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSet);
 
 		DescriptorSetUpdate update = Initializers::samplerDescriptor(&m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 1);
 

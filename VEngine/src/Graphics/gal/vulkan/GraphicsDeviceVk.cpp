@@ -51,7 +51,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_samplerMemoryPool(16),
 	m_semaphoreMemoryPool(16),
 	m_queryPoolMemoryPool(16),
-	m_descriptorPoolMemoryPool(16),
+	m_descriptorSetPoolMemoryPool(16),
 	m_descriptorSetLayoutMemoryPool(8),
 	m_debugLayers(debugLayer)
 {
@@ -798,59 +798,27 @@ void VEngine::gal::GraphicsDeviceVk::destroySemaphore(Semaphore *semaphore)
 	}
 }
 
-void VEngine::gal::GraphicsDeviceVk::createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool)
+void VEngine::gal::GraphicsDeviceVk::createDescriptorSetPool(uint32_t maxSets, const DescriptorSetLayout *descriptorSetLayout, DescriptorSetPool **descriptorSetPool)
 {
-	uint32_t typeCountsVk[VK_DESCRIPTOR_TYPE_RANGE_SIZE] = {};
-	for (uint32_t i = 0; i < (uint32_t)DescriptorType::RANGE_SIZE; ++i)
-	{
-		auto type = static_cast<DescriptorType>(i);
-		VkDescriptorType typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
-		switch (type)
-		{
-		case DescriptorType::SAMPLER:
-			typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
-			break;
-		case DescriptorType::SAMPLED_IMAGE:
-			typeVk = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			break;
-		case  DescriptorType::STORAGE_IMAGE:
-			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			break;
-		case  DescriptorType::UNIFORM_TEXEL_BUFFER:
-			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-			break;
-		case  DescriptorType::STORAGE_TEXEL_BUFFER:
-			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-			break;
-		case  DescriptorType::UNIFORM_BUFFER:
-			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			break;
-		case  DescriptorType::STORAGE_BUFFER:
-			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-		typeCountsVk[typeVk] = typeCounts[i];
-	}
-
-	auto *memory = m_descriptorPoolMemoryPool.alloc();
+	auto *memory = m_descriptorSetPoolMemoryPool.alloc();
 	assert(memory);
 
-	*descriptorPool = new(memory) DescriptorPoolVk(m_device, maxSets, typeCountsVk);
+	const DescriptorSetLayoutVk *layoutVk = dynamic_cast<const DescriptorSetLayoutVk *>(descriptorSetLayout);
+	assert(layoutVk);
+
+	*descriptorSetPool = new(memory) DescriptorSetPoolVk(m_device, maxSets, layoutVk);
 }
 
-void VEngine::gal::GraphicsDeviceVk::destroyDescriptorPool(DescriptorPool *descriptorPool)
+void VEngine::gal::GraphicsDeviceVk::destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool)
 {
-	if (descriptorPool)
+	if (descriptorSetPool)
 	{
-		auto *poolVk = dynamic_cast<DescriptorPoolVk *>(descriptorPool);
+		auto *poolVk = dynamic_cast<DescriptorSetPoolVk *>(descriptorSetPool);
 		assert(poolVk);
 
 		// call destructor and free backing memory
-		poolVk->~DescriptorPoolVk();
-		m_descriptorPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorPoolVk)> *>(poolVk));
+		poolVk->~DescriptorSetPoolVk();
+		m_descriptorSetPoolMemoryPool.free(reinterpret_cast<ByteArray<sizeof(DescriptorSetPoolVk)> *>(poolVk));
 	}
 }
 
@@ -992,9 +960,9 @@ void VEngine::gal::GraphicsDeviceVk::setDebugObjectName(ObjectType objectType, v
 			info.objectType = VK_OBJECT_TYPE_SAMPLER;
 			info.objectHandle = (uint64_t)reinterpret_cast<Sampler *>(object)->getNativeHandle();
 			break;
-		case ObjectType::DESCRIPTOR_POOL:
+		case ObjectType::DESCRIPTOR_SET_POOL:
 			info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
-			info.objectHandle = (uint64_t)reinterpret_cast<DescriptorPool *>(object)->getNativeHandle();
+			info.objectHandle = (uint64_t)reinterpret_cast<DescriptorSetPool *>(object)->getNativeHandle();
 			break;
 		case ObjectType::DESCRIPTOR_SET:
 			info.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET;

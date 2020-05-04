@@ -39,15 +39,9 @@ void VEngine::DescriptorSetCache::update(uint64_t currentFrameIndex, uint64_t fr
 
 VEngine::DescriptorSetCache::DescriptorSetPools::DescriptorSetPools(GraphicsDevice *graphicsDevice, const DescriptorSetLayout *layout)
 	:m_graphicsDevice(graphicsDevice),
-	m_typeCounts(),
 	m_layout(layout),
 	m_pools()
 {
-	memcpy(m_typeCounts, layout->getTypeCounts().m_typeCounts, sizeof(m_typeCounts));
-	for (auto &typeCount : m_typeCounts)
-	{
-		typeCount *= SETS_PER_POOL;
-	}
 }
 
 VEngine::DescriptorSetCache::DescriptorSetPools::~DescriptorSetPools()
@@ -55,7 +49,7 @@ VEngine::DescriptorSetCache::DescriptorSetPools::~DescriptorSetPools()
 	for (auto &pool : m_pools)
 	{
 		assert(pool.m_pool);
-		m_graphicsDevice->destroyDescriptorPool(pool.m_pool);
+		m_graphicsDevice->destroyDescriptorSetPool(pool.m_pool);
 	}
 }
 
@@ -82,20 +76,10 @@ VEngine::gal::DescriptorSet *VEngine::DescriptorSetCache::DescriptorSetPools::ge
 	Pool &pool = m_pools.back();
 	{
 		// create pool
-		{
-			m_graphicsDevice->createDescriptorPool(SETS_PER_POOL, m_typeCounts, &pool.m_pool);
-		}
+		m_graphicsDevice->createDescriptorSetPool(SETS_PER_POOL, m_layout, &pool.m_pool);
 
 		// allocate sets from pool
-		{
-			const DescriptorSetLayout *layouts[SETS_PER_POOL];
-			for (size_t i = 0; i < SETS_PER_POOL; ++i)
-			{
-				layouts[i] = m_layout;
-			}
-
-			pool.m_pool->allocateDescriptorSets(SETS_PER_POOL, layouts, pool.m_sets);
-		}
+		pool.m_pool->allocateDescriptorSets(SETS_PER_POOL, pool.m_sets);
 
 		// set free bits
 		pool.m_freeSetsMask = 0;

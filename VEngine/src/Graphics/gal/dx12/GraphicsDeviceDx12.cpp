@@ -1,6 +1,7 @@
 #include "GraphicsDeviceDx12.h"
 #include "SwapChainDx12.h"
 #include "UtilityDx12.h"
+#include "Utility/Utility.h"
 
 #define GPU_DESCRIPTOR_HEAP_SIZE (1000000)
 #define GPU_SAMPLER_DESCRIPTOR_HEAP_SIZE (1024)
@@ -547,27 +548,28 @@ void VEngine::gal::GraphicsDeviceDx12::destroySemaphore(Semaphore *semaphore)
 	}
 }
 
-void VEngine::gal::GraphicsDeviceDx12::createDescriptorPool(uint32_t maxSets, const uint32_t typeCounts[(size_t)DescriptorType::RANGE_SIZE], DescriptorPool **descriptorPool)
+void VEngine::gal::GraphicsDeviceDx12::createDescriptorSetPool(uint32_t maxSets, const DescriptorSetLayout *descriptorSetLayout, DescriptorSetPool **descriptorSetPool)
 {
 	auto *memory = m_descriptorSetPoolMemoryPool.alloc();
 	assert(memory);
 
-	bool samplerPool = false;
+	const DescriptorSetLayoutDx12 *layoutDx = dynamic_cast<const DescriptorSetLayoutDx12 *>(descriptorSetLayout);
+	assert(layoutDx);
+
+	bool samplerPool = layoutDx->needsSamplerHeap();
 
 	TLSFAllocator &heapAllocator = samplerPool ? m_gpuSamplerDescriptorAllocator : m_gpuDescriptorAllocator;
 	ID3D12DescriptorHeap *heap = samplerPool ? m_cmdListRecordContext.m_gpuSamplerDescriptorHeap : m_cmdListRecordContext.m_gpuDescriptorHeap;
 	UINT incSize = samplerPool ? m_descriptorIncrementSizes[1] : m_descriptorIncrementSizes[0];
 
-	// TODO
-	//*descriptorPool 
-	auto *pool = new(memory) DescriptorSetPoolDx12(m_device, heapAllocator, heap->GetCPUDescriptorHandleForHeapStart(), heap->GetGPUDescriptorHandleForHeapStart(), incSize, nullptr, maxSets);
+	*descriptorSetPool = new(memory) DescriptorSetPoolDx12(m_device, heapAllocator, heap->GetCPUDescriptorHandleForHeapStart(), heap->GetGPUDescriptorHandleForHeapStart(), incSize, layoutDx, maxSets);
 }
 
-void VEngine::gal::GraphicsDeviceDx12::destroyDescriptorPool(DescriptorPool *descriptorPool)
+void VEngine::gal::GraphicsDeviceDx12::destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool)
 {
-	if (descriptorPool)
+	if (descriptorSetPool)
 	{
-		auto *poolDx = dynamic_cast<DescriptorSetPoolDx12 *>(descriptorPool);
+		auto *poolDx = dynamic_cast<DescriptorSetPoolDx12 *>(descriptorSetPool);
 		assert(poolDx);
 
 		// call destructor and free backing memory
@@ -581,8 +583,24 @@ void VEngine::gal::GraphicsDeviceDx12::createDescriptorSetLayout(uint32_t bindin
 	auto *memory = m_descriptorSetLayoutMemoryPool.alloc();
 	assert(memory);
 
-	// TODO
-	*descriptorSetLayout = new(memory) DescriptorSetLayoutDx12(1, false);
+	uint32_t descriptorCount = 0;
+	bool hasSamplers = false;
+	bool hasNonSamplers = false;
+
+	for (size_t i = 0; i < bindingCount; ++i)
+	{
+		descriptorCount += bindings[i].m_descriptorCount;
+		auto type = bindings[i].m_descriptorType;
+		hasSamplers = hasSamplers || type == DescriptorType::SAMPLER;
+		hasNonSamplers = hasNonSamplers || type != DescriptorType::SAMPLER;
+	}
+
+	if (hasSamplers && hasNonSamplers)
+	{
+		Utility::fatalExit("Tried to create descriptor set layout with both sampler and non-sampler descriptors!", EXIT_FAILURE);
+	}
+
+	*descriptorSetLayout = new(memory) DescriptorSetLayoutDx12(descriptorCount, hasSamplers);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout)
@@ -665,7 +683,7 @@ void VEngine::gal::GraphicsDeviceDx12::setDebugObjectName(ObjectType objectType,
 		break;
 	case VEngine::gal::ObjectType::SAMPLER:
 		break;
-	case VEngine::gal::ObjectType::DESCRIPTOR_POOL:
+	case VEngine::gal::ObjectType::DESCRIPTOR_SET_POOL:
 		break;
 	case VEngine::gal::ObjectType::DESCRIPTOR_SET:
 		break;

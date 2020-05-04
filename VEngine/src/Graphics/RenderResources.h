@@ -74,7 +74,9 @@ namespace VEngine
 		gal::DescriptorSet *m_computeTextureDescriptorSet = {};
 		gal::DescriptorSetLayout *m_imGuiDescriptorSetLayout = {};
 		gal::DescriptorSet *m_imGuiDescriptorSet = {};
-		gal::DescriptorPool *m_textureDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_textureDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_computeTextureDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_imguiDescriptorSetPool = {};
 
 		// proxy mesh info
 		uint32_t m_pointLightProxyMeshIndexCount;
