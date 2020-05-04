@@ -480,7 +480,7 @@ const VEngine::gal::Buffer *VEngine::gal::BufferViewDx12::getBuffer() const
 
 const VEngine::gal::BufferViewCreateInfo &VEngine::gal::BufferViewDx12::getDescription() const
 {
-	m_description;
+	return m_description;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::BufferViewDx12::getCBV() const
