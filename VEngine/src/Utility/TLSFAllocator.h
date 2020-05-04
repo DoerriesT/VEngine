@@ -54,7 +54,9 @@ namespace VEngine
 		const uint32_t m_pageSize;
 		uint32_t m_firstLevelBitset;
 		uint32_t m_secondLevelBitsets[MAX_FIRST_LEVELS];
+		uint32_t m_smallBitset;
 		Span *m_freeSpans[MAX_FIRST_LEVELS][MAX_SECOND_LEVELS];
+		Span *m_smallFreeSpans[32];
 		Span *m_firstPhysicalSpan;
 		uint32_t m_allocationCount;
 		uint32_t m_freeSize;
@@ -69,8 +71,9 @@ namespace VEngine
 		// ensuring, that any block in the list can be used. used for alloc
 		void mappingSearch(uint32_t size, uint32_t &firstLevelIndex, uint32_t &secondLevelIndex);
 		bool findFreeSpan(uint32_t &firstLevelIndex, uint32_t &secondLevelIndex);
-		void addSpanToFreeList(Span *span, uint32_t firstLevelIndex, uint32_t secondLevelIndex);
-		void removeSpanFromFreeList(Span *span, uint32_t firstLevelIndex, uint32_t secondLevelIndex);
+		Span *findFreeSpan(uint32_t size);
+		void addSpanToFreeList(Span *span);
+		void removeSpanFromFreeList(Span *span);
 		void checkIntegrity();
 	};
 }

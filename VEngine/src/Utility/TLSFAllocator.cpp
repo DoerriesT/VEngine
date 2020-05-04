@@ -7,6 +7,7 @@ VEngine::TLSFAllocator::TLSFAllocator(uint32_t memorySize, uint32_t pageSize)
 	:m_memorySize(memorySize),
 	m_pageSize(pageSize),
 	m_firstLevelBitset(),
+	m_smallBitset(),
 	m_firstPhysicalSpan(nullptr),
 	m_allocationCount(),
 	m_freeSize(memorySize),
@@ -16,44 +17,53 @@ VEngine::TLSFAllocator::TLSFAllocator(uint32_t memorySize, uint32_t pageSize)
 {
 	memset(m_secondLevelBitsets, 0, sizeof(m_secondLevelBitsets));
 	memset(m_freeSpans, 0, sizeof(m_freeSpans));
+	memset(m_smallFreeSpans, 0, sizeof(m_smallFreeSpans));
 
 	// add span of memory, spanning the whole block
 	Span *span = m_spanPool.alloc();
 	memset(span, 0, sizeof(Span));
 
 	span->m_size = m_memorySize;
-
-	uint32_t firstLevelIndex = 0;
-	uint32_t secondLevelIndex = 0;
-	mappingInsert(m_memorySize, firstLevelIndex, secondLevelIndex);
-
 	m_firstPhysicalSpan = span;
-
-	addSpanToFreeList(span, firstLevelIndex, secondLevelIndex);
+	addSpanToFreeList(span);
 }
 
 bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &spanOffset, void *&backingSpan)
 {
-	size = size < 32 ? 32 : size;
-	uint32_t firstLevelIndex = 0;
-	uint32_t secondLevelIndex = 0;
+	assert(size > 0);
 
-	// add some margin to accound for alignment
-	uint32_t requestedSize = size + alignment;
+	Span *freeSpan = nullptr;
+	uint32_t alignedOffset = 0;
 
-	// size must be larger-equal than MAX_SECOND_LEVELS
-	requestedSize = requestedSize < MAX_SECOND_LEVELS ? MAX_SECOND_LEVELS : requestedSize;
+	// first try without adding (alignment - 1) and if that does not succeed add (alignment - 1)
+	// to guarantee that the aligned offset + requested size fit into the allocated span
+	for (int i = 0; i < 2; ++i)
+	{
+		Span *span = findFreeSpan(i == 0 ? size : size + alignment - 1);
 
-	// rounds up requested size to next power of two and finds indices of a list containing spans of the requested size class
-	mappingSearch(requestedSize, firstLevelIndex, secondLevelIndex);
+		// no free span of requested size found
+		if (!span)
+		{
+			return false;
+		}
 
-	// finds a free span and updates indices to the indices of the actual free list of the span
-	if (!findFreeSpan(firstLevelIndex, secondLevelIndex))
+		// offset into this span where alignment requirement is satisfied
+		alignedOffset = Utility::alignUp(span->m_offset, alignment);
+
+		assert(i == 0 || alignedOffset + size <= freeSpan->m_offset + freeSpan->m_size);
+
+		// test alignment
+		if (alignedOffset + size <= span->m_offset + span->m_size)
+		{
+			freeSpan = span;
+			break;
+		}
+	}
+
+	if (!freeSpan)
 	{
 		return false;
 	}
-
-	Span *freeSpan = m_freeSpans[firstLevelIndex][secondLevelIndex];
 
 	assert(freeSpan);
 	assert(freeSpan->m_size >= size);
@@ -61,11 +71,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 	assert(!freeSpan->m_previousPhysical || freeSpan->m_previousPhysical->m_offset + freeSpan->m_previousPhysical->m_size == freeSpan->m_offset);
 	assert(!freeSpan->m_nextPhysical || freeSpan->m_offset + freeSpan->m_size == freeSpan->m_nextPhysical->m_offset);
 
-	removeSpanFromFreeList(freeSpan, firstLevelIndex, secondLevelIndex);
-
-	// offset into this span where alignment requirement is satisfied
-	const uint32_t alignedOffset = Utility::alignUp(freeSpan->m_offset, alignment);
-	assert(alignedOffset + size <= freeSpan->m_offset + freeSpan->m_size);
+	removeSpanFromFreeList(freeSpan);
 
 	uint32_t nextLowerPageSizeOffset = Utility::alignDown(alignedOffset, m_pageSize);
 	assert(nextLowerPageSizeOffset <= alignedOffset);
@@ -107,8 +113,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 		freeSpan->m_previousPhysical = beginSpan;
 
 		// add begin span to free list
-		mappingInsert(beginSpan->m_size, firstLevelIndex, secondLevelIndex);
-		addSpanToFreeList(beginSpan, firstLevelIndex, secondLevelIndex);
+		addSpanToFreeList(beginSpan);
 		++m_requiredDebugSpanCount;
 	}
 
@@ -133,8 +138,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 		freeSpan->m_size -= endMargin;
 
 		// add end span to free list
-		mappingInsert(endSpan->m_size, firstLevelIndex, secondLevelIndex);
-		addSpanToFreeList(endSpan, firstLevelIndex, secondLevelIndex);
+		addSpanToFreeList(endSpan);
 		++m_requiredDebugSpanCount;
 	}
 
@@ -177,10 +181,7 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 		if (nextPhysical && nextPhysical->m_usedSize == 0)
 		{
 			// remove next physical span from free list
-			uint32_t firstLevelIndex = 0;
-			uint32_t secondLevelIndex = 0;
-			mappingInsert(nextPhysical->m_size, firstLevelIndex, secondLevelIndex);
-			removeSpanFromFreeList(nextPhysical, firstLevelIndex, secondLevelIndex);
+			removeSpanFromFreeList(nextPhysical);
 
 			// merge spans
 			span->m_size += nextPhysical->m_size;
@@ -201,10 +202,7 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 		if (previousPhysical && previousPhysical->m_usedSize == 0)
 		{
 			// remove previous physical span from free list
-			uint32_t firstLevelIndex = 0;
-			uint32_t secondLevelIndex = 0;
-			mappingInsert(previousPhysical->m_size, firstLevelIndex, secondLevelIndex);
-			removeSpanFromFreeList(previousPhysical, firstLevelIndex, secondLevelIndex);
+			removeSpanFromFreeList(previousPhysical);
 
 			// merge spans
 			previousPhysical->m_size += span->m_size;
@@ -223,10 +221,7 @@ void VEngine::TLSFAllocator::free(void *backingSpan)
 
 	// add span to free list
 	{
-		uint32_t firstLevelIndex = 0;
-		uint32_t secondLevelIndex = 0;
-		mappingInsert(span->m_size, firstLevelIndex, secondLevelIndex);
-		addSpanToFreeList(span, firstLevelIndex, secondLevelIndex);
+		addSpanToFreeList(span);
 	}
 
 	--m_allocationCount;
@@ -328,16 +323,10 @@ void VEngine::TLSFAllocator::getFreeUsedWastedSizes(uint32_t &free, uint32_t &us
 
 void VEngine::TLSFAllocator::mappingInsert(uint32_t size, uint32_t &firstLevelIndex, uint32_t &secondLevelIndex)
 {
-	if (size < SMALL_BLOCK)
-	{
-		firstLevelIndex = 0;
-		secondLevelIndex = size / (SMALL_BLOCK / MAX_SECOND_LEVELS);
-	}
-	else
-	{
-		firstLevelIndex = Utility::findLastSetBit(size);
-		secondLevelIndex = (size >> (firstLevelIndex - MAX_LOG2_SECOND_LEVELS)) - MAX_SECOND_LEVELS;
-	}
+	assert(size >= SMALL_BLOCK);
+	
+	firstLevelIndex = Utility::findLastSetBit(size);
+	secondLevelIndex = (size >> (firstLevelIndex - MAX_LOG2_SECOND_LEVELS)) - MAX_SECOND_LEVELS;
 
 	assert(firstLevelIndex < MAX_FIRST_LEVELS);
 	assert(secondLevelIndex < MAX_SECOND_LEVELS);
@@ -345,19 +334,13 @@ void VEngine::TLSFAllocator::mappingInsert(uint32_t size, uint32_t &firstLevelIn
 
 void VEngine::TLSFAllocator::mappingSearch(uint32_t size, uint32_t &firstLevelIndex, uint32_t &secondLevelIndex)
 {
-	if (size < SMALL_BLOCK)
-	{
-		firstLevelIndex = 0;
-		secondLevelIndex = size / (SMALL_BLOCK / MAX_SECOND_LEVELS);
-	}
-	else
-	{
-		uint32_t t = (1 << (Utility::findLastSetBit(size) - MAX_LOG2_SECOND_LEVELS)) - 1;
-		size += t;
-		firstLevelIndex = Utility::findLastSetBit(size);
-		secondLevelIndex = (size >> (firstLevelIndex - MAX_LOG2_SECOND_LEVELS)) - MAX_SECOND_LEVELS;
-		size &= ~t;
-	}
+	assert(size >= SMALL_BLOCK);
+
+	uint32_t t = (1 << (Utility::findLastSetBit(size) - MAX_LOG2_SECOND_LEVELS)) - 1;
+	size += t;
+	firstLevelIndex = Utility::findLastSetBit(size);
+	secondLevelIndex = (size >> (firstLevelIndex - MAX_LOG2_SECOND_LEVELS)) - MAX_SECOND_LEVELS;
+	size &= ~t;
 
 	assert(firstLevelIndex < MAX_FIRST_LEVELS);
 	assert(secondLevelIndex < MAX_SECOND_LEVELS);
@@ -378,7 +361,7 @@ bool VEngine::TLSFAllocator::findFreeSpan(uint32_t &firstLevelIndex, uint32_t &s
 	else
 	{
 		firstLevelIndex = Utility::findFirstSetBit(m_firstLevelBitset & (~0u << (firstLevelIndex + 1)));
-		if (firstLevelIndex != (uint32_t(0) - 1))
+		if (firstLevelIndex != UINT32_MAX)
 		{
 			secondLevelIndex = Utility::findFirstSetBit(m_secondLevelBitsets[firstLevelIndex]);
 			return true;
@@ -387,62 +370,174 @@ bool VEngine::TLSFAllocator::findFreeSpan(uint32_t &firstLevelIndex, uint32_t &s
 	return false;
 }
 
-void VEngine::TLSFAllocator::addSpanToFreeList(Span *span, uint32_t firstLevelIndex, uint32_t secondLevelIndex)
+VEngine::TLSFAllocator::Span *VEngine::TLSFAllocator::findFreeSpan(uint32_t size)
 {
-	assert(firstLevelIndex < MAX_FIRST_LEVELS);
-	assert(secondLevelIndex < MAX_SECOND_LEVELS);
+	Span *result = nullptr;
+
+	if (size < SMALL_BLOCK && m_smallBitset != 0)
+	{
+		const uint32_t index = Utility::findFirstSetBit(m_smallBitset & (~0u << size));
+		if (index != UINT32_MAX)
+		{
+			result = m_smallFreeSpans[index];
+		}
+	}
+	else
+	{
+		// size must be at least SMALL_BLOCK size if we want to use tlsf allocation
+		size = size < SMALL_BLOCK ? SMALL_BLOCK : size;
+
+		uint32_t firstLevelIndex = 0;
+		uint32_t secondLevelIndex = 0;
+		// rounds up requested size to next power of two and finds indices of a list containing spans of the requested size class
+		mappingSearch(size, firstLevelIndex, secondLevelIndex);
+
+		for (int i = 0; i < 2; ++i)
+		{
+			// one last attempt: check the first element in the next smaller bucket size.
+			// tlsf always searches in a bucket that has spans that are at least as big as the requested size. however,
+			// the next smaller bucket may also have spans that are big enough. this may happen if a new TLSFAllocator
+			// was created and the first allocation tries to allocate the whole managed memory range.
+			if (i != 0)
+			{
+				if (secondLevelIndex == 0)
+				{
+					secondLevelIndex = 31;
+					--firstLevelIndex;
+				}
+				else
+				{
+					--secondLevelIndex;
+				}
+			}
+
+			uint32_t tmpFirstLevelIndex = firstLevelIndex;
+			uint32_t tmpSecondLevelIndex = secondLevelIndex;
+
+			// finds a free span and updates indices to the indices of the actual free list of the span
+			if (findFreeSpan(tmpFirstLevelIndex, tmpSecondLevelIndex))
+			{
+				result = m_freeSpans[tmpFirstLevelIndex][tmpSecondLevelIndex];
+				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+void VEngine::TLSFAllocator::addSpanToFreeList(Span *span)
+{
+	Span **list = nullptr;
+
+	// get pointer to beginning of the correct list of free spans and update bitsets
+	if (span->m_size < SMALL_BLOCK)
+	{
+		list = &m_smallFreeSpans[span->m_size];
+
+		// update bitset
+		m_smallBitset |= 1 << span->m_size;
+	}
+	else
+	{
+		uint32_t firstLevelIndex = 0;
+		uint32_t secondLevelIndex = 0;
+		mappingInsert(span->m_size, firstLevelIndex, secondLevelIndex);
+		
+		assert(firstLevelIndex < MAX_FIRST_LEVELS);
+		assert(secondLevelIndex < MAX_SECOND_LEVELS);
+
+		list = &m_freeSpans[firstLevelIndex][secondLevelIndex];
+
+		// update bitsets
+		m_secondLevelBitsets[firstLevelIndex] |= 1 << secondLevelIndex;
+		m_firstLevelBitset |= 1 << firstLevelIndex;
+	}
 
 	// set span as new head
-	Span *head = m_freeSpans[firstLevelIndex][secondLevelIndex];
-	m_freeSpans[firstLevelIndex][secondLevelIndex] = span;
+	Span *prevHead = *list;
+	*list = span;
 
 	// link span and previous head and mark span as free
 	span->m_previous = nullptr;
-	span->m_next = head;
+	span->m_next = prevHead;
 	span->m_usedOffset = 0;
 	span->m_usedSize = 0;
-	if (head)
+	if (prevHead)
 	{
-		assert(!head->m_previous);
-		head->m_previous = span;
+		assert(!prevHead->m_previous);
+		prevHead->m_previous = span;
 	}
-
-	// update bitsets
-	m_secondLevelBitsets[firstLevelIndex] |= 1 << secondLevelIndex;
-	m_firstLevelBitset |= 1 << firstLevelIndex;
 }
 
-void VEngine::TLSFAllocator::removeSpanFromFreeList(Span *span, uint32_t firstLevelIndex, uint32_t secondLevelIndex)
+void VEngine::TLSFAllocator::removeSpanFromFreeList(Span *span)
 {
-	assert(firstLevelIndex < MAX_FIRST_LEVELS);
-	assert(secondLevelIndex < MAX_SECOND_LEVELS);
-
-	// is span head of list?
-	if (!span->m_previous)
+	if (span->m_size < SMALL_BLOCK)
 	{
-		assert(span == m_freeSpans[firstLevelIndex][secondLevelIndex]);
-
-		m_freeSpans[firstLevelIndex][secondLevelIndex] = span->m_next;
-		if (span->m_next)
+		// is span head of list?
+		if (!span->m_previous)
 		{
-			span->m_next->m_previous = nullptr;
+			assert(span == m_smallFreeSpans[span->m_size]);
+
+			m_smallFreeSpans[span->m_size] = span->m_next;
+			if (span->m_next)
+			{
+				span->m_next->m_previous = nullptr;
+			}
+			else
+			{
+				// update bitset, since list is now empty
+				m_smallBitset &= ~(1 << span->m_size);
+			}
 		}
 		else
 		{
-			// update bitsets, since list is now empty
-			m_secondLevelBitsets[firstLevelIndex] &= ~(1 << secondLevelIndex);
-			if (m_secondLevelBitsets[firstLevelIndex] == 0)
+			span->m_previous->m_next = span->m_next;
+			if (span->m_next)
 			{
-				m_firstLevelBitset &= ~(1 << firstLevelIndex);
+				span->m_next->m_previous = span->m_previous;
 			}
 		}
 	}
 	else
 	{
-		span->m_previous->m_next = span->m_next;
-		if (span->m_next)
+		uint32_t firstLevelIndex = 0;
+		uint32_t secondLevelIndex = 0;
+		mappingInsert(span->m_size, firstLevelIndex, secondLevelIndex);
+		
+		// remove from free list
 		{
-			span->m_next->m_previous = span->m_previous;
+			assert(firstLevelIndex < MAX_FIRST_LEVELS);
+			assert(secondLevelIndex < MAX_SECOND_LEVELS);
+
+			// is span head of list?
+			if (!span->m_previous)
+			{
+				assert(span == m_freeSpans[firstLevelIndex][secondLevelIndex]);
+
+				m_freeSpans[firstLevelIndex][secondLevelIndex] = span->m_next;
+				if (span->m_next)
+				{
+					span->m_next->m_previous = nullptr;
+				}
+				else
+				{
+					// update bitsets, since list is now empty
+					m_secondLevelBitsets[firstLevelIndex] &= ~(1 << secondLevelIndex);
+					if (m_secondLevelBitsets[firstLevelIndex] == 0)
+					{
+						m_firstLevelBitset &= ~(1 << firstLevelIndex);
+					}
+				}
+			}
+			else
+			{
+				span->m_previous->m_next = span->m_next;
+				if (span->m_next)
+				{
+					span->m_next->m_previous = span->m_previous;
+				}
+			}
 		}
 	}
 

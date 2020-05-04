@@ -48,7 +48,7 @@ uint32_t VEngine::Utility::findFirstSetBit(uint32_t mask)
 
 	if (!mask)
 	{
-		return -1;
+		return UINT32_MAX;
 	}
 
 	if (!(mask & 0xFFFF))
@@ -85,7 +85,7 @@ uint32_t VEngine::Utility::findLastSetBit(uint32_t mask)
 
 	if (!mask)
 	{
-		return -1;
+		return UINT32_MAX;
 	}
 
 	if (!(mask & 0xFFFF0000u))

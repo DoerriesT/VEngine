@@ -383,7 +383,7 @@ VkResult VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::alloc(VkDeviceSize size,
 		}
 
 		VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		memoryAllocateInfo.allocationSize = size + alignment > m_preferredBlockSize ? Utility::alignUp(size + alignment, VkDeviceSize(1024 * 1024)) : m_preferredBlockSize;
+		memoryAllocateInfo.allocationSize = size > m_preferredBlockSize ? size : m_preferredBlockSize;
 		memoryAllocateInfo.memoryTypeIndex = m_memoryType;
 
 		if (vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_memory[blockIndex]) != VK_SUCCESS)

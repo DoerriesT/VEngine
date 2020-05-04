@@ -211,7 +211,6 @@ namespace VEngine
 			desc.m_clear = true;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = bufferSize;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -236,7 +235,6 @@ namespace VEngine
 			desc.m_clear = true;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * drawCount;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -249,7 +247,6 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * count;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -262,7 +259,6 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * 2;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -275,7 +271,6 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(float) * partitions;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -288,7 +283,6 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * 6 * partitions;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
@@ -301,7 +295,6 @@ namespace VEngine
 			desc.m_clear = false;
 			desc.m_clearValue.m_bufferClearValue = 0;
 			desc.m_size = sizeof(uint32_t) * instances;
-			desc.m_size = desc.m_size < 32 ? 32 : desc.m_size;
 
 			return graph.createBufferView({ desc.m_name, graph.createBuffer(desc), 0, desc.m_size });
 		}
