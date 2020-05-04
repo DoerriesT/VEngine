@@ -38,6 +38,16 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 	m_descriptorSetLayoutMemoryPool(8),
 	m_debugLayers(debugLayer)
 {
+	// Enable the D3D12 debug layer.
+	{
+		ID3D12Debug *debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), (void **)&debugController)))
+		{
+			debugController->EnableDebugLayer();
+		}
+		debugController->Release();
+	}
+
 	// get adapter
 	IDXGIAdapter4 *dxgiAdapter4 = nullptr;
 	{
@@ -111,8 +121,8 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 				NewFilter.DenyList.pIDList = DenyIds;
 
 				//UtilityDx12::checkResult(pInfoQueue->PushStorageFilter(&NewFilter), "Failed to set info queue filter!");
+				pInfoQueue->Release();
 			}
-			pInfoQueue->Release();
 		}
 
 		m_device = d3d12Device2;
@@ -615,7 +625,57 @@ void VEngine::gal::GraphicsDeviceDx12::waitIdle()
 
 void VEngine::gal::GraphicsDeviceDx12::setDebugObjectName(ObjectType objectType, void *object, const char *name)
 {
-	// TODO
+	constexpr size_t wStrLen = 1024;
+	wchar_t wName[wStrLen];
+
+	size_t ret;
+	mbstowcs_s(&ret, wName, name, wStrLen - 1);
+
+	switch (objectType)
+	{
+	case ObjectType::QUEUE:
+		((ID3D12CommandQueue *)((QueueDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::SEMAPHORE:
+		((ID3D12Fence *)((SemaphoreDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::COMMAND_LIST:
+		((ID3D12GraphicsCommandList5 *)((CommandListDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::BUFFER:
+		((ID3D12Resource *)((BufferDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::IMAGE:
+		((ID3D12Resource *)((ImageDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::QUERY_POOL:
+		((ID3D12QueryHeap *)((QueryPoolDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::BUFFER_VIEW:
+		break;
+	case VEngine::gal::ObjectType::IMAGE_VIEW:
+		break;
+	case VEngine::gal::ObjectType::GRAPHICS_PIPELINE:
+		((ID3D12PipelineState *)((GraphicsPipelineDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::COMPUTE_PIPELINE:
+		((ID3D12PipelineState *)((ComputePipelineDx12 *)object)->getNativeHandle())->SetName(wName);
+		break;
+	case VEngine::gal::ObjectType::DESCRIPTOR_SET_LAYOUT:
+		break;
+	case VEngine::gal::ObjectType::SAMPLER:
+		break;
+	case VEngine::gal::ObjectType::DESCRIPTOR_POOL:
+		break;
+	case VEngine::gal::ObjectType::DESCRIPTOR_SET:
+		break;
+	case VEngine::gal::ObjectType::COMMAND_LIST_POOL:
+		break;
+	case VEngine::gal::ObjectType::SWAPCHAIN:
+		break;
+	default:
+		break;
+	}
 }
 
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceDx12::getGraphicsQueue()

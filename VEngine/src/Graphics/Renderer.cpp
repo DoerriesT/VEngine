@@ -45,12 +45,6 @@
 
 using namespace VEngine::gal;
 
-extern uint32_t g_debugVoxelCascadeIndex;
-extern uint32_t g_giVoxelDebugMode;
-extern uint32_t g_allocatedBricks;
-extern bool g_forceVoxelization;
-extern bool g_voxelizeOnDemand;
-
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN)),
 	m_framesSinceLastResize()

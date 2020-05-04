@@ -25,6 +25,7 @@ namespace VEngine
 			bool needsSamplerHeap() const;
 
 		private:
+			DescriptorSetLayoutTypeCounts m_typeCounts = {};
 			uint32_t m_offsetFromTableStart[32];
 			uint32_t m_totalDescriptorCount;
 			uint32_t m_rangeCount;

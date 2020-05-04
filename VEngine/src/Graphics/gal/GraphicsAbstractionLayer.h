@@ -10,7 +10,8 @@ namespace VEngine
 
 		enum class GraphicsBackendType
 		{
-			VULKAN = 0
+			VULKAN,
+			D3D12
 		};
 
 		enum class ObjectType

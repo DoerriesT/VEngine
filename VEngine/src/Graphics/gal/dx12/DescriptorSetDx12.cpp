@@ -188,6 +188,11 @@ void *VEngine::gal::DescriptorSetLayoutDx12::getNativeHandle() const
 	return nullptr;
 }
 
+const VEngine::gal::DescriptorSetLayoutTypeCounts &VEngine::gal::DescriptorSetLayoutDx12::getTypeCounts() const
+{
+	return m_typeCounts;
+}
+
 uint32_t VEngine::gal::DescriptorSetLayoutDx12::getDescriptorCount() const
 {
 	return m_totalDescriptorCount;

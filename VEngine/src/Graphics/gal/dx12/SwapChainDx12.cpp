@@ -1,6 +1,9 @@
 #include "SwapChainDx12.h"
 #include "UtilityDx12.h"
 #include "GraphicsDeviceDx12.h"
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 VEngine::gal::SwapChainDx12::SwapChainDx12(GraphicsDeviceDx12 *graphicsDevice, ID3D12Device *device, void *windowHandle, Queue *presentQueue, uint32_t width, uint32_t height)
     :m_graphicsDeviceDx12(graphicsDevice),
@@ -80,25 +83,37 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
 
     // Describe and create the swap chain.
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.BufferCount = s_maxImageCount;
-    swapChainDesc.Width = width;
-    swapChainDesc.Height = height;
+    swapChainDesc.Width = 0;
+    swapChainDesc.Height = 0;
     swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapChainDesc.Stereo = FALSE;
     swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = s_maxImageCount;
+    swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+    swapChainDesc.Flags = 0;
 
     IDXGISwapChain1 *swapChain;
-    UtilityDx12::checkResult(factory->CreateSwapChainForHwnd((ID3D12CommandQueue *)m_presentQueue->getNativeHandle(), (HWND)m_windowHandle, &swapChainDesc, nullptr, nullptr, &swapChain), "Failed to create swapchain!");
+    UtilityDx12::checkResult(factory->CreateSwapChainForHwnd((ID3D12CommandQueue *)m_presentQueue->getNativeHandle(), glfwGetWin32Window((GLFWwindow *)m_windowHandle), &swapChainDesc, nullptr, nullptr, &swapChain), "Failed to create swapchain!");
     UtilityDx12::checkResult(swapChain->QueryInterface(__uuidof(IDXGISwapChain4), (void **)&m_swapChain), "Failed to create swapchain!");
 
     UtilityDx12::checkResult(factory->MakeWindowAssociation((HWND)m_windowHandle, DXGI_MWA_NO_ALT_ENTER), "Failed to create swapchain!");
 
+    m_swapChain->GetDesc1(&swapChainDesc);
+
+    m_extent.m_width = swapChainDesc.Width;
+    m_extent.m_height = swapChainDesc.Height;
+
+    m_imageFormat = Format::B8G8R8A8_UNORM;
+
     m_imageCount = s_maxImageCount;
 
     ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.m_width = width;
-    imageCreateInfo.m_height = height;
+    imageCreateInfo.m_width = m_extent.m_width;
+    imageCreateInfo.m_height = m_extent.m_height;
     imageCreateInfo.m_depth = 1;
     imageCreateInfo.m_layers = 1;
     imageCreateInfo.m_levels = 1;
@@ -117,11 +132,6 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
 
         m_images[i] = new(memory) ImageDx12(imageDx, nullptr, imageCreateInfo);
     }
-
-    m_extent.m_width = width;
-    m_extent.m_height = height;
-
-    m_imageFormat = Format::B8G8R8A8_UNORM;
 }
 
 void VEngine::gal::SwapChainDx12::destroy()

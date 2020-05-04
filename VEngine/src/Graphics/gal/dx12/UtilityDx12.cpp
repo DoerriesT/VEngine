@@ -1,9 +1,165 @@
 #include "UtilityDx12.h"
 #include <cassert>
+#include "Utility/Utility.h"
 
 HRESULT VEngine::gal::UtilityDx12::checkResult(HRESULT result, const char *errorMsg, bool exitOnError)
 {
-	return E_NOTIMPL;
+	if (SUCCEEDED(result))
+	{
+		return result;
+	}
+
+	constexpr size_t maxErrorMsgLength = 256;
+	constexpr size_t maxResultLength = 128;
+	constexpr size_t msgBufferLength = maxErrorMsgLength + maxResultLength;
+
+	char msgBuffer[msgBufferLength];
+	msgBuffer[0] = '\0';
+
+	if (errorMsg)
+	{
+		snprintf(msgBuffer, maxErrorMsgLength, errorMsg);
+	}
+
+	bool error = false;
+
+	switch (result)
+	{
+	case S_OK:
+		break;
+	case S_FALSE:
+		break;
+	case E_NOTIMPL:
+		strcat_s(msgBuffer, " E_NOTIMPL\n");
+		error = true;
+		break;
+	case E_OUTOFMEMORY:
+		strcat_s(msgBuffer, " E_OUTOFMEMORY\n");
+		error = true;
+		break;
+	case E_INVALIDARG:
+		strcat_s(msgBuffer, " E_INVALIDARG\n");
+		error = true;
+		break;
+	case E_FAIL:
+		strcat_s(msgBuffer, " E_FAIL\n");
+		error = true;
+		break;
+	case DXGI_ERROR_WAS_STILL_DRAWING:
+		strcat_s(msgBuffer, " DXGI_ERROR_WAS_STILL_DRAWING\n");
+		error = true;
+		break;
+	case DXGI_ERROR_INVALID_CALL:
+		strcat_s(msgBuffer, " DXGI_ERROR_INVALID_CALL\n");
+		error = true;
+		break;
+	//case D3D12_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS:
+	//	strcat_s(msgBuffer, " D3D12_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS\n");
+	//	error = true;
+	//	break;
+	//case D3D12_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS:
+	//	strcat_s(msgBuffer, " D3D12_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS\n");
+	//	error = true;
+	//	break;
+	//case D3D12_ERROR_FILE_NOT_FOUND:
+	//	strcat_s(msgBuffer, " D3D12_ERROR_FILE_NOT_FOUND\n");
+	//	error = true;
+	//	break;
+	case DXGI_ERROR_ACCESS_DENIED:
+		strcat_s(msgBuffer, " DXGI_ERROR_ACCESS_DENIED\n");
+		error = true;
+		break;
+	case DXGI_ERROR_ACCESS_LOST:
+		strcat_s(msgBuffer, " DXGI_ERROR_ACCESS_LOST\n");
+		error = true;
+		break;
+	case DXGI_ERROR_ALREADY_EXISTS:
+		strcat_s(msgBuffer, " DXGI_ERROR_ALREADY_EXISTS\n");
+		error = true;
+		break;
+	case DXGI_ERROR_CANNOT_PROTECT_CONTENT:
+		strcat_s(msgBuffer, " DXGI_ERROR_CANNOT_PROTECT_CONTENT\n");
+		error = true;
+		break;
+	case DXGI_ERROR_DEVICE_HUNG:
+		strcat_s(msgBuffer, " DXGI_ERROR_DEVICE_HUNG\n");
+		error = true;
+		break;
+	case DXGI_ERROR_DEVICE_REMOVED:
+		strcat_s(msgBuffer, " DXGI_ERROR_DEVICE_REMOVED\n");
+		error = true;
+		break;
+	case DXGI_ERROR_DEVICE_RESET:
+		strcat_s(msgBuffer, " DXGI_ERROR_DEVICE_RESET\n");
+		error = true;
+		break;
+	case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
+		strcat_s(msgBuffer, " DXGI_ERROR_DRIVER_INTERNAL_ERROR\n");
+		error = true;
+		break;
+	case DXGI_ERROR_FRAME_STATISTICS_DISJOINT:
+		strcat_s(msgBuffer, " DXGI_ERROR_FRAME_STATISTICS_DISJOINT\n");
+		error = true;
+		break;
+	case DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE:
+		strcat_s(msgBuffer, " DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE\n");
+		error = true;
+		break;
+	case DXGI_ERROR_MORE_DATA:
+		strcat_s(msgBuffer, " DXGI_ERROR_MORE_DATA\n");
+		error = true;
+		break;
+	case DXGI_ERROR_NAME_ALREADY_EXISTS:
+		strcat_s(msgBuffer, " DXGI_ERROR_NAME_ALREADY_EXISTS\n");
+		error = true;
+		break;
+	case DXGI_ERROR_NONEXCLUSIVE:
+		strcat_s(msgBuffer, " DXGI_ERROR_NONEXCLUSIVE\n");
+		error = true;
+		break;
+	case DXGI_ERROR_NOT_CURRENTLY_AVAILABLE:
+		strcat_s(msgBuffer, " DXGI_ERROR_NOT_CURRENTLY_AVAILABLE\n");
+		error = true;
+		break;
+	case DXGI_ERROR_NOT_FOUND:
+		strcat_s(msgBuffer, " DXGI_ERROR_NOT_FOUND\n");
+		error = true;
+		break;
+	case DXGI_ERROR_RESTRICT_TO_OUTPUT_STALE:
+		strcat_s(msgBuffer, " DXGI_ERROR_RESTRICT_TO_OUTPUT_STALE\n");
+		error = true;
+		break;
+	case DXGI_ERROR_SDK_COMPONENT_MISSING:
+		strcat_s(msgBuffer, " DXGI_ERROR_SDK_COMPONENT_MISSING\n");
+		error = true;
+		break;
+	case DXGI_ERROR_SESSION_DISCONNECTED:
+		strcat_s(msgBuffer, " DXGI_ERROR_SESSION_DISCONNECTED\n");
+		error = true;
+		break;
+	case DXGI_ERROR_UNSUPPORTED:
+		strcat_s(msgBuffer, " DXGI_ERROR_UNSUPPORTED\n");
+		error = true;
+		break;
+	case DXGI_ERROR_WAIT_TIMEOUT:
+		strcat_s(msgBuffer, " DXGI_ERROR_WAIT_TIMEOUT\n");
+		error = true;
+		break;
+	default:
+		break;
+	}
+
+	if (error)
+	{
+		printf(msgBuffer);
+	}
+
+	if (error && exitOnError)
+	{
+		Utility::fatalExit(msgBuffer, EXIT_FAILURE);
+	}
+
+	return result;
 }
 
 D3D12_COMPARISON_FUNC VEngine::gal::UtilityDx12::translate(CompareOp compareOp)
