@@ -146,12 +146,12 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogVBufferPassData.m_jitter[0] = jitterX0;
-	volumetricFogVBufferPassData.m_jitter[1] = jitterY0;
-	volumetricFogVBufferPassData.m_jitter[2] = jitterZ0;
-	volumetricFogVBufferPassData.m_jitter[3] = jitterX1;
-	volumetricFogVBufferPassData.m_jitter[4] = jitterY1;
-	volumetricFogVBufferPassData.m_jitter[5] = jitterZ1;
+	volumetricFogScatterPassData.m_jitter[0] = jitterX0;
+	volumetricFogScatterPassData.m_jitter[1] = jitterY0;
+	volumetricFogScatterPassData.m_jitter[2] = jitterZ0;
+	volumetricFogScatterPassData.m_jitter[3] = jitterX1;
+	volumetricFogScatterPassData.m_jitter[4] = jitterY1;
+	volumetricFogScatterPassData.m_jitter[5] = jitterZ1;
 	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
 	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
 	volumetricFogScatterPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
