@@ -14,6 +14,13 @@ namespace VEngine
 			D3D12
 		};
 
+		enum class QueueType
+		{
+			GRAPHICS,
+			COMPUTE,
+			TRANSFER
+		};
+
 		enum class ObjectType
 		{
 			QUEUE,
@@ -1183,7 +1190,7 @@ namespace VEngine
 			virtual void endQuery(const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount) = 0;
 			virtual void writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query) = 0;
-			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags) = 0;
+			virtual void copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset) = 0;
 			virtual void pushConstants(const GraphicsPipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
 			virtual void pushConstants(const ComputePipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values) = 0;
 			virtual void beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea) = 0;
@@ -1208,8 +1215,10 @@ namespace VEngine
 		public:
 			virtual ~Queue() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual uint32_t getFamilyIndex() const = 0;
+			virtual QueueType getQueueType() const = 0;
 			virtual uint32_t getTimestampValidBits() const = 0;
+			virtual float getTimestampPeriod() const = 0;
+			virtual bool canPresent() const = 0;
 			virtual void submit(uint32_t count, const SubmitInfo *submitInfo) = 0;
 			virtual void waitIdle() const = 0;
 		};
@@ -1322,8 +1331,6 @@ namespace VEngine
 			virtual Queue *getGraphicsQueue() = 0;
 			virtual Queue *getComputeQueue() = 0;
 			virtual Queue *getTransferQueue() = 0;
-			virtual void getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags) = 0;
-			virtual float getTimestampPeriod() const = 0;
 			virtual uint64_t getMinUniformBufferOffsetAlignment() const = 0;
 			virtual uint64_t getMinStorageBufferOffsetAlignment() const = 0;
 			virtual float getMaxSamplerAnisotropy() const = 0;

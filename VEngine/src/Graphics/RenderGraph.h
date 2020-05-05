@@ -239,6 +239,7 @@ namespace VEngine
 				gal::PipelineStageFlags m_waitDstStageMasks[3];
 				uint64_t m_waitValues[3];
 				uint64_t m_signalValue;
+				bool m_lastBatchOnQueue;
 			};
 
 			enum { TIMESTAMP_QUERY_COUNT = 1024 };
@@ -250,6 +251,7 @@ namespace VEngine
 			uint64_t m_queueTimestampMasks[3];
 			bool m_recordTimings = true;
 			std::unique_ptr<PassTimingInfo[]> m_timingInfos;
+			gal::Buffer *m_queryResultBuffer;
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //

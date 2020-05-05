@@ -360,17 +360,26 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		m_physicalDevice = selectedDevice.m_physicalDevice;
 
-		m_graphicsQueue.m_queueFamily = selectedDevice.m_graphicsQueueFamily;
 		m_graphicsQueue.m_queue = VK_NULL_HANDLE;
+		m_graphicsQueue.m_queueType = QueueType::GRAPHICS;
+		m_graphicsQueue.m_timestampValidBits = 0;
+		m_graphicsQueue.m_timestampPeriod = selectedDevice.m_properties.limits.timestampPeriod;
 		m_graphicsQueue.m_presentable = true;
+		m_graphicsQueue.m_queueFamily = selectedDevice.m_graphicsQueueFamily;
 
-		m_computeQueue.m_queueFamily = selectedDevice.m_computeQueueFamily;
 		m_computeQueue.m_queue = VK_NULL_HANDLE;
+		m_computeQueue.m_queueType = QueueType::COMPUTE;
+		m_computeQueue.m_timestampValidBits = 0;
+		m_computeQueue.m_timestampPeriod = selectedDevice.m_properties.limits.timestampPeriod;
 		m_computeQueue.m_presentable = selectedDevice.m_computeQueuePresentable;
+		m_computeQueue.m_queueFamily = selectedDevice.m_computeQueueFamily;
 
-		m_transferQueue.m_queueFamily = selectedDevice.m_transferQueueFamily;
 		m_transferQueue.m_queue = VK_NULL_HANDLE;
+		m_transferQueue.m_queueType = QueueType::TRANSFER;
+		m_transferQueue.m_timestampValidBits = 0;
+		m_transferQueue.m_timestampPeriod = selectedDevice.m_properties.limits.timestampPeriod;
 		m_transferQueue.m_presentable = false;
+		m_transferQueue.m_queueFamily = selectedDevice.m_transferQueueFamily;
 
 		m_properties = selectedDevice.m_properties;
 		m_features = selectedDevice.m_features;
@@ -634,9 +643,9 @@ void VEngine::gal::GraphicsDeviceVk::createBuffer(const BufferCreateInfo &buffer
 
 	uint32_t queueFamilyIndices[] =
 	{
-		m_graphicsQueue.getFamilyIndex(),
-		m_computeQueue.getFamilyIndex(),
-		m_transferQueue.getFamilyIndex()
+		m_graphicsQueue.m_queueFamily,
+		m_computeQueue.m_queueFamily,
+		m_transferQueue.m_queueFamily
 	};
 
 	uint32_t queueFamilyIndexCount = 0;
@@ -997,16 +1006,6 @@ VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getComputeQueue()
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getTransferQueue()
 {
 	return m_transferQueue.m_queue == m_graphicsQueue.m_queue ? &m_graphicsQueue : &m_transferQueue;
-}
-
-void VEngine::gal::GraphicsDeviceVk::getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags)
-{
-	UtilityVk::checkResult(vkGetQueryPoolResults(m_device, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount, dataSize, data, stride, flags));
-}
-
-float VEngine::gal::GraphicsDeviceVk::getTimestampPeriod() const
-{
-	return m_properties.limits.timestampPeriod;
 }
 
 uint64_t VEngine::gal::GraphicsDeviceVk::getMinUniformBufferOffsetAlignment() const

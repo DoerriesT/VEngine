@@ -8,7 +8,7 @@ VEngine::gal::CommandListPoolVk::CommandListPoolVk(GraphicsDeviceVk &device, con
 	m_commandPool(VK_NULL_HANDLE),
 	m_commandListMemoryPool(32)
 {
-	VkCommandPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queue.getFamilyIndex() };
+	VkCommandPoolCreateInfo poolCreateInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, nullptr, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queue.m_queueFamily };
 	UtilityVk::checkResult(vkCreateCommandPool(device.getDevice(), &poolCreateInfo, nullptr, &m_commandPool), "Failed to create command pool!");
 }
 

@@ -17,10 +17,12 @@ namespace VEngine
 			~QueryPoolDx12();
 			void *getNativeHandle() const override;
 			D3D12_QUERY_HEAP_TYPE getHeapType() const;
+			D3D12_QUERY_TYPE getQueryType() const;
 
 		private:
 			ID3D12QueryHeap *m_queryHeap;
 			D3D12_QUERY_HEAP_TYPE m_heapType;
+			D3D12_QUERY_TYPE m_queryType;
 		};
 	}
 }

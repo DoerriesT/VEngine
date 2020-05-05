@@ -7,14 +7,24 @@ void *VEngine::gal::QueueVk::getNativeHandle() const
 	return m_queue;
 }
 
-uint32_t VEngine::gal::QueueVk::getFamilyIndex() const
+VEngine::gal::QueueType VEngine::gal::QueueVk::getQueueType() const
 {
-	return m_queueFamily;
+	return m_queueType;
 }
 
 uint32_t VEngine::gal::QueueVk::getTimestampValidBits() const
 {
 	return m_timestampValidBits;
+}
+
+float VEngine::gal::QueueVk::getTimestampPeriod() const
+{
+	return m_timestampPeriod;
+}
+
+bool VEngine::gal::QueueVk::canPresent() const
+{
+	return m_presentable;
 }
 
 void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)

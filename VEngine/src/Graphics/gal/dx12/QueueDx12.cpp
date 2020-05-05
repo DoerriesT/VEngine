@@ -1,19 +1,41 @@
 #include "QueueDx12.h"
 #include <vector>
 
+void VEngine::gal::QueueDx12::init(ID3D12CommandQueue *queue, QueueType queueType, uint32_t timestampBits, bool presentable)
+{
+	m_queue = queue;
+	m_queueType = queueType;
+	m_timestampValidBits = timestampBits;
+
+	uint64_t timestampFrequency;
+	queue->GetTimestampFrequency(&timestampFrequency);
+	m_timestampPeriod = (float)((1.0 / double(timestampFrequency)) * 1e9);
+	m_presentable = presentable;
+}
+
 void *VEngine::gal::QueueDx12::getNativeHandle() const
 {
 	return m_queue;
 }
 
-uint32_t VEngine::gal::QueueDx12::getFamilyIndex() const
+VEngine::gal::QueueType VEngine::gal::QueueDx12::getQueueType() const
 {
-	return m_queueFamily;
+	return m_queueType;
 }
 
 uint32_t VEngine::gal::QueueDx12::getTimestampValidBits() const
 {
 	return m_timestampValidBits;
+}
+
+float VEngine::gal::QueueDx12::getTimestampPeriod() const
+{
+	return m_timestampPeriod;
+}
+
+bool VEngine::gal::QueueDx12::canPresent() const
+{
+	return m_presentable;
 }
 
 void VEngine::gal::QueueDx12::submit(uint32_t count, const SubmitInfo *submitInfo)

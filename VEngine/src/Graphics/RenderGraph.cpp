@@ -168,6 +168,13 @@ VEngine::rg::RenderGraph::RenderGraph(gal::GraphicsDevice *graphicsDevice, Semap
 		const uint32_t validBits = m_queues[i]->getTimestampValidBits();
 		m_queueTimestampMasks[i] = validBits >= 64 ? ~uint64_t() : ((uint64_t(1) << validBits) - 1);
 	}
+
+	gal::BufferCreateInfo createInfo{};
+	createInfo.m_size = 3 * TIMESTAMP_QUERY_COUNT * 8;
+	createInfo.m_createFlags = 0;
+	createInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT;
+
+	m_graphicsDevice->createBuffer(createInfo, MemoryPropertyFlagBits::HOST_CACHED_BIT | MemoryPropertyFlagBits::HOST_VISIBLE_BIT, 0, false, &m_queryResultBuffer);
 }
 
 VEngine::rg::RenderGraph::~RenderGraph()
@@ -177,6 +184,7 @@ VEngine::rg::RenderGraph::~RenderGraph()
 	{
 		m_graphicsDevice->destroyQueryPool(m_queryPools[i]);
 	}
+	m_graphicsDevice->destroyBuffer(m_queryResultBuffer);
 }
 
 void VEngine::rg::RenderGraph::addPass(const char *name, QueueType queueType, uint32_t passResourceUsageCount, const ResourceUsageDescription *passResourceUsages, const RecordFunc &recordFunc, bool forceExecution)
@@ -442,25 +450,32 @@ void VEngine::rg::RenderGraph::reset()
 	if (m_recordTimings && !m_passHandleOrder.empty())
 	{
 		m_timingInfoCount = static_cast<uint32_t>(m_passHandleOrder.size());
+
+		uint64_t *queryResultData;
+		m_queryResultBuffer->map((void **)&queryResultData);
+		MemoryRange range{ 0, TIMESTAMP_QUERY_COUNT * 3 * 8 };
+		m_queryResultBuffer->invalidate(1, &range);
+
 		for (uint32_t i = 0; i < m_passHandleOrder.size(); ++i)
 		{
 			const Queue *queue = m_passRecordInfo[m_passHandleOrder[i]].m_queue;
-			const uint32_t queueIndex = queue->getFamilyIndex();
+			const uint32_t queueIndex = static_cast<uint32_t>(queue->getQueueType());
 
 			// zero initialize data so that passes on queues without timestamp support will have timings of 0
 			uint64_t data[4]{};
 			if (m_queueTimestampMasks[queueIndex])
 			{
-				m_graphicsDevice->getQueryPoolResults(m_queryPools[queueIndex], i * 4, 4, sizeof(data), data, sizeof(data[0]), QueryResultFlagBits::_64_BIT | QueryResultFlagBits::WAIT_BIT);
+				//m_graphicsDevice->getQueryPoolResults(m_queryPools[queueIndex], i * 4, 4, sizeof(data), data, sizeof(data[0]), QueryResultFlagBits::_64_BIT | QueryResultFlagBits::WAIT_BIT);
 
 				// mask value by valid timestamp bits
 				for (size_t j = 0; j < 4; ++j)
 				{
+					data[j] = queryResultData[queueIndex * TIMESTAMP_QUERY_COUNT + i * 4 + j];
 					data[j] = data[j] & m_queueTimestampMasks[queueIndex];
 				}
 			}
 
-			const float timestampPeriod = m_graphicsDevice->getTimestampPeriod();
+			const float timestampPeriod = queue->getTimestampPeriod();
 
 			m_timingInfos[i] =
 			{
@@ -1066,6 +1081,24 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 		prevQueue = curQueue;
 		++batch.m_passIndexCount;
 	}
+
+	// walk backwards over batches and find last batch for each queue
+	bool foundLastBatch[3] = {};
+	for (size_t i = m_batches.size(); i > 0; --i)
+	{
+		auto &batch = m_batches[i - 1];
+		const size_t queueIdx = batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2;
+		if (!foundLastBatch[queueIdx])
+		{
+			foundLastBatch[queueIdx] = true;
+			batch.m_lastBatchOnQueue = true;
+
+			if (foundLastBatch[0] && foundLastBatch[1] && foundLastBatch[2])
+			{
+				break;
+			}
+		}
+	}
 }
 
 void VEngine::rg::RenderGraph::record()
@@ -1098,10 +1131,14 @@ void VEngine::rg::RenderGraph::record()
 	assert(!m_recordTimings || m_passHandleOrder.size() <= (TIMESTAMP_QUERY_COUNT / 4));
 
 	bool resetQueryPools[3] = {};
+	uint32_t queryCounts[3] = {};
 
 	// record passes
 	for (const auto &batch : m_batches)
 	{
+		const uint32_t queueTypeIndex = batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2;
+		const bool recordTimings = m_recordTimings && m_queueTimestampMasks[queueTypeIndex];
+
 		// get command list
 		CommandList *cmdList = m_commandLists[batch.m_cmdListOffset] = m_commandListFramePool.acquire(batch.m_queue);
 
@@ -1116,10 +1153,8 @@ void VEngine::rg::RenderGraph::record()
 			cmdList->beginDebugLabel(m_passNames[passHandle]);
 
 			const uint32_t queryIndex = (i + batch.m_passIndexOffset) * 4;
-			const uint32_t queueTypeIndex = batch.m_queue == m_queues[0] ? 0 : batch.m_queue == m_queues[1] ? 1 : 2;
+			
 			// disable timestamps if the queue doesnt support it
-			const bool recordTimings = m_recordTimings && m_queueTimestampMasks[queueTypeIndex];
-
 			if (recordTimings && !resetQueryPools[queueTypeIndex])
 			{
 				cmdList->resetQueryPool(m_queryPools[queueTypeIndex], 0, TIMESTAMP_QUERY_COUNT);
@@ -1163,9 +1198,16 @@ void VEngine::rg::RenderGraph::record()
 			if (recordTimings)
 			{
 				cmdList->writeTimestamp(PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT, m_queryPools[queueTypeIndex], queryIndex + 3);
+				queryCounts[queueTypeIndex] += 4;
 			}
 
 			cmdList->endDebugLabel();
+		}
+
+		if (recordTimings && batch.m_lastBatchOnQueue)
+		{
+			// 4 queries per pass and 8 byte per query
+			cmdList->copyQueryPoolResults(m_queryPools[queueTypeIndex], 0, queryCounts[queueTypeIndex], m_queryResultBuffer, queueTypeIndex * TIMESTAMP_QUERY_COUNT * 8);
 		}
 
 		// end recording

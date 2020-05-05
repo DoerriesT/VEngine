@@ -190,7 +190,7 @@ void VEngine::gal::CommandListDx12::drawIndexed(uint32_t indexCount, uint32_t in
 }
 
 void VEngine::gal::CommandListDx12::drawIndirect(const Buffer *buffer, uint64_t offset, uint32_t drawCount, uint32_t stride)
-{ 
+{
 	m_commandList->ExecuteIndirect(m_recordContext->m_drawIndirectSignature, drawCount, (ID3D12Resource *)buffer->getNativeHandle(), offset, nullptr, 0);
 }
 
@@ -226,7 +226,7 @@ void VEngine::gal::CommandListDx12::copyImage(const Image *srcImage, const Image
 
 		D3D12_TEXTURE_COPY_LOCATION srcCpyLoc{ (ID3D12Resource *)srcImage->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX };
 		srcCpyLoc.SubresourceIndex = regions[i].m_srcMipLevel + (regions[i].m_srcBaseLayer * srcImage->getDescription().m_levels);
-		
+
 		D3D12_BOX srcBox{};
 		srcBox.left = regions[i].m_srcOffset.m_x;
 		srcBox.top = regions[i].m_srcOffset.m_y;
@@ -234,7 +234,7 @@ void VEngine::gal::CommandListDx12::copyImage(const Image *srcImage, const Image
 		srcBox.right = srcBox.left + regions[i].m_extent.m_width;
 		srcBox.bottom = srcBox.top + regions[i].m_extent.m_height;
 		srcBox.back = srcBox.front + regions[i].m_extent.m_depth;
-		
+
 		m_commandList->CopyTextureRegion(&dstCpyLoc, regions[i].m_dstOffset.m_x, regions[i].m_dstOffset.m_y, regions[i].m_dstOffset.m_z, &srcCpyLoc, &srcBox);
 	}
 }
@@ -254,7 +254,7 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 		srcFootprint.RowPitch = 0; // TODO
 
 		D3D12_TEXTURE_COPY_LOCATION srcCpyLoc{ (ID3D12Resource *)srcBuffer->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT };
-		srcCpyLoc.PlacedFootprint = {regions[i].m_bufferOffset, srcFootprint };
+		srcCpyLoc.PlacedFootprint = { regions[i].m_bufferOffset, srcFootprint };
 
 		m_commandList->CopyTextureRegion(&dstCpyLoc, regions[i].m_offset.m_x, regions[i].m_offset.m_y, regions[i].m_offset.m_z, &srcCpyLoc, nullptr);
 	}
@@ -276,7 +276,7 @@ void VEngine::gal::CommandListDx12::copyImageToBuffer(const Image *srcImage, con
 
 		D3D12_TEXTURE_COPY_LOCATION srcCpyLoc{ (ID3D12Resource *)srcImage->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX };
 		srcCpyLoc.SubresourceIndex = regions[i].m_imageMipLevel + (regions[i].m_imageBaseLayer * srcImage->getDescription().m_levels);
-		
+
 		m_commandList->CopyTextureRegion(&dstCpyLoc, regions[i].m_offset.m_x, regions[i].m_offset.m_y, regions[i].m_offset.m_z, &srcCpyLoc, nullptr);
 	}
 }
@@ -305,7 +305,7 @@ void VEngine::gal::CommandListDx12::fillBuffer(const Buffer *dstBuffer, uint64_t
 {
 	// TODO
 	UINT values[4] = { data, data, data, data };
-	D3D12_RECT rect{0, 0, static_cast<LONG>(size), 1};
+	D3D12_RECT rect{ 0, 0, static_cast<LONG>(size), 1 };
 	m_commandList->ClearUnorderedAccessViewUint({}, {}, (ID3D12Resource *)dstBuffer->getNativeHandle(), values, 1, &rect);
 }
 
@@ -476,7 +476,7 @@ void VEngine::gal::CommandListDx12::beginQuery(const QueryPool *queryPool, uint3
 
 	const auto heapType = queryPoolDx->getHeapType();
 	D3D12_QUERY_TYPE queryType = D3D12_QUERY_TYPE_BINARY_OCCLUSION;
-	
+
 	switch (heapType)
 	{
 	case D3D12_QUERY_HEAP_TYPE_OCCLUSION:
@@ -501,26 +501,7 @@ void VEngine::gal::CommandListDx12::endQuery(const QueryPool *queryPool, uint32_
 	const QueryPoolDx12 *queryPoolDx = dynamic_cast<const QueryPoolDx12 *>(queryPool);
 	assert(queryPoolDx);
 
-	const auto heapType = queryPoolDx->getHeapType();
-	D3D12_QUERY_TYPE queryType = D3D12_QUERY_TYPE_BINARY_OCCLUSION;
-
-	switch (heapType)
-	{
-	case D3D12_QUERY_HEAP_TYPE_OCCLUSION:
-		queryType = D3D12_QUERY_TYPE_BINARY_OCCLUSION;
-		break;
-	case D3D12_QUERY_HEAP_TYPE_TIMESTAMP:
-		queryType = D3D12_QUERY_TYPE_TIMESTAMP;
-		break;
-	case D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS:
-		queryType = D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
-		break;
-	default:
-		assert(false);
-		break;
-	}
-
-	m_commandList->EndQuery((ID3D12QueryHeap *)queryPool->getNativeHandle(), queryType, query);
+	m_commandList->EndQuery((ID3D12QueryHeap *)queryPoolDx->getNativeHandle(), queryPoolDx->getQueryType(), query);
 }
 
 void VEngine::gal::CommandListDx12::resetQueryPool(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount)
@@ -533,9 +514,12 @@ void VEngine::gal::CommandListDx12::writeTimestamp(PipelineStageFlags pipelineSt
 	m_commandList->EndQuery((ID3D12QueryHeap *)queryPool->getNativeHandle(), D3D12_QUERY_TYPE_TIMESTAMP, query);
 }
 
-void VEngine::gal::CommandListDx12::copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags)
+void VEngine::gal::CommandListDx12::copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset)
 {
-	m_commandList->ResolveQueryData((ID3D12QueryHeap *)queryPool->getNativeHandle(), D3D12_QUERY_TYPE_TIMESTAMP /*TODO*/, firstQuery, queryCount, (ID3D12Resource *)dstBuffer->getNativeHandle(), dstOffset);
+	const QueryPoolDx12 *queryPoolDx = dynamic_cast<const QueryPoolDx12 *>(queryPool);
+	assert(queryPoolDx);
+
+	m_commandList->ResolveQueryData((ID3D12QueryHeap *)queryPoolDx->getNativeHandle(), queryPoolDx->getQueryType(), firstQuery, queryCount, (ID3D12Resource *)dstBuffer->getNativeHandle(), dstOffset);
 }
 
 void VEngine::gal::CommandListDx12::pushConstants(const GraphicsPipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)

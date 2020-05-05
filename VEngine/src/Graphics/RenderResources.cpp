@@ -429,8 +429,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_imGuiDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "ImGui DSet Layout");
-		m_graphicsDevice->createDescriptorSetPool(1, m_imGuiDescriptorSetLayout, &m_computeTextureDescriptorSetPool);
-		m_computeTextureDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSet);
+		m_graphicsDevice->createDescriptorSetPool(1, m_imGuiDescriptorSetLayout, &m_imguiDescriptorSetPool);
+		m_imguiDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSet);
 
 		DescriptorSetUpdate update = Initializers::samplerDescriptor(&m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 1);
 

@@ -58,8 +58,6 @@ namespace VEngine
 			Queue *getGraphicsQueue() override;
 			Queue *getComputeQueue() override;
 			Queue *getTransferQueue() override;
-			void getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags) override;
-			float getTimestampPeriod() const override;
 			uint64_t getMinUniformBufferOffsetAlignment() const override;
 			uint64_t getMinStorageBufferOffsetAlignment() const override;
 			float getMaxSamplerAnisotropy() const override;

@@ -9,18 +9,21 @@ namespace VEngine
 		class QueueDx12 : public Queue
 		{
 		public:
+			void init(ID3D12CommandQueue *queue, QueueType queueType, uint32_t timestampBits, bool presentable);
 			void *getNativeHandle() const override;
-			uint32_t getFamilyIndex() const override;
+			QueueType getQueueType() const override;
 			uint32_t getTimestampValidBits() const override;
+			float getTimestampPeriod() const override;
+			bool canPresent() const override;
 			void submit(uint32_t count, const SubmitInfo *submitInfo) override;
 			void waitIdle() const override;
 
-			uint32_t m_queueFamily = -1;
-			ID3D12CommandQueue *m_queue;
-			uint32_t m_timestampValidBits = 0;
-			bool m_presentable = false;
-
 		private:
+			ID3D12CommandQueue *m_queue;
+			QueueType m_queueType;
+			uint32_t m_timestampValidBits;
+			float m_timestampPeriod;
+			bool m_presentable;
 			Semaphore *m_waitIdleSemaphore;
 			mutable uint64_t m_semaphoreValue;
 		};

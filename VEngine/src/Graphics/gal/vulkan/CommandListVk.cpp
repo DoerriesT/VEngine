@@ -453,6 +453,9 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			const bool memoryBarrierRequired = beforeStateInfo.m_writeAccess && !imageBarrierRequired && !bufferBarrierRequired;
 			const bool executionBarrierRequired = beforeStateInfo.m_writeAccess || afterStateInfo.m_writeAccess || memoryBarrierRequired || bufferBarrierRequired || imageBarrierRequired;
 
+			const QueueVk *srcQueueVk = dynamic_cast<const QueueVk *>(barrier.m_srcQueue);
+			const QueueVk *dstQueueVk = dynamic_cast<const QueueVk *>(barrier.m_dstQueue);
+
 			if (imageBarrierRequired)
 			{
 				const auto &subResRange = barrier.m_imageSubresourceRange;
@@ -464,8 +467,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 				imageBarrier.dstAccessMask = afterStateInfo.m_accessMask;
 				imageBarrier.oldLayout = beforeStateInfo.m_layout;
 				imageBarrier.newLayout = afterStateInfo.m_layout;
-				imageBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? barrier.m_srcQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
-				imageBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? barrier.m_dstQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
+				imageBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? srcQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
+				imageBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? dstQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
 				imageBarrier.image = (VkImage)barrier.m_image->getNativeHandle();
 				imageBarrier.subresourceRange = { imageAspectMask, subResRange.m_baseMipLevel, subResRange.m_levelCount, subResRange.m_baseArrayLayer, subResRange.m_layerCount };
 			}
@@ -475,8 +478,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 				bufferBarrier = { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
 				bufferBarrier.srcAccessMask = beforeStateInfo.m_accessMask;
 				bufferBarrier.dstAccessMask = afterStateInfo.m_accessMask;
-				bufferBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? barrier.m_srcQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
-				bufferBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? barrier.m_dstQueue->getFamilyIndex() : VK_QUEUE_FAMILY_IGNORED;
+				bufferBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? srcQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
+				bufferBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? dstQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
 				bufferBarrier.buffer = (VkBuffer)barrier.m_buffer->getNativeHandle();
 				bufferBarrier.offset = 0;
 				bufferBarrier.size = VK_WHOLE_SIZE;
@@ -522,9 +525,9 @@ void VEngine::gal::CommandListVk::writeTimestamp(PipelineStageFlags pipelineStag
 	vkCmdWriteTimestamp(m_commandBuffer, static_cast<VkPipelineStageFlagBits>(pipelineStage), (VkQueryPool)queryPool->getNativeHandle(), query);
 }
 
-void VEngine::gal::CommandListVk::copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset, uint64_t stride, uint32_t flags)
+void VEngine::gal::CommandListVk::copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset)
 {
-	vkCmdCopyQueryPoolResults(m_commandBuffer, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount, (VkBuffer)dstBuffer->getNativeHandle(), dstOffset, stride, flags);
+	vkCmdCopyQueryPoolResults(m_commandBuffer, (VkQueryPool)queryPool->getNativeHandle(), firstQuery, queryCount, (VkBuffer)dstBuffer->getNativeHandle(), dstOffset, 8, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 }
 
 void VEngine::gal::CommandListVk::pushConstants(const GraphicsPipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)

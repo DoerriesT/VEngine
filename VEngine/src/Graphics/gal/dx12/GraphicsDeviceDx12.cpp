@@ -140,28 +140,28 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 		// graphics queue
 		{
 			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&m_graphicsQueue.m_queue), "Failed to create graphics queue!");
-			m_graphicsQueue.m_queueFamily = 0;
-			m_graphicsQueue.m_timestampValidBits = 64;
-			m_graphicsQueue.m_presentable = true;
+
+			ID3D12CommandQueue *queue;
+			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create graphics queue!");
+			m_graphicsQueue.init(queue, QueueType::GRAPHICS, 64, true);
 		}
 
 		// compute queue
 		{
 			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&m_computeQueue.m_queue), "Failed to create compute queue!");
-			m_computeQueue.m_queueFamily = 1;
-			m_computeQueue.m_timestampValidBits = 64;
-			m_computeQueue.m_presentable = true;
+
+			ID3D12CommandQueue *queue;
+			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create compute queue!");
+			m_computeQueue.init(queue, QueueType::COMPUTE, 64, true);
 		}
 
 		// transfer queue
 		{
 			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&m_transferQueue.m_queue), "Failed to create transfer queue!");
-			m_transferQueue.m_queueFamily = 2;
-			m_transferQueue.m_timestampValidBits = 64;
-			m_transferQueue.m_presentable = false;
+
+			ID3D12CommandQueue *queue;
+			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create transfer queue!");
+			m_transferQueue.init(queue, QueueType::TRANSFER, 0, false);
 		}
 	}
 
@@ -297,9 +297,9 @@ VEngine::gal::GraphicsDeviceDx12::~GraphicsDeviceDx12()
 	m_cpuRTVDescriptorHeap->Release();
 	m_cpuDSVDescriptorHeap->Release();
 
-	m_graphicsQueue.m_queue->Release();
-	m_computeQueue.m_queue->Release();
-	m_transferQueue.m_queue->Release();
+	((ID3D12CommandQueue *)m_graphicsQueue.getNativeHandle())->Release();
+	((ID3D12CommandQueue *)m_computeQueue.getNativeHandle())->Release();
+	((ID3D12CommandQueue *)m_transferQueue.getNativeHandle())->Release();
 
 	m_device->Release();
 }
@@ -354,14 +354,14 @@ void VEngine::gal::GraphicsDeviceDx12::createCommandListPool(const Queue *queue,
 {
 	auto *memory = m_commandListPoolMemoryPool.alloc();
 	assert(memory);
-	auto *queueVk = dynamic_cast<const QueueDx12 *>(queue);
-	assert(queueVk);
+	auto *queueDx = dynamic_cast<const QueueDx12 *>(queue);
+	assert(queueDx);
 
-	const uint32_t queueFamilyIdx = queueVk->getFamilyIndex();
-	assert(queueFamilyIdx < 3);
+	const uint32_t queueTypeIdx = static_cast<uint32_t>(queueDx->getQueueType());
+	assert(queueTypeIdx < 3);
 
 	D3D12_COMMAND_LIST_TYPE cmdListTypes[]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_LIST_TYPE_COPY };
-	*commandListPool = new(memory) CommandListPoolDx12(m_device, cmdListTypes[queueFamilyIdx], &m_cmdListRecordContext);
+	*commandListPool = new(memory) CommandListPoolDx12(m_device, cmdListTypes[queueTypeIdx], &m_cmdListRecordContext);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroyCommandListPool(CommandListPool *commandListPool)
@@ -709,18 +709,6 @@ VEngine::gal::Queue *VEngine::gal::GraphicsDeviceDx12::getComputeQueue()
 VEngine::gal::Queue *VEngine::gal::GraphicsDeviceDx12::getTransferQueue()
 {
 	return &m_transferQueue;
-}
-
-void VEngine::gal::GraphicsDeviceDx12::getQueryPoolResults(QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void *data, uint64_t stride, QueryResultFlags flags)
-{
-	// TODO
-	// no implementation
-}
-
-float VEngine::gal::GraphicsDeviceDx12::getTimestampPeriod() const
-{
-	// TODO: move this to Queue
-	return 1.0f;
 }
 
 uint64_t VEngine::gal::GraphicsDeviceDx12::getMinUniformBufferOffsetAlignment() const
