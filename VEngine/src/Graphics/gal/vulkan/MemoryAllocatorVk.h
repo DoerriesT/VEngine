@@ -41,7 +41,7 @@ namespace VEngine
 		public:
 			MemoryAllocatorVk();
 			void init(VkDevice device, VkPhysicalDevice physicalDevice);
-			VkResult alloc(const AllocationCreateInfoVk &allocationCreateInfo, const VkMemoryRequirements &memoryRequirements, AllocationHandleVk &allocationHandle);
+			VkResult alloc(const AllocationCreateInfoVk &allocationCreateInfo, const VkMemoryRequirements &memoryRequirements, const VkMemoryDedicatedAllocateInfo *dedicatedAllocInfo, AllocationHandleVk &allocationHandle);
 			VkResult createImage(const AllocationCreateInfoVk &allocationCreateInfo, const VkImageCreateInfo &imageCreateInfo, VkImage &image, AllocationHandleVk &allocationHandle);
 			VkResult createBuffer(const AllocationCreateInfoVk &allocationCreateInfo, const VkBufferCreateInfo &bufferCreateInfo, VkBuffer &buffer, AllocationHandleVk &allocationHandle);
 			void free(AllocationHandleVk allocationHandle);

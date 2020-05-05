@@ -22,12 +22,12 @@ void VEngine::gal::MemoryAllocatorVk::init(VkDevice device, VkPhysicalDevice phy
 
 	for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
 	{
-		const auto& heap = m_memoryProperties.memoryHeaps[m_memoryProperties.memoryTypes[i].heapIndex];
+		const auto &heap = m_memoryProperties.memoryHeaps[m_memoryProperties.memoryTypes[i].heapIndex];
 		m_pools[i].init(m_device, i, m_bufferImageGranularity, heap.size < MAX_BLOCK_SIZE ? heap.size : MAX_BLOCK_SIZE);
 	}
 }
 
-VkResult VEngine::gal::MemoryAllocatorVk::alloc(const AllocationCreateInfoVk &allocationCreateInfo, const VkMemoryRequirements &memoryRequirements, AllocationHandleVk &allocationHandle)
+VkResult VEngine::gal::MemoryAllocatorVk::alloc(const AllocationCreateInfoVk &allocationCreateInfo, const VkMemoryRequirements &memoryRequirements, const VkMemoryDedicatedAllocateInfo *dedicatedAllocInfo, AllocationHandleVk &allocationHandle)
 {
 	uint32_t memoryTypeIndex;
 	if (findMemoryTypeIndex(memoryRequirements.memoryTypeBits, allocationCreateInfo.m_requiredFlags, allocationCreateInfo.m_preferredFlags, memoryTypeIndex) != VK_SUCCESS)
@@ -41,7 +41,7 @@ VkResult VEngine::gal::MemoryAllocatorVk::alloc(const AllocationCreateInfoVk &al
 
 	if (allocationCreateInfo.m_dedicatedAllocation)
 	{
-		VkMemoryAllocateInfo memoryAllocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+		VkMemoryAllocateInfo memoryAllocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, dedicatedAllocInfo };
 		memoryAllocateInfo.allocationSize = memoryRequirements.size;
 		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
@@ -84,10 +84,24 @@ VkResult VEngine::gal::MemoryAllocatorVk::createImage(const AllocationCreateInfo
 		return result;
 	}
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(m_device, image, &memoryRequirements);
+	// get image memory requirements and dedicated memory requirements
+	VkMemoryDedicatedRequirements dedicatedRequirements{ VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR };
+	VkMemoryRequirements2 memoryRequirements2{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
 
-	result = alloc(allocationCreateInfo, memoryRequirements, allocationHandle);
+	VkImageMemoryRequirementsInfo2 imageRequirementsInfo{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2 };
+	imageRequirementsInfo.image = image;
+
+	vkGetImageMemoryRequirements2(m_device, &imageRequirementsInfo, &memoryRequirements2);
+
+	// fill out dedicated alloc info
+	VkMemoryDedicatedAllocateInfo dedicatedAllocInfo{ VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR };
+	dedicatedAllocInfo.image = image;
+
+	// allocate memory
+	result = alloc(allocationCreateInfo, 
+		memoryRequirements2.memoryRequirements, 
+		allocationCreateInfo.m_dedicatedAllocation && dedicatedRequirements.prefersDedicatedAllocation ? &dedicatedAllocInfo : nullptr, 
+		allocationHandle);
 
 	if (result != VK_SUCCESS)
 	{
@@ -119,10 +133,24 @@ VkResult VEngine::gal::MemoryAllocatorVk::createBuffer(const AllocationCreateInf
 		return result;
 	}
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(m_device, buffer, &memoryRequirements);
+	// get buffer memory requirements and dedicated memory requirements
+	VkMemoryDedicatedRequirements dedicatedRequirements{ VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR };
+	VkMemoryRequirements2 memoryRequirements2{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
 
-	result = alloc(allocationCreateInfo, memoryRequirements, allocationHandle);
+	VkBufferMemoryRequirementsInfo2 bufferRequirementsInfo{ VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2 };
+	bufferRequirementsInfo.buffer = buffer;
+
+	vkGetBufferMemoryRequirements2(m_device, &bufferRequirementsInfo, &memoryRequirements2);
+
+	// fill out dedicated alloc info
+	VkMemoryDedicatedAllocateInfo dedicatedAllocInfo{ VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR };
+	dedicatedAllocInfo.buffer = buffer;
+
+	// allocate memory
+	result = alloc(allocationCreateInfo,
+		memoryRequirements2.memoryRequirements,
+		allocationCreateInfo.m_dedicatedAllocation && dedicatedRequirements.prefersDedicatedAllocation ? &dedicatedAllocInfo : nullptr,
+		allocationHandle);
 
 	if (result != VK_SUCCESS)
 	{
