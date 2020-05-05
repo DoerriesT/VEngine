@@ -169,7 +169,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
-				m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, false, &m_uboBuffers[i]);
+				m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, true, &m_uboBuffers[i]);
 				m_mappableUBOBlock[i] = std::make_unique<MappableBufferBlock>(m_uboBuffers[i], m_graphicsDevice->getMinUniformBufferOffsetAlignment());
 			}
 		}
@@ -183,7 +183,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
-				m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, false, &m_ssboBuffers[i]);
+				m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_COHERENT_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, true, &m_ssboBuffers[i]);
 				m_mappableSSBOBlock[i] = std::make_unique<MappableBufferBlock>(m_ssboBuffers[i], m_graphicsDevice->getMinStorageBufferOffsetAlignment());
 			}
 		}
@@ -274,7 +274,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		bufferCreateInfo.m_createFlags = 0;
 		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::VERTEX_BUFFER_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
 
-		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_vertexBuffer);
+		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_vertexBuffer);
 	}
 
 	// index buffer
@@ -284,7 +284,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		bufferCreateInfo.m_createFlags = 0;
 		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
 
-		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_indexBuffer);
+		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_indexBuffer);
 	}
 
 	// submeshdata info buffer
@@ -548,7 +548,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 			{
 				m_graphicsDevice->destroyImage(m_depthImages[i]);
 			}
-			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_depthImages[i]);
+			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_depthImages[i]);
 		}
 	}
 
@@ -574,7 +574,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 			{
 				m_graphicsDevice->destroyImage(m_lightImages[i]);
 			}
-			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_lightImages[i]);
+			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_lightImages[i]);
 		}
 	}
 
@@ -598,7 +598,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 			{
 				m_graphicsDevice->destroyImage(m_taaHistoryTextures[i]);
 			}
-			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_taaHistoryTextures[i]);
+			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_taaHistoryTextures[i]);
 		}
 	}
 }

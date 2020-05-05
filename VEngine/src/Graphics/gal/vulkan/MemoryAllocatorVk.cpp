@@ -3,6 +3,7 @@
 
 VEngine::gal::MemoryAllocatorVk::MemoryAllocatorVk()
 	:m_device(VK_NULL_HANDLE),
+	m_physicalDevice(VK_NULL_HANDLE),
 	m_memoryProperties(),
 	m_bufferImageGranularity(),
 	m_nonCoherentAtomSize(),
@@ -10,20 +11,28 @@ VEngine::gal::MemoryAllocatorVk::MemoryAllocatorVk()
 {
 }
 
-void VEngine::gal::MemoryAllocatorVk::init(VkDevice device, VkPhysicalDevice physicalDevice)
+void VEngine::gal::MemoryAllocatorVk::init(VkDevice device, VkPhysicalDevice physicalDevice, bool useMemBudgetExt)
 {
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &m_memoryProperties);
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
 	m_device = device;
+	m_physicalDevice = physicalDevice;
 	m_bufferImageGranularity = deviceProperties.limits.bufferImageGranularity;
 	m_nonCoherentAtomSize = deviceProperties.limits.nonCoherentAtomSize;
+	m_useMemoryBudgetExtension = useMemBudgetExt;
 
-	for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+	for (size_t i = 0; i < m_memoryProperties.memoryHeapCount; ++i)
 	{
-		const auto &heap = m_memoryProperties.memoryHeaps[m_memoryProperties.memoryTypes[i].heapIndex];
-		m_pools[i].init(m_device, i, m_bufferImageGranularity, heap.size < MAX_BLOCK_SIZE ? heap.size : MAX_BLOCK_SIZE);
+		m_heapSizeLimits[i] = m_memoryProperties.memoryHeaps[i].size;
+	}
+
+	for (size_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+	{
+		const uint32_t heapIndex = m_memoryProperties.memoryTypes[i].heapIndex;
+		const auto &heap = m_memoryProperties.memoryHeaps[heapIndex];
+		m_pools[i].init(m_device, m_physicalDevice, i, heapIndex, m_bufferImageGranularity, heap.size < MAX_BLOCK_SIZE ? heap.size : MAX_BLOCK_SIZE, &m_heapUsage[heapIndex], m_heapSizeLimits[heapIndex], m_useMemoryBudgetExtension);
 	}
 }
 
@@ -366,12 +375,26 @@ VkResult VEngine::gal::MemoryAllocatorVk::findMemoryTypeIndex(uint32_t memoryTyp
 	return memoryTypeIndex != ~uint32_t(0) ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
 }
 
-void VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::init(VkDevice device, uint32_t memoryType, VkDeviceSize bufferImageGranularity, VkDeviceSize preferredBlockSize)
+void VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::init(
+	VkDevice device, 
+	VkPhysicalDevice physicalDevice, 
+	uint32_t memoryType, 
+	uint32_t heapIndex, 
+	VkDeviceSize bufferImageGranularity, 
+	VkDeviceSize preferredBlockSize, 
+	VkDeviceSize *heapUsage, 
+	VkDeviceSize heapSizeLimit, 
+	bool useMemBudgetExt)
 {
 	m_device = device;
+	m_physicalDevice = physicalDevice;
 	m_memoryType = memoryType;
+	m_heapIndex = heapIndex;
 	m_bufferImageGranularity = bufferImageGranularity;
 	m_preferredBlockSize = preferredBlockSize;
+	m_heapUsage = heapUsage;
+	m_heapSizeLimit = heapSizeLimit;
+	m_useMemoryBudgetExtension = useMemBudgetExt;
 
 	memset(m_blockSizes, 0, sizeof(m_blockSizes));
 	memset(m_memory, 0, sizeof(m_memory));
@@ -410,14 +433,27 @@ VkResult VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::alloc(VkDeviceSize size,
 			return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 		}
 
+		VkDeviceSize memoryBudget = 0;
+		VkDeviceSize usedMemory = 0;
+		getBudget(memoryBudget, usedMemory);
+
+		VkDeviceSize maxInBudgetAllocSize = memoryBudget > usedMemory ? (memoryBudget - usedMemory) : 0;
+
+		// try to stay in budet. if there is sufficient memory, try to allocate the preferred size
+		VkDeviceSize allocSize = maxInBudgetAllocSize < m_preferredBlockSize ? maxInBudgetAllocSize : m_preferredBlockSize;
+		// we still need to allocate enough memory to satisfy the request though
+		allocSize = size > allocSize ? size : allocSize;
+
 		VkMemoryAllocateInfo memoryAllocateInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		memoryAllocateInfo.allocationSize = size > m_preferredBlockSize ? size : m_preferredBlockSize;
+		memoryAllocateInfo.allocationSize = allocSize;
 		memoryAllocateInfo.memoryTypeIndex = m_memoryType;
 
 		if (vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_memory[blockIndex]) != VK_SUCCESS)
 		{
 			return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 		}
+
+		*m_heapUsage += memoryAllocateInfo.allocationSize;
 
 		m_blockSizes[blockIndex] = memoryAllocateInfo.allocationSize;
 		m_allocators[blockIndex] = new TLSFAllocator(static_cast<uint32_t>(memoryAllocateInfo.allocationSize), static_cast<uint32_t>(m_bufferImageGranularity));
@@ -568,4 +604,22 @@ bool VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::allocFromBlock(size_t blockI
 		return true;
 	}
 	return false;
+}
+
+void VEngine::gal::MemoryAllocatorVk::MemoryPoolVk::getBudget(VkDeviceSize &budget, VkDeviceSize &usage)
+{
+	if (m_useMemoryBudgetExtension)
+	{
+		VkPhysicalDeviceMemoryBudgetPropertiesEXT budgetProperties{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT };
+		VkPhysicalDeviceMemoryProperties2 memProps2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2, &budgetProperties };
+		vkGetPhysicalDeviceMemoryProperties2(m_physicalDevice, &memProps2);
+
+		budget = budgetProperties.heapBudget[m_heapIndex];
+		usage = budgetProperties.heapUsage[m_heapIndex];
+	}
+	else
+	{
+		budget = static_cast<VkDeviceSize>(m_heapSizeLimit * 0.8f);
+		usage = *m_heapUsage;
+	}
 }

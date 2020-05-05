@@ -147,6 +147,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	}
 
 	const char *const deviceExtensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	const char *const optionalExtensions[]{ VK_EXT_MEMORY_BUDGET_EXTENSION_NAME };
+	bool supportsMemoryBudgetExtension = false;
 
 	// pick physical device
 	{
@@ -171,6 +173,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 			uint32_t m_computeQueueFamily;
 			uint32_t m_transferQueueFamily;
 			bool m_computeQueuePresentable;
+			bool m_memoryBudgetExtensionSupported;
 		};
 
 		std::vector<DeviceInfo> suitableDevices;
@@ -248,7 +251,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 			}
 
 			// test if all required extensions are supported by this physical device
-			bool extensionsSupported;
+			bool extensionsSupported = false;
+			bool memoryBudgetExtensionSupported = false;
 			{
 				uint32_t extensionCount;
 				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -261,6 +265,10 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				for (const auto &extension : availableExtensions)
 				{
 					requiredExtensions.erase(extension.extensionName);
+					if (strcmp(extension.extensionName, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME) == 0)
+					{
+						memoryBudgetExtensionSupported = true;
+					}
 				}
 
 				extensionsSupported = requiredExtensions.empty();
@@ -312,6 +320,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				deviceInfo.m_computeQueueFamily = static_cast<uint32_t>(computeFamilyIndex);
 				deviceInfo.m_transferQueueFamily = static_cast<uint32_t>(transferFamilyIndex);
 				deviceInfo.m_computeQueuePresentable = static_cast<bool>(computeFamilyPresentable);
+				deviceInfo.m_memoryBudgetExtensionSupported = memoryBudgetExtensionSupported;
 
 				suitableDevices.push_back(deviceInfo);
 			}
@@ -383,6 +392,8 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 
 		m_properties = selectedDevice.m_properties;
 		m_features = selectedDevice.m_features;
+
+		supportsMemoryBudgetExtension = selectedDevice.m_memoryBudgetExtensionSupported;
 	}
 
 	// create logical device and retrieve queues
@@ -416,14 +427,22 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 		vulkan12Features.imagelessFramebuffer = VK_TRUE;
 
+		constexpr size_t requiredDeviceExtensionCount = sizeof(deviceExtensions) / sizeof(deviceExtensions[0]);
+		const char *extensions[requiredDeviceExtensionCount + 1];
+		for (size_t i = 0; i < requiredDeviceExtensionCount; ++i)
+		{
+			extensions[i] = deviceExtensions[i];
+		}
+		extensions[requiredDeviceExtensionCount] = VK_EXT_MEMORY_BUDGET_EXTENSION_NAME;
+
 		VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &vulkan12Features };
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.enabledLayerCount = 0;
 		createInfo.ppEnabledLayerNames = nullptr;
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(sizeof(deviceExtensions) / sizeof(deviceExtensions[0]));
-		createInfo.ppEnabledExtensionNames = deviceExtensions;
+		createInfo.enabledExtensionCount = requiredDeviceExtensionCount + (supportsMemoryBudgetExtension ? 1 : 0);
+		createInfo.ppEnabledExtensionNames = extensions;
 
 		if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 		{
@@ -480,7 +499,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 	m_renderPassCache = new RenderPassCacheVk(m_device);
 	m_framebufferCache = new FramebufferCacheVk(m_device);
 	m_gpuMemoryAllocator = new MemoryAllocatorVk();
-	m_gpuMemoryAllocator->init(m_device, m_physicalDevice);
+	m_gpuMemoryAllocator->init(m_device, m_physicalDevice, supportsMemoryBudgetExtension);
 }
 
 VEngine::gal::GraphicsDeviceVk::~GraphicsDeviceVk()

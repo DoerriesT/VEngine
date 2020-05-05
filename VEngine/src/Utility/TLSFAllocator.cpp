@@ -50,7 +50,7 @@ bool VEngine::TLSFAllocator::alloc(uint32_t size, uint32_t alignment, uint32_t &
 		// offset into this span where alignment requirement is satisfied
 		alignedOffset = Utility::alignUp(span->m_offset, alignment);
 
-		assert(i == 0 || alignedOffset + size <= freeSpan->m_offset + freeSpan->m_size);
+		assert(i == 0 || alignedOffset + size <= span->m_offset + span->m_size);
 
 		// test alignment
 		if (alignedOffset + size <= span->m_offset + span->m_size)
@@ -417,8 +417,13 @@ VEngine::TLSFAllocator::Span *VEngine::TLSFAllocator::findFreeSpan(uint32_t size
 			// finds a free span and updates indices to the indices of the actual free list of the span
 			if (findFreeSpan(tmpFirstLevelIndex, tmpSecondLevelIndex))
 			{
-				result = m_freeSpans[tmpFirstLevelIndex][tmpSecondLevelIndex];
-				break;
+				// if we are in the second iteration, it is possible that we got a span that is not big enough
+				Span *span = m_freeSpans[tmpFirstLevelIndex][tmpSecondLevelIndex];
+				if (span->m_size >= size)
+				{
+					result = m_freeSpans[tmpFirstLevelIndex][tmpSecondLevelIndex];
+					break;
+				}
 			}
 		}
 	}
