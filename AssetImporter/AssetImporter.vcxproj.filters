@@ -51,10 +51,25 @@
     <ClCompile Include="src\meshoptimizer-0.12\vfetchoptimizer.cpp">
       <Filter>src\meshoptimizer-0.12</Filter>
     </ClCompile>
+    <ClCompile Include="src\WavefrontOBJLoader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utility.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\meshoptimizer-0.12\meshoptimizer.h">
       <Filter>src\meshoptimizer-0.12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\WavefrontOBJLoader.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\IModelLoader.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utility.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
