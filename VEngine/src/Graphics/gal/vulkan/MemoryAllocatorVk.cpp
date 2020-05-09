@@ -260,12 +260,13 @@ void VEngine::gal::MemoryAllocatorVk::unmapMemory(AllocationHandleVk allocationH
 
 	assert(m_memoryProperties.memoryTypes[allocationInfo->m_memoryType].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
+	assert(allocationInfo->m_mapCount);
+	--allocationInfo->m_mapCount;
+
 	// dedicated allocation has a pool index of max uint
 	if (allocationInfo->m_poolIndex == ~size_t(0))
 	{
 		assert(allocationInfo->m_blockIndex == ~size_t(0));
-		assert(allocationInfo->m_mapCount);
-		--allocationInfo->m_mapCount;
 
 		if (allocationInfo->m_mapCount == 0)
 		{
@@ -278,8 +279,6 @@ void VEngine::gal::MemoryAllocatorVk::unmapMemory(AllocationHandleVk allocationH
 	{
 		m_pools[allocationInfo->m_poolIndex].unmapMemory(allocationInfo->m_blockIndex);
 	}
-
-	--allocationInfo->m_mapCount;
 }
 
 VEngine::gal::AllocationInfoVk VEngine::gal::MemoryAllocatorVk::getAllocationInfo(AllocationHandleVk allocationHandle)
