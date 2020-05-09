@@ -370,6 +370,17 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
+	// shadowed directional light probe data write
+	DescriptorBufferInfo directionalLightsShadowedProbeBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowedProbe.size() * sizeof(DirectionalLight), size_t(1)) };
+	{
+		uint8_t *bufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsShadowedProbeBufferInfo.m_range, directionalLightsShadowedProbeBufferInfo.m_offset, directionalLightsShadowedProbeBufferInfo.m_buffer, bufferPtr);
+		if (!lightData.m_directionalLightsShadowedProbe.empty())
+		{
+			memcpy(bufferPtr, lightData.m_directionalLightsShadowedProbe.data(), lightData.m_directionalLightsShadowedProbe.size() * sizeof(DirectionalLight));
+		}
+	}
+
 	// punctual light data write
 	DescriptorBufferInfo punctualLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLights.size() * sizeof(PunctualLight), size_t(1)) };
 	DescriptorBufferInfo punctualLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
@@ -491,6 +502,49 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
+	// probe shadow maps
+	rg::ImageViewHandle probeShadowImageViewHandle = 0;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Probe Shadow Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 2048;
+		desc.m_height = 2048;
+		desc.m_layers = glm::max(renderData.m_probeShadowViewRenderListCount, 1u);
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::D16_UNORM;
+
+		rg::ImageHandle shadowImageHandle = graph.createImage(desc);
+		probeShadowImageViewHandle = graph.createImageView({ desc.m_name, shadowImageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
+
+		for (uint32_t i = 0; i < renderData.m_probeShadowViewRenderListCount; ++i)
+		{
+			rg::ImageViewHandle shadowLayer = graph.createImageView({ desc.m_name, shadowImageHandle, { 0, 1, i, 1 } });
+
+			const auto &drawList = renderData.m_renderLists[renderData.m_probeShadowViewRenderListOffset + i];
+
+			// draw shadows
+			ShadowPass::Data shadowPassData;
+			shadowPassData.m_passRecordContext = &passRecordContext;
+			shadowPassData.m_shadowMapSize = 2048;
+			shadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[lightData.m_directionalLightsShadowedProbe[i].m_shadowOffset];
+			shadowPassData.m_opaqueInstanceDataCount = drawList.m_opaqueCount;
+			shadowPassData.m_opaqueInstanceDataOffset = drawList.m_opaqueOffset;
+			shadowPassData.m_maskedInstanceDataCount = drawList.m_maskedCount;
+			shadowPassData.m_maskedInstanceDataOffset = drawList.m_maskedOffset;
+			shadowPassData.m_instanceData = sortedInstanceData.data();
+			shadowPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+			shadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+			shadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+			shadowPassData.m_shadowImageHandle = shadowLayer;
+
+			ShadowPass::addToGraph(graph, shadowPassData);
+		}
+	}
+
+
 	// probe gbuffer pass
 	for (size_t i = 0; i < renderData.m_probeRenderCount; ++i)
 	{
@@ -522,7 +576,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	lightProbeGBufferPassData.m_probeNearPlane = 0.1f;
 	lightProbeGBufferPassData.m_probeFarPlane = 20.0f;
 	lightProbeGBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
-	lightProbeGBufferPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
+	lightProbeGBufferPassData.m_directionalLightsShadowedProbeBufferInfo = directionalLightsShadowedProbeBufferInfo;
 	for (size_t j = 0; j < 6; ++j)
 	{
 		lightProbeGBufferPassData.m_depthImageHandles[j] = probeDepthImageViewHandles[j];
@@ -530,6 +584,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		lightProbeGBufferPassData.m_normalImageHandles[j] = probeNormalImageViewHandles[j];
 		lightProbeGBufferPassData.m_resultImageHandles[j] = probeImageViewHandles[j];
 	}
+	lightProbeGBufferPassData.m_directionalShadowImageViewHandle = probeShadowImageViewHandle;
+	lightProbeGBufferPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 
 	LightProbeGBufferPass::addToGraph(graph, lightProbeGBufferPassData);
 
@@ -635,7 +691,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			ShadowPass::Data shadowPassData;
 			shadowPassData.m_passRecordContext = &passRecordContext;
 			shadowPassData.m_shadowMapSize = 2048;
-			shadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[i];
+			shadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[lightData.m_directionalLightsShadowed[0].m_shadowOffset + i];
 			shadowPassData.m_opaqueInstanceDataCount = drawList.m_opaqueCount;
 			shadowPassData.m_opaqueInstanceDataOffset = drawList.m_opaqueOffset;
 			shadowPassData.m_maskedInstanceDataCount = drawList.m_maskedCount;

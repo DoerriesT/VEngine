@@ -75,6 +75,7 @@ namespace VEngine
 		std::vector<ShadowAtlasDrawInfo> m_shadowAtlasDrawInfos;
 		std::vector<DirectionalLight> m_directionalLights;
 		std::vector<DirectionalLight> m_directionalLightsShadowed;
+		std::vector<DirectionalLight> m_directionalLightsShadowedProbe;
 		std::vector<PunctualLight> m_punctualLights;
 		std::vector<PunctualLightShadowed> m_punctualLightsShadowed;
 		std::vector<GlobalParticipatingMedium> m_globalParticipatingMedia;
@@ -94,6 +95,7 @@ namespace VEngine
 			m_shadowAtlasDrawInfos.clear();
 			m_directionalLights.clear();
 			m_directionalLightsShadowed.clear();
+			m_directionalLightsShadowedProbe.clear();
 			m_punctualLights.clear();
 			m_punctualLightsShadowed.clear();
 			m_globalParticipatingMedia.clear();

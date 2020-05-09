@@ -12,12 +12,19 @@
 #define DIRECTIONAL_LIGHTS_BINDING 5
 #define DIRECTIONAL_LIGHTS_SHADOWED_SET 0
 #define DIRECTIONAL_LIGHTS_SHADOWED_BINDING 6
+#define DIRECTIONAL_LIGHTS_SHADOW_IMAGE_SET 0
+#define DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING 7
+#define SHADOW_SAMPLER_SET 0
+#define SHADOW_SAMPLER_BINDING 8
+#define SHADOW_MATRICES_SET 0
+#define SHADOW_MATRICES_BINDING 9
 
 
 struct Constants
 {
 	float4x4 probeFaceToViewSpace[6];
 	float4x4 viewMatrix;
+	float4x4 invViewMatrix;
 	float2 texelSize;
 	uint width;
 	uint height;

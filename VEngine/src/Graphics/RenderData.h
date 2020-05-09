@@ -39,6 +39,7 @@ namespace VEngine
 		uint32_t m_frame;
 		uint32_t m_directionalLightCount;
 		uint32_t m_directionalLightShadowedCount;
+		uint32_t m_directionalLightShadowedProbeCount;
 		uint32_t m_punctualLightCount;
 		uint32_t m_punctualLightShadowedCount;
 		uint32_t m_globalParticipatingMediaCount;
@@ -88,6 +89,8 @@ namespace VEngine
 		SubMeshInstanceData *m_subMeshInstanceData;
 		uint64_t *m_drawCallKeys;
 		uint32_t m_mainViewRenderListIndex;
+		uint32_t m_probeShadowViewRenderListOffset;
+		uint32_t m_probeShadowViewRenderListCount;
 		uint32_t m_shadowCascadeViewRenderListOffset;
 		uint32_t m_shadowCascadeViewRenderListCount;
 		ViewRenderList *m_renderLists;

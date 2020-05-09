@@ -10,6 +10,9 @@ Texture2D<float> g_DepthImage[6] : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE
 Texture2D<float4> g_AlbedoRoughnessImage[6] : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAGE_BINDING, ALBEDO_ROUGHNESS_IMAGE_SET);
 Texture2D<float2> g_NormalImage[6] : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+Texture2DArray<float> g_ShadowImage : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_SET);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
+StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -55,12 +58,17 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		}
 	}
 	
+	const float3 worldSpacePos = mul(g_Constants.invViewMatrix, float4(viewSpacePos, 1.0)).xyz;
 	// shadowed directional lights
 	{
+		
 		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 		{
 			DirectionalLight light = g_DirectionalLightsShadowed[i];
-			result += Diffuse_Lambert(albedo) * light.color * saturate(dot(N, light.direction));
+			float4x4 shadowMatrix;
+			const float4 tc = float4(mul(g_ShadowMatrices[light.shadowOffset], float4(worldSpacePos.xyz, 1.0)).xyz, i);
+			float shadow = g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(tc.xy * 0.5 + 0.5, tc.w), tc.z - 0.001).x ;
+			result += Diffuse_Lambert(albedo) * light.color * (saturate(dot(N, light.direction)) * shadow);
 		}
 	}
 	

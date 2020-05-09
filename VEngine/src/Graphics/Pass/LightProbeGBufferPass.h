@@ -15,11 +15,13 @@ namespace VEngine
 			float m_probeNearPlane;
 			float m_probeFarPlane;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
-			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
+			gal::DescriptorBufferInfo m_directionalLightsShadowedProbeBufferInfo;
+			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 			rg::ImageViewHandle m_depthImageHandles[6];
 			rg::ImageViewHandle m_albedoRoughnessImageHandles[6];
 			rg::ImageViewHandle m_normalImageHandles[6];
 			rg::ImageViewHandle m_resultImageHandles[6];
+			rg::ImageViewHandle m_directionalShadowImageViewHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);
