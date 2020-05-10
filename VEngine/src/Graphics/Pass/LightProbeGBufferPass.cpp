@@ -55,15 +55,14 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	memcpy(uboDataPtr, &consts, sizeof(Constants));
 
 
-	rg::ResourceUsageDescription passUsages[4 * 6 + 1];
-	for (size_t i = 0; i < 6; ++i)
+	rg::ResourceUsageDescription passUsages[]
 	{
-		passUsages[i * 4 + 0] = { rg::ResourceViewHandle(data.m_depthImageHandles[i]), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
-		passUsages[i * 4 + 1] = { rg::ResourceViewHandle(data.m_albedoRoughnessImageHandles[i]), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
-		passUsages[i * 4 + 2] = { rg::ResourceViewHandle(data.m_normalImageHandles[i]), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
-		passUsages[i * 4 + 3] = { rg::ResourceViewHandle(data.m_resultImageHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
-	}
-	passUsages[4 * 6] = { rg::ResourceViewHandle(data.m_directionalShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+		{ rg::ResourceViewHandle(data.m_directionalShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{ rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{ rg::ResourceViewHandle(data.m_albedoRoughnessImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{ rg::ResourceViewHandle(data.m_normalImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{ rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+	};
 
 	graph.addPass("Light Probe G-Buffer", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
@@ -80,25 +79,18 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 
 			// update descriptor sets
 			{
-				ImageView *depthImageViews[6];
-				ImageView *albedoRoughImageViews[6];
-				ImageView *normalImageViews[6];
-				ImageView *resultImageViews[6];
-				for (size_t i = 0; i < 6; ++i)
-				{
-					depthImageViews[i] = registry.getImageView(data.m_depthImageHandles[i]);
-					albedoRoughImageViews[i] = registry.getImageView(data.m_albedoRoughnessImageHandles[i]);
-					normalImageViews[i] = registry.getImageView(data.m_normalImageHandles[i]);
-					resultImageViews[i] = registry.getImageView(data.m_resultImageHandles[i]);
-				}
 				ImageView *shadowImageView = registry.getImageView(data.m_directionalShadowImageViewHandle);
-
+				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
+				ImageView *albedoRoughImageView = registry.getImageView(data.m_albedoRoughnessImageViewHandle);
+				ImageView *normalImageView = registry.getImageView(data.m_normalImageViewHandle);
+				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
+				
 				DescriptorSetUpdate updates[] =
 				{
-					Initializers::storageImage(resultImageViews, RESULT_IMAGE_BINDING, 0, 6),
-					Initializers::sampledImage(depthImageViews, DEPTH_IMAGE_BINDING, 0, 6),
-					Initializers::sampledImage(albedoRoughImageViews, ALBEDO_ROUGHNESS_IMAGE_BINDING, 0, 6),
-					Initializers::sampledImage(normalImageViews, NORMAL_IMAGE_BINDING, 0, 6),
+					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::sampledImage(&albedoRoughImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
+					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowImageView, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),

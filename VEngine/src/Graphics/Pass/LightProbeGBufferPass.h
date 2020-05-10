@@ -17,11 +17,11 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedProbeBufferInfo;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
-			rg::ImageViewHandle m_depthImageHandles[6];
-			rg::ImageViewHandle m_albedoRoughnessImageHandles[6];
-			rg::ImageViewHandle m_normalImageHandles[6];
-			rg::ImageViewHandle m_resultImageHandles[6];
 			rg::ImageViewHandle m_directionalShadowImageViewHandle;
+			rg::ImageViewHandle m_depthImageViewHandle; // 6 layers
+			rg::ImageViewHandle m_albedoRoughnessImageViewHandle; // 6 layers
+			rg::ImageViewHandle m_normalImageViewHandle; // 6 layers
+			rg::ImageViewHandle m_resultImageViewHandle; // 6 layers
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

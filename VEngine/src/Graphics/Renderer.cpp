@@ -217,10 +217,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	rg::ImageHandle probeDepthImageHandle = graph.importImage(m_renderResources->m_probeDepthImage, "Probe Depth Image", false, {}, m_renderResources->m_probeDepthImageState);
-	rg::ImageViewHandle probeDepthCubeImageViewHandle = 0;
+	//rg::ImageViewHandle probeDepthCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeDepthArrayImageViewHandle = 0;
 	rg::ImageViewHandle probeDepthImageViewHandles[6] = {};
 	{
-		probeDepthCubeImageViewHandle = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		//probeDepthCubeImageViewHandle = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		probeDepthArrayImageViewHandle = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		for (uint32_t i = 0; i < 6; ++i)
 		{
 			probeDepthImageViewHandles[i] = graph.createImageView({ "Probe Depth Image", probeDepthImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
@@ -228,10 +230,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 	
 	rg::ImageHandle probeAlbedoRoughnessImageHandle = graph.importImage(m_renderResources->m_probeAlbedoRoughnessImage, "Probe Albedo/Roughness Image", false, {}, m_renderResources->m_probeAlbedoRoughnessImageState);
-	rg::ImageViewHandle probeAlbedoRoughnessCubeImageViewHandle = 0;
+	//rg::ImageViewHandle probeAlbedoRoughnessCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeAlbedoRoughnessArrayImageViewHandle = 0;
 	rg::ImageViewHandle probeAlbedoRoughnessImageViewHandles[6] = {};
 	{
-		probeAlbedoRoughnessCubeImageViewHandle = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		//probeAlbedoRoughnessCubeImageViewHandle = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		probeAlbedoRoughnessArrayImageViewHandle = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		for (uint32_t i = 0; i < 6; ++i)
 		{
 			probeAlbedoRoughnessImageViewHandles[i] = graph.createImageView({ "Probe Albedo/Roughness Image", probeAlbedoRoughnessImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
@@ -239,10 +243,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 	
 	rg::ImageHandle probeNormalImageHandle = graph.importImage(m_renderResources->m_probeNormalImage, "Probe Normal Image", false, {}, m_renderResources->m_probeNormalImageState);
-	rg::ImageViewHandle probeNormalCubeImageViewHandle = 0;
+	//rg::ImageViewHandle probeNormalCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeNormalArrayImageViewHandle = 0;
 	rg::ImageViewHandle probeNormalImageViewHandles[6] = {};
 	{
-		probeNormalCubeImageViewHandle = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		//probeNormalCubeImageViewHandle = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		probeNormalArrayImageViewHandle = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		for (uint32_t i = 0; i < 6; ++i)
 		{
 			probeNormalImageViewHandles[i] = graph.createImageView({ "Probe Normal Image", probeNormalImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
@@ -251,9 +257,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	rg::ImageHandle probeImageHandle = graph.importImage(m_renderResources->m_probeImage, "Probe Image", false, {}, m_renderResources->m_probeImageState);
 	rg::ImageViewHandle probeCubeImageViewHandle = 0;
+	rg::ImageViewHandle probeArrayImageViewHandle = 0;
 	rg::ImageViewHandle probeImageViewHandles[6] = {};
 	{
 		probeCubeImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
+		probeArrayImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		for (uint32_t i = 0; i < 6; ++i)
 		{
 			probeImageViewHandles[i] = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
@@ -577,13 +585,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	lightProbeGBufferPassData.m_probeFarPlane = 20.0f;
 	lightProbeGBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	lightProbeGBufferPassData.m_directionalLightsShadowedProbeBufferInfo = directionalLightsShadowedProbeBufferInfo;
-	for (size_t j = 0; j < 6; ++j)
-	{
-		lightProbeGBufferPassData.m_depthImageHandles[j] = probeDepthImageViewHandles[j];
-		lightProbeGBufferPassData.m_albedoRoughnessImageHandles[j] = probeAlbedoRoughnessImageViewHandles[j];
-		lightProbeGBufferPassData.m_normalImageHandles[j] = probeNormalImageViewHandles[j];
-		lightProbeGBufferPassData.m_resultImageHandles[j] = probeImageViewHandles[j];
-	}
+	lightProbeGBufferPassData.m_depthImageViewHandle = probeDepthArrayImageViewHandle;
+	lightProbeGBufferPassData.m_albedoRoughnessImageViewHandle = probeAlbedoRoughnessArrayImageViewHandle;
+	lightProbeGBufferPassData.m_normalImageViewHandle = probeNormalArrayImageViewHandle;
+	lightProbeGBufferPassData.m_resultImageViewHandle = probeArrayImageViewHandle;
 	lightProbeGBufferPassData.m_directionalShadowImageViewHandle = probeShadowImageViewHandle;
 	lightProbeGBufferPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 

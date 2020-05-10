@@ -5,10 +5,10 @@
 #include "common.hlsli"
 #include "brdf.hlsli"
 
-RWTexture2D<float4> g_ResultImage[6] : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float> g_DepthImage[6] : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2D<float4> g_AlbedoRoughnessImage[6] : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAGE_BINDING, ALBEDO_ROUGHNESS_IMAGE_SET);
-Texture2D<float2> g_NormalImage[6] : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
+RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
+Texture2DArray<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
+Texture2DArray<float4> g_AlbedoRoughnessImage : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAGE_BINDING, ALBEDO_ROUGHNESS_IMAGE_SET);
+Texture2DArray<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 Texture2DArray<float> g_ShadowImage : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
@@ -30,20 +30,20 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		return;
 	}
 
-	float depth = g_DepthImage[groupID.z].Load(int3(threadID.xy, 0)).x;
+	float depth = g_DepthImage.Load(int4(threadID, 0)).x;
 	
 	if (depth == 1.0)
 	{
-		g_ResultImage[groupID.z][threadID.xy] = float4(0.529, 0.808, 0.922, 1.0);
+		g_ResultImage[threadID] = float4(0.529, 0.808, 0.922, 1.0);
 		return;
 	}
 	
 	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * 2.0 - 1.0, depth, 1.0));
 	float3 viewSpacePos = viewSpacePos4.xyz / viewSpacePos4.w;
-	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage[groupID.z].Load(int3(threadID.xy, 0)));
+	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage.Load(int4(threadID, 0)));
 	float3 albedo = albedoRoughness.rgb;
 	float roughness = albedoRoughness.a;
-	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage[groupID.z].Load(int3(threadID.xy, 0)).xy), 0.0)).xyz;
+	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage.Load(int4(threadID, 0)).xy), 0.0)).xyz;
 	
 	float3 result = 0.0;
 	
@@ -72,5 +72,5 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		}
 	}
 	
-	g_ResultImage[groupID.z][threadID.xy] = float4(result, 1.0);
+	g_ResultImage[threadID] = float4(result, 1.0);
 }
