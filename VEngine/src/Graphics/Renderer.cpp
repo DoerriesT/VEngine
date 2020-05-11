@@ -9,6 +9,8 @@
 #include "Pass/IntegrateBrdfPass.h"
 #include "Pass/ProbeGBufferPass.h"
 #include "Pass/LightProbeGBufferPass.h"
+#include "Pass/ProbeDownsamplePass.h"
+#include "Pass/ProbeFilterPass.h"
 #include "Pass/ShadowPass.h"
 #include "Pass/ShadowAtlasPass.h"
 #include "Pass/RasterTilingPass.h"
@@ -257,17 +259,31 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	rg::ImageHandle probeImageHandle = graph.importImage(m_renderResources->m_probeImage, "Probe Image", false, {}, m_renderResources->m_probeImageState);
 	rg::ImageViewHandle probeCubeImageViewHandle = 0;
-	rg::ImageViewHandle probeArrayImageViewHandle = 0;
-	rg::ImageViewHandle probeImageViewHandles[6] = {};
+	rg::ImageViewHandle probeArrayImageViewHandles[7] = {};
+	//rg::ImageViewHandle probeImageViewHandles[6] = {};
 	{
-		probeCubeImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, 0, 6 }, ImageViewType::CUBE });
-		probeArrayImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
-		for (uint32_t i = 0; i < 6; ++i)
+		probeCubeImageViewHandle = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 7, 0, 6 }, ImageViewType::CUBE });
+		
+		for (uint32_t i = 0; i < 7; ++i)
 		{
-			probeImageViewHandles[i] = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+			probeArrayImageViewHandles[i] = graph.createImageView({ "Probe Image", probeImageHandle, { i, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		}
+		//for (uint32_t i = 0; i < 6; ++i)
+		//{
+		//	probeImageViewHandles[i] = graph.createImageView({ "Probe Image", probeImageHandle, { 0, 1, i, 1 }, ImageViewType::_2D });
+		//}
 	}
 
+	rg::ImageHandle probeTmpImageHandle = graph.importImage(m_renderResources->m_probeTmpImage, "Probe Temp Image", false, {}, m_renderResources->m_probeTmpImageState);
+	rg::ImageViewHandle probeTmpArrayImageViewHandles[7] = {};
+	rg::ImageViewHandle probeTmpImageViewHandle = 0;
+	{
+		probeTmpImageViewHandle = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { 0, 7, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < 7; ++i)
+		{
+			probeTmpArrayImageViewHandles[i] = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { i, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
+		}
+	}
 
 	// create graph managed resources
 
@@ -578,6 +594,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 	
 
+	// light reflection probe
 	LightProbeGBufferPass::Data lightProbeGBufferPassData;
 	lightProbeGBufferPassData.m_passRecordContext = &passRecordContext;
 	lightProbeGBufferPassData.m_probePosition = { 0.0f, 2.0f, 0.0f };
@@ -588,13 +605,29 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	lightProbeGBufferPassData.m_depthImageViewHandle = probeDepthArrayImageViewHandle;
 	lightProbeGBufferPassData.m_albedoRoughnessImageViewHandle = probeAlbedoRoughnessArrayImageViewHandle;
 	lightProbeGBufferPassData.m_normalImageViewHandle = probeNormalArrayImageViewHandle;
-	lightProbeGBufferPassData.m_resultImageViewHandle = probeArrayImageViewHandle;
+	lightProbeGBufferPassData.m_resultImageViewHandle = probeTmpArrayImageViewHandles[0];
 	lightProbeGBufferPassData.m_directionalShadowImageViewHandle = probeShadowImageViewHandle;
 	lightProbeGBufferPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 
 	LightProbeGBufferPass::addToGraph(graph, lightProbeGBufferPassData);
 
 
+	// downsample reflection probe
+	ProbeDownsamplePass::Data probeDownsamplePassData;
+	probeDownsamplePassData.m_passRecordContext = &passRecordContext;
+	for (size_t i = 0; i < 7; ++i) probeDownsamplePassData.m_resultImageViewHandles[i] = probeTmpArrayImageViewHandles[i];
+	for (size_t i = 0; i < 7; ++i) probeDownsamplePassData.m_cubeImageViews[i] = m_renderResources->m_probeTmpCubeViews[i];
+
+	ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
+
+
+	// filter reflection probe
+	ProbeFilterPass::Data probeFilterPassData;
+	probeFilterPassData.m_passRecordContext = &passRecordContext;
+	probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
+	for (size_t i = 0; i < 7; ++i) probeFilterPassData.m_resultImageViewHandles[i] = probeArrayImageViewHandles[i];
+
+	ProbeFilterPass::addToGraph(graph, probeFilterPassData);
 
 	// Hi-Z furthest depth pyramid
 	HiZPyramidPass::OutData hiZMinPyramidPassOutData;

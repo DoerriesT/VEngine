@@ -265,11 +265,17 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 							glm::mat4 lightView = glm::lookAt(direction * 150.0f + camPos, camPos, upDir);
 
-							// snap to shadow map texel to avoid shimmering
-							lightView[3].x -= fmodf(lightView[3].x, (50.0f / static_cast<float>(2048.0f)) * 2.0f);
-							lightView[3].y -= fmodf(lightView[3].y, (50.0f / static_cast<float>(2048.0f)) * 2.0f);
+							constexpr float radius = 50.0f;
+							constexpr float shadowMapRes = 2048.0f;
+							constexpr float depthRange = 300.0f;
+							constexpr float precisionRange = 65536.0f;
 
-							glm::mat4 shadowMatrix = vulkanCorrection * glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 0.0f, 300.0f) * lightView;
+							// snap to shadow map texel to avoid shimmering
+							lightView[3].x -= fmodf(lightView[3].x, (radius / shadowMapRes) * 2.0f);
+							lightView[3].y -= fmodf(lightView[3].y, (radius / shadowMapRes) * 2.0f);
+							lightView[3].z -= fmodf(lightView[3].z, depthRange / precisionRange);
+
+							glm::mat4 shadowMatrix = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
 
 							m_shadowMatrices.push_back(shadowMatrix);
 
@@ -1102,11 +1108,15 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 
 		glm::mat4 lightView = glm::lookAt(center + lightDir * 150.0f, center, upDir);
 
+		constexpr float depthRange = 300.0f;
+		constexpr float precisionRange = 65536.0f;
+
 		// snap to shadow map texel to avoid shimmering
 		lightView[3].x -= fmodf(lightView[3].x, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
 		lightView[3].y -= fmodf(lightView[3].y, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].z -= fmodf(lightView[3].z, depthRange / precisionRange);
 
-		constexpr float depthRange = 300.0f;
+		
 
 		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
 

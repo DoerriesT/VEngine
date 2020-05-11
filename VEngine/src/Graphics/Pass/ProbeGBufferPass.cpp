@@ -37,8 +37,8 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 
 	graph.addPass("Probe G-Buffer", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
-			const uint32_t width = 256;
-			const uint32_t height = 256;
+			const uint32_t width = RendererConsts::REFLECTION_PROBE_RES;;
+			const uint32_t height = RendererConsts::REFLECTION_PROBE_RES;;
 
 			Format depthAttachmentFormat = registry.getImageView(data.m_depthImageHandles[0])->getImage()->getDescription().m_format;
 			Format colorAttachmentFormats[]

@@ -6,6 +6,12 @@
 #include "imgui/imgui.h"
 #include "ProxyMeshes.h"
 
+namespace
+{
+	using float4 = glm::vec4;
+#include "../../../Application/Resources/Shaders/hlsl/src/probeFilterCoeffsQuad32.hlsli"
+}
+
 using namespace VEngine::gal;
 
 VEngine::RenderResources::RenderResources(gal::GraphicsDevice *graphicsDevice)
@@ -54,9 +60,14 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyImage(m_probeAlbedoRoughnessImage);
 	m_graphicsDevice->destroyImage(m_probeNormalImage);
 	m_graphicsDevice->destroyImage(m_probeImage);
+	m_graphicsDevice->destroyImage(m_probeTmpImage);
 
 	// views
 	m_graphicsDevice->destroyImageView(m_imGuiFontsTextureView);
+	for (size_t i = 0; i < 7; ++i)
+	{
+		m_graphicsDevice->destroyImageView(m_probeTmpCubeViews[i]);
+	}
 
 	// buffers
 	m_graphicsDevice->destroyBuffer(m_lightProxyVertexBuffer);
@@ -126,8 +137,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	// probe
 	{
 		ImageCreateInfo imageCreateInfo{};
-		imageCreateInfo.m_width = 256;
-		imageCreateInfo.m_height = 256;
+		imageCreateInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
+		imageCreateInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
 		imageCreateInfo.m_depth = 1;
 		imageCreateInfo.m_levels = 1;
 		imageCreateInfo.m_layers = 6;
@@ -151,9 +162,26 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeNormalImage);
 
 		imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
+		imageCreateInfo.m_levels = 7;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeImage);
+
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeTmpImage);
+
+		for (uint32_t i = 0; i < 7; ++i)
+		{
+			gal::ImageViewCreateInfo viewCreateInfo{};
+			viewCreateInfo.m_image = m_probeTmpImage;
+			viewCreateInfo.m_viewType = gal::ImageViewType::CUBE;
+			viewCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;;
+			viewCreateInfo.m_baseMipLevel = i;
+			viewCreateInfo.m_levelCount = 1;
+			viewCreateInfo.m_baseArrayLayer = 0;
+			viewCreateInfo.m_layerCount = 6;
+
+			m_graphicsDevice->createImageView(viewCreateInfo, &m_probeTmpCubeViews[i]);
+		}
 	}
 
 	resize(width, height);
@@ -512,6 +540,65 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		}
 		m_commandList->end();
 		Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);
+	}
+
+	// reflection probe filter coeffs image
+	{
+		// create image and view
+		{
+			// create image
+			ImageCreateInfo imageCreateInfo{};
+			imageCreateInfo.m_width = sizeof(coeffs) / 16;
+			imageCreateInfo.m_height = 1;
+			imageCreateInfo.m_depth = 1;
+			imageCreateInfo.m_levels = 1;
+			imageCreateInfo.m_layers = 1;
+			imageCreateInfo.m_samples = SampleCount::_1;
+			imageCreateInfo.m_imageType = ImageType::_1D;
+			imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
+			imageCreateInfo.m_createFlags = 0;
+			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+
+			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeFilterCoeffsImage);
+
+			// create view
+			m_graphicsDevice->createImageView(m_probeFilterCoeffsImage, &m_probeFilterCoeffsImageView);
+		}
+
+		// Upload to Buffer:
+		{
+			uint8_t *map = nullptr;
+			m_stagingBuffer->map((void **)&map);
+			{
+				memcpy(map, coeffs, sizeof(coeffs));
+			}
+			m_stagingBuffer->unmap();
+		}
+
+		// Copy to Image:
+		{
+			m_commandListPool->reset();
+			m_commandList->begin();
+			{
+				// transition from UNDEFINED to TRANSFER_DST
+				Barrier b0 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::HOST_BIT, PipelineStageFlagBits::TRANSFER_BIT, ResourceState::UNDEFINED, ResourceState::WRITE_IMAGE_TRANSFER);
+				m_commandList->barrier(1, &b0);
+
+				BufferImageCopy region{};
+				region.m_imageLayerCount = 1;
+				region.m_extent.m_width = sizeof(coeffs) / 16;
+				region.m_extent.m_height = 1;
+				region.m_extent.m_depth = 1;
+
+				m_commandList->copyBufferToImage(m_stagingBuffer, m_probeFilterCoeffsImage, 1, &region);
+
+				// transition from TRANSFER_DST to TEXTURE
+				Barrier b1 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::WRITE_IMAGE_TRANSFER, ResourceState::READ_TEXTURE);
+				m_commandList->barrier(1, &b1);
+			}
+			m_commandList->end();
+			Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);
+		}
 	}
 }
 

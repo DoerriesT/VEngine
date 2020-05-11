@@ -27,9 +27,13 @@ namespace VEngine
 		gal::Image *m_probeAlbedoRoughnessImage = {};
 		gal::Image *m_probeNormalImage = {};
 		gal::Image *m_probeImage = {};
+		gal::Image *m_probeTmpImage = {};
+		gal::Image *m_probeFilterCoeffsImage = {};
 
 		// views
 		gal::ImageView *m_imGuiFontsTextureView = {};
+		gal::ImageView *m_probeTmpCubeViews[7] = {};
+		gal::ImageView *m_probeFilterCoeffsImageView = {};
 
 		// buffers
 		gal::Buffer *m_lightProxyVertexBuffer = {};
@@ -66,7 +70,8 @@ namespace VEngine
 		rg::ResourceStateData m_probeDepthImageState[6] = {};
 		rg::ResourceStateData m_probeAlbedoRoughnessImageState[6] = {};
 		rg::ResourceStateData m_probeNormalImageState[6] = {};
-		rg::ResourceStateData m_probeImageState[6] = {};
+		rg::ResourceStateData m_probeImageState[6 * 7] = {}; // 6 faces and 7 mip levels
+		rg::ResourceStateData m_probeTmpImageState[6 * 7] = {}; // 6 faces and 7 mip levels
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};

@@ -45,9 +45,9 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	consts.probeFaceToViewSpace[3] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
 	consts.probeFaceToViewSpace[4] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 	consts.probeFaceToViewSpace[5] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-	consts.texelSize = 1.0f / glm::vec2(256);
-	consts.width = 256;
-	consts.height = 256;
+	consts.texelSize = 1.0f / glm::vec2(RendererConsts::REFLECTION_PROBE_RES);
+	consts.width = RendererConsts::REFLECTION_PROBE_RES;
+	consts.height = RendererConsts::REFLECTION_PROBE_RES;
 	consts.directionalLightCount = data.m_passRecordContext->m_commonRenderData->m_directionalLightCount;
 	consts.directionalLightShadowedCount = data.m_passRecordContext->m_commonRenderData->m_directionalLightShadowedProbeCount;
 
@@ -104,6 +104,6 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 
-			cmdList->dispatch((256 + 7) / 8, (256 + 7) / 8, 6);
+			cmdList->dispatch((RendererConsts::REFLECTION_PROBE_RES + 7) / 8, (RendererConsts::REFLECTION_PROBE_RES + 7) / 8, 6);
 		}, true);
 }
