@@ -14,6 +14,12 @@
 #define NORMAL_IMAGE_BINDING 6
 #define LINEAR_SAMPLER_SET 0
 #define LINEAR_SAMPLER_BINDING 7
+#define REFLECTION_PROBE_IMAGE_SET 0
+#define REFLECTION_PROBE_IMAGE_BINDING 8
+#define REFLECTION_PROBE_DATA_SET 0
+#define REFLECTION_PROBE_DATA_BINDING 9
+#define EXPOSURE_DATA_BUFFER_SET 0
+#define EXPOSURE_DATA_BUFFER_BINDING 10
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -22,6 +28,7 @@
 
 struct PushConsts
 {
+	float4x4 invViewMatrix;
 	float4 unprojectParams;
 	float2 noiseScale;
 	float2 noiseJitter;

@@ -61,8 +61,10 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyImage(m_probeNormalImage);
 	m_graphicsDevice->destroyImage(m_probeImage);
 	m_graphicsDevice->destroyImage(m_probeTmpImage);
+	m_graphicsDevice->destroyImage(m_probeFilterCoeffsImage);
 
 	// views
+	m_graphicsDevice->destroyImageView(m_probeFilterCoeffsImageView);
 	m_graphicsDevice->destroyImageView(m_imGuiFontsTextureView);
 	for (size_t i = 0; i < 7; ++i)
 	{

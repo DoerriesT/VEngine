@@ -473,6 +473,17 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
+	// local reflection probe data write
+	DescriptorBufferInfo localReflProbesDataBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe), size_t(1)) };
+	{
+		uint8_t *dataBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localReflProbesDataBufferInfo.m_range, localReflProbesDataBufferInfo.m_offset, localReflProbesDataBufferInfo.m_buffer, dataBufferPtr);
+		if (!lightData.m_localReflectionProbes.empty())
+		{
+			memcpy(dataBufferPtr, lightData.m_localReflectionProbes.data(), lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe));
+		}
+	}
+
 	// shadow matrices write
 	DescriptorBufferInfo shadowMatricesBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), size_t(1)) };
 	{
@@ -863,6 +874,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// apply volumetric fog and indirect specular light to scene
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
+	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	volumetricFogApplyPassData.m_reflectionProbeImageViewHandle = probeCubeImageViewHandle;
 	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();

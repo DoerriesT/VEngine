@@ -43,6 +43,8 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 		{rg::ResourceViewHandle(data.m_brdfLutImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_specularRoughnessImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_normalImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_reflectionProbeImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Volumetric Fog Apply", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -70,6 +72,8 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 				ImageView *brdfLutImageView = registry.getImageView(data.m_brdfLutImageViewHandle);
 				ImageView *specularRoughnessImageView = registry.getImageView(data.m_specularRoughnessImageViewHandle);
 				ImageView *normalImageView = registry.getImageView(data.m_normalImageViewHandle);
+				ImageView *reflectionProbeImageView = registry.getImageView(data.m_reflectionProbeImageViewHandle);
+				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -81,6 +85,9 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::sampledImage(&brdfLutImageView, BRDF_LUT_IMAGE_BINDING),
 					Initializers::sampledImage(&specularRoughnessImageView, SPEC_ROUGHNESS_IMAGE_BINDING),
 					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
+					Initializers::sampledImage(&reflectionProbeImageView, REFLECTION_PROBE_IMAGE_BINDING),
+					Initializers::storageBuffer(&data.m_reflectionProbeDataBufferInfo, REFLECTION_PROBE_DATA_BINDING),
+					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -92,6 +99,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 
 			PushConsts pushConsts;
+			pushConsts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
 			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;

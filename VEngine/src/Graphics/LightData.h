@@ -70,6 +70,15 @@ namespace VEngine
 		float m_pad0;
 	};
 
+	struct LocalReflectionProbe
+	{
+		glm::vec4 m_worldToLocal0;
+		glm::vec4 m_worldToLocal1;
+		glm::vec4 m_worldToLocal2;
+		glm::vec3 m_capturePosition;
+		float m_pad0;
+	};
+
 	struct LightData
 	{
 		std::vector<ShadowAtlasDrawInfo> m_shadowAtlasDrawInfos;
@@ -80,6 +89,7 @@ namespace VEngine
 		std::vector<PunctualLightShadowed> m_punctualLightsShadowed;
 		std::vector<GlobalParticipatingMedium> m_globalParticipatingMedia;
 		std::vector<LocalParticipatingMedium> m_localParticipatingMedia;
+		std::vector<LocalReflectionProbe> m_localReflectionProbes;
 		std::vector<glm::mat4> m_punctualLightTransforms;
 		std::vector<glm::mat4> m_punctualLightShadowedTransforms;
 		std::vector<glm::mat4> m_localMediaTransforms;
@@ -100,6 +110,7 @@ namespace VEngine
 			m_punctualLightsShadowed.clear();
 			m_globalParticipatingMedia.clear();
 			m_localParticipatingMedia.clear();
+			m_localReflectionProbes.clear();
 			m_punctualLightTransforms.clear();
 			m_punctualLightShadowedTransforms.clear();
 			m_localMediaTransforms.clear();

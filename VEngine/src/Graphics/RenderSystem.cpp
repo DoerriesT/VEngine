@@ -769,6 +769,23 @@ void VEngine::RenderSystem::update(float timeDelta)
 					renderLists.push_back({});
 				}
 			}
+
+			glm::vec3 minCorner = glm::vec3(-9.5, -0.01, -2.4);
+			glm::vec3 maxCorner = glm::vec3(9.5, 13.0, 2.4);
+			
+			glm::vec3 center = 0.5f * (minCorner + maxCorner);
+			glm::vec3 extent = maxCorner - center;
+
+			glm::quat orientation = glm::quat(glm::vec3(0.0f));
+			glm::mat4 worldToLocalTransposed = glm::transpose(glm::scale(1.0f / extent) * glm::mat4_cast(glm::inverse(orientation))  * glm::translate(-center));
+
+			LocalReflectionProbe probe{};
+			probe.m_worldToLocal0 = worldToLocalTransposed[0];
+			probe.m_worldToLocal1 = worldToLocalTransposed[1];
+			probe.m_worldToLocal2 = worldToLocalTransposed[2];
+			probe.m_capturePosition = position;
+
+			m_lightData.m_localReflectionProbes.push_back(probe);
 		}
 
 		// update all transformations and generate draw lists
