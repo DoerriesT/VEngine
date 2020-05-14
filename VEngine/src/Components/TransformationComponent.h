@@ -15,7 +15,7 @@ namespace VEngine
 		Mobility m_mobility;
 		glm::vec3 m_position;
 		glm::quat m_orientation;
-		float m_scale = 1.0f;
+		glm::vec3 m_scale = glm::vec3(1.0f);
 		glm::mat4 m_transformation;
 		glm::mat4 m_previousTransformation;
 	};

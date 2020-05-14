@@ -11,7 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			rg::ImageViewHandle m_inputImageViewHandle; // cube with 7 mips
-			rg::ImageViewHandle m_resultImageViewHandles[7]; // 7 mips with 6 layers each
+			gal::ImageView *m_resultImageViews[7]; // 7 mips with 6 layers each
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

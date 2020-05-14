@@ -13,7 +13,7 @@ namespace VEngine
 			uint32_t m_noiseTextureHandle;
 			gal::DescriptorBufferInfo m_reflectionProbeDataBufferInfo;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
-			rg::ImageViewHandle m_reflectionProbeImageViewHandle;
+			gal::ImageView *m_reflectionProbeImageView;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;

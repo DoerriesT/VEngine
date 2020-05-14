@@ -444,6 +444,15 @@
     <ClInclude Include="src\Graphics\Pass\ProbeFilterPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Components\ReflectionProbeComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\FrustumCullData.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\ReflectionProbeManager.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -745,6 +754,12 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\FrustumCullData.cpp">
+      <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\ReflectionProbeManager.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

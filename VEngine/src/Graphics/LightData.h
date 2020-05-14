@@ -93,12 +93,15 @@ namespace VEngine
 		std::vector<glm::mat4> m_punctualLightTransforms;
 		std::vector<glm::mat4> m_punctualLightShadowedTransforms;
 		std::vector<glm::mat4> m_localMediaTransforms;
+		std::vector<glm::mat4> m_localReflectionProbeTransforms;
 		std::vector<uint32_t> m_punctualLightOrder;
 		std::vector<uint32_t> m_punctualLightShadowedOrder;
 		std::vector<uint32_t> m_localMediaOrder;
+		std::vector<uint32_t> m_localReflectionProbeOrder;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightDepthBins;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightShadowedDepthBins;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_localMediaDepthBins;
+		std::array<uint32_t, RendererConsts::Z_BINS> m_localReflectionProbeDepthBins;
 
 		void clear()
 		{
@@ -114,12 +117,15 @@ namespace VEngine
 			m_punctualLightTransforms.clear();
 			m_punctualLightShadowedTransforms.clear();
 			m_localMediaTransforms.clear();
+			m_localReflectionProbeTransforms.clear();
 			m_punctualLightOrder.clear();
 			m_punctualLightShadowedOrder.clear();
 			m_localMediaOrder.clear();
+			m_localReflectionProbeOrder.clear();
 			memset(m_punctualLightDepthBins.data(), 0, sizeof(m_punctualLightDepthBins));
 			memset(m_punctualLightShadowedDepthBins.data(), 0, sizeof(m_punctualLightShadowedDepthBins));
 			memset(m_localMediaDepthBins.data(), 0, sizeof(m_localMediaDepthBins));
+			memset(m_localMediaDepthBins.data(), 0, sizeof(m_localReflectionProbeDepthBins));
 		}
 	};
 }

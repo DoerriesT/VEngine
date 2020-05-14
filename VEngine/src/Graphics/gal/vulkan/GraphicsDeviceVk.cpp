@@ -307,6 +307,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 				&& supportedFeatures.fragmentStoresAndAtomics
 				&& supportedFeatures.shaderStorageImageExtendedFormats
 				&& supportedFeatures.shaderStorageImageWriteWithoutFormat
+				&& supportedFeatures.imageCubeArray
 				&& vulkan12Features.shaderSampledImageArrayNonUniformIndexing
 				&& vulkan12Features.timelineSemaphore
 				&& vulkan12Features.imagelessFramebuffer)
@@ -419,6 +420,7 @@ VEngine::gal::GraphicsDeviceVk::GraphicsDeviceVk(void *windowHandle, bool debugL
 		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		deviceFeatures.shaderStorageImageExtendedFormats = VK_TRUE;
 		deviceFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+		deviceFeatures.imageCubeArray = VK_TRUE;
 
 		m_enabledFeatures = deviceFeatures;
 

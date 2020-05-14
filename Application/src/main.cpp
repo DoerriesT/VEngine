@@ -12,6 +12,7 @@
 #include <Components/DirectionalLightComponent.h>
 #include <Components/ParticipatingMediumComponent.h>
 #include <Components/BoundingBoxComponent.h>
+#include <Components/ReflectionProbeComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
 #include <Scene.h>
@@ -73,7 +74,7 @@ public:
 
 		scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
 		entt::entity orbEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), 3.0f);
+		entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
 		entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
 		entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
 
@@ -115,6 +116,17 @@ public:
 		//entityRegistry.assign<VEngine::TransformationComponent>(knobEntity, VEngine::TransformationComponent::Mobility::STATIC);
 		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
+
+		glm::vec3 minCorner = glm::vec3(-9.5, -0.01, -2.4);
+		glm::vec3 maxCorner = glm::vec3(9.5, 13.0, 2.4);
+		glm::vec3 probeCenter = (minCorner + maxCorner) * 0.5f;
+		glm::vec3 captureOffset = glm::vec3(0.0f, 2.0f, 0.0f) - probeCenter;
+
+		auto reflectionProbeEntity = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), maxCorner - probeCenter);
+		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset, 0.0f);
+		entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
+
 
 		g_globalFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f);

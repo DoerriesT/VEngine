@@ -8,11 +8,13 @@
 #include "Handles.h"
 #include "Utility/AxisAlignedBoundingBox.h"
 #include "BVH.h"
-#include "Graphics/Renderer.h"
+#include "Renderer.h"
+#include "ReflectionProbeManager.h"
 
 namespace VEngine
 {
 	class Renderer;
+	class ReflectionProbeManager;
 	struct Material;
 	struct SubMesh;
 	struct PassTimingInfo;
@@ -41,6 +43,7 @@ namespace VEngine
 	private:
 		entt::registry &m_entityRegistry;
 		std::unique_ptr<Renderer> m_renderer;
+		std::unique_ptr<ReflectionProbeManager> m_reflectionProbeManager;
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;

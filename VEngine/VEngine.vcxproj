@@ -148,6 +148,7 @@
     <ClInclude Include="src\Components\MeshComponent.h" />
     <ClInclude Include="src\Components\ParticipatingMediumComponent.h" />
     <ClInclude Include="src\Components\PointLightComponent.h" />
+    <ClInclude Include="src\Components\ReflectionProbeComponent.h" />
     <ClInclude Include="src\Components\RenderableComponent.h" />
     <ClInclude Include="src\Components\SpotLightComponent.h" />
     <ClInclude Include="src\Components\TransformationComponent.h" />
@@ -159,6 +160,7 @@
     <ClInclude Include="src\Graphics\Camera\Camera.h" />
     <ClInclude Include="src\Graphics\CommandListFramePool.h" />
     <ClInclude Include="src\Graphics\DescriptorSetCache.h" />
+    <ClInclude Include="src\Graphics\FrustumCullData.h" />
     <ClInclude Include="src\Graphics\gal\dx12\CommandListDx12.h" />
     <ClInclude Include="src\Graphics\gal\dx12\CommandListPoolDx12.h" />
     <ClInclude Include="src\Graphics\gal\dx12\DescriptorSetDx12.h" />
@@ -247,6 +249,7 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h" />
     <ClInclude Include="src\Graphics\PipelineCache.h" />
     <ClInclude Include="src\Graphics\ProxyMeshes.h" />
+    <ClInclude Include="src\Graphics\ReflectionProbeManager.h" />
     <ClInclude Include="src\Graphics\RenderData.h" />
     <ClInclude Include="src\Graphics\Renderer.h" />
     <ClInclude Include="src\Graphics\RendererConsts.h" />
@@ -283,6 +286,7 @@
     <ClCompile Include="src\Graphics\Camera\Camera.cpp" />
     <ClCompile Include="src\Graphics\CommandListFramePool.cpp" />
     <ClCompile Include="src\Graphics\DescriptorSetCache.cpp" />
+    <ClCompile Include="src\Graphics\FrustumCullData.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\CommandListDx12.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\CommandListPoolDx12.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\DescriptorSetDx12.cpp" />
@@ -361,6 +365,7 @@
     <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp" />
     <ClCompile Include="src\Graphics\PipelineCache.cpp" />
+    <ClCompile Include="src\Graphics\ReflectionProbeManager.cpp" />
     <ClCompile Include="src\Graphics\Renderer.cpp" />
     <ClCompile Include="src\Graphics\RenderGraph.cpp" />
     <ClCompile Include="src\Graphics\RenderResources.cpp" />

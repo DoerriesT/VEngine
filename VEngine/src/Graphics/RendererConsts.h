@@ -24,6 +24,7 @@ namespace VEngine
 		constexpr uint32_t SAMPLER_POINT_CLAMP_IDX = 2;
 		constexpr uint32_t SAMPLER_POINT_REPEAT_IDX = 3;
 		constexpr uint32_t REFLECTION_PROBE_RES = 128;
+		constexpr uint32_t REFLECTION_PROBE_CACHE_SIZE = 32;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

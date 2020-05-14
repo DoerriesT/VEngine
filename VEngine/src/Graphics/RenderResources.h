@@ -23,16 +23,24 @@ namespace VEngine
 		gal::Image *m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_imGuiFontsTexture = {};
 		gal::Image *m_brdfLUT = {};
-		gal::Image *m_probeDepthImage = {};
-		gal::Image *m_probeAlbedoRoughnessImage = {};
-		gal::Image *m_probeNormalImage = {};
-		gal::Image *m_probeImage = {};
+		gal::Image *m_probeDepthArrayImage = {};
+		gal::Image *m_probeAlbedoRoughnessArrayImage = {};
+		gal::Image *m_probeNormalArrayImage = {};
+		gal::Image *m_probeArrayImage = {};
 		gal::Image *m_probeTmpImage = {};
 		gal::Image *m_probeFilterCoeffsImage = {};
 
 		// views
 		gal::ImageView *m_imGuiFontsTextureView = {};
 		gal::ImageView *m_probeTmpCubeViews[7] = {};
+		gal::ImageView *m_probeDepthArrayView = {};
+		gal::ImageView *m_probeDepthSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
+		gal::ImageView *m_probeAlbedoRoughnessArrayView = {};
+		gal::ImageView *m_probeAlbedoRoughnessSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
+		gal::ImageView *m_probeNormalArrayView = {};
+		gal::ImageView *m_probeNormalSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
+		gal::ImageView *m_probeCubeArrayView = {};
+		gal::ImageView *m_probeMipViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE][7];
 		gal::ImageView *m_probeFilterCoeffsImageView = {};
 
 		// buffers
@@ -67,10 +75,6 @@ namespace VEngine
 		rg::ResourceStateData m_avgLuminanceBufferState = {};
 		rg::ResourceStateData m_exposureDataBufferState = {};
 		rg::ResourceStateData m_brdfLutImageState = {};
-		rg::ResourceStateData m_probeDepthImageState[6] = {};
-		rg::ResourceStateData m_probeAlbedoRoughnessImageState[6] = {};
-		rg::ResourceStateData m_probeNormalImageState[6] = {};
-		rg::ResourceStateData m_probeImageState[6 * 7] = {}; // 6 faces and 7 mip levels
 		rg::ResourceStateData m_probeTmpImageState[6 * 7] = {}; // 6 faces and 7 mip levels
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};

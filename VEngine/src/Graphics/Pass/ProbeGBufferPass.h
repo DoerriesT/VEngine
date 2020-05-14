@@ -22,9 +22,9 @@ namespace VEngine
 			const SubMeshInfo *m_subMeshInfo;
 			gal::DescriptorBufferInfo m_materialDataBufferInfo;
 			gal::DescriptorBufferInfo m_transformDataBufferInfo;
-			rg::ImageViewHandle m_depthImageHandles[6];
-			rg::ImageViewHandle m_albedoRoughnessImageHandles[6];
-			rg::ImageViewHandle m_normalImageHandles[6];
+			gal::ImageView *m_depthImageViews[6];
+			gal::ImageView *m_albedoRoughnessImageViews[6];
+			gal::ImageView *m_normalImageViews[6];
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

@@ -45,11 +45,11 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	consts.probeFaceToViewSpace[3] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
 	consts.probeFaceToViewSpace[4] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 	consts.probeFaceToViewSpace[5] = consts.viewMatrix * glm::inverse(projection * glm::lookAtLH(data.m_probePosition, data.m_probePosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-	consts.texelSize = 1.0f / glm::vec2(RendererConsts::REFLECTION_PROBE_RES);
+	consts.texelSize = 1.0f / RendererConsts::REFLECTION_PROBE_RES;
 	consts.width = RendererConsts::REFLECTION_PROBE_RES;
-	consts.height = RendererConsts::REFLECTION_PROBE_RES;
 	consts.directionalLightCount = data.m_passRecordContext->m_commonRenderData->m_directionalLightCount;
 	consts.directionalLightShadowedCount = data.m_passRecordContext->m_commonRenderData->m_directionalLightShadowedProbeCount;
+	consts.arrayTextureOffset = data.m_probeIndex * 6;
 
 
 	memcpy(uboDataPtr, &consts, sizeof(Constants));
@@ -58,9 +58,6 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{ rg::ResourceViewHandle(data.m_directionalShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
-		{ rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
-		{ rg::ResourceViewHandle(data.m_albedoRoughnessImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
-		{ rg::ResourceViewHandle(data.m_normalImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{ rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 	};
 
@@ -80,17 +77,14 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 			// update descriptor sets
 			{
 				ImageView *shadowImageView = registry.getImageView(data.m_directionalShadowImageViewHandle);
-				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
-				ImageView *albedoRoughImageView = registry.getImageView(data.m_albedoRoughnessImageViewHandle);
-				ImageView *normalImageView = registry.getImageView(data.m_normalImageViewHandle);
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 				
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&albedoRoughImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
+					Initializers::sampledImage(&data.m_depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::sampledImage(&data.m_albedoRoughnessImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
+					Initializers::sampledImage(&data.m_normalImageView, NORMAL_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowImageView, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),

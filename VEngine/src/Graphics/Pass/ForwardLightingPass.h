@@ -40,7 +40,7 @@ namespace VEngine
 			//rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_ssaoImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
-			rg::ImageViewHandle m_probeImageViewHandle;
+			gal::ImageView *m_probeImageView;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

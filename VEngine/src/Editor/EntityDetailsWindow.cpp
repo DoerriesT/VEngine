@@ -53,7 +53,7 @@ void VEngine::EntityDetailsWindow::draw(uint32_t entity, uint32_t editorCameraEn
 		{
 			tc->m_orientation = glm::quat(glm::radians(eulerAngles));
 		}
-		ImGui::DragFloat("Scale", &tc->m_scale);
+		ImGui::DragFloat("Scale", &tc->m_scale.x);
 
 		ImGui::RadioButton("Translate", &m_translateRotateScaleMode, 0); ImGui::SameLine();
 		ImGui::RadioButton("Rotate", &m_translateRotateScaleMode, 1); ImGui::SameLine();
@@ -200,7 +200,7 @@ void VEngine::EntityDetailsWindow::draw(uint32_t entity, uint32_t editorCameraEn
 			tc.m_orientation = glm::quat(glm::radians(eulerAngles));
 			break;
 		case ImGuizmo::SCALE:
-			tc.m_scale = tc.m_scale != scale.x ? scale.x : tc.m_scale != scale.y ? scale.y : scale.z;
+			tc.m_scale = scale;
 			break;
 		case ImGuizmo::BOUNDS:
 			break;

@@ -27,24 +27,44 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 	memcpy(uboDataPtr, &data.m_viewProjectionMatrices, sizeof(Constants));
 
 
-	rg::ResourceUsageDescription passUsages[3 * 6];
-	for (size_t i = 0; i < 6; ++i)
-	{
-		passUsages[i * 3 + 0] = { rg::ResourceViewHandle(data.m_depthImageHandles[i]), {gal::ResourceState::READ_WRITE_DEPTH_STENCIL, PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT} };
-		passUsages[i * 3 + 1] = { rg::ResourceViewHandle(data.m_albedoRoughnessImageHandles[i]), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} };
-		passUsages[i * 3 + 2] = { rg::ResourceViewHandle(data.m_normalImageHandles[i]), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} };
-	}
-
-	graph.addPass("Probe G-Buffer", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	graph.addPass("Probe G-Buffer", rg::QueueType::GRAPHICS, 0, nullptr, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
+			// transition images to correct state for writing in this pass
+			{
+				gal::Barrier barriers[3];
+				{
+					barriers[0] = Initializers::imageBarrier(data.m_depthImageViews[0]->getImage(),
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT,
+						ResourceState::READ_TEXTURE,
+						ResourceState::READ_WRITE_DEPTH_STENCIL,
+						{ 0, 1, data.m_depthImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+
+					barriers[1] = Initializers::imageBarrier(data.m_albedoRoughnessImageViews[0]->getImage(),
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+						ResourceState::READ_TEXTURE,
+						ResourceState::WRITE_ATTACHMENT,
+						{ 0, 1, data.m_albedoRoughnessImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+
+					barriers[2] = Initializers::imageBarrier(data.m_normalImageViews[0]->getImage(),
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+						ResourceState::READ_TEXTURE,
+						ResourceState::WRITE_ATTACHMENT,
+						{ 0, 1, data.m_normalImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+				}
+				cmdList->barrier(3, barriers);
+			}
+
 			const uint32_t width = RendererConsts::REFLECTION_PROBE_RES;;
 			const uint32_t height = RendererConsts::REFLECTION_PROBE_RES;;
 
-			Format depthAttachmentFormat = registry.getImageView(data.m_depthImageHandles[0])->getImage()->getDescription().m_format;
+			Format depthAttachmentFormat = data.m_depthImageViews[0]->getImage()->getDescription().m_format;
 			Format colorAttachmentFormats[]
 			{
-				registry.getImageView(data.m_albedoRoughnessImageHandles[0])->getImage()->getDescription().m_format,
-				registry.getImageView(data.m_normalImageHandles[0])->getImage()->getDescription().m_format,
+				data.m_albedoRoughnessImageViews[0]->getImage()->getDescription().m_format,
+				data.m_normalImageViews[0]->getImage()->getDescription().m_format,
 			};
 			PipelineColorBlendAttachmentState colorBlendAttachments[]
 			{
@@ -55,7 +75,7 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			for (int face = 0; face < 6; ++face)
 			{
 				// begin renderpass
-				DepthStencilAttachmentDescription depthAttachmentDesc{ registry.getImageView(data.m_depthImageHandles[face]) };
+				DepthStencilAttachmentDescription depthAttachmentDesc{ data.m_depthImageViews[face] };
 				depthAttachmentDesc.m_loadOp = AttachmentLoadOp::CLEAR;
 				depthAttachmentDesc.m_storeOp = AttachmentStoreOp::STORE;
 				depthAttachmentDesc.m_stencilLoadOp = AttachmentLoadOp::DONT_CARE;
@@ -63,8 +83,8 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				depthAttachmentDesc.m_clearValue = { 1.0f, 0 };
 				depthAttachmentDesc.m_readOnly = false;
 
-				ColorAttachmentDescription albedoRoughAttachmentDesc{ registry.getImageView(data.m_albedoRoughnessImageHandles[face]), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
-				ColorAttachmentDescription normalAttachmentDesc{ registry.getImageView(data.m_normalImageHandles[face]), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
+				ColorAttachmentDescription albedoRoughAttachmentDesc{ data.m_albedoRoughnessImageViews[face], AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
+				ColorAttachmentDescription normalAttachmentDesc{ data.m_normalImageViews[face], AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
 				ColorAttachmentDescription colorAttachmentDescs[] = { albedoRoughAttachmentDesc, normalAttachmentDesc };
 				cmdList->beginRenderPass(2, colorAttachmentDescs, &depthAttachmentDesc, { {}, {width, height} });
 
@@ -142,6 +162,34 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				}
 
 				cmdList->endRenderPass();
+			}
+
+			// transition images to correct state for reading in lighting pass
+			{
+				gal::Barrier barriers[3];
+				{
+					barriers[0] = Initializers::imageBarrier(data.m_depthImageViews[0]->getImage(),
+						PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT,
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						ResourceState::READ_WRITE_DEPTH_STENCIL,
+						ResourceState::READ_TEXTURE,
+						{ 0, 1, data.m_depthImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+
+					barriers[1] = Initializers::imageBarrier(data.m_albedoRoughnessImageViews[0]->getImage(),
+						PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						ResourceState::WRITE_ATTACHMENT,
+						ResourceState::READ_TEXTURE,
+						{ 0, 1, data.m_albedoRoughnessImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+
+					barriers[2] = Initializers::imageBarrier(data.m_normalImageViews[0]->getImage(),
+						PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT,
+						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+						ResourceState::WRITE_ATTACHMENT,
+						ResourceState::READ_TEXTURE,
+						{ 0, 1, data.m_normalImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+				}
+				cmdList->barrier(3, barriers);
 			}
 		}, true);
 }

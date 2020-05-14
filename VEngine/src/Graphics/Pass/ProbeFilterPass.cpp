@@ -10,16 +10,24 @@ using namespace VEngine::gal;
 
 void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	rg::ResourceUsageDescription passUsages[8];
-
-	passUsages[0] = { rg::ResourceViewHandle(data.m_inputImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
-	for (size_t i = 0; i < 7; ++i)
+	rg::ResourceUsageDescription passUsages[]
 	{
-		passUsages[i + 1] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
-	}
+		{ rg::ResourceViewHandle(data.m_inputImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } }
+	};
 
 	graph.addPass("Reflection Probe Filter", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
+			// transition image from READ_TEXTURE to WRITE_STORAGE_IMAGE
+			{
+				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					ResourceState::READ_TEXTURE,
+					ResourceState::WRITE_STORAGE_IMAGE,
+					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+				cmdList->barrier(1, &barrier);
+			}
+
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
@@ -36,29 +44,22 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
-				ImageView *resultImageView0 = registry.getImageView(data.m_resultImageViewHandles[0]);
-				ImageView *resultImageView1 = registry.getImageView(data.m_resultImageViewHandles[1]);
-				ImageView *resultImageView2 = registry.getImageView(data.m_resultImageViewHandles[2]);
-				ImageView *resultImageView3 = registry.getImageView(data.m_resultImageViewHandles[3]);
-				ImageView *resultImageView4 = registry.getImageView(data.m_resultImageViewHandles[4]);
-				ImageView *resultImageView5 = registry.getImageView(data.m_resultImageViewHandles[5]);
-				ImageView *resultImageView6 = registry.getImageView(data.m_resultImageViewHandles[6]);
 
 				DescriptorSetUpdate updates[] =
 				{
-					Initializers::storageImage(&resultImageView0, 0),
-					Initializers::storageImage(&resultImageView1, 1),
-					Initializers::storageImage(&resultImageView2, 2),
-					Initializers::storageImage(&resultImageView3, 3),
-					Initializers::storageImage(&resultImageView4, 4),
-					Initializers::storageImage(&resultImageView5, 5),
-					Initializers::storageImage(&resultImageView6, 6),
+					Initializers::storageImage(&data.m_resultImageViews[0], 0),
+					Initializers::storageImage(&data.m_resultImageViews[1], 1),
+					Initializers::storageImage(&data.m_resultImageViews[2], 2),
+					Initializers::storageImage(&data.m_resultImageViews[3], 3),
+					Initializers::storageImage(&data.m_resultImageViews[4], 4),
+					Initializers::storageImage(&data.m_resultImageViews[5], 5),
+					Initializers::storageImage(&data.m_resultImageViews[6], 6),
 					Initializers::sampledImage(&inputImageView, 7),
 					Initializers::samplerDescriptor(&linearSampler, 8),
 					Initializers::sampledImage(&data.m_passRecordContext->m_renderResources->m_probeFilterCoeffsImageView, 9),
 				};
 
-				descriptorSet->update(10, updates);
+				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
@@ -74,5 +75,16 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 			}
 
 			cmdList->dispatch((texelCount + 63) / 64 + 1, 6, 1);
+
+			// transition image from WRITE_STORAGE_IMAGE to READ_TEXTURE
+			{
+				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					ResourceState::WRITE_STORAGE_IMAGE,
+					ResourceState::READ_TEXTURE,
+					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+				cmdList->barrier(1, &barrier);
+			}
 		}, true);
 }

@@ -82,17 +82,20 @@ namespace VEngine
 		uint32_t m_shadowMatrixCount;
 		glm::mat4 *m_shadowMatrices;
 		glm::vec4 *m_shadowCascadeParams;
-		uint32_t m_probeRenderCount;
 		glm::mat4 *m_probeViewProjectionMatrices;
-		uint32_t m_probeDrawListOffset;
+		uint32_t m_probeRenderCount;
+		uint32_t *m_probeRenderIndices;
+		uint32_t m_probeRelightCount;
+		uint32_t *m_probeRelightIndices;
 		uint32_t m_subMeshInstanceDataCount;
 		SubMeshInstanceData *m_subMeshInstanceData;
 		uint64_t *m_drawCallKeys;
 		uint32_t m_mainViewRenderListIndex;
-		uint32_t m_probeShadowViewRenderListOffset;
-		uint32_t m_probeShadowViewRenderListCount;
+		uint32_t m_probeDrawListOffset;
 		uint32_t m_shadowCascadeViewRenderListOffset;
 		uint32_t m_shadowCascadeViewRenderListCount;
+		uint32_t m_probeShadowViewRenderListOffset;
+		uint32_t m_probeShadowViewRenderListCount;
 		ViewRenderList *m_renderLists;
 	};
 }

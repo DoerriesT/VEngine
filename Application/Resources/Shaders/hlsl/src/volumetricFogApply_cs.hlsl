@@ -16,7 +16,7 @@ Texture2D<float4> g_IndirectSpecularLightImage : REGISTER_SRV(INDIRECT_SPECULAR_
 Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT_IMAGE_SET);
 Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
 Texture2D<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
-TextureCube<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
+TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, REFLECTION_PROBE_DATA_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
@@ -82,7 +82,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		
 		float3 lookupDir = parallaxCorrectReflectionDir(g_ReflectionProbeData[0], worldSpacePos, R);
 		
-		float3 reflectionProbeSpecular = g_ReflectionProbeImage.SampleLevel(g_LinearSampler, lookupDir, roughness * 7.0).rgb;
+		float3 reflectionProbeSpecular = g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, 0.0), roughness * 7.0).rgb;
 		// apply pre-exposure
 		reflectionProbeSpecular *= asfloat(g_ExposureData.Load(0));
 		

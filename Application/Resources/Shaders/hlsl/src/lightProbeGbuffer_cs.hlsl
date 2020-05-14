@@ -25,12 +25,12 @@ StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DI
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 {
-	if (threadID.x >= g_Constants.width || threadID.y >= g_Constants.height)
+	if (threadID.x >= g_Constants.width || threadID.y >= g_Constants.width)
 	{
 		return;
 	}
 
-	float depth = g_DepthImage.Load(int4(threadID, 0)).x;
+	float depth = g_DepthImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)).x;
 	
 	if (depth == 1.0)
 	{
@@ -40,10 +40,10 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 	
 	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * 2.0 - 1.0, depth, 1.0));
 	float3 viewSpacePos = viewSpacePos4.xyz / viewSpacePos4.w;
-	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage.Load(int4(threadID, 0)));
+	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)));
 	float3 albedo = albedoRoughness.rgb;
 	float roughness = albedoRoughness.a;
-	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage.Load(int4(threadID, 0)).xy), 0.0)).xyz;
+	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)).xy), 0.0)).xyz;
 	
 	float3 result = 0.0;
 	
