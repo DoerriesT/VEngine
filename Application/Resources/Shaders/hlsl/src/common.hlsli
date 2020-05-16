@@ -106,7 +106,7 @@ struct LocalReflectionProbe
 	float4 worldToLocal1;
 	float4 worldToLocal2;
 	float3 capturePosition;
-	float pad0;
+	float arraySlot;
 };
 
 struct SubMeshInstanceData

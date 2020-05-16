@@ -76,7 +76,14 @@ namespace VEngine
 		glm::vec4 m_worldToLocal1;
 		glm::vec4 m_worldToLocal2;
 		glm::vec3 m_capturePosition;
-		float m_pad0;
+		float m_arraySlot;
+	};
+
+	struct ReflectionProbeRelightData
+	{
+		glm::vec3 m_position;
+		float m_nearPlane;
+		float m_farPlane;
 	};
 
 	struct LightData
@@ -102,6 +109,7 @@ namespace VEngine
 		std::array<uint32_t, RendererConsts::Z_BINS> m_punctualLightShadowedDepthBins;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_localMediaDepthBins;
 		std::array<uint32_t, RendererConsts::Z_BINS> m_localReflectionProbeDepthBins;
+		const ReflectionProbeRelightData *m_reflectionProbeRelightData;
 
 		void clear()
 		{

@@ -31,6 +31,7 @@ VEngine::ReflectionProbeManager::ReflectionProbeManager(entt::registry &entityRe
 	{
 		m_freeCacheSlots.push_back(i - 1);
 	}
+	m_probeRelightData.resize(RendererConsts::REFLECTION_PROBE_CACHE_SIZE);
 }
 
 void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
@@ -55,7 +56,6 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 		struct ProbeSortData
 		{
 			float m_cameraDistance2;
-			float m_zDistance;
 			glm::vec3 m_capturePosition;
 			ReflectionProbeInternalDataComponent *m_internalData;
 		};
@@ -67,8 +67,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 				internalComponent.m_lastLit = (internalComponent.m_lastLit == UINT32_MAX) ? UINT32_MAX : internalComponent.m_lastLit + 1;
 
 				ProbeSortData probeSortData{};
-				probeSortData.m_cameraDistance2 = glm::dot(glm::vec3(commonData.m_cameraPosition), transformationComponent.m_position);
-				probeSortData.m_zDistance;
+				probeSortData.m_cameraDistance2 = glm::length2(glm::vec3(commonData.m_cameraPosition) - transformationComponent.m_position);
 				probeSortData.m_capturePosition = transformationComponent.m_position + probeComponent.m_captureOffset;
 				probeSortData.m_internalData = &internalComponent;
 
@@ -113,12 +112,14 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 			{
 				// allocate cache slot for probe
 				assert(!m_freeCacheSlots.empty());
-				data.m_internalData->m_cacheSlot = m_freeCacheSlots.back();
+				const uint32_t slot = m_freeCacheSlots.back();
+				data.m_internalData->m_cacheSlot = slot;
+				m_probeRelightData[slot] = { data.m_capturePosition, 0.1f, 20.0f }; // TODO: compute proper near/far planes
 				m_freeCacheSlots.pop_back();
 			}
 
 			// evaluate relighting score
-			const float distanceScore = 1.0f - (data.m_cameraDistance2 * invFurthestDistance2);
+			const float distanceScore = (1.0f - (data.m_cameraDistance2 * invFurthestDistance2)) * 0.5f + 0.5f;
 			const float timeScore = static_cast<float>((data.m_internalData->m_lastLit == UINT32_MAX) ? RendererConsts::REFLECTION_PROBE_CACHE_SIZE : data.m_internalData->m_lastLit);
 			const float relightScore = distanceScore * timeScore;
 
@@ -137,6 +138,12 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 
 		// if we need to render a probe, we also light it directly
 		relightProbeIndex = renderProbeIndex != UINT32_MAX ? renderProbeIndex : relightProbeIndex;
+
+		// reset the last_lit counter
+		if (relightProbeIndex != UINT32_MAX)
+		{
+			sortData[relightProbeIndex].m_internalData->m_lastLit = 0;
+		}
 
 		// schedule rendering a probe gbuffer
 		if (renderProbeIndex != UINT32_MAX)
@@ -231,11 +238,12 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 					probe.m_worldToLocal1 = worldToLocalTransposed[1];
 					probe.m_worldToLocal2 = worldToLocalTransposed[2];
 					probe.m_capturePosition = probePosition;
+					probe.m_arraySlot = internalComponent.m_cacheSlot;
 
 					ProbeDepthSortData probeSortData{};
 					probeSortData.m_zDist = glm::dot(glm::vec4(commonData.m_viewMatrix[0][2], commonData.m_viewMatrix[1][2], commonData.m_viewMatrix[2][2], commonData.m_viewMatrix[3][2]), glm::vec4(transformationComponent.m_position, 1.0f));
-					probeSortData.m_closest = probeSortData.m_zDist - radius;
-					probeSortData.m_furthest = probeSortData.m_zDist + radius;
+					probeSortData.m_closest = probeSortData.m_zDist + radius;
+					probeSortData.m_furthest = probeSortData.m_zDist - radius;
 
 					depthSortData.push_back(probeSortData);
 					lightData.m_localReflectionProbes.push_back(probe);
@@ -278,6 +286,11 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 			}
 		}
 	}
+}
+
+const VEngine::ReflectionProbeRelightData *VEngine::ReflectionProbeManager::getRelightData() const
+{
+	return m_probeRelightData.data();
 }
 
 void VEngine::ReflectionProbeManager::addInternalComponent(entt::registry &registry, entt::entity entity)

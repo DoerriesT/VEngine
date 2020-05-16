@@ -2,6 +2,7 @@
 #include <entt/entity/registry.hpp>
 #include <vector>
 #include <glm/mat4x4.hpp>
+#include "LightData.h"
 
 namespace VEngine
 {
@@ -25,12 +26,15 @@ namespace VEngine
 			uint32_t &probeRelightCount,
 			glm::vec3 &probeShadowMapCenter, 
 			float &probeShadowMapRadius);
+		const ReflectionProbeRelightData *getRelightData() const;
+
 	private:
 		entt::registry &m_entityRegistry;
 		uint32_t m_renderProbeIndex;
 		uint32_t m_relightProbeIndex;
 		std::vector<glm::mat4> m_probeMatrices;
 		std::vector<uint32_t> m_freeCacheSlots;
+		std::vector<ReflectionProbeRelightData> m_probeRelightData;
 
 		void addInternalComponent(entt::registry &registry, entt::entity entity);
 		void removeInternalComponent(entt::registry &registry, entt::entity entity);

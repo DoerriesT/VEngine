@@ -39,6 +39,8 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 	m_renderer = std::make_unique<Renderer>(m_width, m_height, windowHandle);
 	m_reflectionProbeManager = std::make_unique<ReflectionProbeManager>(m_entityRegistry);
 	memset(&m_commonRenderData, 0, sizeof(m_commonRenderData));
+
+	m_lightData.m_reflectionProbeRelightData = m_reflectionProbeManager->getRelightData();
 }
 
 void VEngine::RenderSystem::update(float timeDelta)
@@ -834,6 +836,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		m_commonRenderData.m_punctualLightShadowedCount = static_cast<uint32_t>(m_lightData.m_punctualLightsShadowed.size());
 		m_commonRenderData.m_globalParticipatingMediaCount = static_cast<uint32_t>(m_lightData.m_globalParticipatingMedia.size());
 		m_commonRenderData.m_localParticipatingMediaCount = static_cast<uint32_t>(m_lightData.m_localParticipatingMedia.size());
+		m_commonRenderData.m_reflectionProbeCount = static_cast<uint32_t>(m_lightData.m_localReflectionProbes.size());
 
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());

@@ -4,6 +4,7 @@
 #include "srgb.hlsli"
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
+#include "lighting.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -17,7 +18,11 @@ Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT
 Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
 Texture2D<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
 TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
+
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, REFLECTION_PROBE_DATA_SET);
+ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, REFLECTION_PROBE_BIT_MASK_SET);
+ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, REFLECTION_PROBE_Z_BINS_SET);
+
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 
@@ -73,25 +78,60 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		const float3 V = -normalize(viewSpacePosition.xyz);
 		const float3 N = decodeOctahedron(g_NormalImage.Load(int3(threadID.xy, 0)).xy);
 		
-		float4 indirectSpecular = depth == -10.0 ? g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0)) : 0.0;
+		float4 indirectSpecular = g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0));
 		
 		float3 worldSpacePos = mul(g_PushConsts.invViewMatrix, float4(viewSpacePosition, 1.0)).xyz;
 		float3 worldSpaceNormal = mul(g_PushConsts.invViewMatrix, float4(N, 0.0)).xyz;
 		float3 worldSpaceViewDir = mul(g_PushConsts.invViewMatrix, float4(V, 0.0)).xyz;
 		float3 R = reflect(-worldSpaceViewDir, worldSpaceNormal);
 		
-		float3 lookupDir = parallaxCorrectReflectionDir(g_ReflectionProbeData[0], worldSpacePos, R);
+		float weightSum = 0.0;
+		float3 reflectionProbeSpecular = 0.0;
+		const float preExposureFactor = asfloat(g_ExposureData.Load(0));
 		
-		float3 reflectionProbeSpecular = g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, 0.0), roughness * 7.0).rgb;
-		// apply pre-exposure
-		reflectionProbeSpecular *= asfloat(g_ExposureData.Load(0));
+		// iterate over all reflection probes
+		uint probeCount = g_PushConsts.probeCount;
+		if (probeCount > 0)
+		{
+			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
+			getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, -viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			const uint address = getTileAddress(threadID.xy, g_PushConsts.width, wordCount);
 		
-		indirectSpecular = depth != -10.0 ? float4(reflectionProbeSpecular, 1.0) : indirectSpecular;
+			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
+			{
+				uint mask = getLightingBitMask(g_ReflectionProbeBitMask, address, wordIndex, minIndex, maxIndex);
+				
+				while (mask != 0)
+				{
+					const uint bitIndex = firstbitlow(mask);
+					const uint index = 32 * wordIndex + bitIndex;
+					mask ^= (1 << bitIndex);
+					
+					LocalReflectionProbe probeData = g_ReflectionProbeData[index];
+					
+					const float3 localPos = float3(dot(probeData.worldToLocal0, float4(worldSpacePos, 1.0)), 
+									dot(probeData.worldToLocal1, float4(worldSpacePos, 1.0)), 
+									dot(probeData.worldToLocal2, float4(worldSpacePos, 1.0)));
+									
+					if (all(abs(localPos) <= 1.0))
+					{
+						float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, R);
+		
+						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), roughness * 7.0).rgb * preExposureFactor;
+						weightSum += 1.0;
+					}
+				}
+			}
+		}
+		
+		reflectionProbeSpecular = weightSum > 0.0 ? reflectionProbeSpecular * (1.0 / weightSum) : reflectionProbeSpecular;
+
+		indirectSpecular.rgb = lerp(reflectionProbeSpecular, indirectSpecular.rgb, indirectSpecular.a);
 		
 		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(roughness, saturate(dot(N, V))), 0.0).xy;
 		indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
 		
-		result += indirectSpecular.rgb * indirectSpecular.a;
+		result += indirectSpecular.rgb;
 	}
 	
 	// volumetric fog

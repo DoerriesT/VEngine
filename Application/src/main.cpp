@@ -25,9 +25,9 @@
 #include <Graphics/imgui/imgui.h>
 #include <Utility/Utility.h>
 
-float g_fogAlbedo[3] = {0.01f, 0.01f, 0.01f};
+float g_fogAlbedo[3] = { 0.01f, 0.01f, 0.01f };
 float g_fogExtinction = 0.01f;
-float g_fogEmissiveColor[3] = {1.0f, 1.0f, 1.0f};
+float g_fogEmissiveColor[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogEmissiveIntensity = 0.0f;
 float g_fogPhase = 0.0f;
 
@@ -117,15 +117,38 @@ public:
 		//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
 		//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
 
-		glm::vec3 minCorner = glm::vec3(-9.5, -0.01, -2.4);
-		glm::vec3 maxCorner = glm::vec3(9.5, 13.0, 2.4);
-		glm::vec3 probeCenter = (minCorner + maxCorner) * 0.5f;
-		glm::vec3 captureOffset = glm::vec3(0.0f, 2.0f, 0.0f) - probeCenter;
 
-		auto reflectionProbeEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), maxCorner - probeCenter);
-		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset, 0.0f);
-		entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
+		auto createReflectionProbe = [&](const glm::vec3 &bboxMin, const glm::vec3 &bboxMax, bool manualOffset = false, const glm::vec3 &capturePos = glm::vec3(0.0f))
+		{
+			glm::vec3 probeCenter = (bboxMin + bboxMax) * 0.5f;
+			glm::vec3 captureOffset = manualOffset ? capturePos - probeCenter : glm::vec3(0.0f);
+
+			auto reflectionProbeEntity = entityRegistry.create();
+			entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), bboxMax - probeCenter);
+			entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset, 0.0f);
+			entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
+			return reflectionProbeEntity;
+		};
+
+		// center
+		createReflectionProbe(glm::vec3(-9.5, -0.01, -2.4), glm::vec3(9.5, 13.0, 2.4), true, glm::vec3(0.0f, 2.0f, 0.0f));
+
+		// lower halls
+		createReflectionProbe(glm::vec3(-9.5, -0.01, 2.4), glm::vec3(9.5, 3.9, 6.1));
+		createReflectionProbe(glm::vec3(-9.5, -0.01, -6.1), glm::vec3(9.5, 3.9, -2.4));
+
+		// lower end
+		createReflectionProbe(glm::vec3(-13.7, -0.01, -6.1), glm::vec3(-9.5, 3.9, 6.1));
+		createReflectionProbe(glm::vec3(9.5, -0.01, -6.1), glm::vec3(13.65, 3.9, 6.1));
+
+		// upper halls
+		createReflectionProbe(glm::vec3(-9.8, 4.15, 2.8), glm::vec3(9.8, 8.7, 6.15));
+		createReflectionProbe(glm::vec3(-9.8, 4.15, -6.1), glm::vec3(9.8, 8.7, -2.8));
+
+		// upper ends
+		createReflectionProbe(glm::vec3(-13.7, 4.15, -6.1), glm::vec3(-9.8, 8.7, 6.15));
+		createReflectionProbe(glm::vec3(9.8, 4.15, -6.1), glm::vec3(13.65, 8.7, 6.15));
+
 
 
 		g_globalFogEntity = entityRegistry.create();
@@ -159,7 +182,7 @@ public:
 		std::uniform_real_distribution<float> pz(-8.0f, 8.0f);
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
 		std::uniform_real_distribution<float> r(0.0f, glm::two_pi<float>());
-		
+
 		//for (size_t i = 0; i < 16; ++i)
 		//{
 		//	entt::entity lightEntity = entityRegistry.create();
@@ -199,7 +222,7 @@ public:
 		ImGui::Begin("Volumetric Fog");
 		{
 			//ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
-			
+
 			ImGui::RadioButton("Spot Light", &entityIdx, 0); ImGui::SameLine();
 			ImGui::RadioButton("Sun Light", &entityIdx, 1); ImGui::SameLine();
 			ImGui::RadioButton("Local Fog Volume", &entityIdx, 2);

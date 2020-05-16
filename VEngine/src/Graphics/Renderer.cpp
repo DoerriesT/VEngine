@@ -299,6 +299,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rg::BufferViewHandle punctualLightBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
 	rg::BufferViewHandle punctualLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
 	rg::BufferViewHandle localMediaBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localParticipatingMedia.size()));
+	rg::BufferViewHandle reflProbeBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localReflectionProbes.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
@@ -419,12 +420,19 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// local reflection probe data write
 	DescriptorBufferInfo localReflProbesDataBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe), size_t(1)) };
+	DescriptorBufferInfo localReflProbesZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbeDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localReflProbesDataBufferInfo.m_range, localReflProbesDataBufferInfo.m_offset, localReflProbesDataBufferInfo.m_buffer, dataBufferPtr);
+		uint8_t *zBinsBufferPtr;
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localReflProbesZBinsBufferInfo.m_range, localReflProbesZBinsBufferInfo.m_offset, localReflProbesZBinsBufferInfo.m_buffer, zBinsBufferPtr);
 		if (!lightData.m_localReflectionProbes.empty())
 		{
-			memcpy(dataBufferPtr, lightData.m_localReflectionProbes.data(), lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe));
+			for (size_t i = 0; i < lightData.m_localReflectionProbeOrder.size(); ++i)
+			{
+				((LocalReflectionProbe *)dataBufferPtr)[i] = lightData.m_localReflectionProbes[lightData.m_localReflectionProbeOrder[i]];
+			}
+			memcpy(zBinsBufferPtr, lightData.m_localReflectionProbeDepthBins.data(), lightData.m_localReflectionProbeDepthBins.size() * sizeof(uint32_t));
 		}
 	}
 
@@ -552,19 +560,21 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// relight reflection probes
 	for (size_t i = 0; i < renderData.m_probeRelightCount; ++i)
 	{
+		const auto &relightData = lightData.m_reflectionProbeRelightData[renderData.m_probeRelightIndices[i]];
+
 		// light reflection probes
 		LightProbeGBufferPass::Data lightProbeGBufferPassData;
 		lightProbeGBufferPassData.m_passRecordContext = &passRecordContext;
-		lightProbeGBufferPassData.m_probePosition = { 0.0f, 2.0f, 0.0f };
-		lightProbeGBufferPassData.m_probeNearPlane = 0.1f;
-		lightProbeGBufferPassData.m_probeFarPlane = 20.0f;
+		lightProbeGBufferPassData.m_probePosition = relightData.m_position;
+		lightProbeGBufferPassData.m_probeNearPlane = relightData.m_nearPlane;
+		lightProbeGBufferPassData.m_probeFarPlane = relightData.m_farPlane;
 		lightProbeGBufferPassData.m_probeIndex = renderData.m_probeRelightIndices[i];
 		lightProbeGBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 		lightProbeGBufferPassData.m_directionalLightsShadowedProbeBufferInfo = directionalLightsShadowedProbeBufferInfo;
 		lightProbeGBufferPassData.m_depthImageView = m_renderResources->m_probeDepthArrayView;
 		lightProbeGBufferPassData.m_albedoRoughnessImageView = m_renderResources->m_probeAlbedoRoughnessArrayView;
 		lightProbeGBufferPassData.m_normalImageView = m_renderResources->m_probeNormalArrayView;
-		lightProbeGBufferPassData.m_resultImageViewHandle = probeTmpArrayImageViewHandles[renderData.m_probeRelightIndices[i]];
+		lightProbeGBufferPassData.m_resultImageViewHandle = probeTmpArrayImageViewHandles[0];
 		lightProbeGBufferPassData.m_directionalShadowImageViewHandle = probeShadowImageViewHandle;
 		lightProbeGBufferPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 
@@ -636,8 +646,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rasterTilingPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	rasterTilingPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 	rasterTilingPassData.m_participatingMediaBitMaskBufferHandle = localMediaBitMaskBufferViewHandle;
+	rasterTilingPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
 
-	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty() || !lightData.m_localParticipatingMedia.empty())
+	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty() || !lightData.m_localParticipatingMedia.empty() || !lightData.m_localReflectionProbes.empty())
 	{
 		RasterTilingPass::addToGraph(graph, rasterTilingPassData);
 	}
@@ -824,8 +835,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
 	volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
+	volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
 	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogApplyPassData.m_reflectionProbeImageView = m_renderResources->m_probeCubeArrayView;
+	volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
 	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();

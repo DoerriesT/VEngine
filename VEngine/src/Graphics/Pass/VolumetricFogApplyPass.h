@@ -12,8 +12,10 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_noiseTextureHandle;
 			gal::DescriptorBufferInfo m_reflectionProbeDataBufferInfo;
+			gal::DescriptorBufferInfo m_reflectionProbeZBinsBufferInfo;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			gal::ImageView *m_reflectionProbeImageView;
+			rg::BufferViewHandle m_reflectionProbeBitMaskBufferHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;
