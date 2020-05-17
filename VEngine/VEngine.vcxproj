@@ -229,6 +229,7 @@
     <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h" />
     <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
+    <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeFilterPass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h" />
@@ -347,6 +348,7 @@
     <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp" />

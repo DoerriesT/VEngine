@@ -456,6 +456,9 @@
     <ClInclude Include="src\Graphics\Module\ReflectionProbeModule.h">
       <Filter>src\Graphics\Module</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -766,6 +769,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Module\ReflectionProbeModule.cpp">
       <Filter>src\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

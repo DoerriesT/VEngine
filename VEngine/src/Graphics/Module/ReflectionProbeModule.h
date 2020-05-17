@@ -74,6 +74,8 @@ namespace VEngine
 		gal::Image *m_probeNormalArrayImage = {};
 		gal::Image *m_probeArrayImage = {};
 		gal::Image *m_probeTmpImage = {};
+		gal::Image *m_probeUncompressedLitImage = {};
+		gal::Image *m_probeCompressedTmpLitImage = {};
 		gal::Image *m_probeFilterCoeffsImage = {};
 
 		gal::ImageView *m_probeTmpCubeViews[7] = {};
@@ -84,7 +86,8 @@ namespace VEngine
 		gal::ImageView *m_probeNormalArrayView = {};
 		gal::ImageView *m_probeNormalSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
 		gal::ImageView *m_probeCubeArrayView = {};
-		gal::ImageView *m_probeMipViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE][7] = {};
+		gal::ImageView *m_probeCompressedTmpMipViews[7] = {};
+		gal::ImageView *m_probeUncompressedMipViews[7] = {};
 		gal::ImageView *m_probeFilterCoeffsImageView = {};
 
 		rg::ImageViewHandle m_probeShadowImageViewHandle = 0;

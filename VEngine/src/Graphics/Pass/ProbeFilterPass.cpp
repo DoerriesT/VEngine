@@ -17,7 +17,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 	graph.addPass("Reflection Probe Filter", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
-			// transition image from READ_TEXTURE to WRITE_STORAGE_IMAGE
+			// transition result image from READ_TEXTURE to WRITE_STORAGE_IMAGE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
@@ -76,7 +76,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 			cmdList->dispatch((texelCount + 63) / 64 + 1, 6, 1);
 
-			// transition image from WRITE_STORAGE_IMAGE to READ_TEXTURE
+			// transition result image from WRITE_STORAGE_IMAGE to READ_TEXTURE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,

@@ -44,5 +44,6 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main -D ALPHA_MASK_ENABLE
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main lightProbeGBuffer_cs.hlsl -Fo ./../lightProbeGBuffer_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main downsampleCubemap_cs.hlsl -Fo ./../downsampleCubemap_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeFilter_cs.hlsl -Fo ./../probeFilter_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeCompressBCH6_cs.hlsl -Fo ./../probeCompressBCH6_cs.spv
 
 pause
