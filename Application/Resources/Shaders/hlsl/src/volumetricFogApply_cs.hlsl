@@ -85,7 +85,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		const float3 V = -normalize(viewSpacePosition.xyz);
 		const float3 N = decodeOctahedron(g_NormalImage.Load(int3(threadID.xy, 0)).xy);
 		
-		float4 indirectSpecular = g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0));
+		float4 indirectSpecular = depth == 50.0 ? g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0)) : 0.0;
 		
 		float3 worldSpacePos = mul(g_PushConsts.invViewMatrix, float4(viewSpacePosition, 1.0)).xyz;
 		float3 worldSpaceNormal = mul(g_PushConsts.invViewMatrix, float4(N, 0.0)).xyz;
@@ -105,8 +105,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, -viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(threadID.xy, g_PushConsts.width, wordCount);
 		
-			const float mipCount = 5.0;
-			float mipLevel = sqrt(roughness) * mipCount;
+			const float mipCount = 7.0;
+			float mipLevel = roughness * mipCount;
 		
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{

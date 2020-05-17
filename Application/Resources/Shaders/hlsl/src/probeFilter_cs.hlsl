@@ -130,7 +130,7 @@ void main( uint3 id : SV_DispatchThreadID )
 		return;
 	}
 
-	level = WaveReadLaneFirst(level);
+	//level = WaveReadLaneFirst(level);
 
 	// determine dir / pos for the texel
 	float3 dir, adir, frameZ;
@@ -292,7 +292,7 @@ void main( uint3 id : SV_DispatchThreadID )
 		tex_out5[id] = color;
 		break;
 	default:
-		tex_out6[id] = 1.0;//color;
+		tex_out6[id] = color;
 		break;
 	}
 }

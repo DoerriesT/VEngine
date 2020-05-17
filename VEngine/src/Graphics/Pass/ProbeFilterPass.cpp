@@ -10,6 +10,8 @@ using namespace VEngine::gal;
 
 void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	static_assert(RendererConsts::REFLECTION_PROBE_MIPS == 7);
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{ rg::ResourceViewHandle(data.m_inputImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } }
@@ -64,17 +66,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
 
-			uint32_t texelCount = 0;
-			{
-				uint32_t s = 128;
-				for (size_t i = 0; i < 7; ++i)
-				{
-					texelCount += s * s;
-					s /= 2;
-				}
-			}
-
-			cmdList->dispatch((texelCount + 63) / 64 + 1, 6, 1);
+			cmdList->dispatch(342, 6, 1);
 
 			// transition result image from WRITE_STORAGE_IMAGE to READ_TEXTURE
 			{
