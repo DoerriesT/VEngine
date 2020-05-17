@@ -97,6 +97,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, -viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(threadID.xy, g_PushConsts.width, wordCount);
 		
+			const float mipCount = 5.0;
+			float mipLevel = sqrt(roughness) * mipCount;
+		
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
 				uint mask = getLightingBitMask(g_ReflectionProbeBitMask, address, wordIndex, minIndex, maxIndex);
@@ -117,7 +120,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					{
 						float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, R);
 		
-						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), roughness * 7.0).rgb * preExposureFactor;
+						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
 						weightSum += 1.0;
 					}
 				}

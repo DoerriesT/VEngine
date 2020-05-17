@@ -45,7 +45,7 @@ float3 integrateCubeLDOnly(float3 N, float roughness)
 		if (NdotL > 0.0)
 		{
 			float NdotH = saturate(dot(N, H));
-			float pdf = D_GGX(NdotH, a2) / PI * 0.25; // since N==V -> NdotH == VdotH == LdotH, we can simplify the pdf
+			float pdf = D_GGX(NdotH, a2) * 0.25; // since N==V -> NdotH == VdotH == LdotH, we can simplify the pdf
 			// solid angle of sample
 			float omegaS = 1.0 / (sampleCount * pdf);
 			// solid angle of cubemap pixel
@@ -93,6 +93,16 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	float2 texCoord = (threadID.xy + 0.5) * g_PushConsts.texelSize;
 	float3 N = getDir(texCoord, threadID.z);
-	float3 result = integrateCubeLDOnly(N, g_PushConsts.roughness);
+	
+	float3 result;
+	if (g_PushConsts.mip == 0)
+	{
+		result = g_InputImage.SampleLevel(g_LinearSampler, N, 0.0).rgb;
+	}
+	else
+	{
+		result = integrateCubeLDOnly(N, g_PushConsts.roughness);
+	}
+	
 	g_ResultImages[g_PushConsts.mip][threadID] = float4(result, 1.0);
 }

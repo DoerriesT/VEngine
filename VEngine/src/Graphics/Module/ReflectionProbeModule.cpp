@@ -150,69 +150,69 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 	}
 
 	// uncompressed lit image -> result of filtering
-	{
-		ImageCreateInfo imageCreateInfo{};
-		imageCreateInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
-		imageCreateInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
-		imageCreateInfo.m_depth = 1;
-		imageCreateInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
-		imageCreateInfo.m_layers = 6;
-		imageCreateInfo.m_samples = SampleCount::_1;
-		imageCreateInfo.m_imageType = ImageType::_2D;
-		imageCreateInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
-		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
-
-		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeUncompressedLitImage);
-
-		for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
-		{
-			gal::ImageViewCreateInfo viewCreateInfo{};
-			viewCreateInfo.m_image = m_probeUncompressedLitImage;
-			viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
-			viewCreateInfo.m_format = imageCreateInfo.m_format;
-			viewCreateInfo.m_baseMipLevel = i;
-			viewCreateInfo.m_levelCount = 1;
-			viewCreateInfo.m_baseArrayLayer = 0;
-			viewCreateInfo.m_layerCount = 6;
-
-			m_graphicsDevice->createImageView(viewCreateInfo, &m_probeUncompressedMipViews[i]);
-		}
-	}
+	//{
+	//	ImageCreateInfo imageCreateInfo{};
+	//	imageCreateInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
+	//	imageCreateInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
+	//	imageCreateInfo.m_depth = 1;
+	//	imageCreateInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
+	//	imageCreateInfo.m_layers = 6;
+	//	imageCreateInfo.m_samples = SampleCount::_1;
+	//	imageCreateInfo.m_imageType = ImageType::_2D;
+	//	imageCreateInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
+	//	imageCreateInfo.m_createFlags = 0;
+	//	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+	//
+	//	m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeUncompressedLitImage);
+	//
+	//	for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
+	//	{
+	//		gal::ImageViewCreateInfo viewCreateInfo{};
+	//		viewCreateInfo.m_image = m_probeUncompressedLitImage;
+	//		viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
+	//		viewCreateInfo.m_format = imageCreateInfo.m_format;
+	//		viewCreateInfo.m_baseMipLevel = i;
+	//		viewCreateInfo.m_levelCount = 1;
+	//		viewCreateInfo.m_baseArrayLayer = 0;
+	//		viewCreateInfo.m_layerCount = 6;
+	//
+	//		m_graphicsDevice->createImageView(viewCreateInfo, &m_probeUncompressedMipViews[i]);
+	//	}
+	//}
 
 	// compressed uint tmp -> result of compression
-	{
-		ImageCreateInfo createInfo{};
-		createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES / 4;
-		createInfo.m_height = RendererConsts::REFLECTION_PROBE_RES / 4;
-		createInfo.m_depth = 1;
-		createInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
-		createInfo.m_layers = 6;
-		createInfo.m_samples = SampleCount::_1;
-		createInfo.m_imageType = ImageType::_2D;
-		createInfo.m_format = Format::R32G32B32A32_UINT;
-		createInfo.m_createFlags = 0;
-		createInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::STORAGE_BIT;
+	//{
+	//	ImageCreateInfo createInfo{};
+	//	createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES / 4;
+	//	createInfo.m_height = RendererConsts::REFLECTION_PROBE_RES / 4;
+	//	createInfo.m_depth = 1;
+	//	createInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
+	//	createInfo.m_layers = 6;
+	//	createInfo.m_samples = SampleCount::_1;
+	//	createInfo.m_imageType = ImageType::_2D;
+	//	createInfo.m_format = Format::R32G32B32A32_UINT;
+	//	createInfo.m_createFlags = 0;
+	//	createInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::STORAGE_BIT;
+	//
+	//	m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeCompressedTmpLitImage);
+	//
+	//	// mip views
+	//	for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
+	//	{
+	//		gal::ImageViewCreateInfo viewCreateInfo{};
+	//		viewCreateInfo.m_image = m_probeCompressedTmpLitImage;
+	//		viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
+	//		viewCreateInfo.m_format = createInfo.m_format;
+	//		viewCreateInfo.m_baseMipLevel = j;
+	//		viewCreateInfo.m_levelCount = 1;
+	//		viewCreateInfo.m_baseArrayLayer = 0;
+	//		viewCreateInfo.m_layerCount = 6;
+	//
+	//		m_graphicsDevice->createImageView(viewCreateInfo, &m_probeCompressedTmpMipViews[j]);
+	//	}
+	//}
 
-		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeCompressedTmpLitImage);
-
-		// mip views
-		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
-		{
-			gal::ImageViewCreateInfo viewCreateInfo{};
-			viewCreateInfo.m_image = m_probeCompressedTmpLitImage;
-			viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
-			viewCreateInfo.m_format = createInfo.m_format;
-			viewCreateInfo.m_baseMipLevel = j;
-			viewCreateInfo.m_levelCount = 1;
-			viewCreateInfo.m_baseArrayLayer = 0;
-			viewCreateInfo.m_layerCount = 6;
-
-			m_graphicsDevice->createImageView(viewCreateInfo, &m_probeCompressedTmpMipViews[j]);
-		}
-	}
-
-	// compressed lit array -> sampled during shading and transfer dst of compressed temp uint image
+	// lit array -> sampled during shading
 	{
 		ImageCreateInfo createInfo{};
 		createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
@@ -222,9 +222,9 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_layers = 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE;
 		createInfo.m_samples = SampleCount::_1;
 		createInfo.m_imageType = ImageType::_2D;
-		createInfo.m_format = Format::BC6H_UFLOAT_BLOCK;
+		createInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		createInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
-		createInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT;
+		createInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeArrayImage);
 
@@ -241,6 +241,24 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 
 			m_graphicsDevice->createImageView(viewCreateInfo, &m_probeCubeArrayView);
 		}
+
+		// mip views
+		for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_CACHE_SIZE; ++i)
+		{
+			for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
+			{
+				gal::ImageViewCreateInfo viewCreateInfo{};
+				viewCreateInfo.m_image = m_probeArrayImage;
+				viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
+				viewCreateInfo.m_format = createInfo.m_format;
+				viewCreateInfo.m_baseMipLevel = j;
+				viewCreateInfo.m_levelCount = 1;
+				viewCreateInfo.m_baseArrayLayer = i * 6;
+				viewCreateInfo.m_layerCount = 6;
+
+				m_graphicsDevice->createImageView(viewCreateInfo, &m_probeMipViews[i][j]);
+			}
+		}
 	}
 
 	// transition images to expected layouts
@@ -254,8 +272,8 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 				Initializers::imageBarrier(m_probeDepthArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 				Initializers::imageBarrier(m_probeAlbedoRoughnessArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 				Initializers::imageBarrier(m_probeNormalArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
-				Initializers::imageBarrier(m_probeUncompressedLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
-				Initializers::imageBarrier(m_probeCompressedTmpLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_IMAGE_TRANSFER, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
+				//Initializers::imageBarrier(m_probeUncompressedLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
+				//Initializers::imageBarrier(m_probeCompressedTmpLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_IMAGE_TRANSFER, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
 				Initializers::imageBarrier(m_probeArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 			};
 			cmdList->barrier(sizeof(barriers) / sizeof(barriers[0]), barriers);
@@ -296,65 +314,65 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 	}
 
 	// reflection probe filter coeffs image
-	{
-		// create image and view
-		{
-			// create image
-			ImageCreateInfo imageCreateInfo{};
-			imageCreateInfo.m_width = sizeof(coeffs) / 16;
-			imageCreateInfo.m_height = 1;
-			imageCreateInfo.m_depth = 1;
-			imageCreateInfo.m_levels = 1;
-			imageCreateInfo.m_layers = 1;
-			imageCreateInfo.m_samples = SampleCount::_1;
-			imageCreateInfo.m_imageType = ImageType::_1D;
-			imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
-			imageCreateInfo.m_createFlags = 0;
-			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::SAMPLED_BIT;
-
-			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeFilterCoeffsImage);
-
-			// create view
-			m_graphicsDevice->createImageView(m_probeFilterCoeffsImage, &m_probeFilterCoeffsImageView);
-		}
-
-		auto *cmdList = renderResources->m_commandList;
-
-		// Upload to Buffer:
-		{
-			uint8_t *map = nullptr;
-			renderResources->m_stagingBuffer->map((void **)&map);
-			{
-				memcpy(map, coeffs, sizeof(coeffs));
-			}
-			renderResources->m_stagingBuffer->unmap();
-		}
-
-		// Copy to Image:
-		{
-			renderResources->m_commandListPool->reset();
-			cmdList->begin();
-			{
-				// transition from UNDEFINED to TRANSFER_DST
-				Barrier b0 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::HOST_BIT, PipelineStageFlagBits::TRANSFER_BIT, ResourceState::UNDEFINED, ResourceState::WRITE_IMAGE_TRANSFER);
-				cmdList->barrier(1, &b0);
-
-				BufferImageCopy region{};
-				region.m_imageLayerCount = 1;
-				region.m_extent.m_width = sizeof(coeffs) / 16;
-				region.m_extent.m_height = 1;
-				region.m_extent.m_depth = 1;
-
-				cmdList->copyBufferToImage(renderResources->m_stagingBuffer, m_probeFilterCoeffsImage, 1, &region);
-
-				// transition from TRANSFER_DST to TEXTURE
-				Barrier b1 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::WRITE_IMAGE_TRANSFER, ResourceState::READ_TEXTURE);
-				cmdList->barrier(1, &b1);
-			}
-			cmdList->end();
-			Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), cmdList);
-		}
-	}
+	//{
+	//	// create image and view
+	//	{
+	//		// create image
+	//		ImageCreateInfo imageCreateInfo{};
+	//		imageCreateInfo.m_width = sizeof(coeffs) / 16;
+	//		imageCreateInfo.m_height = 1;
+	//		imageCreateInfo.m_depth = 1;
+	//		imageCreateInfo.m_levels = 1;
+	//		imageCreateInfo.m_layers = 1;
+	//		imageCreateInfo.m_samples = SampleCount::_1;
+	//		imageCreateInfo.m_imageType = ImageType::_1D;
+	//		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
+	//		imageCreateInfo.m_createFlags = 0;
+	//		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+	//
+	//		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeFilterCoeffsImage);
+	//
+	//		// create view
+	//		m_graphicsDevice->createImageView(m_probeFilterCoeffsImage, &m_probeFilterCoeffsImageView);
+	//	}
+	//
+	//	auto *cmdList = renderResources->m_commandList;
+	//
+	//	// Upload to Buffer:
+	//	{
+	//		uint8_t *map = nullptr;
+	//		renderResources->m_stagingBuffer->map((void **)&map);
+	//		{
+	//			memcpy(map, coeffs, sizeof(coeffs));
+	//		}
+	//		renderResources->m_stagingBuffer->unmap();
+	//	}
+	//
+	//	// Copy to Image:
+	//	{
+	//		renderResources->m_commandListPool->reset();
+	//		cmdList->begin();
+	//		{
+	//			// transition from UNDEFINED to TRANSFER_DST
+	//			Barrier b0 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::HOST_BIT, PipelineStageFlagBits::TRANSFER_BIT, ResourceState::UNDEFINED, ResourceState::WRITE_IMAGE_TRANSFER);
+	//			cmdList->barrier(1, &b0);
+	//
+	//			BufferImageCopy region{};
+	//			region.m_imageLayerCount = 1;
+	//			region.m_extent.m_width = sizeof(coeffs) / 16;
+	//			region.m_extent.m_height = 1;
+	//			region.m_extent.m_depth = 1;
+	//
+	//			cmdList->copyBufferToImage(renderResources->m_stagingBuffer, m_probeFilterCoeffsImage, 1, &region);
+	//
+	//			// transition from TRANSFER_DST to TEXTURE
+	//			Barrier b1 = Initializers::imageBarrier(m_probeFilterCoeffsImage, PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::WRITE_IMAGE_TRANSFER, ResourceState::READ_TEXTURE);
+	//			cmdList->barrier(1, &b1);
+	//		}
+	//		cmdList->end();
+	//		Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), cmdList);
+	//	}
+	//}
 }
 
 VEngine::ReflectionProbeModule::~ReflectionProbeModule()
@@ -364,7 +382,7 @@ VEngine::ReflectionProbeModule::~ReflectionProbeModule()
 	m_graphicsDevice->destroyImage(m_probeNormalArrayImage);
 	m_graphicsDevice->destroyImage(m_probeArrayImage);
 	m_graphicsDevice->destroyImage(m_probeTmpImage);
-	m_graphicsDevice->destroyImage(m_probeFilterCoeffsImage);
+	//m_graphicsDevice->destroyImage(m_probeFilterCoeffsImage);
 
 	for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 	{
@@ -373,7 +391,6 @@ VEngine::ReflectionProbeModule::~ReflectionProbeModule()
 	m_graphicsDevice->destroyImageView(m_probeDepthArrayView);
 	m_graphicsDevice->destroyImageView(m_probeAlbedoRoughnessArrayView);
 	m_graphicsDevice->destroyImageView(m_probeNormalArrayView);
-	m_graphicsDevice->destroyImageView(m_probeCubeArrayView);
 	for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6; ++i)
 	{
 		m_graphicsDevice->destroyImageView(m_probeDepthSliceViews[i]);
@@ -381,14 +398,15 @@ VEngine::ReflectionProbeModule::~ReflectionProbeModule()
 		m_graphicsDevice->destroyImageView(m_probeNormalSliceViews[i]);
 	}
 
+	m_graphicsDevice->destroyImageView(m_probeCubeArrayView);
 	for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_CACHE_SIZE; ++i)
 	{
 		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
 		{
-			//m_graphicsDevice->destroyImageView(m_probeMipUint4Views[i][j]);
+			m_graphicsDevice->destroyImageView(m_probeMipViews[i][j]);
 		}
 	}
-	m_graphicsDevice->destroyImageView(m_probeFilterCoeffsImageView);
+	//m_graphicsDevice->destroyImageView(m_probeFilterCoeffsImageView);
 }
 
 void VEngine::ReflectionProbeModule::addGBufferRenderingToGraph(rg::RenderGraph &graph, const GBufferRenderingData &data)
@@ -529,20 +547,20 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 		ProbeFilterImportanceSamplingPass::Data probeFilterPassData;
 		probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
 		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
-		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeUncompressedMipViews[j];
-		
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeMipViews[data.m_relightProbeIndices[i]][j];
+
 		ProbeFilterImportanceSamplingPass::addToGraph(graph, probeFilterPassData);
 
 
 		// compress lit probe
-		ProbeCompressBCH6Pass::Data compressPassData;
-		compressPassData.m_passRecordContext = data.m_passRecordContext;
-		compressPassData.m_probeIndex = data.m_relightProbeIndices[i];
-		compressPassData.m_compressedCubeArrayImage = m_probeArrayImage;
-		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_inputImageViews[j] = m_probeUncompressedMipViews[j];
-		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_tmpResultImageViews[j] = m_probeCompressedTmpMipViews[j];
-
-		ProbeCompressBCH6Pass::addToGraph(graph, compressPassData);
+		//ProbeCompressBCH6Pass::Data compressPassData;
+		//compressPassData.m_passRecordContext = data.m_passRecordContext;
+		//compressPassData.m_probeIndex = data.m_relightProbeIndices[i];
+		//compressPassData.m_compressedCubeArrayImage = m_probeArrayImage;
+		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_inputImageViews[j] = m_probeUncompressedMipViews[j];
+		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_tmpResultImageViews[j] = m_probeCompressedTmpMipViews[j];
+		//
+		//ProbeCompressBCH6Pass::addToGraph(graph, compressPassData);
 	}
 }
 
