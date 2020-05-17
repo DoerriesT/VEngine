@@ -6,6 +6,7 @@
 #include "Graphics/Pass/LightProbeGBufferPass.h"
 #include "Graphics/Pass/ProbeDownsamplePass.h"
 #include "Graphics/Pass/ProbeFilterPass.h"
+#include "Graphics/Pass/ProbeFilterImportanceSamplingPass.h"
 #include "Graphics/Pass/ProbeCompressBCH6Pass.h"
 #include "Graphics/LightData.h"
 #include "Graphics/PassRecordContext.h"
@@ -517,13 +518,20 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 
 
 		// filter reflection probe
-		ProbeFilterPass::Data probeFilterPassData;
+		//ProbeFilterPass::Data probeFilterPassData;
+		//probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
+		//probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
+		//probeFilterPassData.m_probeFilterCoeffsImageView = m_probeFilterCoeffsImageView;
+		//for (size_t j = 0; j < 7; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeUncompressedMipViews[j];
+		//
+		//ProbeFilterPass::addToGraph(graph, probeFilterPassData);
+
+		ProbeFilterImportanceSamplingPass::Data probeFilterPassData;
 		probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
 		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
-		probeFilterPassData.m_probeFilterCoeffsImageView = m_probeFilterCoeffsImageView;
 		for (size_t j = 0; j < 7; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeUncompressedMipViews[j];
-
-		ProbeFilterPass::addToGraph(graph, probeFilterPassData);
+		
+		ProbeFilterImportanceSamplingPass::addToGraph(graph, probeFilterPassData);
 
 
 		// compress lit probe

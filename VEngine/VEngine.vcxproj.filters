@@ -459,6 +459,9 @@
     <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -771,6 +774,9 @@
       <Filter>src\Graphics\Module</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
