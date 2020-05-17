@@ -45,9 +45,10 @@ float3 integrateCubeLDOnly(float3 N, float roughness)
 		if (NdotL > 0.0)
 		{
 			float NdotH = saturate(dot(N, H));
-			float pdf = D_GGX(NdotH, a2) * 0.25; // since N==V -> NdotH == VdotH == LdotH, we can simplify the pdf
+			float LdotH = saturate(dot(L, H));
+			float pdf = (D_GGX(NdotH, a2) / PI) * NdotH / (4.0 * LdotH);
 			// solid angle of sample
-			float omegaS = 1.0 / (sampleCount * pdf);
+			float omegaS = 1.0 / (sampleCount * pdf) + 1e-5;
 			// solid angle of cubemap pixel
 			float omegaP = 4.0 * PI / (6.0 * g_PushConsts.width * g_PushConsts.width);
 			float mipLevel = clamp(0.5 * log2(omegaS / omegaP), 0.0, g_PushConsts.mipCount);

@@ -5,6 +5,7 @@
 #include "Graphics/Pass/ProbeGBufferPass.h"
 #include "Graphics/Pass/LightProbeGBufferPass.h"
 #include "Graphics/Pass/ProbeDownsamplePass.h"
+#include "Graphics/Pass/ProbeDownsamplePass2.h"
 #include "Graphics/Pass/ProbeFilterPass.h"
 #include "Graphics/Pass/ProbeFilterImportanceSamplingPass.h"
 #include "Graphics/Pass/ProbeCompressBCH6Pass.h"
@@ -527,12 +528,18 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 
 
 		// downsample reflection probe
-		ProbeDownsamplePass::Data probeDownsamplePassData;
+		//ProbeDownsamplePass::Data probeDownsamplePassData;
+		//probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
+		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
+		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_probeTmpCubeViews[j];
+		//
+		//ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
+
+		ProbeDownsamplePass2::Data probeDownsamplePassData;
 		probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
 		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
-		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_probeTmpCubeViews[j];
 
-		ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
+		ProbeDownsamplePass2::addToGraph(graph, probeDownsamplePassData);
 
 
 		// filter reflection probe

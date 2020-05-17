@@ -71,7 +71,7 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 				pushConsts.width = mipSize;
 				pushConsts.mipCount = RendererConsts::REFLECTION_PROBE_MIPS;
 				pushConsts.texelSize = 1.0f / mipSize;
-				pushConsts.roughness = i / float(RendererConsts::REFLECTION_PROBE_MIPS);
+				pushConsts.roughness = i / float(RendererConsts::REFLECTION_PROBE_MIPS - 1);
 				pushConsts.roughness *= pushConsts.roughness;
 
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);

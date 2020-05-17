@@ -231,6 +231,7 @@
     <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h" />
+    <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass2.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeFilterPass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h" />
@@ -351,6 +352,7 @@
     <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp" />

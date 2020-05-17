@@ -54,6 +54,13 @@ float3 parallaxCorrectReflectionDir(const LocalReflectionProbe probeData, float3
 	return intersectPositionWS - probeData.capturePosition;
 }
 
+float3 getSpecularDominantDir(float3 N, float3 R, float roughness)
+{
+	float smoothness = saturate(1.0 - roughness);
+	float lerpFactor = smoothness * (sqrt(smoothness) + roughness);
+	return lerp(N, R, lerpFactor);
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
@@ -84,6 +91,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float3 worldSpaceNormal = mul(g_PushConsts.invViewMatrix, float4(N, 0.0)).xyz;
 		float3 worldSpaceViewDir = mul(g_PushConsts.invViewMatrix, float4(V, 0.0)).xyz;
 		float3 R = reflect(-worldSpaceViewDir, worldSpaceNormal);
+		float3 dominantR = getSpecularDominantDir(worldSpaceNormal, R, roughness);
 		
 		float weightSum = 0.0;
 		float3 reflectionProbeSpecular = 0.0;
@@ -118,7 +126,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 									
 					if (all(abs(localPos) <= 1.0))
 					{
-						float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, R);
+						float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, dominantR);
+						lookupDir = lerp(lookupDir, dominantR, roughness);
 		
 						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
 						weightSum += 1.0;
