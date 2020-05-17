@@ -10,13 +10,13 @@ using namespace VEngine::gal;
 
 void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	rg::ResourceUsageDescription passUsages[7];
+	rg::ResourceUsageDescription passUsages[RendererConsts::REFLECTION_PROBE_MIPS];
 
 	passUsages[0] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[0]), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
-	for (uint32_t i = 1; i < 7; ++i)
+	for (uint32_t i = 1; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 	{
 		// last level isnt read from in this pass
-		if (i == 6)
+		if (i == RendererConsts::REFLECTION_PROBE_MIPS - 1)
 		{
 			passUsages[i] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 		}
@@ -39,9 +39,9 @@ void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 
 			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 
-			uint32_t mipSize = 128;
+			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;
 
-			for (uint32_t i = 1; i < 7; ++i)
+			for (uint32_t i = 1; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 			{
 				mipSize /= 2;
 
@@ -67,7 +67,7 @@ void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 				cmdList->dispatch((mipSize + 7) / 8, (mipSize + 7) / 8, 6);
 
 				// dont insert a barrier after the last iteration: we dont know the next resource state, so let the RenderGraph figure it out
-				if (i < 6)
+				if (i < RendererConsts::REFLECTION_PROBE_MIPS - 1)
 				{
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_resultImageViewHandles[i]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,

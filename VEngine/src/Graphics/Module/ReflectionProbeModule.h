@@ -78,7 +78,7 @@ namespace VEngine
 		gal::Image *m_probeCompressedTmpLitImage = {};
 		gal::Image *m_probeFilterCoeffsImage = {};
 
-		gal::ImageView *m_probeTmpCubeViews[7] = {};
+		gal::ImageView *m_probeTmpCubeViews[RendererConsts::REFLECTION_PROBE_MIPS] = {};
 		gal::ImageView *m_probeDepthArrayView = {};
 		gal::ImageView *m_probeDepthSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
 		gal::ImageView *m_probeAlbedoRoughnessArrayView = {};
@@ -86,11 +86,11 @@ namespace VEngine
 		gal::ImageView *m_probeNormalArrayView = {};
 		gal::ImageView *m_probeNormalSliceViews[RendererConsts::REFLECTION_PROBE_CACHE_SIZE * 6] = {};
 		gal::ImageView *m_probeCubeArrayView = {};
-		gal::ImageView *m_probeCompressedTmpMipViews[7] = {};
-		gal::ImageView *m_probeUncompressedMipViews[7] = {};
+		gal::ImageView *m_probeCompressedTmpMipViews[RendererConsts::REFLECTION_PROBE_MIPS] = {};
+		gal::ImageView *m_probeUncompressedMipViews[RendererConsts::REFLECTION_PROBE_MIPS] = {};
 		gal::ImageView *m_probeFilterCoeffsImageView = {};
 
 		rg::ImageViewHandle m_probeShadowImageViewHandle = 0;
-		rg::ResourceStateData m_probeTmpImageState[6 * 7] = {}; // 6 faces and 7 mip levels
+		rg::ResourceStateData m_probeTmpImageState[6 * RendererConsts::REFLECTION_PROBE_MIPS] = {}; // 6 faces and REFLECTION_PROBE_MIPS mip levels
 	};
 }

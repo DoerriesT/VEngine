@@ -155,7 +155,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		imageCreateInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
 		imageCreateInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
 		imageCreateInfo.m_depth = 1;
-		imageCreateInfo.m_levels = 7;
+		imageCreateInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
 		imageCreateInfo.m_layers = 6;
 		imageCreateInfo.m_samples = SampleCount::_1;
 		imageCreateInfo.m_imageType = ImageType::_2D;
@@ -165,7 +165,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeUncompressedLitImage);
 
-		for (uint32_t i = 0; i < 7; ++i)
+		for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 		{
 			gal::ImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.m_image = m_probeUncompressedLitImage;
@@ -186,7 +186,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES / 4;
 		createInfo.m_height = RendererConsts::REFLECTION_PROBE_RES / 4;
 		createInfo.m_depth = 1;
-		createInfo.m_levels = 5;
+		createInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
 		createInfo.m_layers = 6;
 		createInfo.m_samples = SampleCount::_1;
 		createInfo.m_imageType = ImageType::_2D;
@@ -197,7 +197,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeCompressedTmpLitImage);
 
 		// mip views
-		for (size_t j = 0; j < 5; ++j)
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
 		{
 			gal::ImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.m_image = m_probeCompressedTmpLitImage;
@@ -218,7 +218,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
 		createInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
 		createInfo.m_depth = 1;
-		createInfo.m_levels = 5;
+		createInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
 		createInfo.m_layers = 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE;
 		createInfo.m_samples = SampleCount::_1;
 		createInfo.m_imageType = ImageType::_2D;
@@ -235,7 +235,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 			viewCreateInfo.m_viewType = gal::ImageViewType::CUBE_ARRAY;
 			viewCreateInfo.m_format = createInfo.m_format;
 			viewCreateInfo.m_baseMipLevel = 0;
-			viewCreateInfo.m_levelCount = 5;
+			viewCreateInfo.m_levelCount = RendererConsts::REFLECTION_PROBE_MIPS;
 			viewCreateInfo.m_baseArrayLayer = 0;
 			viewCreateInfo.m_layerCount = 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE;
 
@@ -254,9 +254,9 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 				Initializers::imageBarrier(m_probeDepthArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 				Initializers::imageBarrier(m_probeAlbedoRoughnessArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 				Initializers::imageBarrier(m_probeNormalArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
-				Initializers::imageBarrier(m_probeUncompressedLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 7, 0, 6}),
-				Initializers::imageBarrier(m_probeCompressedTmpLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_IMAGE_TRANSFER, {0, 5, 0, 6}),
-				Initializers::imageBarrier(m_probeArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 5, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
+				Initializers::imageBarrier(m_probeUncompressedLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
+				Initializers::imageBarrier(m_probeCompressedTmpLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_IMAGE_TRANSFER, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
+				Initializers::imageBarrier(m_probeArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 			};
 			cmdList->barrier(sizeof(barriers) / sizeof(barriers[0]), barriers);
 		}
@@ -270,7 +270,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_width = RendererConsts::REFLECTION_PROBE_RES;
 		createInfo.m_height = RendererConsts::REFLECTION_PROBE_RES;
 		createInfo.m_depth = 1;
-		createInfo.m_levels = 7;
+		createInfo.m_levels = RendererConsts::REFLECTION_PROBE_MIPS;
 		createInfo.m_layers = 6;
 		createInfo.m_samples = SampleCount::_1;
 		createInfo.m_imageType = ImageType::_2D;
@@ -280,7 +280,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeTmpImage);
 
-		for (uint32_t i = 0; i < 7; ++i)
+		for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 		{
 			gal::ImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.m_image = m_probeTmpImage;
@@ -366,7 +366,7 @@ VEngine::ReflectionProbeModule::~ReflectionProbeModule()
 	m_graphicsDevice->destroyImage(m_probeTmpImage);
 	m_graphicsDevice->destroyImage(m_probeFilterCoeffsImage);
 
-	for (size_t i = 0; i < 7; ++i)
+	for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 	{
 		m_graphicsDevice->destroyImageView(m_probeTmpCubeViews[i]);
 	}
@@ -383,7 +383,7 @@ VEngine::ReflectionProbeModule::~ReflectionProbeModule()
 
 	for (size_t i = 0; i < RendererConsts::REFLECTION_PROBE_CACHE_SIZE; ++i)
 	{
-		for (size_t j = 0; j < 7; ++j)
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j)
 		{
 			//m_graphicsDevice->destroyImageView(m_probeMipUint4Views[i][j]);
 		}
@@ -474,11 +474,11 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 	}
 
 	rg::ImageHandle probeTmpImageHandle = graph.importImage(m_probeTmpImage, "Probe Temp Image", false, {}, m_probeTmpImageState);
-	rg::ImageViewHandle probeTmpArrayImageViewHandles[7] = {};
+	rg::ImageViewHandle probeTmpArrayImageViewHandles[RendererConsts::REFLECTION_PROBE_MIPS] = {};
 	rg::ImageViewHandle probeTmpImageViewHandle = 0;
 	{
-		probeTmpImageViewHandle = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { 0, 7, 0, 6 }, ImageViewType::CUBE });
-		for (uint32_t i = 0; i < 7; ++i)
+		probeTmpImageViewHandle = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { 0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6 }, ImageViewType::CUBE });
+		for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 		{
 			probeTmpArrayImageViewHandles[i] = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { i, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
 		}
@@ -511,8 +511,8 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 		// downsample reflection probe
 		ProbeDownsamplePass::Data probeDownsamplePassData;
 		probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
-		for (size_t j = 0; j < 7; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
-		for (size_t j = 0; j < 7; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_probeTmpCubeViews[j];
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_probeTmpCubeViews[j];
 
 		ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
 
@@ -529,7 +529,7 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 		ProbeFilterImportanceSamplingPass::Data probeFilterPassData;
 		probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
 		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
-		for (size_t j = 0; j < 7; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeUncompressedMipViews[j];
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeUncompressedMipViews[j];
 		
 		ProbeFilterImportanceSamplingPass::addToGraph(graph, probeFilterPassData);
 
@@ -539,8 +539,8 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 		compressPassData.m_passRecordContext = data.m_passRecordContext;
 		compressPassData.m_probeIndex = data.m_relightProbeIndices[i];
 		compressPassData.m_compressedCubeArrayImage = m_probeArrayImage;
-		for (size_t j = 0; j < 5; ++j) compressPassData.m_inputImageViews[j] = m_probeUncompressedMipViews[j];
-		for (size_t j = 0; j < 5; ++j) compressPassData.m_tmpResultImageViews[j] = m_probeCompressedTmpMipViews[j];
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_inputImageViews[j] = m_probeUncompressedMipViews[j];
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) compressPassData.m_tmpResultImageViews[j] = m_probeCompressedTmpMipViews[j];
 
 		ProbeCompressBCH6Pass::addToGraph(graph, compressPassData);
 	}

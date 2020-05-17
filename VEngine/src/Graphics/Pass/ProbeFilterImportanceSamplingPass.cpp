@@ -30,7 +30,7 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::READ_TEXTURE,
 					ResourceState::WRITE_STORAGE_IMAGE,
-					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);
 			}
 
@@ -53,7 +53,7 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 
 				DescriptorSetUpdate updates[] =
 				{
-					Initializers::storageImage(data.m_resultImageViews, RESULT_IMAGE_BINDING, 0, 7),
+					Initializers::storageImage(data.m_resultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
 					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&linearSampler, LINEAR_SAMPLER_BINDING),
 				};
@@ -64,14 +64,14 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 			}
 
 			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;
-			for (uint32_t i = 0; i < 7; ++i)
+			for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 			{
 				PushConsts pushConsts;
 				pushConsts.mip = i;
 				pushConsts.width = mipSize;
-				pushConsts.mipCount = 7.0f;
+				pushConsts.mipCount = RendererConsts::REFLECTION_PROBE_MIPS;
 				pushConsts.texelSize = 1.0f / mipSize;
-				pushConsts.roughness = i / 7.0f;
+				pushConsts.roughness = i / float(RendererConsts::REFLECTION_PROBE_MIPS);
 				pushConsts.roughness *= pushConsts.roughness;
 
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
@@ -87,7 +87,7 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::WRITE_STORAGE_IMAGE,
 					ResourceState::READ_TEXTURE,
-					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);
 			}
 		}, true);

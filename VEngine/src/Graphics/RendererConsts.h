@@ -23,8 +23,10 @@ namespace VEngine
 		constexpr uint32_t SAMPLER_LINEAR_REPEAT_IDX = 1;
 		constexpr uint32_t SAMPLER_POINT_CLAMP_IDX = 2;
 		constexpr uint32_t SAMPLER_POINT_REPEAT_IDX = 3;
-		constexpr uint32_t REFLECTION_PROBE_RES = 128;
 		constexpr uint32_t REFLECTION_PROBE_CACHE_SIZE = 32;
+		constexpr uint32_t REFLECTION_PROBE_MAX_MIPS = 8; // max probe size is 512 and we skip all mips below 4x4
+		constexpr uint32_t REFLECTION_PROBE_RES = 256;
+		constexpr uint32_t REFLECTION_PROBE_MIPS = 5;
 		constexpr float Z_BIN_DEPTH = 1.0f;
 	}
 }

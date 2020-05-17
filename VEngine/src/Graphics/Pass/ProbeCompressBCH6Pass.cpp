@@ -25,7 +25,7 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::READ_IMAGE_TRANSFER,
 					ResourceState::WRITE_STORAGE_IMAGE,
-					{ 0, 5, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);
 			}
 
@@ -46,8 +46,8 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 
 				DescriptorSetUpdate updates[] =
 				{
-					Initializers::storageImage(data.m_tmpResultImageViews, RESULT_IMAGE_BINDING, 0, 5),
-					Initializers::sampledImage(data.m_inputImageViews, INPUT_IMAGE_BINDING, 0, 5),
+					Initializers::storageImage(data.m_tmpResultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
+					Initializers::sampledImage(data.m_inputImageViews, INPUT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
 					Initializers::samplerDescriptor(&pointSampler, POINT_SAMPLER_BINDING),
 				};
 
@@ -57,7 +57,7 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 			}
 
 			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;
-			for (uint32_t i = 0; i < 5; ++i)
+			for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 			{
 				PushConsts pushConsts;
 				pushConsts.mip = i;
@@ -78,14 +78,14 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::WRITE_STORAGE_IMAGE,
 					ResourceState::READ_IMAGE_TRANSFER,
-					{ 0, 5, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 
 				gal::Barrier barrier1 = Initializers::imageBarrier(data.m_compressedCubeArrayImage,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::TRANSFER_BIT,
 					ResourceState::READ_TEXTURE,
 					ResourceState::WRITE_IMAGE_TRANSFER,
-					{ 0, 5, data.m_probeIndex * 6, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_probeIndex * 6, 6 });
 
 				gal::Barrier barriers[]{ barrier0, barrier1 };
 
@@ -94,9 +94,9 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 
 			// copy from temp compressed image to final compressed image
 			{
-				ImageCopy regions[5];
+				ImageCopy regions[RendererConsts::REFLECTION_PROBE_MIPS];
 				uint32_t mipWidth = RendererConsts::REFLECTION_PROBE_RES / 4;
-				for (uint32_t i = 0; i < 5; ++i)
+				for (uint32_t i = 0; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
 				{
 					auto &region = regions[i];
 					region = {};
@@ -114,7 +114,7 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 
 					mipWidth /= 2;
 				}
-				cmdList->copyImage(data.m_tmpResultImageViews[0]->getImage(), data.m_compressedCubeArrayImage, 5, regions);
+				cmdList->copyImage(data.m_tmpResultImageViews[0]->getImage(), data.m_compressedCubeArrayImage, RendererConsts::REFLECTION_PROBE_MIPS, regions);
 			}
 			
 			// transition final compressed image back to READ_TEXTURE from WRITE_IMAGE_TRANSFER
@@ -124,7 +124,7 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::WRITE_IMAGE_TRANSFER,
 					ResourceState::READ_TEXTURE,
-					{ 0, 5, data.m_probeIndex * 6, 6 });
+					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_probeIndex * 6, 6 });
 
 				cmdList->barrier(1, &barrier);
 			}
