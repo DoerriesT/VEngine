@@ -39,7 +39,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 
 		// depth
 		{
-			imageCreateInfo.m_format = Format::D32_SFLOAT;
+			imageCreateInfo.m_format = Format::D16_UNORM;
 			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeDepthArrayImage);
