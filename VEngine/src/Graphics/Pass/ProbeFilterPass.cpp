@@ -56,7 +56,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 					Initializers::storageImage(&data.m_resultImageViews[6], 6),
 					Initializers::sampledImage(&inputImageView, 7),
 					Initializers::samplerDescriptor(&linearSampler, 8),
-					Initializers::sampledImage(&data.m_passRecordContext->m_renderResources->m_probeFilterCoeffsImageView, 9),
+					Initializers::sampledImage(&data.m_probeFilterCoeffsImageView, 9),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

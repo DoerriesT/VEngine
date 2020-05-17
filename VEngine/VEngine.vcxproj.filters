@@ -453,6 +453,9 @@
     <ClInclude Include="src\Graphics\ReflectionProbeManager.h">
       <Filter>src\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Module\ReflectionProbeModule.h">
+      <Filter>src\Graphics\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -760,6 +763,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\ReflectionProbeManager.cpp">
       <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Module\ReflectionProbeModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

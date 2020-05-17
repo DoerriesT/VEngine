@@ -29,6 +29,7 @@ namespace VEngine
 	class GTAOModule;
 	class SSRModule;
 	class VolumetricFogModule;
+	class ReflectionProbeModule;
 
 	class Renderer
 	{
@@ -65,6 +66,7 @@ namespace VEngine
 		std::unique_ptr<GTAOModule> m_gtaoModule;
 		std::unique_ptr<SSRModule> m_ssrModule;
 		std::unique_ptr<VolumetricFogModule> m_volumetricFogModule;
+		std::unique_ptr<ReflectionProbeModule> m_reflectionProbeModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 

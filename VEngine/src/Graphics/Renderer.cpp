@@ -34,6 +34,7 @@
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
 #include "Module/VolumetricFogModule.h"
+#include "Module/ReflectionProbeModule.h"
 #include "PipelineCache.h"
 #include "DescriptorSetCache.h"
 #include "MaterialManager.h"
@@ -87,6 +88,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_gtaoModule = std::make_unique<GTAOModule>(m_graphicsDevice, m_width, m_height);
 	m_ssrModule = std::make_unique<SSRModule>(m_graphicsDevice, m_width, m_height);
 	m_volumetricFogModule = std::make_unique<VolumetricFogModule>(m_graphicsDevice, m_width, m_height);
+	m_reflectionProbeModule = std::make_unique<ReflectionProbeModule>(m_graphicsDevice, m_renderResources.get());
 }
 
 VEngine::Renderer::~Renderer()
@@ -105,6 +107,7 @@ VEngine::Renderer::~Renderer()
 	m_ssrModule.reset();
 	m_renderResources.reset();
 	m_volumetricFogModule.reset();
+	m_reflectionProbeModule.reset();
 
 	m_graphicsDevice->destroySemaphore(m_semaphores[0]);
 	m_graphicsDevice->destroySemaphore(m_semaphores[1]);
@@ -218,17 +221,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		brdfLUTImageViewHandle = graph.createImageView({ "BRDF LUT Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
-	rg::ImageHandle probeTmpImageHandle = graph.importImage(m_renderResources->m_probeTmpImage, "Probe Temp Image", false, {}, m_renderResources->m_probeTmpImageState);
-	rg::ImageViewHandle probeTmpArrayImageViewHandles[7] = {};
-	rg::ImageViewHandle probeTmpImageViewHandle = 0;
-	{
-		probeTmpImageViewHandle = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { 0, 7, 0, 6 }, ImageViewType::CUBE });
-		for (uint32_t i = 0; i < 7; ++i)
-		{
-			probeTmpArrayImageViewHandles[i] = graph.createImageView({ "Probe Temp Image", probeTmpImageHandle, { i, 1, 0, 6 }, ImageViewType::_2D_ARRAY });
-		}
-	}
-
 	// create graph managed resources
 
 	rg::ImageViewHandle normalImageViewHandle;
@@ -336,17 +328,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		if (!lightData.m_directionalLightsShadowed.empty())
 		{
 			memcpy(bufferPtr, lightData.m_directionalLightsShadowed.data(), lightData.m_directionalLightsShadowed.size() * sizeof(DirectionalLight));
-		}
-	}
-
-	// shadowed directional light probe data write
-	DescriptorBufferInfo directionalLightsShadowedProbeBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowedProbe.size() * sizeof(DirectionalLight), size_t(1)) };
-	{
-		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsShadowedProbeBufferInfo.m_range, directionalLightsShadowedProbeBufferInfo.m_offset, directionalLightsShadowedProbeBufferInfo.m_buffer, bufferPtr);
-		if (!lightData.m_directionalLightsShadowedProbe.empty())
-		{
-			memcpy(bufferPtr, lightData.m_directionalLightsShadowedProbe.data(), lightData.m_directionalLightsShadowedProbe.size() * sizeof(DirectionalLight));
 		}
 	}
 
@@ -490,114 +471,47 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// probe shadow maps
-	rg::ImageViewHandle probeShadowImageViewHandle = 0;
+	if (renderData.m_probeRelightCount)
 	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Probe Shadow Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 2048;
-		desc.m_height = 2048;
-		desc.m_layers = glm::max(renderData.m_probeShadowViewRenderListCount, 1u);
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::D16_UNORM;
+		ReflectionProbeModule::ShadowRenderingData probeShadowPassData;
+		probeShadowPassData.m_passRecordContext = &passRecordContext;
+		probeShadowPassData.m_renderData = &renderData;
+		probeShadowPassData.m_instanceData = sortedInstanceData.data();
+		probeShadowPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+		probeShadowPassData.m_directionalLightsShadowedProbe = lightData.m_directionalLightsShadowedProbe.data();
+		probeShadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 
-		rg::ImageHandle shadowImageHandle = graph.createImage(desc);
-		probeShadowImageViewHandle = graph.createImageView({ desc.m_name, shadowImageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
-
-		for (uint32_t i = 0; i < renderData.m_probeShadowViewRenderListCount; ++i)
-		{
-			rg::ImageViewHandle shadowLayer = graph.createImageView({ desc.m_name, shadowImageHandle, { 0, 1, i, 1 } });
-
-			const auto &drawList = renderData.m_renderLists[renderData.m_probeShadowViewRenderListOffset + i];
-
-			// draw shadows
-			ShadowPass::Data shadowPassData;
-			shadowPassData.m_passRecordContext = &passRecordContext;
-			shadowPassData.m_shadowMapSize = 2048;
-			shadowPassData.m_shadowMatrix = renderData.m_shadowMatrices[lightData.m_directionalLightsShadowedProbe[i].m_shadowOffset];
-			shadowPassData.m_opaqueInstanceDataCount = drawList.m_opaqueCount;
-			shadowPassData.m_opaqueInstanceDataOffset = drawList.m_opaqueOffset;
-			shadowPassData.m_maskedInstanceDataCount = drawList.m_maskedCount;
-			shadowPassData.m_maskedInstanceDataOffset = drawList.m_maskedOffset;
-			shadowPassData.m_instanceData = sortedInstanceData.data();
-			shadowPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-			shadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-			shadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-			shadowPassData.m_shadowImageHandle = shadowLayer;
-
-			ShadowPass::addToGraph(graph, shadowPassData);
-		}
+		m_reflectionProbeModule->addShadowRenderingToGraph(graph, probeShadowPassData);
 	}
 
 
 	// probe gbuffer pass
-	for (size_t i = 0; i < renderData.m_probeRenderCount; ++i)
+	if (renderData.m_probeRenderCount)
 	{
-		ProbeGBufferPass::Data probeGBufferPassData;
+		ReflectionProbeModule::GBufferRenderingData probeGBufferPassData;
 		probeGBufferPassData.m_passRecordContext = &passRecordContext;
-		memcpy(probeGBufferPassData.m_viewProjectionMatrices, renderData.m_probeViewProjectionMatrices + 6 * i, sizeof(glm::mat4) * 6);
-		for (size_t j = 0; j < 6; ++j)
-		{
-			probeGBufferPassData.m_opaqueInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueCount;
-			probeGBufferPassData.m_opaqueInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_opaqueOffset;
-			probeGBufferPassData.m_maskedInstanceDataCount[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedCount;
-			probeGBufferPassData.m_maskedInstanceDataOffset[j] = renderData.m_renderLists[renderData.m_probeDrawListOffset + 6 * i + j].m_maskedOffset;
-			probeGBufferPassData.m_depthImageViews[j] = m_renderResources->m_probeDepthSliceViews[j + renderData.m_probeRenderIndices[i] * 6];
-			probeGBufferPassData.m_albedoRoughnessImageViews[j] = m_renderResources->m_probeAlbedoRoughnessSliceViews[j + renderData.m_probeRenderIndices[i] * 6];
-			probeGBufferPassData.m_normalImageViews[j] = m_renderResources->m_probeNormalSliceViews[j + renderData.m_probeRenderIndices[i] * 6];
-		}
+		probeGBufferPassData.m_renderData = &renderData;
 		probeGBufferPassData.m_instanceData = sortedInstanceData.data();
 		probeGBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-		probeGBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 		probeGBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	
-		ProbeGBufferPass::addToGraph(graph, probeGBufferPassData);
+
+		m_reflectionProbeModule->addGBufferRenderingToGraph(graph, probeGBufferPassData);
 	}
 	
 
-	// relight reflection probes
-	for (size_t i = 0; i < renderData.m_probeRelightCount; ++i)
+	// probe relighting
+	if (renderData.m_probeRelightCount)
 	{
-		const auto &relightData = lightData.m_reflectionProbeRelightData[renderData.m_probeRelightIndices[i]];
+		ReflectionProbeModule::RelightingData probeRelightPassData;
+		probeRelightPassData.m_relightCount = renderData.m_probeRelightCount;
+		probeRelightPassData.m_relightProbeIndices = renderData.m_probeRelightIndices;
+		probeRelightPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
+		probeRelightPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+		probeRelightPassData.m_lightData = &lightData;
 
-		// light reflection probes
-		LightProbeGBufferPass::Data lightProbeGBufferPassData;
-		lightProbeGBufferPassData.m_passRecordContext = &passRecordContext;
-		lightProbeGBufferPassData.m_probePosition = relightData.m_position;
-		lightProbeGBufferPassData.m_probeNearPlane = relightData.m_nearPlane;
-		lightProbeGBufferPassData.m_probeFarPlane = relightData.m_farPlane;
-		lightProbeGBufferPassData.m_probeIndex = renderData.m_probeRelightIndices[i];
-		lightProbeGBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
-		lightProbeGBufferPassData.m_directionalLightsShadowedProbeBufferInfo = directionalLightsShadowedProbeBufferInfo;
-		lightProbeGBufferPassData.m_depthImageView = m_renderResources->m_probeDepthArrayView;
-		lightProbeGBufferPassData.m_albedoRoughnessImageView = m_renderResources->m_probeAlbedoRoughnessArrayView;
-		lightProbeGBufferPassData.m_normalImageView = m_renderResources->m_probeNormalArrayView;
-		lightProbeGBufferPassData.m_resultImageViewHandle = probeTmpArrayImageViewHandles[0];
-		lightProbeGBufferPassData.m_directionalShadowImageViewHandle = probeShadowImageViewHandle;
-		lightProbeGBufferPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-
-		LightProbeGBufferPass::addToGraph(graph, lightProbeGBufferPassData);
-
-
-		// downsample reflection probe
-		ProbeDownsamplePass::Data probeDownsamplePassData;
-		probeDownsamplePassData.m_passRecordContext = &passRecordContext;
-		for (size_t j = 0; j < 7; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
-		for (size_t j = 0; j < 7; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_renderResources->m_probeTmpCubeViews[j];
-
-		ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
-
-
-		// filter reflection probe
-		ProbeFilterPass::Data probeFilterPassData;
-		probeFilterPassData.m_passRecordContext = &passRecordContext;
-		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
-		for (size_t j = 0; j < 7; ++j) probeFilterPassData.m_resultImageViews[j] = m_renderResources->m_probeMipViews[renderData.m_probeRelightIndices[i]][j];
-
-		ProbeFilterPass::addToGraph(graph, probeFilterPassData);
+		m_reflectionProbeModule->addRelightingToGraph(graph, probeRelightPassData);
 	}
+
 
 	// Hi-Z furthest depth pyramid
 	HiZPyramidPass::OutData hiZMinPyramidPassOutData;
@@ -798,7 +712,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
-	forwardPassData.m_probeImageView = m_renderResources->m_probeCubeArrayView;
+	forwardPassData.m_probeImageView = m_reflectionProbeModule->getCubeArrayView();
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
@@ -837,7 +751,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
 	volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
 	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	volumetricFogApplyPassData.m_reflectionProbeImageView = m_renderResources->m_probeCubeArrayView;
+	volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
 	volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
 	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
