@@ -140,7 +140,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
 		indirectSpecular.rgb = lerp(reflectionProbeSpecular, indirectSpecular.rgb, indirectSpecular.a);
 		
-		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(roughness, saturate(dot(N, V))), 0.0).xy;
+		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(saturate(dot(N, V)), roughness), 0.0).xy;
 		indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
 		
 		result += indirectSpecular.rgb;

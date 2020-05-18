@@ -31,8 +31,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	float roughness = (threadID.x + 0.5) * g_PushConsts.texelWidth;
-	float NdotV = (threadID.y + 0.5) * g_PushConsts.texelHeight;
+	float NdotV = (threadID.x + 0.5) * g_PushConsts.texelWidth;
+	float roughness = (threadID.y + 0.5) * g_PushConsts.texelHeight;
+	
 	float a = roughness * roughness;
 	float a2 = a * a;
 	

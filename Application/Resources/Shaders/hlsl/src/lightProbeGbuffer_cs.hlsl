@@ -47,7 +47,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 	
 	float3 result = 0.0;
 	
-	result += 1.0 * albedo;
+	result += (1.0 / PI) * albedo;
 
 	// directional lights
 	{
