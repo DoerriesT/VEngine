@@ -78,7 +78,7 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 float henyeyGreenstein(float3 V, float3 L, float g)
 {
 	float num = -g * g + 1.0;
-	float cosTheta = dot(L, V);
+	float cosTheta = dot(-L, V);
 	float denom = 4.0 * PI * pow((g * g + 1.0) - 2.0 * g * cosTheta, 1.5);
 	return num / denom;
 }
@@ -262,8 +262,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		}
 	}
 	
-	const float3 albedo = scatteringExtinction.rgb / max(scatteringExtinction.w, 1e-7);
-	lighting *= albedo;
+	lighting *= scatteringExtinction.rgb;
 	
 	// apply pre-exposure
 	lighting *= asfloat(g_ExposureData.Load(0));
