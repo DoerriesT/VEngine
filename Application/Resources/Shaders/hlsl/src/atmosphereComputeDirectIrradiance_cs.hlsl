@@ -14,6 +14,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 {
 	AtmosphereParameters atmosphere = g_AtmosphereParams;
 	
-	g_IrradianceImage[threadID.xy] = float4(ComputeDirectIrradianceTexture(atmosphere, g_TransmittanceImage, threadID.xy + 0.5), 1.0);
+	g_DeltaIrradianceImage[threadID.xy] = float4(ComputeDirectIrradianceTexture(atmosphere, g_TransmittanceImage, threadID.xy + 0.5), 1.0);
 	g_IrradianceImage[threadID.xy] = 0.0;
 }

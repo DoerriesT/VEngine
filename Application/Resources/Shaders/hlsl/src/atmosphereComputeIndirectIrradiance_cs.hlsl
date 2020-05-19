@@ -30,5 +30,5 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 irradiance = delta_irradiance;
 	
 	g_DeltaIrradianceImage[threadID.xy] = float4(delta_irradiance, 1.0);
-	g_IrradianceImage[threadID.xy] = float4(irradiance, 1.0);
+	g_IrradianceImage[threadID.xy] += float4(irradiance, 1.0);
 }

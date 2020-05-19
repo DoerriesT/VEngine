@@ -30,6 +30,7 @@ namespace VEngine
 	class SSRModule;
 	class VolumetricFogModule;
 	class ReflectionProbeModule;
+	class AtmosphericScatteringModule;
 
 	class Renderer
 	{
@@ -67,6 +68,7 @@ namespace VEngine
 		std::unique_ptr<SSRModule> m_ssrModule;
 		std::unique_ptr<VolumetricFogModule> m_volumetricFogModule;
 		std::unique_ptr<ReflectionProbeModule> m_reflectionProbeModule;
+		std::unique_ptr<AtmosphericScatteringModule> m_atmosphericScatteringModule;
 
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 

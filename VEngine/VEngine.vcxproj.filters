@@ -465,6 +465,9 @@
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass2.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Module\AtmosphericScatteringModule.h">
+      <Filter>src\Graphics\Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -784,6 +787,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp">
       <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Module\AtmosphericScatteringModule.cpp">
+      <Filter>src\Graphics\Module</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

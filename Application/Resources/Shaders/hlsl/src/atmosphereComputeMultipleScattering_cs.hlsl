@@ -20,5 +20,5 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float4 scattering = float4(delta_multiple_scattering.rgb / RayleighPhaseFunction(nu), 0.0);
 	
 	g_DeltaMultipleScatteringImage[threadID] = float4(delta_multiple_scattering, 1.0);
-	g_ScatteringImage[threadID] = scattering;
+	g_ScatteringImage[threadID] += scattering;
 }

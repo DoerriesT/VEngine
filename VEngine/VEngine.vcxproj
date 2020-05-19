@@ -205,6 +205,7 @@
     <ClInclude Include="src\Graphics\MaterialManager.h" />
     <ClInclude Include="src\Graphics\Mesh.h" />
     <ClInclude Include="src\Graphics\MeshManager.h" />
+    <ClInclude Include="src\Graphics\Module\AtmosphericScatteringModule.h" />
     <ClInclude Include="src\Graphics\Module\BloomModule.h" />
     <ClInclude Include="src\Graphics\Module\GTAOModule.h" />
     <ClInclude Include="src\Graphics\Module\ReflectionProbeModule.h" />
@@ -328,6 +329,7 @@
     <ClCompile Include="src\Graphics\MappableBufferBlock.cpp" />
     <ClCompile Include="src\Graphics\MaterialManager.cpp" />
     <ClCompile Include="src\Graphics\MeshManager.cpp" />
+    <ClCompile Include="src\Graphics\Module\AtmosphericScatteringModule.cpp" />
     <ClCompile Include="src\Graphics\Module\BloomModule.cpp" />
     <ClCompile Include="src\Graphics\Module\GTAOModule.cpp" />
     <ClCompile Include="src\Graphics\Module\ReflectionProbeModule.cpp" />

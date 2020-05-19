@@ -35,6 +35,7 @@
 #include "Module/BloomModule.h"
 #include "Module/VolumetricFogModule.h"
 #include "Module/ReflectionProbeModule.h"
+#include "Module/AtmosphericScatteringModule.h"
 #include "PipelineCache.h"
 #include "DescriptorSetCache.h"
 #include "MaterialManager.h"
@@ -89,6 +90,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_ssrModule = std::make_unique<SSRModule>(m_graphicsDevice, m_width, m_height);
 	m_volumetricFogModule = std::make_unique<VolumetricFogModule>(m_graphicsDevice, m_width, m_height);
 	m_reflectionProbeModule = std::make_unique<ReflectionProbeModule>(m_graphicsDevice, m_renderResources.get());
+	m_atmosphericScatteringModule = std::make_unique<AtmosphericScatteringModule>(m_graphicsDevice);
 }
 
 VEngine::Renderer::~Renderer()
@@ -108,6 +110,7 @@ VEngine::Renderer::~Renderer()
 	m_renderResources.reset();
 	m_volumetricFogModule.reset();
 	m_reflectionProbeModule.reset();
+	m_atmosphericScatteringModule.reset();
 
 	m_graphicsDevice->destroySemaphore(m_semaphores[0]);
 	m_graphicsDevice->destroySemaphore(m_semaphores[1]);
@@ -467,6 +470,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		integrateBrdfPassData.m_resultImageViewHandle = brdfLUTImageViewHandle;
 
 		IntegrateBrdfPass::addToGraph(graph, integrateBrdfPassData);
+
+
+		AtmosphericScatteringModule::Data atmosphericScatteringModuleData;
+		atmosphericScatteringModuleData.m_passRecordContext = &passRecordContext;
+
+		m_atmosphericScatteringModule->addPrecomputationToGraph(graph, atmosphericScatteringModuleData);
 	}
 
 
@@ -503,6 +512,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	if (renderData.m_probeRelightCount)
 	{
 		ReflectionProbeModule::RelightingData probeRelightPassData;
+		probeRelightPassData.m_passRecordContext = &passRecordContext;
 		probeRelightPassData.m_relightCount = renderData.m_probeRelightCount;
 		probeRelightPassData.m_relightProbeIndices = renderData.m_probeRelightIndices;
 		probeRelightPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
