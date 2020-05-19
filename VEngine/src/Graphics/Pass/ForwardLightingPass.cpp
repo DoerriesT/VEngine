@@ -9,6 +9,8 @@
 
 using namespace VEngine::gal;
 
+extern glm::vec3 g_sunDir;
+
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
@@ -52,6 +54,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		//{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_atmosphereScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_atmosphereTransmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
@@ -109,10 +113,18 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				
 				// update descriptor sets
 				{
+					ImageView *atmosphereScatteringImageView = registry.getImageView(data.m_atmosphereScatteringImageViewHandle);
+					ImageView *atmosphereTransmittanceImageView = registry.getImageView(data.m_atmosphereTransmittanceImageViewHandle);
+					DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
+
 					DescriptorSetUpdate updates[] =
 					{
 						Initializers::sampledImage(&data.m_probeImageView, 0),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], 1),
+						Initializers::uniformBuffer(&data.m_atmosphereConstantBufferInfo, 2),
+						Initializers::sampledImage(&atmosphereScatteringImageView, 4),
+						Initializers::sampledImage(&atmosphereTransmittanceImageView, 3),
+						Initializers::storageBuffer(&exposureDataBufferInfo, 5),
 					};
 				
 					descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);
@@ -126,7 +138,19 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				cmdList->setViewport(0, 1, &viewport);
 				cmdList->setScissor(0, 1, &scissor);
 
-				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(glm::mat4), &data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix);
+				struct SkyPushConsts
+				{
+					float4x4 invModelViewProjection;
+					float3 sunDir;
+					float cameraHeight;
+				};
+
+				SkyPushConsts pushconsts;
+				pushconsts.invModelViewProjection = data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
+				pushconsts.sunDir = g_sunDir;
+				pushconsts.cameraHeight = data.m_passRecordContext->m_commonRenderData->m_cameraPosition.y;
+
+				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, sizeof(pushconsts), &pushconsts);
 
 				cmdList->draw(3, 1, 0, 0);
 			}

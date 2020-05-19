@@ -21,6 +21,8 @@
 #include "ReflectionProbeManager.h"
 #include "FrustumCullData.h"
 
+glm::vec3 g_sunDir;
+
 VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height)
 	:m_entityRegistry(entityRegistry),
 	m_cameraEntity(entt::null),
@@ -147,6 +149,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						assert(directionalLightComponent.m_cascadeCount <= DirectionalLightComponent::MAX_CASCADES);
 
 						const glm::vec3 direction = transformationComponent.m_orientation * glm::vec3(0.0f, 1.0f, 0.0f);
+						g_sunDir = direction;
 
 						DirectionalLight directionalLight{};
 						directionalLight.m_color = directionalLightComponent.m_color * directionalLightComponent.m_intensity;

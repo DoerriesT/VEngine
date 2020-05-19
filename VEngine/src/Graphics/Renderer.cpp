@@ -463,6 +463,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
 	passRecordContext.m_commonRenderData = &commonData;
 
+	m_atmosphericScatteringModule->registerResources(graph);
+
 	if (commonData.m_frame == 0)
 	{
 		IntegrateBrdfPass::Data integrateBrdfPassData;
@@ -723,6 +725,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	forwardPassData.m_probeImageView = m_reflectionProbeModule->getCubeArrayView();
+	forwardPassData.m_atmosphereConstantBufferInfo = m_atmosphericScatteringModule->getConstantBufferInfo();
+	forwardPassData.m_atmosphereScatteringImageViewHandle = m_atmosphericScatteringModule->getScatteringImageViewHandle();
+	forwardPassData.m_atmosphereTransmittanceImageViewHandle = m_atmosphericScatteringModule->getTransmittanceImageViewHandle();
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 

@@ -9,6 +9,8 @@ struct VSOutput
 struct PushConsts
 {
 	float4x4 invModelViewProjection;
+	float3 sunDir;
+	float cameraHeight;
 };
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
