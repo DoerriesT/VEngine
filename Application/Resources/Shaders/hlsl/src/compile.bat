@@ -47,5 +47,11 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeFilter_cs.hlsl 
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeCompressBCH6_cs.hlsl -Fo ./../probeCompressBCH6_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeFilterImportanceSampling_cs.hlsl -Fo ./../probeFilterImportanceSampling_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main probeDownsample_cs.hlsl -Fo ./../probeDownsample_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeTransmittance_cs.hlsl -Fo ./../atmosphereComputeTransmittance_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeDirectIrradiance_cs.hlsl -Fo ./../atmosphereComputeDirectIrradiance_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeSingleScattering_cs.hlsl -Fo ./../atmosphereComputeSingleScattering_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeScatteringDensity_cs.hlsl -Fo ./../atmosphereComputeScatteringDensity_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeIndirectIrradiance_cs.hlsl -Fo ./../atmosphereComputeIndirectIrradiance_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeMultipleScattering_cs.hlsl -Fo ./../atmosphereComputeMultipleScattering_cs.spv
 
 pause
