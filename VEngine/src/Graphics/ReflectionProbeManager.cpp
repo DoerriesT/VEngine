@@ -185,7 +185,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 			}
 		}
 
-		probeShadowMapCenter = sortData[relightProbeIndex].m_capturePosition;
+		probeShadowMapCenter = sortData.empty() ? glm::vec3(0.0f) : sortData[relightProbeIndex].m_capturePosition;
 		probeShadowMapRadius = 50.0f; // TODO
 
 		m_renderProbeIndex = renderProbeIndex;
@@ -194,7 +194,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 		probeMatrices = m_probeMatrices.data();
 		probeRenderIndices = &m_renderProbeIndex;
 		probeRelightIndices = &m_relightProbeIndex;
-		probeRelightCount = 1;
+		probeRelightCount = relightProbeIndex != UINT32_MAX ? 1 : 0;
 	}
 
 	// build probe list for frame
