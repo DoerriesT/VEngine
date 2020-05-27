@@ -56,12 +56,9 @@ namespace VEngine
 
 	struct LocalParticipatingMedium
 	{
-		glm::vec3 m_obbAxis0;
-		float m_extentX;
-		glm::vec3 m_obbAxis1;
-		float m_extentY;
-		glm::vec3 m_obbAxis2;
-		float m_extentZ;
+		glm::vec4 m_worldToLocal0;
+		glm::vec4 m_worldToLocal1;
+		glm::vec4 m_worldToLocal2;
 		glm::vec3 m_position;
 		float m_phase;
 		glm::vec3 m_emissive;

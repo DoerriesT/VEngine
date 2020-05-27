@@ -120,6 +120,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// integrate inscattered lighting
 	float3 lighting = emissivePhase.rgb;
 	{
+		// ambient
+		{
+			float3 ambientLight = (1.0 / PI);
+			lighting += ambientLight * (1.0 / (4.0 * PI));
+		}
+		
 		// directional lights
 		{
 			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)

@@ -58,6 +58,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float3 worldSpacePos1 = calcWorldSpacePos(threadID + float3(g_Constants.jitter1.x, g_Constants.jitter1.y, frac(g_Constants.jitter1.z + dither)));
 	const float3 viewSpacePos1 = mul(g_Constants.viewMatrix, float4(worldSpacePos1, 1.0)).xyz;
 
+	const float3 worldSpacePos[] = { worldSpacePos0, worldSpacePos1 };
 	const float3 viewSpacePos[] = { viewSpacePos0, viewSpacePos1 };
 
 	uint3 imageDims;
@@ -106,11 +107,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 				int count = g_Constants.sampleCount;
 				for (int i = 0; i < count; ++i)
 				{
-					float3 localPos = mul(viewSpacePos[i] - medium.position, float3x3(medium.obbAxis0, medium.obbAxis1, medium.obbAxis2));
-				
-					bool insideMedium = all(abs(localPos) <= float3(medium.extentX, medium.extentY, medium.extentZ));
-					
-					if (insideMedium)
+					const float3 localPos = float3(dot(medium.worldToLocal0, float4(worldSpacePos[i], 1.0)), 
+									dot(medium.worldToLocal1, float4(worldSpacePos[i], 1.0)), 
+									dot(medium.worldToLocal2, float4(worldSpacePos[i], 1.0)));
+									
+					if (all(abs(localPos) <= 1.0))
 					{
 						float multiplier = (count == 2) ? 0.5 : 1.0;
 						scattering += medium.scattering * multiplier;

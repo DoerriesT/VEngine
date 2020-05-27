@@ -653,18 +653,20 @@ void VEngine::RenderSystem::update(float timeDelta)
 			{
 				auto view = m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, BoundingBoxComponent, RenderableComponent>();
 
+				std::vector<float> mediumRadii;
+
 				view.each([&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, BoundingBoxComponent &bboxComponent, RenderableComponent &)
 					{
-						glm::mat3 rotationMatrix = glm::inverse(glm::mat3(glm::mat4_cast(transformationComponent.m_orientation))) * glm::mat3(m_commonRenderData.m_invViewMatrix);
+						glm::mat4 worldToLocalTransposed =
+							glm::transpose(glm::scale(1.0f / bboxComponent.m_extent)
+								* glm::mat4_cast(glm::inverse(transformationComponent.m_orientation))
+								* glm::translate(-transformationComponent.m_position));
 
 						LocalParticipatingMedium medium{};
-						medium.m_obbAxis0 = rotationMatrix[0];
-						medium.m_obbAxis1 = rotationMatrix[1];
-						medium.m_obbAxis2 = rotationMatrix[2];
+						medium.m_worldToLocal0 = worldToLocalTransposed[0];
+						medium.m_worldToLocal1 = worldToLocalTransposed[1];
+						medium.m_worldToLocal2 = worldToLocalTransposed[2];
 						medium.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
-						medium.m_extentX = bboxComponent.m_extent.x;
-						medium.m_extentY = bboxComponent.m_extent.y;
-						medium.m_extentZ = bboxComponent.m_extent.z;
 						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
 						medium.m_extinction = mediumComponent.m_extinction;
 						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
@@ -674,6 +676,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						m_lightData.m_localMediaTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(bboxComponent.m_extent));
 						m_lightData.m_localMediaOrder.push_back(static_cast<uint32_t>(m_lightData.m_localMediaOrder.size()));
+						mediumRadii.push_back(glm::length(bboxComponent.m_extent));
 					});
 
 				// sort by distance to camera
@@ -693,7 +696,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				for (size_t i = 0; i < m_lightData.m_localParticipatingMedia.size(); ++i)
 				{
 					const auto &media = m_lightData.m_localParticipatingMedia[m_lightData.m_localMediaOrder[i]];
-					const float radius = glm::length(glm::vec3(media.m_extentX, media.m_extentY, media.m_extentZ));
+					const float radius = mediumRadii[m_lightData.m_localMediaOrder[i]];
 					float nearestPoint = -media.m_position.z - radius;
 					float furthestPoint = -media.m_position.z + radius;
 

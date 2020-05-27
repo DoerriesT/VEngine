@@ -241,15 +241,11 @@ public:
 			ImGui::NewLine();
 			ImGui::Separator();
 			ImGui::NewLine();
-			ImGui::ColorPicker3("Albedo", g_fogAlbedo);
+			ImGui::ColorEdit3("Albedo", g_fogAlbedo);
 			ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			ImGui::NewLine();
-			ImGui::Separator();
-			ImGui::NewLine();
-
-			ImGui::ColorPicker3("Emissive Color", g_fogEmissiveColor);
+			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.9f, 0.9f, "%.7f");
+			ImGui::ColorEdit3("Emissive Color", g_fogEmissiveColor);
 			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
-			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.999f, 0.99f, "%.7f");
 
 			auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
 			mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);

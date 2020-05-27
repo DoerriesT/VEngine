@@ -86,12 +86,9 @@ struct GlobalParticipatingMedium
 
 struct LocalParticipatingMedium
 {
-	float3 obbAxis0;
-	float extentX;
-	float3 obbAxis1;
-	float extentY;
-	float3 obbAxis2;
-	float extentZ;
+	float4 worldToLocal0;
+	float4 worldToLocal1;
+	float4 worldToLocal2;
 	float3 position;
 	float phase;
 	float3 emissive;
