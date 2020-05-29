@@ -215,7 +215,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 							att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
 						}
 						
-						const float3 radiance = light.color * att;
+						float multiplier = (count == 2) ? 0.5 : 1.0;
+						const float3 radiance = light.color * att * multiplier;
 						
 						lighting += radiance * henyeyGreenstein(viewSpaceV[i], L, emissivePhase.w);
 					}
@@ -293,9 +294,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 							shadow *= raymarch(worldSpacePos[i], lightShadowed.positionWS);
 						}
 						
-						const float3 radiance = lightShadowed.light.color * att;
+						float multiplier = (count == 2) ? 0.5 : 1.0;
+						const float3 radiance = lightShadowed.light.color * att * multiplier;
 						
-						lighting += shadow * radiance * henyeyGreenstein(viewSpaceV[i], L, emissivePhase.w) * 0.5;
+						lighting += shadow * radiance * henyeyGreenstein(viewSpaceV[i], L, emissivePhase.w);
 					}
 				}
 			}
