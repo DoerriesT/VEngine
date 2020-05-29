@@ -30,6 +30,7 @@
 #include "Pass/ForwardLightingPass.h"
 #include "Pass/VolumetricFogApplyPass.h"
 #include "Pass/GaussianDownsamplePass.h"
+#include "Pass/VolumetricFogExtinctionVolumeDebugPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -728,6 +729,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_atmosphereConstantBufferInfo = m_atmosphericScatteringModule->getConstantBufferInfo();
 	forwardPassData.m_atmosphereScatteringImageViewHandle = m_atmosphericScatteringModule->getScatteringImageViewHandle();
 	forwardPassData.m_atmosphereTransmittanceImageViewHandle = m_atmosphericScatteringModule->getTransmittanceImageViewHandle();
+	forwardPassData.m_extinctionVolumeImageViewHandle = m_volumetricFogModule->getExtinctionVolumeImageViewHandle();
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
@@ -778,6 +780,15 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
+
+
+
+	//VolumetricFogExtinctionVolumeDebugPass::Data extinctionVolumeDebugData;
+	//extinctionVolumeDebugData.m_passRecordContext = &passRecordContext;
+	//extinctionVolumeDebugData.m_extinctionVolumeImageViewHandle = m_volumetricFogModule->getExtinctionVolumeImageViewHandle();
+	//extinctionVolumeDebugData.m_resultImageViewHandle = lightImageViewHandle;
+	//
+	//VolumetricFogExtinctionVolumeDebugPass::addToGraph(graph, extinctionVolumeDebugData);
 
 
 	GaussianDownsamplePass::Data gaussianDownsamplePassData;

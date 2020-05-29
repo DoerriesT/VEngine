@@ -42,6 +42,8 @@
 #define SHADOW_ATLAS_IMAGE_BINDING 20
 #define SHADOW_SAMPLER_SET 0
 #define SHADOW_SAMPLER_BINDING 21
+#define EXTINCTION_IMAGE_SET 0
+#define EXTINCTION_IMAGE_BINDING 22
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -65,4 +67,8 @@ struct Constants
 	uint punctualLightShadowedCount;
 	uint ambientOcclusion;
 	uint width;
+	float coordScale;
+	int volumetricShadow;
+	float3 coordBias;
+	float extinctionVolumeTexelSize;
 };

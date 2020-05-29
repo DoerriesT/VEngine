@@ -49,6 +49,8 @@ uint32_t g_allocatedBricks = 0;
 bool g_forceVoxelization = false;
 bool g_voxelizeOnDemand = false;
 
+bool g_volumetricShadow = true;
+
 entt::entity g_globalFogEntity = 0;
 entt::entity g_localFogEntity = 0;
 
@@ -76,7 +78,7 @@ public:
 		entt::entity orbEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
 		entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
-		entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
+		//entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
 
 		/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 		entt::entity giHouseEntity = entityRegistry.create();
@@ -159,7 +161,7 @@ public:
 		g_localFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(45.0f), 0.0f)));
 		entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1.0f, 1.0f, 1.0f));
-		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, glm::vec3(1.0f), 0.0f, 0.0f);
+		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(222, 184, 135) / 255.0f, 3.0f, glm::vec3(1.0f), 0.0f, 0.0f);
 		entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 
 
@@ -202,6 +204,7 @@ public:
 		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
 		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		//entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true);
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)
@@ -291,7 +294,14 @@ public:
 			mode = ImGuizmo::MODE::LOCAL;
 		}
 
-
+		if (input.isKeyPressed(InputKey::V))
+		{
+			g_volumetricShadow = true;
+		}
+		else if (input.isKeyPressed(InputKey::B))
+		{
+			g_volumetricShadow = false;
+		}
 
 		glm::mat4 orientation = glm::translate(tansC.m_position) * glm::mat4_cast(tansC.m_orientation);
 

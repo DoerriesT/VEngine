@@ -18,6 +18,8 @@ SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
+SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, EXTINCTION_IMAGE_SET);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -81,6 +83,32 @@ float henyeyGreenstein(float3 V, float3 L, float g)
 	float cosTheta = dot(-L, V);
 	float denom = 4.0 * PI * pow((g * g + 1.0) - 2.0 * g * cosTheta, 1.5);
 	return num / denom;
+}
+
+float raymarch(const float3 origin, const float3 dst)
+{
+	const int NUM_STEPS = 16;
+	
+	float3 dir = normalize(dst - origin);
+	float stepSize = distance(origin, dst) / float(NUM_STEPS);
+	
+	float accumulatedTransmittance = 1.0;
+	for (int i = 0; i <= NUM_STEPS; ++i)
+	{
+		float3 coord = (origin + dir * stepSize * i) * g_Constants.coordScale + g_Constants.coordBias;
+		coord *= g_Constants.extinctionVolumeTexelSize;
+		
+		if (all(coord >= 0.0) && all(coord < 1.0))
+		{
+			float extinction = g_ExtinctionImage.SampleLevel(g_LinearSampler, coord, 0.0).x;
+			
+			extinction = max(extinction, 1e-5);
+			float transmittance = exp(-extinction * stepSize);
+			accumulatedTransmittance *= transmittance;
+		}
+	}
+	
+	return accumulatedTransmittance;
 }
 
 [numthreads(2, 2, 16)]
@@ -257,6 +285,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						if (lightShadowed.light.angleScale != -1.0) // -1.0 is a special value that marks this light as a point light
 						{
 							att *= getAngleAtt(L, lightShadowed.light.direction, lightShadowed.light.angleScale, lightShadowed.light.angleOffset);
+						}
+						
+						// trace extinction volume
+						if (shadow > 0.0 && att > 0.0 && g_Constants.volumetricShadow)
+						{
+							shadow *= raymarch(worldSpacePos[i], lightShadowed.positionWS);
 						}
 						
 						const float3 radiance = lightShadowed.light.color * att;

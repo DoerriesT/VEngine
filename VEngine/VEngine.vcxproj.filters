@@ -468,6 +468,12 @@
     <ClInclude Include="src\Graphics\Module\AtmosphericScatteringModule.h">
       <Filter>src\Graphics\Module</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -790,6 +796,12 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Module\AtmosphericScatteringModule.cpp">
       <Filter>src\Graphics\Module</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -32,6 +32,10 @@
 #define SHADOW_ATLAS_IMAGE_BINDING 15
 #define EXPOSURE_DATA_BUFFER_SET 0
 #define EXPOSURE_DATA_BUFFER_BINDING 16
+#define LINEAR_SAMPLER_SET 0
+#define LINEAR_SAMPLER_BINDING 17
+#define EXTINCTION_IMAGE_SET 0
+#define EXTINCTION_IMAGE_BINDING 18
 
 struct Constants
 {
@@ -51,4 +55,8 @@ struct Constants
 	uint punctualLightShadowedCount;
 	uint useDithering;
 	uint sampleCount;
+	float extinctionVolumeTexelSize;
+	float3 coordBias;
+	float coordScale;
+	int volumetricShadow;
 };

@@ -27,6 +27,7 @@ namespace VEngine
 			rg::ImageViewHandle m_emissivePhaseImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
+			rg::ImageViewHandle m_extinctionVolumeImageViewHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 		};
 

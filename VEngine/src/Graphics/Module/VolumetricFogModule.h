@@ -45,6 +45,7 @@ namespace VEngine
 		void addToGraph(rg::RenderGraph &graph, const Data &data);
 		void resize(uint32_t width, uint32_t height);
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
+		rg::ImageViewHandle getExtinctionVolumeImageViewHandle();
 
 	private:
 		static constexpr size_t s_haltonSampleCount = 32;
@@ -53,6 +54,7 @@ namespace VEngine
 		uint32_t m_height = 1;
 		float *m_haltonJitter;
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
+		rg::ImageViewHandle m_extinctionVolumeImageViewHandle = 0;
 
 		gal::Image *m_inScatteringHistoryImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_inScatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};

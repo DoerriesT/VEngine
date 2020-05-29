@@ -3,6 +3,7 @@
 #include "Graphics/Pass/VolumetricFogScatterPass.h"
 #include "Graphics/Pass/VolumetricFogFilterPass.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
+#include "Graphics/Pass/VolumetricFogExtinctionVolumePass.h"
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
 #include "Graphics/PassRecordContext.h"
@@ -91,6 +92,35 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		m_volumetricScatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 	}
 
+	// extinction volume
+	{
+		rg::ImageViewHandle extinctionVolumeImageViewHandle;
+
+		rg::ImageDescription desc = {};
+		desc.m_clear = true;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 64;
+		desc.m_height = 64;
+		desc.m_depth = 64;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_imageType = ImageType::_3D;
+		desc.m_format = Format::R16_SFLOAT;
+
+		desc.m_name = "Volumetric Fog V-Buffer Extinction Volume Image";
+		m_extinctionVolumeImageViewHandle = extinctionVolumeImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+
+
+		VolumetricFogExtinctionVolumePass::Data extinctionVolumePassData;
+		extinctionVolumePassData.m_passRecordContext = data.m_passRecordContext;
+		extinctionVolumePassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
+		extinctionVolumePassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
+		extinctionVolumePassData.m_extinctionVolumeImageViewHandle = extinctionVolumeImageViewHandle;
+
+		VolumetricFogExtinctionVolumePass::addToGraph(graph, extinctionVolumePassData);
+	}
+
 	const size_t haltonIdx0 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2) % s_haltonSampleCount;
 	const size_t haltonIdx1 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2 + 1) % s_haltonSampleCount;
 	const float jitterX0 = g_fogLookupDithering ? (m_haltonJitter[haltonIdx0 * 3 + 0] - 0.5f) * 0.5f + 0.25f : m_haltonJitter[haltonIdx0 * 3 + 0];
@@ -167,6 +197,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
 	volumetricFogScatterPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
 	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
+	volumetricFogScatterPassData.m_extinctionVolumeImageViewHandle = m_extinctionVolumeImageViewHandle;
 
 	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 
@@ -244,4 +275,9 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getVolumetricScatteringImageViewHandle()
 {
 	return m_volumetricScatteringImageViewHandle;
+}
+
+VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getExtinctionVolumeImageViewHandle()
+{
+	return m_extinctionVolumeImageViewHandle;
 }

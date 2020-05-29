@@ -248,6 +248,8 @@
     <ClInclude Include="src\Graphics\Pass\TonemapPass.h" />
     <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h" />
@@ -370,6 +372,8 @@
     <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp" />

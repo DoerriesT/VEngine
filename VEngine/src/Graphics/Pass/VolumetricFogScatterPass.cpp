@@ -12,6 +12,7 @@
 extern bool g_fogDithering;
 extern bool g_fogDoubleSample;
 extern bool g_fogJittering;
+extern bool g_volumetricShadow;
 
 using namespace VEngine::gal;
 
@@ -30,6 +31,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 		{rg::ResourceViewHandle(data.m_emissivePhaseImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_extinctionVolumeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -59,6 +61,10 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.jitter1 = g_fogJittering ? glm::vec3{ data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] } : glm::vec3(0.5f);
 	consts.useDithering = g_fogDithering;
 	consts.sampleCount = g_fogDoubleSample ? 2 : 1;
+	consts.coordScale = 4.0f;
+	consts.coordBias = (glm::vec3(64.0f) * 0.5f + 0.5f);// *4.0f;
+	consts.extinctionVolumeTexelSize = 1.0f / 64.0f;
+	consts.volumetricShadow = g_volumetricShadow;
 
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
@@ -86,6 +92,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 				ImageView *emissivePhaseImageView = registry.getImageView(data.m_emissivePhaseImageViewHandle);
 				ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
+				ImageView *extinctionVolumeImageViewHandle = registry.getImageView(data.m_extinctionVolumeImageViewHandle);
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
@@ -97,7 +104,9 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::sampledImage(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
+					Initializers::sampledImage(&extinctionVolumeImageViewHandle, EXTINCTION_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
+					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),

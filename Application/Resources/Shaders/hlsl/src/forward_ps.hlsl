@@ -34,6 +34,7 @@ Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
+Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, EXTINCTION_IMAGE_SET);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -53,6 +54,31 @@ ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGH
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
 
+float raymarch(const float3 origin, const float3 dst)
+{
+	const int NUM_STEPS = 16;
+	
+	float3 dir = normalize(dst - origin);
+	float stepSize = distance(origin, dst) / float(NUM_STEPS);
+	
+	float accumulatedTransmittance = 1.0;
+	for (int i = 0; i <= NUM_STEPS; ++i)
+	{
+		float3 coord = (origin + dir * stepSize * i) * g_Constants.coordScale + g_Constants.coordBias;
+		coord *= g_Constants.extinctionVolumeTexelSize;
+		
+		if (all(coord >= 0.0) && all(coord < 1.0))
+		{
+			float extinction = g_ExtinctionImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], coord, 0.0).x;
+			
+			extinction = max(extinction, 1e-5);
+			float transmittance = exp(-extinction * stepSize);
+			accumulatedTransmittance *= transmittance;
+		}
+	}
+	
+	return accumulatedTransmittance;
+}
 
 [earlydepthstencil]
 PSOutput main(PSInput input)
@@ -218,6 +244,11 @@ PSOutput main(PSInput input)
 				}
 				
 				float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
+				
+				if (shadow > 0.0 && g_Constants.volumetricShadow)
+				{
+					shadow *= raymarch(worldSpacePos, lightShadowed.positionWS);
+				}
 				
 				result += shadow * evaluatePunctualLight(lightingParams, lightShadowed.light);
 			}
