@@ -219,6 +219,7 @@
     <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h" />
     <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h" />
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityMapPass.h" />
     <ClInclude Include="src\Graphics\Pass\FXAAPass.h" />
     <ClInclude Include="src\Graphics\Pass\GaussianDownsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\GTAOPass.h" />
@@ -343,6 +344,7 @@
     <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityMapPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\GaussianDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\GTAOPass.cpp" />

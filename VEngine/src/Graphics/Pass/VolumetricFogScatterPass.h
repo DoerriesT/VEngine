@@ -28,6 +28,8 @@ namespace VEngine
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_extinctionVolumeImageViewHandle;
+			rg::ImageViewHandle m_fom0ImageViewHandle;
+			rg::ImageViewHandle m_fom1ImageViewHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 		};
 

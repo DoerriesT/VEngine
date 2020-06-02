@@ -44,6 +44,8 @@
 #define SHADOW_SAMPLER_BINDING 21
 #define EXTINCTION_IMAGE_SET 0
 #define EXTINCTION_IMAGE_BINDING 22
+#define FOM_0_IMAGE_BINDING 23
+#define FOM_1_IMAGE_BINDING 24
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -58,6 +60,7 @@ struct PushConsts
 
 struct Constants
 {
+	float4x4 shadowMatrix;
 	float4x4 jitteredViewProjectionMatrix;
 	float4x4 invViewMatrix;
 	float4x4 viewMatrix;

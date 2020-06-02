@@ -36,9 +36,12 @@
 #define LINEAR_SAMPLER_BINDING 17
 #define EXTINCTION_IMAGE_SET 0
 #define EXTINCTION_IMAGE_BINDING 18
+#define FOM_0_IMAGE_BINDING 19
+#define FOM_1_IMAGE_BINDING 20
 
 struct Constants
 {
+	float4x4 shadowMatrix;
 	float4x4 viewMatrix;
 	float3 frustumCornerTL;
 	float jitterX;

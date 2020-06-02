@@ -20,6 +20,8 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CO
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, EXTINCTION_IMAGE_SET);
+Texture2D<float4> g_fom0Image : REGISTER_SRV(FOM_0_IMAGE_BINDING, 0);
+Texture2D<float4> g_fom1Image : REGISTER_SRV(FOM_1_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -291,7 +293,56 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						// trace extinction volume
 						if (shadow > 0.0 && att > 0.0 && g_Constants.volumetricShadow)
 						{
-							shadow *= raymarch(worldSpacePos[i], lightShadowed.positionWS);
+							if (g_Constants.volumetricShadow == 2)
+							{
+								shadow *= raymarch(worldSpacePos[i], lightShadowed.positionWS);
+							}
+							else
+							{
+								float4 fomPos = mul(g_Constants.shadowMatrix, float4(worldSpacePos[i], 1.0));
+								float2 uv = fomPos.xy / fomPos.w * 0.5 + 0.5;
+								float4 fom0 = g_fom0Image.SampleLevel(g_LinearSampler, uv, 0.0);
+								float4 fom1 = g_fom1Image.SampleLevel(g_LinearSampler, uv, 0.0);
+								
+								float depthScale = 1.0 / (8.0 - 0.01);
+								float depthBias = depthScale * -0.01;
+								float depth = distance(worldSpacePos[i], lightShadowed.positionWS) * depthScale + depthBias;
+								//depth = saturate(depth);
+							
+								float lnTransmittance = fom0.r * 0.5 * depth;
+							
+								lnTransmittance += fom0.b / (2.0 * PI * 1.0) * sin(2.0 * PI * 1.0 * depth);
+								lnTransmittance += fom0.a / (2.0 * PI * 1.0) * (1.0 - cos(2.0 * PI * 1.0 * depth));
+							
+								lnTransmittance += fom1.r / (2.0 * PI * 2.0) * sin(2.0 * PI * 2.0 * depth);
+								lnTransmittance += fom1.g / (2.0 * PI * 2.0) * (1.0 - cos(2.0 * PI * 2.0 * depth));
+								
+								lnTransmittance += fom1.b / (2.0 * PI * 3.0) * sin(2.0 * PI * 3.0 * depth);
+								lnTransmittance += fom1.a / (2.0 * PI * 3.0) * (1.0 - cos(2.0 * PI * 3.0 * depth));
+								//// DC component
+								//float lnTransmittance = fom0.g * depth;
+								//
+								//// Remaining outputs require sin/cos
+								//float2 cs1;
+								//sincos(PI * 2.0 * depth, cs1.y, cs1.x);
+								//
+								//lnTransmittance += (1-cs1.x) * fom0.a;
+								//lnTransmittance += cs1.y * fom0.b;
+								//
+								//float2 csn;
+								//csn = float2(cs1.x*cs1.x-cs1.y*cs1.y, 2.f*cs1.y*cs1.x);
+								//lnTransmittance += (1-csn.x) * fom1.g;
+								//lnTransmittance += csn.y * fom1.r;
+								//
+								//csn = float2(csn.x*cs1.x-csn.y*cs1.y, csn.y*cs1.x+csn.x*cs1.y);
+								//lnTransmittance += (1-csn.x) * fom1.a;
+								//lnTransmittance += csn.y * fom1.b;
+								//
+								//
+								float shadowFactor = saturate(exp(-lnTransmittance));
+								
+								shadow *= shadowFactor;
+							}
 						}
 						
 						float multiplier = (count == 2) ? 0.5 : 1.0;

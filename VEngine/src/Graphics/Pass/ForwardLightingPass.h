@@ -42,6 +42,8 @@ namespace VEngine
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			gal::ImageView *m_probeImageView;
 			rg::ImageViewHandle m_extinctionVolumeImageViewHandle;
+			rg::ImageViewHandle m_fom0ImageViewHandle;
+			rg::ImageViewHandle m_fom1ImageViewHandle;
 			gal::DescriptorBufferInfo m_atmosphereConstantBufferInfo;
 			rg::ImageViewHandle m_atmosphereScatteringImageViewHandle;
 			rg::ImageViewHandle m_atmosphereTransmittanceImageViewHandle;

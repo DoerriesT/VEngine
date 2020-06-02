@@ -49,10 +49,20 @@ uint32_t g_allocatedBricks = 0;
 bool g_forceVoxelization = false;
 bool g_voxelizeOnDemand = false;
 
-bool g_volumetricShadow = true;
+int g_volumetricShadow = 0;
 
 entt::entity g_globalFogEntity = 0;
 entt::entity g_localFogEntity = 0;
+
+
+glm::vec3 g_lightPos = {0.0f, 2.0f, 0.0f};
+glm::vec3 g_lightDir = {0.0f, 0.0f, -1.0f};
+float g_lightAngle = 0.1f;
+float g_lightRadius = 8.0f;
+glm::vec3 g_volumePos = { 0.0f, 2.0f, 0.0f };
+glm::quat g_volumeRot = {};
+glm::vec3 g_volumeSize = glm::vec3(1.0f);
+float g_volumeExtinction = 30.0f;
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -203,8 +213,8 @@ public:
 		//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
 		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		//entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
-		entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true);
+		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		//entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true);
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)
@@ -296,11 +306,15 @@ public:
 
 		if (input.isKeyPressed(InputKey::V))
 		{
-			g_volumetricShadow = true;
+			g_volumetricShadow = 0;
 		}
 		else if (input.isKeyPressed(InputKey::B))
 		{
-			g_volumetricShadow = false;
+			g_volumetricShadow = 1;
+		}
+		else if (input.isKeyPressed(InputKey::N))
+		{
+			g_volumetricShadow = 2;
 		}
 
 		glm::mat4 orientation = glm::translate(tansC.m_position) * glm::mat4_cast(tansC.m_orientation);
@@ -319,6 +333,26 @@ public:
 		else if (operation == ImGuizmo::OPERATION::ROTATE)
 		{
 			tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
+		}
+
+
+		{
+			using namespace VEngine;
+			TransformationComponent &spotTransC = entityRegistry.get<TransformationComponent>(m_spotLightEntity);
+			SpotLightComponent &spotC = entityRegistry.get<SpotLightComponent>(m_spotLightEntity);
+
+			TransformationComponent &volumeTransC = entityRegistry.get<TransformationComponent>(g_localFogEntity);
+			BoundingBoxComponent &volumeBBoxC = entityRegistry.get<BoundingBoxComponent>(g_localFogEntity);
+			LocalParticipatingMediumComponent &fogC = entityRegistry.get<LocalParticipatingMediumComponent>(g_localFogEntity);
+
+			g_lightPos = spotTransC.m_position;
+			g_lightDir = glm::normalize(spotTransC.m_orientation * glm::vec3(0.0f, 0.0f, -1.0f));
+			g_lightAngle = spotC.m_outerAngle;
+			g_lightRadius = spotC.m_radius;
+			g_volumePos = volumeTransC.m_position;
+			g_volumeRot = volumeTransC.m_orientation;
+			g_volumeSize = volumeBBoxC.m_extent;
+			g_volumeExtinction = fogC.m_extinction;
 		}
 	};
 

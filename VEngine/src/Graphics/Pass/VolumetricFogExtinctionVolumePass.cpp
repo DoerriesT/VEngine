@@ -61,7 +61,7 @@ void VEngine::VolumetricFogExtinctionVolumePass::addToGraph(rg::RenderGraph &gra
 			PushConsts pushConsts;
 			pushConsts.positionScale = 0.25f;
 			pushConsts.positionBias = -(glm::vec3(w, h, d) * 0.5f + 0.5f) * 0.25f;
-			pushConsts.globalMediaCount = data.m_passRecordContext->m_commonRenderData->m_globalParticipatingMediaCount;
+			pushConsts.globalMediaCount = 0;// data.m_passRecordContext->m_commonRenderData->m_globalParticipatingMediaCount;
 			pushConsts.localMediaCount = data.m_passRecordContext->m_commonRenderData->m_localParticipatingMediaCount;
 			pushConsts.dstOffset = 0;
 
