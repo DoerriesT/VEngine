@@ -143,15 +143,15 @@ public:
 		};
 
 		// center
-		createReflectionProbe(glm::vec3(-9.5, -0.01, -2.4), glm::vec3(9.5, 13.0, 2.4), true, glm::vec3(0.0f, 2.0f, 0.0f));
+		createReflectionProbe(glm::vec3(-9.5, -0.05, -2.4), glm::vec3(9.5, 13.0, 2.4), true, glm::vec3(0.0f, 2.0f, 0.0f));
 
 		// lower halls
-		createReflectionProbe(glm::vec3(-9.5, -0.01, 2.4), glm::vec3(9.5, 3.9, 6.1));
-		createReflectionProbe(glm::vec3(-9.5, -0.01, -6.1), glm::vec3(9.5, 3.9, -2.4));
+		createReflectionProbe(glm::vec3(-9.5, -0.05, 2.4), glm::vec3(9.5, 3.9, 6.1));
+		createReflectionProbe(glm::vec3(-9.5, -0.05, -6.1), glm::vec3(9.5, 3.9, -2.4));
 
 		// lower end
-		createReflectionProbe(glm::vec3(-13.7, -0.01, -6.1), glm::vec3(-9.5, 3.9, 6.1));
-		createReflectionProbe(glm::vec3(9.5, -0.01, -6.1), glm::vec3(13.65, 3.9, 6.1));
+		createReflectionProbe(glm::vec3(-13.7, -0.05, -6.1), glm::vec3(-9.5, 3.9, 6.1));
+		createReflectionProbe(glm::vec3(9.5, -0.05, -6.1), glm::vec3(13.65, 3.9, 6.1));
 
 		// upper halls
 		createReflectionProbe(glm::vec3(-9.8, 4.15, 2.8), glm::vec3(9.8, 8.7, 6.15));
