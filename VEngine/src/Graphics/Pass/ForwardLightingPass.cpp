@@ -156,7 +156,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				};
 
 				SkyPushConsts pushconsts;
-				pushconsts.invModelViewProjection = data.m_passRecordContext->m_commonRenderData->m_invViewProjectionMatrix;
+				pushconsts.invModelViewProjection = glm::inverse(data.m_passRecordContext->m_commonRenderData->m_jitteredProjectionMatrix * glm::mat4(glm::mat3(data.m_passRecordContext->m_commonRenderData->m_viewMatrix)));
 				pushconsts.sunDir = g_sunDir;
 				pushconsts.cameraHeight = data.m_passRecordContext->m_commonRenderData->m_cameraPosition.y;
 
