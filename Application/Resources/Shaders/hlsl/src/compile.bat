@@ -57,5 +57,6 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeInd
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeMultipleScattering_cs.hlsl -Fo ./../atmosphereComputeMultipleScattering_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T vs_6_2 -E main fomVolume_vs.hlsl -Fo ./../fomVolume_vs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fomVolume_ps.hlsl -Fo ./../fomVolume_ps.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main fourierOpacityVolume_cs.hlsl -Fo ./../fourierOpacityVolume_cs.spv
 
 pause

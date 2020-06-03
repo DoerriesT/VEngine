@@ -32,6 +32,7 @@
 #include "Pass/GaussianDownsamplePass.h"
 #include "Pass/VolumetricFogExtinctionVolumeDebugPass.h"
 #include "Pass/FourierOpacityMapPass.h"
+#include "Pass/FourierOpacityPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -691,12 +692,22 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	FourierOpacityMapPass::Data fomPassData;
-	fomPassData.m_passRecordContext = &passRecordContext;
-	fomPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
-	fomPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
+	//FourierOpacityMapPass::Data fomPassData;
+	//fomPassData.m_passRecordContext = &passRecordContext;
+	//fomPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
+	//fomPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
+	//
+	//FourierOpacityMapPass::addToGraph(graph, fomPassData);
 
-	FourierOpacityMapPass::addToGraph(graph, fomPassData);
+
+	FourierOpacityPass::Data fourierOpacityPassData;
+	fourierOpacityPassData.m_passRecordContext = &passRecordContext;
+	fourierOpacityPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
+	fourierOpacityPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
+	fourierOpacityPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
+	fourierOpacityPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
+
+	FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
 
 
 	// volumetric fog
