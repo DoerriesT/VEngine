@@ -97,7 +97,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		rg::ImageViewHandle extinctionVolumeImageViewHandle;
 
 		rg::ImageDescription desc = {};
-		desc.m_clear = true;
+		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = 64;
 		desc.m_height = 64;
