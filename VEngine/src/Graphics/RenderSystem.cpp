@@ -373,8 +373,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 								if (fomQuadTreeAllocator.alloc(256, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
 								{
 									punctualLightShadowed.m_fomShadowAtlasParams.x = (fomAtlasDrawInfo.m_size - 2) / 2048.0f;
-									punctualLightShadowed.m_fomShadowAtlasParams.y = (fomAtlasDrawInfo.m_offsetX + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
-									punctualLightShadowed.m_fomShadowAtlasParams.z = (fomAtlasDrawInfo.m_offsetY + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.y = static_cast<float>(fomAtlasDrawInfo.m_offsetX + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.z = static_cast<float>(fomAtlasDrawInfo.m_offsetY + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
 									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
 
 									fomAtlasDrawInfo.m_lightPosition = transformationComponent.m_position;
@@ -541,7 +541,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								FOMAtlasDrawInfo fomAtlasDrawInfo{};
 								if (fomQuadTreeAllocator.alloc(128, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
 								{
-									punctualLightShadowed.m_fomShadowAtlasParams.x = fomAtlasDrawInfo.m_size / 2048.0f;
+									punctualLightShadowed.m_fomShadowAtlasParams.x = fomAtlasDrawInfo.m_size / 128.0f;
 									punctualLightShadowed.m_fomShadowAtlasParams.y = fomAtlasDrawInfo.m_offsetX / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
 									punctualLightShadowed.m_fomShadowAtlasParams.z = fomAtlasDrawInfo.m_offsetY / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
 									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
