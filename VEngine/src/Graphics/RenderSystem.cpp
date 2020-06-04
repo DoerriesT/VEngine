@@ -529,6 +529,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 							punctualLightShadowed.m_shadowMatrix1 = { shadowMatrix[0][1], shadowMatrix[1][1], shadowMatrix[2][1], shadowMatrix[3][1] };
 							punctualLightShadowed.m_shadowMatrix2 = { shadowMatrix[0][2], shadowMatrix[1][2], shadowMatrix[2][2], shadowMatrix[3][2] };
 							punctualLightShadowed.m_shadowMatrix3 = { shadowMatrix[0][3], shadowMatrix[1][3], shadowMatrix[2][3], shadowMatrix[3][3] };
+							punctualLightShadowed.m_shadowAtlasParams[0].x = tileSize * (1.0f / 8192.0f);
+							punctualLightShadowed.m_shadowAtlasParams[0].y = tileOffsetX / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
+							punctualLightShadowed.m_shadowAtlasParams[0].z = tileOffsetY / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = spotLightComponent.m_radius;
 
@@ -577,10 +580,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 								frustumCullData.push_back(cullData);
 								renderLists.push_back({});
 							}
-
-							punctualLightShadowed.m_shadowAtlasParams[0].x = atlasDrawInfo.m_size * (1.0f / 8192.0f);
-							punctualLightShadowed.m_shadowAtlasParams[0].y = atlasDrawInfo.m_offsetX / atlasDrawInfo.m_size * punctualLightShadowed.m_shadowAtlasParams[0].x;
-							punctualLightShadowed.m_shadowAtlasParams[0].z = atlasDrawInfo.m_offsetY / atlasDrawInfo.m_size * punctualLightShadowed.m_shadowAtlasParams[0].x;
 
 							m_lightData.m_punctualLightsShadowed.push_back(punctualLightShadowed);
 							m_lightData.m_punctualLightShadowedTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));

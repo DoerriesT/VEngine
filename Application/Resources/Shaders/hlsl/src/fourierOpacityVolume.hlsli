@@ -8,8 +8,6 @@ struct LightInfo
 {
 	float4x4 invViewProjection;
 	float3 position;
-	float depthScale;
-	float depthBias;
 	float radius;
 	float texelSize;
 	uint resolution;
@@ -17,6 +15,8 @@ struct LightInfo
 	uint offsetY;
 	uint isPointLight;
 	float pad1;
+	float pad2;
+	float pad3;
 };
 
 

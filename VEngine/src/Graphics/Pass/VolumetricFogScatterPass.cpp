@@ -14,8 +14,6 @@ extern bool g_fogDoubleSample;
 extern bool g_fogJittering;
 extern int g_volumetricShadow;
 
-extern glm::mat4 g_shadowMatrix;
-
 using namespace VEngine::gal;
 
 namespace
@@ -49,7 +47,6 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
-	consts.shadowMatrix = g_shadowMatrix;
 	consts.viewMatrix = commonData->m_viewMatrix;
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;

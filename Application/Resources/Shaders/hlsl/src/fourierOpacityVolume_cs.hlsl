@@ -77,6 +77,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	const float segmentLength = lightInfo.radius / 64.0;
 	const float rayStart = segmentLength * depthCoord;
 	const float rayEnd = segmentLength * (depthCoord + 1);
+	const float invRadius = 1.0 / lightInfo.radius;
 	
 	float4 result0 = 0.0;
 	float4 result1 = 0.0;
@@ -118,7 +119,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 		}
 		
 		float transmittance = exp(-extinction * stepSize);
-		float depth = t * lightInfo.depthScale + lightInfo.depthBias;
+		float depth = t * invRadius;
 		
 		result0.r += -2.0 * log(transmittance) * cos(2.0 * PI * 0.0 * depth);
 		result0.g += -2.0 * log(transmittance) * sin(2.0 * PI * 0.0 * depth);

@@ -41,7 +41,6 @@
 
 struct Constants
 {
-	float4x4 shadowMatrix;
 	float4x4 viewMatrix;
 	float3 frustumCornerTL;
 	float jitterX;

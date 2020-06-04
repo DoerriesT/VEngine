@@ -12,17 +12,6 @@
 
 using namespace VEngine::gal;
 
-extern glm::vec3 g_lightPos;
-extern glm::vec3 g_lightDir;
-extern float g_lightAngle;
-extern float g_lightRadius;
-extern glm::vec3 g_volumePos;
-extern glm::quat g_volumeRot;
-extern glm::vec3 g_volumeSize;
-extern float g_volumeExtinction;
-
-extern glm::mat4 g_shadowMatrix;
-
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
@@ -48,8 +37,6 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 		LightInfo lightInfo;
 		lightInfo.invViewProjection = glm::inverse(info.m_shadowMatrix);
 		lightInfo.position = info.m_lightPosition;
-		lightInfo.depthScale = 1.0f / (info.m_lightRadius - 0.01f);
-		lightInfo.depthBias = lightInfo.depthScale * -0.01f;
 		lightInfo.radius = info.m_lightRadius;
 		lightInfo.texelSize = 1.0f / resolution;
 		lightInfo.resolution = resolution;
@@ -59,47 +46,6 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 		((LightInfo *)lightDataPtr)[i] = lightInfo;
 	}
-
-	
-
-	
-
-	//const glm::mat4 vulkanCorrection =
-	//{
-	//	{ 1.0f, 0.0f, 0.0f, 0.0f },
-	//	{ 0.0f, -1.0f, 0.0f, 0.0f },
-	//	{ 0.0f, 0.0f, 0.5f, 0.0f },
-	//	{ 0.0f, 0.0f, 0.5f, 1.0f }
-	//};
-	//
-	//glm::vec3 upDir(0.0f, 1.0f, 0.0f);
-	//// choose different up vector if light direction would be linearly dependent otherwise
-	//if (abs(g_lightDir.x) < 0.001f && abs(g_lightDir.z) < 0.001f)
-	//{
-	//	upDir = glm::vec3(1.0f, 0.0f, 0.0f);
-	//}
-	//
-	//glm::mat4 shadowMatrix = vulkanCorrection * glm::perspective(g_lightAngle, 1.0f, 0.01f, g_lightRadius)
-	//	* glm::lookAt(g_lightPos, g_lightPos + g_lightDir, upDir);
-	//
-	//g_shadowMatrix = shadowMatrix;
-	//
-	//bool pointLight = true;
-	//uint32_t resolution = pointLight ? 128 - 2 : 128;
-	//
-	//LightInfo lightInfo;
-	//lightInfo.invViewProjection = glm::inverse(shadowMatrix);
-	//lightInfo.position = g_lightPos;
-	//lightInfo.depthScale = 1.0f / (g_lightRadius - 0.01f);
-	//lightInfo.depthBias = lightInfo.depthScale * -0.01f;
-	//lightInfo.radius = g_lightRadius;
-	//lightInfo.texelSize = 1.0f / resolution;
-	//lightInfo.resolution = resolution;
-	//lightInfo.offsetX = pointLight ? 1 : 0;
-	//lightInfo.offsetY = pointLight ? 1 : 0;
-	//lightInfo.isPointLight = pointLight;
-	//
-	//memcpy(lightDataPtr, &lightInfo, sizeof(lightInfo));
 
 	rg::ResourceUsageDescription passUsages[]
 	{

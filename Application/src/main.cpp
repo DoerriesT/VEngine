@@ -43,26 +43,11 @@ float g_fogHistoryAlpha = 0.05f;
 extern float g_ssrBias;
 
 uint32_t g_dirLightEntity;
-uint32_t g_debugVoxelCascadeIndex = 0;
-uint32_t g_giVoxelDebugMode = 0;
-uint32_t g_allocatedBricks = 0;
-bool g_forceVoxelization = false;
-bool g_voxelizeOnDemand = false;
 
 int g_volumetricShadow = 0;
 
 entt::entity g_globalFogEntity = 0;
 entt::entity g_localFogEntity = 0;
-
-
-glm::vec3 g_lightPos = {0.0f, 2.0f, 0.0f};
-glm::vec3 g_lightDir = {0.0f, 0.0f, -1.0f};
-float g_lightAngle = 0.1f;
-float g_lightRadius = 8.0f;
-glm::vec3 g_volumePos = { 0.0f, 2.0f, 0.0f };
-glm::quat g_volumeRot = {};
-glm::vec3 g_volumeSize = glm::vec3(1.0f);
-float g_volumeExtinction = 30.0f;
 
 class DummyLogic : public VEngine::IGameLogic
 {
@@ -333,27 +318,6 @@ public:
 		else if (operation == ImGuizmo::OPERATION::ROTATE)
 		{
 			tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
-		}
-
-
-		{
-			using namespace VEngine;
-			TransformationComponent &spotTransC = entityRegistry.get<TransformationComponent>(m_spotLightEntity);
-			//SpotLightComponent &spotC = entityRegistry.get<SpotLightComponent>(m_spotLightEntity);
-			PointLightComponent &pointC = entityRegistry.get<PointLightComponent>(m_spotLightEntity);
-
-			TransformationComponent &volumeTransC = entityRegistry.get<TransformationComponent>(g_localFogEntity);
-			BoundingBoxComponent &volumeBBoxC = entityRegistry.get<BoundingBoxComponent>(g_localFogEntity);
-			LocalParticipatingMediumComponent &fogC = entityRegistry.get<LocalParticipatingMediumComponent>(g_localFogEntity);
-
-			g_lightPos = spotTransC.m_position;
-			g_lightDir = glm::normalize(spotTransC.m_orientation * glm::vec3(0.0f, 0.0f, -1.0f));
-			//g_lightAngle = spotC.m_outerAngle;
-			g_lightRadius = pointC.m_radius;
-			g_volumePos = volumeTransC.m_position;
-			g_volumeRot = volumeTransC.m_orientation;
-			g_volumeSize = volumeBBoxC.m_extent;
-			g_volumeExtinction = fogC.m_extinction;
 		}
 	};
 

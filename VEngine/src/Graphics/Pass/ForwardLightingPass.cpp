@@ -11,7 +11,6 @@ using namespace VEngine::gal;
 
 extern glm::vec3 g_sunDir;
 extern int g_volumetricShadow;
-extern glm::mat4 g_shadowMatrix;
 
 namespace
 {
@@ -29,7 +28,6 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
-	consts.shadowMatrix = g_shadowMatrix;
 	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
 	consts.invViewMatrix = commonData->m_invViewMatrix;
 	consts.viewMatrix = data.m_passRecordContext->m_commonRenderData->m_viewMatrix;

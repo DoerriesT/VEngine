@@ -276,9 +276,7 @@ PSOutput main(PSInput input)
 						float4 fom0 = g_fom0Image.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0);
 						float4 fom1 = g_fom1Image.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0);
 						
-						float depthScale = 1.0 / (8.0 - 0.01);
-						float depthBias = depthScale * -0.01;
-						float depth = distance(worldSpacePos, lightShadowed.positionWS) * depthScale + depthBias;
+						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
 					
 						float lnTransmittance = fom0.r * 0.5 * depth;
