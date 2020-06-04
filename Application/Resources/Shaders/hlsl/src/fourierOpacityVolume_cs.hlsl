@@ -87,9 +87,19 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	//const int stepCount = (int)ceil((rayEnd - rayStart) / stepSize);
 	const int stepCount = clamp(ceil(segmentLength / 0.05), 1, 10);
 	const float stepSize = (rayEnd - rayStart) / stepCount;
+	
+	//float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
+	//float dither = ditherMatrix[groupID.y % 2][groupID.x % 2] * stepSize;
+	
+	float4x4 ditherMatrix = float4x4(1 / 16.0, 9 / 16.0, 3 / 16.0, 11 / 16.0,
+									13 / 16.0, 5 / 16.0, 15 / 16.0, 7 / 16.0,
+									4 / 16.0, 12 / 16.0, 2 / 16.0, 10 / 16.0,
+									16 / 16.0, 8 / 16.0, 14 / 16.0, 6 / 16.0);
+	float dither = ditherMatrix[groupID.y % 4][groupID.x % 4] * stepSize;
+	
 	for (int i = 0; i < stepCount; ++i)
 	{
-		float t = i * stepSize + rayStart;
+		float t = i * stepSize + dither + rayStart;
 		float3 rayPos = lightInfo.position + ray * t;
 		
 		float extinction = 0.0;
