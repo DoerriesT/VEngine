@@ -35,46 +35,71 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// light info
-	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) };
+	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount };
 	uint8_t *lightDataPtr = nullptr;
 	ssboBuffer->allocate(lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
 
-	const glm::mat4 vulkanCorrection =
+	for (size_t i = 0; i < data.m_drawCount; ++i)
 	{
-		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, -1.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 1.0f }
-	};
+		const auto &info = data.m_drawInfo[i];
 
-	glm::vec3 upDir(0.0f, 1.0f, 0.0f);
-	// choose different up vector if light direction would be linearly dependent otherwise
-	if (abs(g_lightDir.x) < 0.001f && abs(g_lightDir.z) < 0.001f)
-	{
-		upDir = glm::vec3(1.0f, 0.0f, 0.0f);
+		uint32_t resolution = info.m_pointLight ? (info.m_size - 2) : info.m_size;
+		
+		LightInfo lightInfo;
+		lightInfo.invViewProjection = glm::inverse(info.m_shadowMatrix);
+		lightInfo.position = info.m_lightPosition;
+		lightInfo.depthScale = 1.0f / (info.m_lightRadius - 0.01f);
+		lightInfo.depthBias = lightInfo.depthScale * -0.01f;
+		lightInfo.radius = info.m_lightRadius;
+		lightInfo.texelSize = 1.0f / resolution;
+		lightInfo.resolution = resolution;
+		lightInfo.offsetX = info.m_offsetX + (info.m_pointLight ? 1 : 0);
+		lightInfo.offsetY = info.m_offsetY + (info.m_pointLight ? 1 : 0);
+		lightInfo.isPointLight = info.m_pointLight;
+
+		((LightInfo *)lightDataPtr)[i] = lightInfo;
 	}
 
-	glm::mat4 shadowMatrix = vulkanCorrection * glm::perspective(g_lightAngle, 1.0f, 0.01f, g_lightRadius)
-		* glm::lookAt(g_lightPos, g_lightPos + g_lightDir, upDir);
+	
 
-	g_shadowMatrix = shadowMatrix;
+	
 
-	bool pointLight = true;
-	uint32_t resolution = pointLight ? 128 - 2 : 128;
-
-	LightInfo lightInfo;
-	lightInfo.invViewProjection = glm::inverse(shadowMatrix);
-	lightInfo.position = g_lightPos;
-	lightInfo.depthScale = 1.0f / (g_lightRadius - 0.01f);
-	lightInfo.depthBias = lightInfo.depthScale * -0.01f;
-	lightInfo.radius = g_lightRadius;
-	lightInfo.texelSize = 1.0f / resolution;
-	lightInfo.resolution = resolution;
-	lightInfo.offsetX = pointLight ? 1 : 0;
-	lightInfo.offsetY = pointLight ? 1 : 0;
-	lightInfo.isPointLight = pointLight;
-
-	memcpy(lightDataPtr, &lightInfo, sizeof(lightInfo));
+	//const glm::mat4 vulkanCorrection =
+	//{
+	//	{ 1.0f, 0.0f, 0.0f, 0.0f },
+	//	{ 0.0f, -1.0f, 0.0f, 0.0f },
+	//	{ 0.0f, 0.0f, 0.5f, 0.0f },
+	//	{ 0.0f, 0.0f, 0.5f, 1.0f }
+	//};
+	//
+	//glm::vec3 upDir(0.0f, 1.0f, 0.0f);
+	//// choose different up vector if light direction would be linearly dependent otherwise
+	//if (abs(g_lightDir.x) < 0.001f && abs(g_lightDir.z) < 0.001f)
+	//{
+	//	upDir = glm::vec3(1.0f, 0.0f, 0.0f);
+	//}
+	//
+	//glm::mat4 shadowMatrix = vulkanCorrection * glm::perspective(g_lightAngle, 1.0f, 0.01f, g_lightRadius)
+	//	* glm::lookAt(g_lightPos, g_lightPos + g_lightDir, upDir);
+	//
+	//g_shadowMatrix = shadowMatrix;
+	//
+	//bool pointLight = true;
+	//uint32_t resolution = pointLight ? 128 - 2 : 128;
+	//
+	//LightInfo lightInfo;
+	//lightInfo.invViewProjection = glm::inverse(shadowMatrix);
+	//lightInfo.position = g_lightPos;
+	//lightInfo.depthScale = 1.0f / (g_lightRadius - 0.01f);
+	//lightInfo.depthBias = lightInfo.depthScale * -0.01f;
+	//lightInfo.radius = g_lightRadius;
+	//lightInfo.texelSize = 1.0f / resolution;
+	//lightInfo.resolution = resolution;
+	//lightInfo.offsetX = pointLight ? 1 : 0;
+	//lightInfo.offsetY = pointLight ? 1 : 0;
+	//lightInfo.isPointLight = pointLight;
+	//
+	//memcpy(lightDataPtr, &lightInfo, sizeof(lightInfo));
 
 	rg::ResourceUsageDescription passUsages[]
 	{
@@ -119,8 +144,14 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 			pushConsts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 			pushConsts.localVolumeCount = commonData->m_localParticipatingMediaCount;
 
-			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+			for (size_t i = 0; i < data.m_drawCount; ++i)
+			{
+				pushConsts.lightIndex = static_cast<uint32_t>(i);
+				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			cmdList->dispatch(resolution, resolution, 1);
+				const auto &info = data.m_drawInfo[i];
+				uint32_t res = info.m_pointLight ? (info.m_size - 2) : info.m_size;
+				cmdList->dispatch(res, res, 1);
+			}
 		}, true);
 }

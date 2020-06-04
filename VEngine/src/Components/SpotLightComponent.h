@@ -11,5 +11,6 @@ namespace VEngine
 		float m_outerAngle;
 		float m_innerAngle;
 		bool m_shadows;
+		bool m_volumetricShadows; // requires m_shadows to be true
 	};
 }

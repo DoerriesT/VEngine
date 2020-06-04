@@ -33,7 +33,7 @@ namespace VEngine
 		glm::vec4 m_shadowMatrix2;
 		glm::vec4 m_shadowMatrix3;
 		glm::vec4 m_shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: unused
-		glm::vec4 m_fomShadowAtlasParams; // x: scale, y: biasX, z: biasY, w: unused
+		glm::vec4 m_fomShadowAtlasParams; // x: scale, y: biasX, z: biasY, w: volumetric shadows enabled
 		glm::vec3 m_positionWS;
 		float m_radius;
 	};
@@ -45,6 +45,17 @@ namespace VEngine
 		uint32_t m_offsetX;
 		uint32_t m_offsetY;
 		uint32_t m_size;
+	};
+
+	struct FOMAtlasDrawInfo
+	{
+		glm::mat4 m_shadowMatrix;
+		glm::vec3 m_lightPosition;
+		float m_lightRadius;
+		uint32_t m_offsetX;
+		uint32_t m_offsetY;
+		uint32_t m_size;
+		bool m_pointLight;
 	};
 
 	struct GlobalParticipatingMedium
@@ -87,6 +98,7 @@ namespace VEngine
 	struct LightData
 	{
 		std::vector<ShadowAtlasDrawInfo> m_shadowAtlasDrawInfos;
+		std::vector<FOMAtlasDrawInfo> m_fomAtlasDrawInfos;;
 		std::vector<DirectionalLight> m_directionalLights;
 		std::vector<DirectionalLight> m_directionalLightsShadowed;
 		std::vector<DirectionalLight> m_directionalLightsShadowedProbe;
@@ -112,6 +124,7 @@ namespace VEngine
 		void clear()
 		{
 			m_shadowAtlasDrawInfos.clear();
+			m_fomAtlasDrawInfos.clear();
 			m_directionalLights.clear();
 			m_directionalLightsShadowed.clear();
 			m_directionalLightsShadowedProbe.clear();

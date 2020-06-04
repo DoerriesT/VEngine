@@ -286,8 +286,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_name = "FOM Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 128;
-		desc.m_height = 128;
+		desc.m_width = 2048;
+		desc.m_height = 2048;
 		desc.m_layers = 1;
 		desc.m_levels = 1;
 		desc.m_samples = SampleCount::_1;
@@ -700,14 +700,20 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//FourierOpacityMapPass::addToGraph(graph, fomPassData);
 
 
-	FourierOpacityPass::Data fourierOpacityPassData;
-	fourierOpacityPassData.m_passRecordContext = &passRecordContext;
-	fourierOpacityPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
-	fourierOpacityPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
-	fourierOpacityPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
-	fourierOpacityPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
+	if (!lightData.m_fomAtlasDrawInfos.empty())
+	{
+		FourierOpacityPass::Data fourierOpacityPassData;
+		fourierOpacityPassData.m_passRecordContext = &passRecordContext;
+		fourierOpacityPassData.m_drawCount = static_cast<uint32_t>(lightData.m_fomAtlasDrawInfos.size());
+		fourierOpacityPassData.m_drawInfo = lightData.m_fomAtlasDrawInfos.data();
+		fourierOpacityPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
+		fourierOpacityPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
+		fourierOpacityPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
+		fourierOpacityPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
 
-	FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
+		FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
+	}
+	
 
 
 	// volumetric fog

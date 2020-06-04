@@ -292,7 +292,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						}
 						
 						// trace extinction volume
-						if (shadow > 0.0 && att > 0.0 && g_Constants.volumetricShadow)
+						if (shadow > 0.0 && att > 0.0 && g_Constants.volumetricShadow && lightShadowed.fomShadowAtlasParams.w != 0.0)
 						{
 							if (g_Constants.volumetricShadow == 2)
 							{

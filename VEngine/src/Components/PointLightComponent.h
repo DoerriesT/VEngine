@@ -9,5 +9,6 @@ namespace VEngine
 		float m_luminousPower;
 		float m_radius;
 		bool m_shadows;
+		bool m_volumetricShadows; // requires m_shadows to be true
 	};
 }

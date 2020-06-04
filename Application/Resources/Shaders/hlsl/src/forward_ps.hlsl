@@ -248,7 +248,7 @@ PSOutput main(PSInput input)
 				
 				float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 				
-				if (shadow > 0.0 && g_Constants.volumetricShadow)
+				if (shadow > 0.0 && g_Constants.volumetricShadow && lightShadowed.fomShadowAtlasParams.w != 0.0)
 				{
 					if (g_Constants.volumetricShadow == 2)
 					{

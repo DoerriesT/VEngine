@@ -48,7 +48,9 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 void VEngine::RenderSystem::update(float timeDelta)
 {
 	static QuadTreeAllocator quadTreeAllocator(8192, 256, 1024);
+	static QuadTreeAllocator fomQuadTreeAllocator(2048, 128, 256);
 	quadTreeAllocator.freeAll();
+	fomQuadTreeAllocator.freeAll();
 
 	m_transformData.clear();
 	m_subMeshInstanceData.clear();
@@ -363,9 +365,26 @@ void VEngine::RenderSystem::update(float timeDelta)
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = pointLightComponent.m_radius;
-							punctualLightShadowed.m_fomShadowAtlasParams.x = 126.0f / 128.0f;
-							punctualLightShadowed.m_fomShadowAtlasParams.y = 1.0f / 128.0f * punctualLightShadowed.m_fomShadowAtlasParams.x;
-							punctualLightShadowed.m_fomShadowAtlasParams.z = 1.0f / 128.0f * punctualLightShadowed.m_fomShadowAtlasParams.x;
+
+							// volumetric shadows
+							if (pointLightComponent.m_volumetricShadows)
+							{
+								FOMAtlasDrawInfo fomAtlasDrawInfo{};
+								if (fomQuadTreeAllocator.alloc(256, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
+								{
+									punctualLightShadowed.m_fomShadowAtlasParams.x = (fomAtlasDrawInfo.m_size - 2) / 2048.0f;
+									punctualLightShadowed.m_fomShadowAtlasParams.y = (fomAtlasDrawInfo.m_offsetX + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.z = (fomAtlasDrawInfo.m_offsetY + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
+
+									fomAtlasDrawInfo.m_lightPosition = transformationComponent.m_position;
+									fomAtlasDrawInfo.m_lightRadius = pointLightComponent.m_radius;
+									fomAtlasDrawInfo.m_pointLight = true;
+
+									m_lightData.m_fomAtlasDrawInfos.push_back(fomAtlasDrawInfo);
+								}
+							}
+							
 
 							for (size_t i = 0; i < 6; ++i)
 							{
@@ -510,14 +529,28 @@ void VEngine::RenderSystem::update(float timeDelta)
 							punctualLightShadowed.m_shadowMatrix1 = { shadowMatrix[0][1], shadowMatrix[1][1], shadowMatrix[2][1], shadowMatrix[3][1] };
 							punctualLightShadowed.m_shadowMatrix2 = { shadowMatrix[0][2], shadowMatrix[1][2], shadowMatrix[2][2], shadowMatrix[3][2] };
 							punctualLightShadowed.m_shadowMatrix3 = { shadowMatrix[0][3], shadowMatrix[1][3], shadowMatrix[2][3], shadowMatrix[3][3] };
-							punctualLightShadowed.m_shadowAtlasParams[0].x = tileSize * (1.0f / 8192.0f);
-							punctualLightShadowed.m_shadowAtlasParams[0].y = tileOffsetX / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
-							punctualLightShadowed.m_shadowAtlasParams[0].z = tileOffsetY / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
-							punctualLightShadowed.m_fomShadowAtlasParams.x = 1.0f;
-							punctualLightShadowed.m_fomShadowAtlasParams.y = 0.0f;
-							punctualLightShadowed.m_fomShadowAtlasParams.z = 0.0f;
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = spotLightComponent.m_radius;
+
+							// volumetric shadows
+							if (spotLightComponent.m_volumetricShadows)
+							{
+								FOMAtlasDrawInfo fomAtlasDrawInfo{};
+								if (fomQuadTreeAllocator.alloc(128, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
+								{
+									punctualLightShadowed.m_fomShadowAtlasParams.x = fomAtlasDrawInfo.m_size / 2048.0f;
+									punctualLightShadowed.m_fomShadowAtlasParams.y = fomAtlasDrawInfo.m_offsetX / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.z = fomAtlasDrawInfo.m_offsetY / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
+
+									fomAtlasDrawInfo.m_lightPosition = transformationComponent.m_position;
+									fomAtlasDrawInfo.m_lightRadius = spotLightComponent.m_radius;
+									fomAtlasDrawInfo.m_shadowMatrix = shadowMatrix;
+									fomAtlasDrawInfo.m_pointLight = false;
+
+									m_lightData.m_fomAtlasDrawInfos.push_back(fomAtlasDrawInfo);
+								}
+							}
 
 
 							ShadowAtlasDrawInfo atlasDrawInfo{};
@@ -544,6 +577,10 @@ void VEngine::RenderSystem::update(float timeDelta)
 								frustumCullData.push_back(cullData);
 								renderLists.push_back({});
 							}
+
+							punctualLightShadowed.m_shadowAtlasParams[0].x = atlasDrawInfo.m_size * (1.0f / 8192.0f);
+							punctualLightShadowed.m_shadowAtlasParams[0].y = atlasDrawInfo.m_offsetX / atlasDrawInfo.m_size * punctualLightShadowed.m_shadowAtlasParams[0].x;
+							punctualLightShadowed.m_shadowAtlasParams[0].z = atlasDrawInfo.m_offsetY / atlasDrawInfo.m_size * punctualLightShadowed.m_shadowAtlasParams[0].x;
 
 							m_lightData.m_punctualLightsShadowed.push_back(punctualLightShadowed);
 							m_lightData.m_punctualLightShadowedTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(glm::vec3(spotLightComponent.m_radius)));
