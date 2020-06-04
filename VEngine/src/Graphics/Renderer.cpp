@@ -31,7 +31,6 @@
 #include "Pass/VolumetricFogApplyPass.h"
 #include "Pass/GaussianDownsamplePass.h"
 #include "Pass/VolumetricFogExtinctionVolumeDebugPass.h"
-#include "Pass/FourierOpacityMapPass.h"
 #include "Pass/FourierOpacityPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
@@ -690,14 +689,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	{
 		m_gtaoModule->addToGraph(graph, gtaoModuleData);
 	}
-
-
-	//FourierOpacityMapPass::Data fomPassData;
-	//fomPassData.m_passRecordContext = &passRecordContext;
-	//fomPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
-	//fomPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
-	//
-	//FourierOpacityMapPass::addToGraph(graph, fomPassData);
 
 
 	if (!lightData.m_fomAtlasDrawInfos.empty())
