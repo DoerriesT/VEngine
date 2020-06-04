@@ -1,6 +1,7 @@
 #include "bindingHelper.hlsli"
 #include "fourierOpacityVolume.hlsli"
 #include "common.hlsli"
+#include "commonEncoding.hlsli"
 
 RWTexture2D<float4> g_Result0Image : REGISTER_UAV(RESULT_0_IMAGE_BINDING, 0);
 RWTexture2D<float4> g_Result1Image : REGISTER_UAV(RESULT_1_IMAGE_BINDING, 0);
@@ -13,22 +14,67 @@ PUSH_CONSTS(PushConsts, g_PushConsts);
 groupshared float4 s_result0[2];
 groupshared float4 s_result1[2];
 
+void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahedronMap, float4 result0, float4 result1)
+{
+	g_Result0Image[dstCoord] = result0;
+	g_Result1Image[dstCoord] = result1;
+	
+	// replicate border texels in outer "gutter" region to ensure correct linear sampling
+	if (octahedronMap)
+	{
+		uint2 localCoord = dstCoord - localOffset;
+		const bool4 border = bool4(localCoord.x == 0, localCoord.y == 0, localCoord.x == (resolution - 1), localCoord.y == (resolution - 1));
+		
+		const int2 offset = int2(localCoord) * -2 + (int(resolution) - 1);
+		
+		// horizontal border
+		if (border.x || border.z)
+		{
+			const int2 horizontalBorderCoord = border.x ? (dstCoord + int2(-1, offset.y)) : (dstCoord + int2(1, offset.y));
+			g_Result0Image[horizontalBorderCoord] = result0;
+			g_Result1Image[horizontalBorderCoord] = result1;
+		}
+		
+		// vertical border
+		if (border.y || border.w)
+		{
+			const int2 verticalBorderCoord = border.y ? (dstCoord + int2(offset.x, -1)) : dstCoord + int2(offset.x, 1);
+			g_Result0Image[verticalBorderCoord] = result0;
+			g_Result1Image[verticalBorderCoord] = result1;
+		}
+		
+		// corner
+		if ((border.x && border.y) || (border.x && border.w) || (border.z && border.y) || (border.z && border.w))
+		{
+			const int2 cornerCoord = dstCoord + int2(border.xy ? int2(resolution, resolution) : int2(-resolution, -resolution));
+			g_Result0Image[cornerCoord] = result0;
+			g_Result1Image[cornerCoord] = result1;
+		}
+	}
+}
+
 [numthreads(64, 1, 1)]
 void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
 {
-	const uint2 pixelCoord = groupID.xy;
-	const uint depthCoord = groupThreadIndex;
 	const LightInfo lightInfo = g_LightInfo[g_PushConsts.lightIndex];
+	uint2 dstCoord = groupID.xy + uint2(lightInfo.offsetX, lightInfo.offsetY);
+	const float2 texCoord = (groupID.xy + 0.5) * lightInfo.texelSize;
+	const uint depthCoord = groupThreadIndex;
 	
 	// compute ray from light source passing through the current pixel
-	const float2 texCoord = (groupID.xy + 0.5) * g_PushConsts.texelSize;
-	const float4 farPlaneWorldSpacePos = mul(lightInfo.invViewProjection, float4(texCoord * 2.0 - 1.0, 1.0, 1.0));
-	float3 ray = (farPlaneWorldSpacePos.xyz / farPlaneWorldSpacePos.w) - lightInfo.position;
-	const float rayLen = length(ray);
-	ray *= rcp(rayLen);
+	float3 ray = 0.0;
+	if (lightInfo.isPointLight)
+	{
+		ray = -decodeOctahedron(texCoord * 2.0 - 1.0);
+	}
+	else
+	{
+		const float4 farPlaneWorldSpacePos = mul(lightInfo.invViewProjection, float4(texCoord * 2.0 - 1.0, 1.0, 1.0));
+		ray = normalize((farPlaneWorldSpacePos.xyz / farPlaneWorldSpacePos.w) - lightInfo.position);
+	}
 	
 	// ray segment of current thread
-	const float segmentLength = rayLen / 64.0;
+	const float segmentLength = lightInfo.radius / 64.0;
 	const float rayStart = segmentLength * depthCoord;
 	const float rayEnd = segmentLength * (depthCoord + 1);
 	
@@ -101,8 +147,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	//		r0 += s_result0[i];
 	//		r1 += s_result1[i];
 	//	}
-	//	g_Result0Image[pixelCoord] = r0;
-	//	g_Result1Image[pixelCoord] = r1;
+	//	writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, r0, r1);
 	//}
 	
 	// sum all results
@@ -116,8 +161,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	{
 		if (WaveIsFirstLane())
 		{
-			g_Result0Image[pixelCoord] = result0;
-			g_Result1Image[pixelCoord] = result1;
+			writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
 		}
 		return;
 	}
@@ -134,7 +178,8 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	
 	if (groupThreadIndex == 0)
 	{
-		g_Result0Image[pixelCoord] = s_result0[0] + s_result0[1];
-		g_Result1Image[pixelCoord] = s_result1[0] + s_result1[1];
+		result0 = s_result0[0] + s_result0[1];
+		result1 = s_result1[0] + s_result1[1];
+		writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
 	}
 }

@@ -59,11 +59,20 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 	g_shadowMatrix = shadowMatrix;
 
+	bool pointLight = true;
+	uint32_t resolution = pointLight ? 128 - 2 : 128;
+
 	LightInfo lightInfo;
 	lightInfo.invViewProjection = glm::inverse(shadowMatrix);
 	lightInfo.position = g_lightPos;
 	lightInfo.depthScale = 1.0f / (g_lightRadius - 0.01f);
 	lightInfo.depthBias = lightInfo.depthScale * -0.01f;
+	lightInfo.radius = g_lightRadius;
+	lightInfo.texelSize = 1.0f / resolution;
+	lightInfo.resolution = resolution;
+	lightInfo.offsetX = pointLight ? 1 : 0;
+	lightInfo.offsetY = pointLight ? 1 : 0;
+	lightInfo.isPointLight = pointLight;
 
 	memcpy(lightDataPtr, &lightInfo, sizeof(lightInfo));
 
@@ -109,10 +118,9 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 			pushConsts.lightIndex = 0;
 			pushConsts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 			pushConsts.localVolumeCount = commonData->m_localParticipatingMediaCount;
-			pushConsts.texelSize = 1.0f / 128.0f;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-			cmdList->dispatch(128, 128, 1);
+			cmdList->dispatch(resolution, resolution, 1);
 		}, true);
 }

@@ -363,6 +363,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = pointLightComponent.m_radius;
+							punctualLightShadowed.m_fomShadowAtlasParams.x = 126.0f / 128.0f;
+							punctualLightShadowed.m_fomShadowAtlasParams.y = 1.0f / 128.0f * punctualLightShadowed.m_fomShadowAtlasParams.x;
+							punctualLightShadowed.m_fomShadowAtlasParams.z = 1.0f / 128.0f * punctualLightShadowed.m_fomShadowAtlasParams.x;
 
 							for (size_t i = 0; i < 6; ++i)
 							{
@@ -510,6 +513,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 							punctualLightShadowed.m_shadowAtlasParams[0].x = tileSize * (1.0f / 8192.0f);
 							punctualLightShadowed.m_shadowAtlasParams[0].y = tileOffsetX / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
 							punctualLightShadowed.m_shadowAtlasParams[0].z = tileOffsetY / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
+							punctualLightShadowed.m_fomShadowAtlasParams.x = 1.0f;
+							punctualLightShadowed.m_fomShadowAtlasParams.y = 0.0f;
+							punctualLightShadowed.m_fomShadowAtlasParams.z = 0.0f;
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = spotLightComponent.m_radius;
 

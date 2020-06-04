@@ -213,13 +213,14 @@ PSOutput main(PSInput input)
 				mask ^= (1 << bitIndex);
 				
 				PunctualLightShadowed lightShadowed = g_PunctualLightsShadowed[index];
+				bool isSpotLight = lightShadowed.light.angleScale != -1.0;
 				
 				// evaluate shadow
 				float4 shadowPosWS = float4(worldSpacePos + normalWS * 0.05, 1.0);
 				float4 shadowPos;
 				
 				// spot light
-				if (lightShadowed.light.angleScale != -1.0)
+				if (isSpotLight)
 				{
 					shadowPos.x = dot(lightShadowed.shadowMatrix0, shadowPosWS);
 					shadowPos.y = dot(lightShadowed.shadowMatrix1, shadowPosWS);
@@ -255,8 +256,23 @@ PSOutput main(PSInput input)
 					}
 					else
 					{
-						float4 fomPos = mul(g_Constants.shadowMatrix, float4(worldSpacePos, 1.0));
-						float2 uv = fomPos.xy / fomPos.w * 0.5 + 0.5;
+						float2 uv;
+						// spot light
+						if (isSpotLight)
+						{
+							uv.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
+							uv.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
+							uv /= dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
+						}
+						// point light
+						else
+						{
+							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos));
+						}
+						
+						uv = uv * 0.5 + 0.5;
+						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
+						
 						float4 fom0 = g_fom0Image.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0);
 						float4 fom1 = g_fom1Image.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0);
 						
@@ -275,26 +291,7 @@ PSOutput main(PSInput input)
 						
 						lnTransmittance += fom1.b / (2.0 * PI * 3.0) * sin(2.0 * PI * 3.0 * depth);
 						lnTransmittance += fom1.a / (2.0 * PI * 3.0) * (1.0 - cos(2.0 * PI * 3.0 * depth));
-						//// DC component
-						//float lnTransmittance = fom0.g * depth;
-						//
-						//// Remaining outputs require sin/cos
-						//float2 cs1;
-						//sincos(PI * 2.0 * depth, cs1.y, cs1.x);
-						//
-						//lnTransmittance += (1-cs1.x) * fom0.a;
-						//lnTransmittance += cs1.y * fom0.b;
-						//
-						//float2 csn;
-						//csn = float2(cs1.x*cs1.x-cs1.y*cs1.y, 2.f*cs1.y*cs1.x);
-						//lnTransmittance += (1-csn.x) * fom1.g;
-						//lnTransmittance += csn.y * fom1.r;
-						//
-						//csn = float2(csn.x*cs1.x-csn.y*cs1.y, csn.y*cs1.x+csn.x*cs1.y);
-						//lnTransmittance += (1-csn.x) * fom1.a;
-						//lnTransmittance += csn.y * fom1.b;
-						//
-						//
+
 						float shadowFactor = saturate(exp(-lnTransmittance));
 						
 						shadow *= shadowFactor;

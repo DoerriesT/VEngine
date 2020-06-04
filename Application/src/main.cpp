@@ -213,8 +213,8 @@ public:
 		//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
 		//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
 		entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-		entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
-		//entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true);
+		//entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
+		entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true);
 		entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
 
 		//for (size_t i = 0; i < 64; ++i)
@@ -339,7 +339,8 @@ public:
 		{
 			using namespace VEngine;
 			TransformationComponent &spotTransC = entityRegistry.get<TransformationComponent>(m_spotLightEntity);
-			SpotLightComponent &spotC = entityRegistry.get<SpotLightComponent>(m_spotLightEntity);
+			//SpotLightComponent &spotC = entityRegistry.get<SpotLightComponent>(m_spotLightEntity);
+			PointLightComponent &pointC = entityRegistry.get<PointLightComponent>(m_spotLightEntity);
 
 			TransformationComponent &volumeTransC = entityRegistry.get<TransformationComponent>(g_localFogEntity);
 			BoundingBoxComponent &volumeBBoxC = entityRegistry.get<BoundingBoxComponent>(g_localFogEntity);
@@ -347,8 +348,8 @@ public:
 
 			g_lightPos = spotTransC.m_position;
 			g_lightDir = glm::normalize(spotTransC.m_orientation * glm::vec3(0.0f, 0.0f, -1.0f));
-			g_lightAngle = spotC.m_outerAngle;
-			g_lightRadius = spotC.m_radius;
+			//g_lightAngle = spotC.m_outerAngle;
+			g_lightRadius = pointC.m_radius;
 			g_volumePos = volumeTransC.m_position;
 			g_volumeRot = volumeTransC.m_orientation;
 			g_volumeSize = volumeBBoxC.m_extent;

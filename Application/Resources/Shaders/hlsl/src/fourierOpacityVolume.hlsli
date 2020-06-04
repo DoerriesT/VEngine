@@ -10,9 +10,13 @@ struct LightInfo
 	float3 position;
 	float depthScale;
 	float depthBias;
-	float pad0;
+	float radius;
+	float texelSize;
+	uint resolution;
+	uint offsetX;
+	uint offsetY;
+	uint isPointLight;
 	float pad1;
-	float pad2;
 };
 
 
@@ -21,5 +25,4 @@ struct PushConsts
 	uint lightIndex;
 	uint globalMediaCount;
 	uint localVolumeCount;
-	float texelSize;
 };
