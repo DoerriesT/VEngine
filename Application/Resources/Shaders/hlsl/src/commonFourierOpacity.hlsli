@@ -50,7 +50,7 @@ float fourierOpacityGetLogTransmittance(float depth, float4 fom0, float4 fom1)
 	const float sine3 = sine2 * cosine + cosine2 * sine;
 	const float cosine3 = cosine2 * cosine - sine2 * sine;
 	lnTransmittance += fom1.b / (2.0 * PI * 3.0) * sine3;
-	lnTransmittance += fom1.a / (2.0 * PI * 3.0) * cosine3;
+	lnTransmittance += fom1.a / (2.0 * PI * 3.0) * (1.0 - cosine3);
 	
 	return lnTransmittance;
 }
@@ -58,7 +58,7 @@ float fourierOpacityGetLogTransmittance(float depth, float4 fom0, float4 fom1)
 float fourierOpacityGetTransmittance(float depth, float4 fom0, float4 fom1)
 {
 	float lnTransmittance = fourierOpacityGetLogTransmittance(depth, fom0, fom1);
-	
+
 	return saturate(exp(-lnTransmittance));
 }
 
