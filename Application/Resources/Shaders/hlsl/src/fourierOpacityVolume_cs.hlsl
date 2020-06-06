@@ -2,6 +2,7 @@
 #include "fourierOpacityVolume.hlsli"
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
+#include "commonFourierOpacity.hlsli"
 
 RWTexture2D<float4> g_Result0Image : REGISTER_UAV(RESULT_0_IMAGE_BINDING, 0);
 RWTexture2D<float4> g_Result1Image : REGISTER_UAV(RESULT_1_IMAGE_BINDING, 0);
@@ -11,8 +12,8 @@ StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MED
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
-groupshared float4 s_result0[2];
-groupshared float4 s_result1[2];
+groupshared float4 s_result0[64];
+groupshared float4 s_result1[64];
 
 void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahedronMap, float4 result0, float4 result1)
 {
@@ -54,12 +55,28 @@ void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahe
 }
 
 [numthreads(64, 1, 1)]
-void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex)
+void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex, uint3 groupThreadID : SV_GroupThreadID)
 {
+	uint rayID = groupThreadID.x / 4;
+	uint3 localCoord;
+	localCoord.y = groupThreadID.x / 16;
+	localCoord.z = groupThreadID.x - rayID * 4;
+	localCoord.x = rayID - localCoord.y * 4;
+	
+	uint2 globalCoord = groupID.xy * 4 + localCoord.xy;
+	
+	
 	const LightInfo lightInfo = g_LightInfo[g_PushConsts.lightIndex];
-	uint2 dstCoord = groupID.xy + uint2(lightInfo.offsetX, lightInfo.offsetY);
-	const float2 texCoord = (groupID.xy + 0.5) * lightInfo.texelSize;
-	const uint depthCoord = groupThreadIndex;
+	if (globalCoord.x >= lightInfo.resolution || globalCoord.y >= lightInfo.resolution)
+	{
+		s_result0[groupThreadID.x] = 0.0;
+		s_result1[groupThreadID.x] = 0.0;
+		return;
+	}
+	
+	uint2 dstCoord = globalCoord.xy + uint2(lightInfo.offsetX, lightInfo.offsetY);
+	const float2 texCoord = (globalCoord.xy + 0.5) * lightInfo.texelSize;
+	const uint depthCoord = localCoord.z;
 	
 	// compute ray from light source passing through the current pixel
 	float3 ray = 0.0;
@@ -74,8 +91,8 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	}
 	
 	// ray segment of current thread
-	const float segmentLength = lightInfo.radius / 64.0;
-	const float rayStart = segmentLength * depthCoord;
+	const float segmentLength = lightInfo.radius / 4.0;
+	float rayStart = segmentLength * depthCoord;
 	const float rayEnd = segmentLength * (depthCoord + 1);
 	const float invRadius = 1.0 / lightInfo.radius;
 	
@@ -85,7 +102,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	// march ray
 	//const float stepSize = 0.1;
 	//const int stepCount = (int)ceil((rayEnd - rayStart) / stepSize);
-	const int stepCount = clamp(ceil(segmentLength / 0.05), 1, 10);
+	const int stepCount = clamp(ceil(segmentLength / 0.05), 1, 64);
 	const float stepSize = (rayEnd - rayStart) / stepCount;
 	
 	//float2x2 ditherMatrix = float2x2(0.25, 0.75, 1.0, 0.5);
@@ -95,11 +112,13 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 									13 / 16.0, 5 / 16.0, 15 / 16.0, 7 / 16.0,
 									4 / 16.0, 12 / 16.0, 2 / 16.0, 10 / 16.0,
 									16 / 16.0, 8 / 16.0, 14 / 16.0, 6 / 16.0);
-	float dither = ditherMatrix[groupID.y % 4][groupID.x % 4] * stepSize;
+	float dither = ditherMatrix[globalCoord.y % 4][globalCoord.x % 4] * stepSize;
+	
+	rayStart += dither + stepSize * 0.5;
 	
 	for (int i = 0; i < stepCount; ++i)
 	{
-		float t = i * stepSize + dither + rayStart;
+		float t = i * stepSize + rayStart;
 		float3 rayPos = lightInfo.position + ray * t;
 		
 		float extinction = 0.0;
@@ -130,67 +149,24 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 		
 		float transmittance = exp(-extinction * stepSize);
 		float depth = t * invRadius;
-		
-		result0.r += -2.0 * log(transmittance) * cos(2.0 * PI * 0.0 * depth);
-		result0.g += -2.0 * log(transmittance) * sin(2.0 * PI * 0.0 * depth);
-		
-		result0.b += -2.0 * log(transmittance) * cos(2.0 * PI * 1.0 * depth);
-		result0.a += -2.0 * log(transmittance) * sin(2.0 * PI * 1.0 * depth);
-		
-		result1.r += -2.0 * log(transmittance) * cos(2.0 * PI * 2.0 * depth);
-		result1.g += -2.0 * log(transmittance) * sin(2.0 * PI * 2.0 * depth);
-		
-		result1.b += -2.0 * log(transmittance) * cos(2.0 * PI * 3.0 * depth);
-		result1.a += -2.0 * log(transmittance) * sin(2.0 * PI * 3.0 * depth);
+		fourierOpacityAccumulate(depth, transmittance, result0, result1);
 	}
 	
-	//s_result0[groupThreadIndex] = result0;
-	//s_result1[groupThreadIndex] = result1;
-	//
-	//GroupMemoryBarrierWithGroupSync();
-	//
-	//if (groupThreadIndex == 0)
-	//{
-	//	float4 r0 = 0.0;
-	//	float4 r1 = 0.0;
-	//	for (int i = 0; i < 64; ++i)
-	//	{
-	//		r0 += s_result0[i];
-	//		r1 += s_result1[i];
-	//	}
-	//	writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, r0, r1);
-	//}
-	
-	// sum all results
-	result0 = WaveActiveSum(result0);
-	result1 = WaveActiveSum(result1);
-	
-	const uint waveSize = WaveGetLaneCount();
-	
-	// entire group fits into a single wave: no need for LDS; wave intrinsics already added every result
-	if (waveSize >= 64)
+	if (localCoord.z != 0)
 	{
-		if (WaveIsFirstLane())
-		{
-			writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
-		}
-		return;
-	}
-	
-	// add final result via LDS
-	if (WaveIsFirstLane() && waveSize < 64)
-	{
-		int waveIndex = groupThreadIndex / waveSize;
-		s_result0[waveIndex] = result0;
-		s_result1[waveIndex] = result1;
+		s_result0[groupThreadID.x] = result0;
+		s_result1[groupThreadID.x] = result1;
 	}
 	
 	GroupMemoryBarrierWithGroupSync();
 	
-	if (groupThreadIndex == 0)
+	if (localCoord.z == 0)
 	{
-		result0 = s_result0[0] + s_result0[1];
-		result1 = s_result1[0] + s_result1[1];
+		for (int i = 1; i < 4; ++i)
+		{
+			result0 += s_result0[groupThreadID.x + i];
+			result1 += s_result1[groupThreadID.x + i];
+		}
 		writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
 	}
 }

@@ -6,6 +6,7 @@
 #include "srgb.hlsli"
 #include "commonFilter.hlsli"
 #include "commonEncoding.hlsli"
+#include "commonFourierOpacity.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -278,21 +279,8 @@ PSOutput main(PSInput input)
 						
 						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
-					
-						float lnTransmittance = fom0.r * 0.5 * depth;
-					
-						lnTransmittance += fom0.b / (2.0 * PI * 1.0) * sin(2.0 * PI * 1.0 * depth);
-						lnTransmittance += fom0.a / (2.0 * PI * 1.0) * (1.0 - cos(2.0 * PI * 1.0 * depth));
-					
-						lnTransmittance += fom1.r / (2.0 * PI * 2.0) * sin(2.0 * PI * 2.0 * depth);
-						lnTransmittance += fom1.g / (2.0 * PI * 2.0) * (1.0 - cos(2.0 * PI * 2.0 * depth));
 						
-						lnTransmittance += fom1.b / (2.0 * PI * 3.0) * sin(2.0 * PI * 3.0 * depth);
-						lnTransmittance += fom1.a / (2.0 * PI * 3.0) * (1.0 - cos(2.0 * PI * 3.0 * depth));
-
-						float shadowFactor = saturate(exp(-lnTransmittance));
-						
-						shadow *= shadowFactor;
+						shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
 					}
 				}
 				

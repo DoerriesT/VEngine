@@ -120,7 +120,7 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 					const auto &info = data.m_drawInfo[i];
 					uint32_t res = info.m_pointLight ? (info.m_size - 2) : info.m_size;
-					cmdList->dispatch(res, res, 1);
+					cmdList->dispatch((res + 3) / 4, (res + 3) / 4, 1);
 				}
 			}
 			
