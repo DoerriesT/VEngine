@@ -4,8 +4,7 @@
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
 
-RWTexture2D<float4> g_Result0Image : REGISTER_UAV(RESULT_0_IMAGE_BINDING, 0);
-RWTexture2D<float4> g_Result1Image : REGISTER_UAV(RESULT_1_IMAGE_BINDING, 0);
+RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(LIGHT_INFO_BINDING, 0);
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
@@ -17,8 +16,8 @@ groupshared float4 s_result1[64];
 
 void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahedronMap, float4 result0, float4 result1)
 {
-	g_Result0Image[dstCoord] = result0;
-	g_Result1Image[dstCoord] = result1;
+	g_ResultImage[uint3(dstCoord, 0)] = result0;
+	g_ResultImage[uint3(dstCoord, 1)] = result1;
 	
 	// replicate border texels in outer "gutter" region to ensure correct linear sampling
 	if (octahedronMap)
@@ -32,24 +31,24 @@ void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahe
 		if (border.x || border.z)
 		{
 			const int2 horizontalBorderCoord = border.x ? (dstCoord + int2(-1, offset.y)) : (dstCoord + int2(1, offset.y));
-			g_Result0Image[horizontalBorderCoord] = result0;
-			g_Result1Image[horizontalBorderCoord] = result1;
+			g_ResultImage[uint3(horizontalBorderCoord, 0)] = result0;
+			g_ResultImage[uint3(horizontalBorderCoord, 1)] = result1;
 		}
 		
 		// vertical border
 		if (border.y || border.w)
 		{
 			const int2 verticalBorderCoord = border.y ? (dstCoord + int2(offset.x, -1)) : dstCoord + int2(offset.x, 1);
-			g_Result0Image[verticalBorderCoord] = result0;
-			g_Result1Image[verticalBorderCoord] = result1;
+			g_ResultImage[uint3(verticalBorderCoord, 0)] = result0;
+			g_ResultImage[uint3(verticalBorderCoord, 1)] = result1;
 		}
 		
 		// corner
 		if ((border.x && border.y) || (border.x && border.w) || (border.z && border.y) || (border.z && border.w))
 		{
 			const int2 cornerCoord = dstCoord + int2(border.xy ? int2(resolution, resolution) : int2(-resolution, -resolution));
-			g_Result0Image[cornerCoord] = result0;
-			g_Result1Image[cornerCoord] = result1;
+			g_ResultImage[uint3(cornerCoord, 0)] = result0;
+			g_ResultImage[uint3(cornerCoord, 1)] = result1;
 		}
 	}
 }

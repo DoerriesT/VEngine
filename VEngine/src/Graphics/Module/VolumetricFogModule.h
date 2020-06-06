@@ -19,8 +19,7 @@ namespace VEngine
 			const CommonRenderData *m_commonData;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
-			rg::ImageViewHandle m_fom0ImageViewHandle;
-			rg::ImageViewHandle m_fom1ImageViewHandle;
+			rg::ImageViewHandle m_fomImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
 			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;

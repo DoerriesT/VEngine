@@ -198,8 +198,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
 	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
 	volumetricFogScatterPassData.m_extinctionVolumeImageViewHandle = m_extinctionVolumeImageViewHandle;
-	volumetricFogScatterPassData.m_fom0ImageViewHandle = data.m_fom0ImageViewHandle;
-	volumetricFogScatterPassData.m_fom1ImageViewHandle = data.m_fom1ImageViewHandle;
+	volumetricFogScatterPassData.m_fomImageViewHandle = data.m_fomImageViewHandle;
 
 	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 

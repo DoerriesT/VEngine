@@ -22,8 +22,7 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CO
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, EXTINCTION_IMAGE_SET);
-Texture2D<float4> g_fom0Image : REGISTER_SRV(FOM_0_IMAGE_BINDING, 0);
-Texture2D<float4> g_fom1Image : REGISTER_SRV(FOM_1_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -318,8 +317,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 								uv = uv * 0.5 + 0.5;
 								uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 								
-								float4 fom0 = g_fom0Image.SampleLevel(g_LinearSampler, uv, 0.0);
-								float4 fom1 = g_fom1Image.SampleLevel(g_LinearSampler, uv, 0.0);
+								float4 fom0 = g_fomImage.SampleLevel(g_LinearSampler, float3(uv, 0.0), 0.0);
+								float4 fom1 = g_fomImage.SampleLevel(g_LinearSampler, float3(uv, 1.0), 0.0);
 								
 								float depth = distance(worldSpacePos[i], lightShadowed.positionWS) * rcp(lightShadowed.radius);
 								//depth = saturate(depth);

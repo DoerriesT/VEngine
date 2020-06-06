@@ -15,8 +15,7 @@ namespace VEngine
 			const FOMAtlasDrawInfo *m_drawInfo;
 			gal::DescriptorBufferInfo m_localMediaBufferInfo;
 			gal::DescriptorBufferInfo m_globalMediaBufferInfo;
-			rg::ImageViewHandle m_fomImageViewHandle0;
-			rg::ImageViewHandle m_fomImageViewHandle1;
+			rg::ImageViewHandle m_fomImageViewHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

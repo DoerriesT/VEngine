@@ -278,8 +278,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		deferredShadowsImageViewHandle = graph.createImageView({ desc.m_name, deferredShadowsImageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
 	}
 
-	rg::ImageViewHandle fom0ImageViewHandle;
-	rg::ImageViewHandle fom1ImageViewHandle;
+	rg::ImageViewHandle fomImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
 		desc.m_name = "FOM Image";
@@ -287,13 +286,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = 2048;
 		desc.m_height = 2048;
-		desc.m_layers = 1;
+		desc.m_layers = 2;
 		desc.m_levels = 1;
 		desc.m_samples = SampleCount::_1;
 		desc.m_format = Format::R16G16B16A16_SFLOAT;
 
-		fom0ImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-		fom1ImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+		fomImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 2 }, ImageViewType::_2D_ARRAY });
 	}
 
 	rg::ImageViewHandle finalImageViewHandle = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
@@ -699,8 +697,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		fourierOpacityPassData.m_drawInfo = lightData.m_fomAtlasDrawInfos.data();
 		fourierOpacityPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
 		fourierOpacityPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
-		fourierOpacityPassData.m_fomImageViewHandle0 = fom0ImageViewHandle;
-		fourierOpacityPassData.m_fomImageViewHandle1 = fom1ImageViewHandle;
+		fourierOpacityPassData.m_fomImageViewHandle = fomImageViewHandle;
 
 		FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
 	}
@@ -714,8 +711,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_commonData = &commonData;
 	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
 	volumetricFogModuleData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
-	volumetricFogModuleData.m_fom0ImageViewHandle = fom0ImageViewHandle;
-	volumetricFogModuleData.m_fom1ImageViewHandle = fom1ImageViewHandle;
+	volumetricFogModuleData.m_fomImageViewHandle = fomImageViewHandle;
 	volumetricFogModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
@@ -767,8 +763,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_atmosphereScatteringImageViewHandle = m_atmosphericScatteringModule->getScatteringImageViewHandle();
 	forwardPassData.m_atmosphereTransmittanceImageViewHandle = m_atmosphericScatteringModule->getTransmittanceImageViewHandle();
 	forwardPassData.m_extinctionVolumeImageViewHandle = m_volumetricFogModule->getExtinctionVolumeImageViewHandle();
-	forwardPassData.m_fom0ImageViewHandle = fom0ImageViewHandle;
-	forwardPassData.m_fom1ImageViewHandle = fom1ImageViewHandle;
+	forwardPassData.m_fomImageViewHandle = fomImageViewHandle;
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
