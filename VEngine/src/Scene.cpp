@@ -19,11 +19,11 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 	{
 		std::default_random_engine e;
 		std::uniform_real_distribution<float> c(0.0f, 1.0f);
-		auto getTextureHandle = [&renderSystem, this](const std::string &filepath) -> uint32_t
+		auto getTextureHandle = [&renderSystem, this](const std::string &filepath) -> Texture2DHandle
 		{
 			if (filepath.empty())
 			{
-				return 0;
+				return { 0 };
 			}
 
 			auto it = m_textures.find(filepath);
@@ -33,7 +33,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 			}
 			else
 			{
-				uint32_t handle = renderSystem.createTexture(filepath.c_str());
+				Texture2DHandle handle = renderSystem.createTexture(filepath.c_str());
 				m_textures[filepath] = handle;
 				return handle;
 			}

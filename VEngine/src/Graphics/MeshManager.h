@@ -28,7 +28,7 @@ namespace VEngine
 		gal::Buffer *m_indexBuffer;
 		gal::Buffer *m_subMeshInfoBuffer;
 		gal::Buffer *m_subMeshBoundingBoxesBuffer;
-		SubMeshHandle *m_freeHandles;
+		uint32_t *m_freeHandles;
 		uint32_t m_freeHandleCount;
 		uint32_t m_vertexCount;
 		uint32_t m_indexCount;

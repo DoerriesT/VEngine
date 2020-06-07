@@ -18,7 +18,7 @@ VEngine::MeshManager::MeshManager(GraphicsDevice *graphicsDevice, Buffer *stagin
 	m_indexBuffer(indexBuffer),
 	m_subMeshInfoBuffer(subMeshInfoBuffer),
 	m_subMeshBoundingBoxesBuffer(subMeshBoundingBoxesBuffer),
-	m_freeHandles(new SubMeshHandle[RendererConsts::MAX_SUB_MESHES]),
+	m_freeHandles(new uint32_t[RendererConsts::MAX_SUB_MESHES]),
 	m_freeHandleCount(RendererConsts::MAX_SUB_MESHES),
 	m_vertexCount(),
 	m_indexCount(),
@@ -29,7 +29,7 @@ VEngine::MeshManager::MeshManager(GraphicsDevice *graphicsDevice, Buffer *stagin
 	m_graphicsDevice->createCommandListPool(m_graphicsDevice->getGraphicsQueue(), &m_cmdListPool);
 	m_cmdListPool->allocate(1, &m_cmdList);
 
-	for (SubMeshHandle i = 0; i < RendererConsts::MAX_SUB_MESHES; ++i)
+	for (uint32_t i = 0; i < RendererConsts::MAX_SUB_MESHES; ++i)
 	{
 		m_freeHandles[i] = RendererConsts::MAX_SUB_MESHES - i - 1;
 	}
@@ -64,7 +64,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 			}
 
 			--m_freeHandleCount;
-			handles[i] = m_freeHandles[m_freeHandleCount];
+			handles[i] = { m_freeHandles[m_freeHandleCount] };
 		}
 
 		SubMeshInfo subMeshInfo;
@@ -73,7 +73,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 		{
 			const uint32_t vertexCount = subMeshes[i].m_vertexCount;
 			uint32_t vertexOffset;
-			if (!m_vertexDataAllocator.alloc(vertexCount, 1, vertexOffset, m_vertexSpans[handles[i]]))
+			if (!m_vertexDataAllocator.alloc(vertexCount, 1, vertexOffset, m_vertexSpans[handles[i].m_handle]))
 			{
 				Utility::fatalExit("Failed to allocate space in vertex buffer!", EXIT_FAILURE);
 			}
@@ -129,7 +129,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 			const uint32_t indexCount = subMeshes[i].m_indexCount;
 
 			uint32_t indexOffset;
-			if (!m_indexDataAllocator.alloc(indexCount * sizeof(uint16_t), 1, indexOffset, m_indexSpans[handles[i]]))
+			if (!m_indexDataAllocator.alloc(indexCount * sizeof(uint16_t), 1, indexOffset, m_indexSpans[handles[i].m_handle]))
 			{
 				Utility::fatalExit("Failed to allocate space in index buffer", EXIT_FAILURE);
 			}
@@ -154,7 +154,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 		{
 			auto &subMeshDataCopy = bufferCopies[i + count * 4];
 			subMeshDataCopy.m_srcOffset = currentStagingBufferOffset;
-			subMeshDataCopy.m_dstOffset = handles[i] * sizeof(SubMeshInfo);
+			subMeshDataCopy.m_dstOffset = handles[i].m_handle * sizeof(SubMeshInfo);
 			subMeshDataCopy.m_size = sizeof(SubMeshInfo);
 
 			// copy to staging buffer
@@ -163,7 +163,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 			currentStagingBufferOffset += subMeshDataCopy.m_size;
 			assert(subMeshDataCopy.m_dstOffset + subMeshDataCopy.m_size <= m_subMeshInfoBuffer->getDescription().m_size);
 
-			m_subMeshInfo[handles[i]] = subMeshInfo;
+			m_subMeshInfo[handles[i].m_handle] = subMeshInfo;
 		}
 
 		// bounding box
@@ -176,7 +176,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 
 			auto &boundingBoxCopy = bufferCopies[i + count * 5];
 			boundingBoxCopy.m_srcOffset = currentStagingBufferOffset;
-			boundingBoxCopy.m_dstOffset = handles[i] * sizeof(boundingBoxData);
+			boundingBoxCopy.m_dstOffset = handles[i].m_handle * sizeof(boundingBoxData);
 			boundingBoxCopy.m_size = sizeof(boundingBoxData);
 
 			// copy to staging buffer
@@ -217,9 +217,9 @@ void VEngine::MeshManager::destroySubMeshes(uint32_t count, SubMeshHandle *handl
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		assert(m_freeHandleCount < RendererConsts::MAX_SUB_MESHES);
-		m_vertexDataAllocator.free(m_vertexSpans[handles[i]]);
-		m_indexDataAllocator.free(m_indexSpans[handles[i]]);
-		m_freeHandles[m_freeHandleCount] = handles[i];
+		m_vertexDataAllocator.free(m_vertexSpans[handles[i].m_handle]);
+		m_indexDataAllocator.free(m_indexSpans[handles[i].m_handle]);
+		m_freeHandles[m_freeHandleCount] = handles[i].m_handle;
 		++m_freeHandleCount;
 	}
 }

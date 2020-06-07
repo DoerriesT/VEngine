@@ -2,6 +2,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <vector>
+#include "Handles.h"
 
 namespace VEngine
 {
@@ -28,13 +29,13 @@ namespace VEngine
 		float m_metallicFactor;
 		float m_roughnessFactor;
 		glm::vec3 m_emissiveFactor;
-		uint32_t m_albedoTexture;
-		uint32_t m_normalTexture;
-		uint32_t m_metallicTexture;
-		uint32_t m_roughnessTexture;
-		uint32_t m_occlusionTexture;
-		uint32_t m_emissiveTexture;
-		uint32_t m_displacementTexture;
+		Texture2DHandle m_albedoTexture;
+		Texture2DHandle m_normalTexture;
+		Texture2DHandle m_metallicTexture;
+		Texture2DHandle m_roughnessTexture;
+		Texture2DHandle m_occlusionTexture;
+		Texture2DHandle m_emissiveTexture;
+		Texture2DHandle m_displacementTexture;
 	};
 
 	struct SubMesh

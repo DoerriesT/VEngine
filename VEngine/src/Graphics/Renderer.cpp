@@ -78,8 +78,8 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_meshManager = std::make_unique<MeshManager>(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
 
 
-	m_fontAtlasTextureIndex = m_textureLoader->load("Resources/Textures/fontConsolas.dds");
-	m_blueNoiseTextureIndex = m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds");
+	m_fontAtlasTextureIndex = m_textureLoader->loadTexture2D("Resources/Textures/fontConsolas.dds");
+	m_blueNoiseTextureIndex = m_textureLoader->loadTexture2D("Resources/Textures/blue_noise_LDR_RGBA_0.dds");
 
 	updateTextureData();
 
@@ -784,7 +784,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	SSRModule::Data ssrModuleData;
 	ssrModuleData.m_passRecordContext = &passRecordContext;
 	ssrModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
-	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
+	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
 	ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
 	ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
@@ -804,7 +804,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
 	volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
-	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex;
+	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
@@ -968,12 +968,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	++m_framesSinceLastResize;
 }
 
-VEngine::TextureHandle VEngine::Renderer::loadTexture(const char *filepath)
+VEngine::Texture2DHandle VEngine::Renderer::loadTexture(const char *filepath)
 {
-	return m_textureLoader->load(filepath);
+	return m_textureLoader->loadTexture2D(filepath);
 }
 
-void VEngine::Renderer::freeTexture(TextureHandle id)
+void VEngine::Renderer::freeTexture(Texture2DHandle id)
 {
 	m_textureLoader->free(id);
 }
@@ -1005,7 +1005,7 @@ void VEngine::Renderer::destroySubMeshes(uint32_t count, SubMeshHandle *handles)
 
 void VEngine::Renderer::updateTextureData()
 {
-	m_renderResources->updateTextureArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->getViews());
+	m_renderResources->updateTextureArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->get2DViews());
 }
 
 const uint32_t *VEngine::Renderer::getLuminanceHistogram() const

@@ -15,13 +15,13 @@ VEngine::MaterialManager::MaterialManager(GraphicsDevice *graphicsDevice, Buffer
 	m_cmdList(),
 	m_stagingBuffer(stagingBuffer),
 	m_materialBuffer(materialBuffer),
-	m_freeHandles(new MaterialHandle[RendererConsts::MAX_MATERIALS]),
+	m_freeHandles(new uint32_t[RendererConsts::MAX_MATERIALS]),
 	m_freeHandleCount(RendererConsts::MAX_MATERIALS)
 {
 	m_graphicsDevice->createCommandListPool(m_graphicsDevice->getGraphicsQueue(), &m_cmdListPool);
 	m_cmdListPool->allocate(1, &m_cmdList);
 
-	for (MaterialHandle i = 0; i < RendererConsts::MAX_MATERIALS; ++i)
+	for (uint32_t i = 0; i < RendererConsts::MAX_MATERIALS; ++i)
 	{
 		m_freeHandles[i] = RendererConsts::MAX_MATERIALS - i - 1;
 	}
@@ -46,7 +46,7 @@ void VEngine::MaterialManager::createMaterials(uint32_t count, const Material *m
 		}
 
 		--m_freeHandleCount;
-		handles[i] = m_freeHandles[m_freeHandleCount];
+		handles[i] = { m_freeHandles[m_freeHandleCount] };
 	}
 
 	updateMaterials(count, materials, handles);
@@ -87,10 +87,10 @@ void VEngine::MaterialManager::updateMaterials(uint32_t count, const Material *m
 				dstData.m_albedoOpacity = glm::packUnorm4x8(glm::vec4(srcData.m_albedoFactor, 0.5f));
 				dstData.m_emissive = glm::packUnorm4x8(rgbmEncode(srcData.m_emissiveFactor));
 				dstData.m_metalnessRoughness = glm::packUnorm4x8(glm::vec4(srcData.m_metallicFactor, srcData.m_roughnessFactor, 0.0f, 0.0f));
-				dstData.m_albedoNormalTexture = packTextures(srcData.m_albedoTexture, srcData.m_normalTexture);
-				dstData.m_metalnessRoughnessTexture = packTextures(srcData.m_metallicTexture, srcData.m_roughnessTexture);
-				dstData.m_occlusionEmissiveTexture = packTextures(srcData.m_occlusionTexture, srcData.m_emissiveTexture);
-				dstData.m_displacementTexture = packTextures(srcData.m_displacementTexture, 0);
+				dstData.m_albedoNormalTexture = packTextures(srcData.m_albedoTexture.m_handle, srcData.m_normalTexture.m_handle);
+				dstData.m_metalnessRoughnessTexture = packTextures(srcData.m_metallicTexture.m_handle, srcData.m_roughnessTexture.m_handle);
+				dstData.m_occlusionEmissiveTexture = packTextures(srcData.m_occlusionTexture.m_handle, srcData.m_emissiveTexture.m_handle);
+				dstData.m_displacementTexture = packTextures(srcData.m_displacementTexture.m_handle, 0);
 			}
 		}
 		m_stagingBuffer->unmap();
@@ -104,7 +104,7 @@ void VEngine::MaterialManager::updateMaterials(uint32_t count, const Material *m
 		{
 			auto &copy = bufferCopies[i];
 			copy.m_srcOffset = i * sizeof(MaterialData);
-			copy.m_dstOffset = handles[i] * sizeof(MaterialData);
+			copy.m_dstOffset = handles[i].m_handle * sizeof(MaterialData);
 			copy.m_size = sizeof(MaterialData);
 		}
 
@@ -125,7 +125,7 @@ void VEngine::MaterialManager::destroyMaterials(uint32_t count, MaterialHandle *
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		assert(m_freeHandleCount < RendererConsts::MAX_MATERIALS);
-		m_freeHandles[m_freeHandleCount] = handles[i];
+		m_freeHandles[m_freeHandleCount] = handles[i].m_handle;
 		++m_freeHandleCount;
 	}
 }

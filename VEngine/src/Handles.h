@@ -3,7 +3,20 @@
 
 namespace VEngine
 {
-	typedef uint16_t TextureHandle;
-	typedef uint16_t MaterialHandle;
-	typedef uint32_t SubMeshHandle;
+	struct Texture2DHandle
+	{
+		uint32_t m_handle;
+	};
+	struct Texture3DHandle
+	{
+		uint32_t m_handle;
+	};
+	struct MaterialHandle
+	{
+		uint32_t m_handle;
+	};
+	struct SubMeshHandle
+	{
+		uint32_t m_handle;
+	};
 }

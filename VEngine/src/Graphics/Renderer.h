@@ -38,8 +38,8 @@ namespace VEngine
 		explicit Renderer(uint32_t width, uint32_t height, void *windowHandle);
 		~Renderer();
 		void render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData);
-		TextureHandle loadTexture(const char *filepath);
-		void freeTexture(TextureHandle id);
+		Texture2DHandle loadTexture(const char *filepath);
+		void freeTexture(Texture2DHandle id);
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
@@ -74,8 +74,8 @@ namespace VEngine
 
 		uint32_t m_width;
 		uint32_t m_height;
-		TextureHandle m_fontAtlasTextureIndex;
-		TextureHandle m_blueNoiseTextureIndex;
+		Texture2DHandle m_fontAtlasTextureIndex;
+		Texture2DHandle m_blueNoiseTextureIndex;
 		size_t m_passTimingCount;
 		const PassTimingInfo *m_passTimingData;
 		uint32_t m_opaqueDraws;

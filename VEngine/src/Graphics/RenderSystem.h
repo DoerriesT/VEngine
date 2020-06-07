@@ -24,8 +24,8 @@ namespace VEngine
 	public:
 		explicit RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height);
 		void update(float timeDelta);
-		TextureHandle createTexture(const char *filepath);
-		void destroyTexture(TextureHandle handle);
+		Texture2DHandle createTexture(const char *filepath);
+		void destroyTexture(Texture2DHandle handle);
 		void updateTextureData();
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);

@@ -789,14 +789,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 					for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 					{
 						SubMeshInstanceData instanceData;
-						instanceData.m_subMeshIndex = p.first;
+						instanceData.m_subMeshIndex = p.first.m_handle;
 						instanceData.m_transformIndex = transformIndex;
-						instanceData.m_materialIndex = p.second;
+						instanceData.m_materialIndex = p.second.m_handle;
 
 						const bool staticMobility = transformationComponent.m_mobility == TransformationComponent::Mobility::STATIC;
 						uint32_t contentTypeMask = 0;
 
-						switch (m_materialBatchAssignment[p.second])
+						switch (m_materialBatchAssignment[p.second.m_handle])
 						{
 						case 0: // Opaque
 							contentTypeMask = staticMobility ? FrustumCullData::STATIC_OPAQUE_CONTENT_TYPE_BIT : FrustumCullData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT;
@@ -812,7 +812,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							break;
 						}
 
-						const glm::vec4 boundingSphere = m_boundingSpheres[p.first];
+						const glm::vec4 boundingSphere = m_boundingSpheres[p.first.m_handle];
 						const glm::vec3 boundingSpherePos = transformationComponent.m_position + transformationComponent.m_orientation * (transformationComponent.m_scale.x * glm::vec3(boundingSphere));
 						const float boundingSphereRadius = boundingSphere.w * transformationComponent.m_scale.x;
 
@@ -836,7 +836,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 									continue;
 								}
 
-								switch (m_materialBatchAssignment[p.second])
+								switch (m_materialBatchAssignment[p.second.m_handle])
 								{
 								case 0: // Opaque
 									++renderLists[cullData.m_renderListIndex].m_opaqueCount;
@@ -860,7 +860,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								// [drawListIdx 8][type 2][depth 22][instanceIdx 32]
 								uint64_t drawCallKey = 0;
 								drawCallKey |= (cullData.m_renderListIndex & createMask(8)) << 56;
-								drawCallKey |= (m_materialBatchAssignment[p.second] & createMask(2)) << 54;
+								drawCallKey |= (m_materialBatchAssignment[p.second.m_handle] & createMask(2)) << 54;
 								drawCallKey |= (depth & createMask(22)) << 32;
 								drawCallKey |= static_cast<uint32_t>(m_subMeshInstanceData.size());
 
@@ -931,12 +931,12 @@ void VEngine::RenderSystem::update(float timeDelta)
 	}
 }
 
-VEngine::TextureHandle VEngine::RenderSystem::createTexture(const char *filepath)
+VEngine::Texture2DHandle VEngine::RenderSystem::createTexture(const char *filepath)
 {
 	return m_renderer->loadTexture(filepath);
 }
 
-void VEngine::RenderSystem::destroyTexture(TextureHandle handle)
+void VEngine::RenderSystem::destroyTexture(Texture2DHandle handle)
 {
 	m_renderer->freeTexture(handle);
 }
@@ -970,10 +970,10 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 	{
 		const glm::vec3 minC = subMeshes[i].m_minCorner;
 		const glm::vec3 maxC = subMeshes[i].m_maxCorner;
-		m_aabbs[handles[i]] = { minC, maxC };
+		m_aabbs[handles[i].m_handle] = { minC, maxC };
 		const glm::vec3 center = minC + (maxC - minC) * 0.5f;
 		const float radius = glm::distance(center, maxC);
-		m_boundingSpheres[handles[i]] = glm::vec4(center, radius);
+		m_boundingSpheres[handles[i].m_handle] = glm::vec4(center, radius);
 	}
 
 	// create BVH
@@ -1035,7 +1035,7 @@ void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Ma
 {
 	for (size_t i = 0; i < count; ++i)
 	{
-		m_materialBatchAssignment[handles[i]] = static_cast<uint8_t>(materials[i].m_alpha);
+		m_materialBatchAssignment[handles[i].m_handle] = static_cast<uint8_t>(materials[i].m_alpha);
 	}
 }
 

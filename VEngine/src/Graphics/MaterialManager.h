@@ -21,7 +21,7 @@ namespace VEngine
 		gal::CommandList *m_cmdList;
 		gal::Buffer *m_stagingBuffer;
 		gal::Buffer *m_materialBuffer;
-		MaterialHandle *m_freeHandles;
+		uint32_t *m_freeHandles;
 		uint32_t m_freeHandleCount;
 	};
 }

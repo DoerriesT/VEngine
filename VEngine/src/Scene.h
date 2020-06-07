@@ -14,7 +14,7 @@ namespace VEngine
 	{
 		std::map<std::string, entt::entity> m_entities;
 		std::map<std::string, std::vector<std::pair<SubMeshHandle, MaterialHandle>>> m_meshInstances;
-		std::map<std::string, uint32_t> m_textures;
+		std::map<std::string, Texture2DHandle> m_textures;
 		std::map<std::string, std::vector<MaterialHandle>> m_materials;
 		std::map<std::string, std::vector<SubMeshHandle>> m_meshes;
 
