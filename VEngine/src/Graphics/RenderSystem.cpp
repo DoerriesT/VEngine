@@ -721,6 +721,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_extinction = mediumComponent.m_extinction;
 						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
 						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+						medium.m_heightFogStart = mediumComponent.m_heightFogEnabled ? mediumComponent.m_heightFogStart : 1.0f;
+						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
 						medium.m_noiseIntensity = mediumComponent.m_noiseIntensity;
 						medium.m_noiseScale = mediumComponent.m_noiseScale;
 						medium.m_noiseBias = mediumComponent.m_noiseBias;

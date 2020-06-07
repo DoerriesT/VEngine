@@ -88,9 +88,9 @@ namespace VEngine
 		glm::vec3 m_scattering;
 		float m_noiseIntensity;
 		glm::vec3 m_noiseScale;
-		float m_pad0;
+		float m_heightFogStart;
 		glm::vec3 m_noiseBias;
-		float m_pad1;
+		float m_heightFogFalloff;
 	};
 
 	struct LocalReflectionProbe

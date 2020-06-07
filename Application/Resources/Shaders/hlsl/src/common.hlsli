@@ -107,9 +107,9 @@ struct LocalParticipatingMedium
 	float3 scattering;
 	float noiseIntensity;
 	float3 noiseScale;
-	float pad0;
+	float heightFogStart;
 	float3 noiseBias;
-	float pad1;
+	float heightFogFalloff;
 };
 
 struct LocalReflectionProbe

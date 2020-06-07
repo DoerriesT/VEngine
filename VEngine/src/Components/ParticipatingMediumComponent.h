@@ -26,6 +26,9 @@ namespace VEngine
 		glm::vec3 m_emissiveColor;
 		float m_emissiveIntensity;
 		float m_phaseAnisotropy;
+		bool m_heightFogEnabled;
+		float m_heightFogStart;
+		float m_heightFogFalloff;
 		float m_noiseIntensity;
 		glm::vec3 m_noiseScale;
 		glm::vec3 m_noiseBias;
