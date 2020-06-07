@@ -3,6 +3,7 @@
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
+#include "commonVolumetricFog.hlsli"
 
 RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(LIGHT_INFO_BINDING, 0);
@@ -127,7 +128,8 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 			for (int j = 0; j < g_PushConsts.globalMediaCount; ++j)
 			{
 				GlobalParticipatingMedium medium = g_GlobalMedia[j];
-				extinction += medium.extinction;
+				const float density = volumetricFogGetDensity(medium, rayPos);
+				extinction += medium.extinction * density;
 			}
 		}
 		
@@ -142,7 +144,8 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 									
 			if (all(abs(localPos) <= 1.0))
 			{
-				extinction += medium.extinction;
+				float density = volumetricFogGetDensity(medium, localPos);
+				extinction += medium.extinction * density;
 			}
 		}
 		

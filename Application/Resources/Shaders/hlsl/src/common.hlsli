@@ -83,6 +83,16 @@ struct GlobalParticipatingMedium
 	float extinction;
 	float3 scattering;
 	float phase;
+	uint heightFogEnabled;
+	float heightFogStart;
+	float heightFogFalloff;
+	float maxHeight;
+	float3 noiseBias;
+	float noiseScale;
+	float noiseIntensity;
+	float pad0;
+	float pad1;
+	float pad2;
 };
 
 struct LocalParticipatingMedium
@@ -95,7 +105,11 @@ struct LocalParticipatingMedium
 	float3 emissive;
 	float extinction;
 	float3 scattering;
+	float noiseIntensity;
+	float3 noiseScale;
 	float pad0;
+	float3 noiseBias;
+	float pad1;
 };
 
 struct LocalReflectionProbe

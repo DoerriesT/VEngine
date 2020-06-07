@@ -3,6 +3,7 @@
 #include "packing.hlsli"
 #include "common.hlsli"
 #include "lighting.hlsli"
+#include "commonVolumetricFog.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -76,9 +77,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		for (int i = 0; i < g_Constants.globalMediaCount; ++i)
 		{
 			GlobalParticipatingMedium medium = g_GlobalMedia[i];
-			scattering += medium.scattering;
-			extinction += medium.extinction;
-			emissive += medium.emissive;
+			const float density = volumetricFogGetDensity(medium, worldSpacePos[0]);
+			scattering += medium.scattering * density;
+			extinction += medium.extinction * density;
+			emissive += medium.emissive * density;
 			phase += medium.phase;
 			++accumulatedMediaCount;
 		}
@@ -114,9 +116,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					if (all(abs(localPos) <= 1.0))
 					{
 						float multiplier = (count == 2) ? 0.5 : 1.0;
-						scattering += medium.scattering * multiplier;
-						extinction += medium.extinction * multiplier;
-						emissive += medium.emissive * multiplier;
+						float density = volumetricFogGetDensity(medium, localPos);
+						scattering += medium.scattering * multiplier * density;
+						extinction += medium.extinction * multiplier * density;
+						emissive += medium.emissive * multiplier * density;
 						phase += medium.phase;
 						++accumulatedMediaCount;
 					}

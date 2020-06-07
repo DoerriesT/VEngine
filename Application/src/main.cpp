@@ -26,10 +26,14 @@
 #include <Utility/Utility.h>
 
 float g_fogAlbedo[3] = { 0.01f, 0.01f, 0.01f };
-float g_fogExtinction = 0.01f;
+float g_fogExtinction = 3.0f;
 float g_fogEmissiveColor[3] = { 1.0f, 1.0f, 1.0f };
 float g_fogEmissiveIntensity = 0.0f;
 float g_fogPhase = 0.0f;
+bool g_heightFogEnabled = true;
+float g_heightFogStart = 0.0f;
+float g_heightFogFalloff = 3.0f;
+float g_fogMaxHeight = 4.0f;
 
 bool g_fogJittering = true;
 bool g_fogDithering = true;
@@ -149,14 +153,14 @@ public:
 
 
 		g_globalFogEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f);
+		entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f, g_heightFogEnabled, g_heightFogStart, g_heightFogFalloff);
 		entityRegistry.assign<VEngine::RenderableComponent>(g_globalFogEntity);
 
 
 		g_localFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(45.0f), 0.0f)));
 		entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1.0f, 1.0f, 1.0f));
-		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(222, 184, 135) / 255.0f, 3.0f, glm::vec3(1.0f), 0.0f, 0.0f);
+		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(222, 184, 135) / 255.0f, 1.0f, glm::vec3(1.0f), 0.0f, 0.0f);
 		entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 
 
@@ -244,6 +248,13 @@ public:
 			ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.9f, 0.9f, "%.7f");
 			ImGui::ColorEdit3("Emissive Color", g_fogEmissiveColor);
 			ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
+			ImGui::Checkbox("Height Fog", &g_heightFogEnabled);
+			ImGui::DragFloat("Height Fog Start", &g_heightFogStart, 0.1f);
+			ImGui::DragFloat("Height Fog Falloff", &g_heightFogFalloff, 0.1f);
+			ImGui::DragFloat("Max Height", &g_fogMaxHeight, 0.1f);
+
+			static float time = 0.0f;
+			time += timeDelta;
 
 			auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
 			mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);
@@ -251,6 +262,13 @@ public:
 			mediaC.m_emissiveColor = glm::vec3(g_fogEmissiveColor[0], g_fogEmissiveColor[1], g_fogEmissiveColor[2]);
 			mediaC.m_emissiveIntensity = g_fogEmissiveIntensity;
 			mediaC.m_phaseAnisotropy = g_fogPhase;
+			mediaC.m_heightFogEnabled = g_heightFogEnabled;
+			mediaC.m_heightFogStart = g_heightFogStart;
+			mediaC.m_heightFogFalloff = g_heightFogFalloff;
+			mediaC.m_maxHeight = g_fogMaxHeight;
+			mediaC.m_noiseIntensity = 1.0f;
+			mediaC.m_noiseScale = 2.0f;
+			mediaC.m_noiseBias = glm::vec3(time, 0.0f, time * 0.5f);
 		}
 		ImGui::End();
 

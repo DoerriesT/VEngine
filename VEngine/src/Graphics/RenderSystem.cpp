@@ -686,6 +686,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_extinction = mediumComponent.m_extinction;
 						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
 						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+						medium.m_heightFogEnabled = mediumComponent.m_heightFogEnabled;
+						medium.m_heightFogStart = mediumComponent.m_heightFogStart;
+						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
+						medium.m_maxHeight = mediumComponent.m_maxHeight;
+						medium.m_noiseScale = mediumComponent.m_noiseScale;
+						medium.m_noiseBias = mediumComponent.m_noiseBias;
+						medium.m_noiseIntensity = mediumComponent.m_noiseIntensity;
+
 
 						m_lightData.m_globalParticipatingMedia.push_back(medium);
 					});
@@ -713,6 +721,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_extinction = mediumComponent.m_extinction;
 						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
 						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+						medium.m_noiseIntensity = mediumComponent.m_noiseIntensity;
+						medium.m_noiseScale = mediumComponent.m_noiseScale;
+						medium.m_noiseBias = mediumComponent.m_noiseBias;
 
 						m_lightData.m_localParticipatingMedia.push_back(medium);
 

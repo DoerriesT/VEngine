@@ -64,6 +64,16 @@ namespace VEngine
 		float m_extinction;
 		glm::vec3 m_scattering;
 		float m_phase;
+		uint32_t m_heightFogEnabled;
+		float m_heightFogStart;
+		float m_heightFogFalloff;
+		float m_maxHeight;
+		glm::vec3 m_noiseBias;
+		float m_noiseScale;
+		float m_noiseIntensity;
+		float m_pad0;
+		float m_pad1;
+		float m_pad2;
 	};
 
 	struct LocalParticipatingMedium
@@ -76,7 +86,11 @@ namespace VEngine
 		glm::vec3 m_emissive;
 		float m_extinction;
 		glm::vec3 m_scattering;
+		float m_noiseIntensity;
+		glm::vec3 m_noiseScale;
 		float m_pad0;
+		glm::vec3 m_noiseBias;
+		float m_pad1;
 	};
 
 	struct LocalReflectionProbe
