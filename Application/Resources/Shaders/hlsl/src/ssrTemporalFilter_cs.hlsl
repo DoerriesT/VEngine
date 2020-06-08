@@ -72,9 +72,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 texCoord = float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight);
 	float4 colorRayDepth = g_ColorRayDepthImage.Load(int3(threadID.xy, 0));
 	float rayDepth = colorRayDepth.w;
-	float4 reprojectedCoord = mul(g_Constants.reprojectionMatrix, float4(texCoord * 2.0 - 1.0, rayDepth, 1.0));
+	float4 reprojectedCoord = mul(g_Constants.reprojectionMatrix, float4(texCoord * float2(2.0, -2.0) - float2(1.0, -1.0), rayDepth, 1.0));
 	reprojectedCoord.xy /= reprojectedCoord.w;
-	reprojectedCoord.xy = reprojectedCoord.xy * 0.5 + 0.5;
+	reprojectedCoord.xy = reprojectedCoord.xy * float2(0.5, -0.5) + 0.5;
 	
 	float4 neighborhoodMin = 0.0;
 	float4 neighborhoodMax = 0.0;

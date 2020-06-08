@@ -231,7 +231,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								const glm::mat4 vulkanCorrection =
 								{
 									{ 1.0f, 0.0f, 0.0f, 0.0f },
-									{ 0.0f, -1.0f, 0.0f, 0.0f },
+									{ 0.0f, 1.0f, 0.0f, 0.0f },
 									{ 0.0f, 0.0f, 0.5f, 0.0f },
 									{ 0.0f, 0.0f, 0.5f, 1.0f }
 								};
@@ -348,7 +348,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							const glm::mat4 vulkanCorrection =
 							{
 								{ 1.0f, 0.0f, 0.0f, 0.0f },
-								{ 0.0f, -1.0f, 0.0f, 0.0f },
+								{ 0.0f, 1.0f, 0.0f, 0.0f },
 								{ 0.0f, 0.0f, 0.5f, 0.0f },
 								{ 0.0f, 0.0f, 0.5f, 1.0f }
 							};
@@ -516,7 +516,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							const glm::mat4 vulkanCorrection =
 							{
 								{ 1.0f, 0.0f, 0.0f, 0.0f },
-								{ 0.0f, -1.0f, 0.0f, 0.0f },
+								{ 0.0f, 1.0f, 0.0f, 0.0f },
 								{ 0.0f, 0.0f, 0.5f, 0.0f },
 								{ 0.0f, 0.0f, 0.5f, 1.0f }
 							};
@@ -541,9 +541,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 								FOMAtlasDrawInfo fomAtlasDrawInfo{};
 								if (fomQuadTreeAllocator.alloc(128, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
 								{
-									punctualLightShadowed.m_fomShadowAtlasParams.x = fomAtlasDrawInfo.m_size / 128.0f;
-									punctualLightShadowed.m_fomShadowAtlasParams.y = fomAtlasDrawInfo.m_offsetX / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
-									punctualLightShadowed.m_fomShadowAtlasParams.z = fomAtlasDrawInfo.m_offsetY / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.x = fomAtlasDrawInfo.m_size / 2048.0f;
+									punctualLightShadowed.m_fomShadowAtlasParams.y = static_cast<float>(fomAtlasDrawInfo.m_offsetX) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.z = static_cast<float>(fomAtlasDrawInfo.m_offsetY) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
 									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
 
 									fomAtlasDrawInfo.m_lightPosition = transformationComponent.m_position;
@@ -1083,7 +1083,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 	const glm::mat4 vulkanCorrection =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, -1.0f, 0.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f, 0.0f },
 		{ 0.0f, 0.0f, 0.5f, 0.0f },
 		{ 0.0f, 0.0f, 0.5f, 1.0f }
 	};

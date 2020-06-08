@@ -70,7 +70,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	}
 
 	const float depth = g_DepthImage.Load(int3(threadID.xy, 0)).x;
-	const float2 clipSpacePosition = (threadID.xy + 0.5) * float2(g_PushConsts.texelWidth, g_PushConsts.texelHeight) * 2.0 - 1.0;
+	const float2 clipSpacePosition = (threadID.xy + 0.5) * float2(g_PushConsts.texelWidth, g_PushConsts.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
 	float4 viewSpacePosition4 = float4(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0, g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
 	float3 viewSpacePosition = viewSpacePosition4.xyz / viewSpacePosition4.w;
 	

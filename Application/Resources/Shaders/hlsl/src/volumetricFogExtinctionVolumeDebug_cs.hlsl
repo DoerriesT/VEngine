@@ -43,10 +43,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	g_ResultImage.GetDimensions(resultDims.x, resultDims.y);
 	float2 resultTexelSize = 1.0 / resultDims;
 	
-	float4 worldSpacePos = mul(g_PushConsts.invViewProjection, float4((threadID.xy + 0.5) * resultTexelSize * 2.0 - 1.0, 1.0, 1.0));
+	float4 worldSpacePos = mul(g_PushConsts.invViewProjection, float4((threadID.xy + 0.5) * resultTexelSize * float2(2.0, -2.0) - float2(1.0, -1.0), 1.0, 1.0));
 	worldSpacePos.xyz /= worldSpacePos.w;
 	
-	float4 direction4 = mul(g_PushConsts.invViewProjection, float4((threadID.xy + 0.5) * resultTexelSize * 2.0 - 1.0, 0.0, 1.0));
+	float4 direction4 = mul(g_PushConsts.invViewProjection, float4((threadID.xy + 0.5) * resultTexelSize * float2(2.0, -2.0) - float2(1.0, -1.0), 0.0, 1.0));
 	float3 direction = normalize(direction4.xyz / direction4.w - worldSpacePos.xyz);
 
 	float extinction = raymarch(worldSpacePos.xyz, direction);

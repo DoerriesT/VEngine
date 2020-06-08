@@ -77,7 +77,7 @@ float3 minDiff(float3 P, float3 Pr, float3 Pl)
 
 float3 getViewSpacePosDepth(float2 texelCoord, float depth)
 {
-	const float2 clipSpacePosition = texelCoord * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
+	const float2 clipSpacePosition = texelCoord * float2(g_Constants.texelWidth, g_Constants.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	return viewSpacePosition.xyz / viewSpacePosition.w;
 }
@@ -101,9 +101,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	const float2 clipSpacePosition = float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
-	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
-	float3 P = viewSpacePosition.xyz / viewSpacePosition.w;
+	float3 P = getViewSpacePosDepth(float2(threadID.xy + 0.5), depth);
 	
 	// Sample neighboring pixels
 	const float3 Pr = getViewSpacePos(float2(threadID.xy) + 0.5 + float2(1.0, 0.0));
@@ -148,7 +146,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		tc = valid ? shadowCoord : tc;
 	}
 	
-	tc.xy = tc.xy * 0.5 + 0.5;
+	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
 	tc.z += g_CascadeParams[int(tc.w)].x;
 
 	float shadow = 0.0;

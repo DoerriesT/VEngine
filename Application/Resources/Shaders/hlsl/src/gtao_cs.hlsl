@@ -13,7 +13,7 @@ float3 getViewSpacePos(float2 uv)
 {
 	uv *= g_PushConsts.resolution.zw;
 	float depth = g_DepthImage.SampleLevel(g_PointSampler, uv, 0.0).x;
-	float2 clipSpacePosition = float2(uv * 2.0 - 1.0);
+	float2 clipSpacePosition = float2(uv * float2(2.0, -2.0) - float2(1.0, -1.0));
 	float4 viewSpacePosition = float4(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0, g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
 	return viewSpacePosition.xyz / viewSpacePosition.w;
 }

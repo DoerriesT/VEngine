@@ -13,7 +13,7 @@ VSOutput main(uint vertexID : SV_VertexID)
 	float x = -1.0 + float((vertexID & 2) << 1);
 
     output.position = float4(x, y, 0.0, 1.0);
-	output.texCoord = output.position.xy * 0.5 + 0.5;
+	output.texCoord = output.position.xy * float2(0.5, -0.5) + 0.5;
 	
 	return output;
 }

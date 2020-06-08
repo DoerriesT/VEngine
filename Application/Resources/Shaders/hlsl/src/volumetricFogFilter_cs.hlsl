@@ -167,7 +167,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 
 		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
-		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * 0.5 + 0.5, d);
+		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
 		prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);

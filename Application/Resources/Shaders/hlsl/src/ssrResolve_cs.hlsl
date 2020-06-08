@@ -78,7 +78,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	const float2 clipSpacePosition = float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
+	const float2 clipSpacePosition = float2(threadID.xy + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	viewSpacePosition.xyz /= viewSpacePosition.w;
 	
@@ -104,7 +104,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float4 rayHitPdf = g_RayHitPdfImage.Load(int3(coord / 2, 0));
 		float mask = g_MaskImage.Load(int3(coord / 2, 0)).x;
 		
-		float4 viewSpaceHitPos = float4(g_Constants.unprojectParams.xy * (rayHitPdf.xy * 2.0 - 1.0), -1.0, g_Constants.unprojectParams.z * rayHitPdf.z + g_Constants.unprojectParams.w);
+		float4 viewSpaceHitPos = float4(g_Constants.unprojectParams.xy * (rayHitPdf.xy * float2(2.0, -2.0) - float2(1.0, -1.0)), -1.0, g_Constants.unprojectParams.z * rayHitPdf.z + g_Constants.unprojectParams.w);
 		viewSpaceHitPos.xyz /= viewSpaceHitPos.w;
 		float3 L = (viewSpaceHitPos.xyz - P);
 		float hitDist = length(L);

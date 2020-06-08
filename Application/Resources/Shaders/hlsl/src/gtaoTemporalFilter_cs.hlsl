@@ -53,10 +53,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// is the reprojected coordinate inside the frame?
 	float insideFrame = all(abs(reprojectedCoord - 0.5) < 0.5) ? 1.0 : 0.0;
 	
-	float4 previousWorldPos = mul(g_Constants.prevInvViewProjection, float4(reprojectedCoord.xy * 2.0 - 1.0, projectDepth(g_Constants.nearPlane, g_Constants.farPlane, -previousAo.y), 1.0));
+	float4 previousWorldPos = mul(g_Constants.prevInvViewProjection, float4(reprojectedCoord.xy * float2(2.0, -2.0) - float2(1.0, -1.0), projectDepth(g_Constants.nearPlane, g_Constants.farPlane, -previousAo.y), 1.0));
 	previousWorldPos.xyz /= previousWorldPos.w;
 	
-	float4 currentWorldPos = mul(g_Constants.invViewProjection, float4(texCoord * 2.0 - 1.0, projectDepth(g_Constants.nearPlane, g_Constants.farPlane, -depth), 1.0));
+	float4 currentWorldPos = mul(g_Constants.invViewProjection, float4(texCoord * float2(2.0, -2.0) - float2(1.0, -1.0), projectDepth(g_Constants.nearPlane, g_Constants.farPlane, -depth), 1.0));
 	currentWorldPos.xyz /= currentWorldPos.w;
     
 	float disocclusionWeight = 1.0 - saturate(length2(abs(currentWorldPos.xyz - previousWorldPos.xyz)) * (1.0 / (0.5 * 0.5)));

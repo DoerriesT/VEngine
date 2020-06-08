@@ -15,8 +15,8 @@ float4 main(PSInput input) : SV_Target0
 {
 	// get current and previous frame's pixel position
 	float depth = g_DepthImage.Load(int3(int2(input.position.xy), 0)).x;
-	float4 reprojectedPos = mul(g_PushConsts.reprojectionMatrix, float4(input.texCoord * 2.0 - 1.0, depth, 1.0));
-	float2 previousTexCoord = (reprojectedPos.xy / reprojectedPos.w) * 0.5 + 0.5;
+	float4 reprojectedPos = mul(g_PushConsts.reprojectionMatrix, float4(input.texCoord * float2(2.0, -2.0) - float2(1.0, -1.0), depth, 1.0));
+	float2 previousTexCoord = (reprojectedPos.xy / reprojectedPos.w) * float2(0.5, -0.5) + 0.5;
 
 	// calculate delta caused by camera movement
 	float2 cameraVelocity = input.texCoord - previousTexCoord;

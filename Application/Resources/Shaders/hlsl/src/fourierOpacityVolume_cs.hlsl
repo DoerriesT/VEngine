@@ -89,7 +89,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	}
 	else
 	{
-		const float4 farPlaneWorldSpacePos = mul(lightInfo.invViewProjection, float4(texCoord * 2.0 - 1.0, 1.0, 1.0));
+		const float4 farPlaneWorldSpacePos = mul(lightInfo.invViewProjection, float4(texCoord * float2(2.0, -2.0) - float2(1.0, -1.0), 1.0, 1.0));
 		ray = normalize((farPlaneWorldSpacePos.xyz / farPlaneWorldSpacePos.w) - lightInfo.position);
 	}
 	

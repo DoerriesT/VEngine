@@ -29,7 +29,7 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	const glm::mat4 vulkanCorrection =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, -1.0f, 0.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f, 0.0f },
 		{ 0.0f, 0.0f, 0.5f, 0.0f },
 		{ 0.0f, 0.0f, 0.5f, 1.0f }
 	};

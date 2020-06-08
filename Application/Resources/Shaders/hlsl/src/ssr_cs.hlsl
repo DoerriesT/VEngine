@@ -127,7 +127,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		return;
 	}
 	
-	const float2 clipSpacePosition = float2(fullResCoord + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * 2.0 - 1.0;
+	const float2 clipSpacePosition = float2(fullResCoord + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	viewSpacePosition.xyz /= viewSpacePosition.w;
 	
@@ -159,7 +159,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 pSS = float3(float2(fullResCoord + 0.5) * float2(g_Constants.texelWidth, g_Constants.texelHeight), depth);
 	float4 reflectSS = mul(g_Constants.projectionMatrix, float4(P + R, 1.0));
 	reflectSS.xyz /= reflectSS.w;
-	reflectSS.xy = reflectSS.xy * 0.5 + 0.5;
+	reflectSS.xy = reflectSS.xy * float2(0.5, -0.5) + 0.5;
 	float3 vSS = reflectSS.xyz - pSS;
 	
 	float4 rayHitPdf = float4(hiZTrace(pSS, vSS), pdf);

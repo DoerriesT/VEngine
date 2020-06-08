@@ -38,7 +38,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		return;
 	}
 	
-	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * 2.0 - 1.0, depth, 1.0));
+	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * float2(2.0, -2.0) - float2(1.0, -1.0), depth, 1.0));
 	float3 viewSpacePos = viewSpacePos4.xyz / viewSpacePos4.w;
 	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)));
 	float3 albedo = albedoRoughness.rgb;
@@ -67,7 +67,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 			DirectionalLight light = g_DirectionalLightsShadowed[i];
 			float4x4 shadowMatrix;
 			const float4 tc = float4(mul(g_ShadowMatrices[light.shadowOffset], float4(worldSpacePos.xyz, 1.0)).xyz, i);
-			float shadow = g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(tc.xy * 0.5 + 0.5, tc.w), tc.z - 0.001).x ;
+			float shadow = g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(tc.xy * float2(0.5, -0.5) + 0.5, tc.w), tc.z - 0.001).x ;
 			result += Diffuse_Lambert(albedo) * light.color * (saturate(dot(N, light.direction)) * shadow);
 		}
 	}

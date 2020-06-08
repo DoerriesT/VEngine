@@ -74,7 +74,7 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 		tc = valid ? shadowCoord : tc;
 	}
 	
-	tc.xy = tc.xy * 0.5 + 0.5;
+	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
 	const float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
 	
 	return shadow;
@@ -261,7 +261,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 							shadowPos.z = dot(lightShadowed.shadowMatrix2, float4(worldSpacePos[i], 1.0));
 							shadowPos.w = dot(lightShadowed.shadowMatrix3, float4(worldSpacePos[i], 1.0));
 							shadowPos.xyz /= shadowPos.w;
-							shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+							shadowPos.xy = shadowPos.xy * float2(0.5, -0.5) + 0.5;
 							shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
 						}
 						// point light

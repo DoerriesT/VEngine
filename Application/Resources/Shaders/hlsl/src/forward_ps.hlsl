@@ -227,7 +227,7 @@ PSOutput main(PSInput input)
 					shadowPos.z = dot(lightShadowed.shadowMatrix2, shadowPosWS);
 					shadowPos.w = dot(lightShadowed.shadowMatrix3, shadowPosWS);
 					shadowPos.xyz /= shadowPos.w;
-					shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+					shadowPos.xy = shadowPos.xy * float2(0.5, -0.5) + 0.5;
 					shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[0].x + lightShadowed.shadowAtlasParams[0].yz;
 				}
 				// point light
@@ -263,14 +263,14 @@ PSOutput main(PSInput input)
 							uv.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
 							uv.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
 							uv /= dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
+							uv = uv * float2(0.5, -0.5) + 0.5;
 						}
 						// point light
 						else
 						{
-							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos));
+							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos)) * 0.5 + 0.5;
 						}
 						
-						uv = uv * 0.5 + 0.5;
 						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 						
 						float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
