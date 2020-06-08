@@ -25,8 +25,11 @@ namespace VEngine
 		explicit RenderSystem(entt::registry &entityRegistry, void *windowHandle, uint32_t width, uint32_t height);
 		void update(float timeDelta);
 		Texture2DHandle createTexture(const char *filepath);
+		Texture3DHandle createTexture3D(const char *filepath);
 		void destroyTexture(Texture2DHandle handle);
+		void destroyTexture(Texture3DHandle handle);
 		void updateTextureData();
+		void updateTexture3DData();
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);

@@ -68,9 +68,9 @@ namespace VEngine
 		float m_heightFogStart;
 		float m_heightFogFalloff;
 		float m_maxHeight;
-		glm::vec3 m_noiseBias;
-		float m_noiseScale;
-		float m_noiseIntensity;
+		glm::vec3 m_textureBias;
+		float m_textureScale;
+		uint32_t m_densityTexture;
 		float m_pad0;
 		float m_pad1;
 		float m_pad2;
@@ -86,10 +86,10 @@ namespace VEngine
 		glm::vec3 m_emissive;
 		float m_extinction;
 		glm::vec3 m_scattering;
-		float m_noiseIntensity;
-		glm::vec3 m_noiseScale;
+		uint32_t m_densityTexture;
+		glm::vec3 m_textureScale;
 		float m_heightFogStart;
-		glm::vec3 m_noiseBias;
+		glm::vec3 m_textureBias;
 		float m_heightFogFalloff;
 	};
 

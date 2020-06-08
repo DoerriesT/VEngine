@@ -151,6 +151,9 @@ public:
 		createReflectionProbe(glm::vec3(9.8, 4.15, -6.1), glm::vec3(13.65, 8.7, 6.15));
 
 
+		auto perlinNoiseTexture = m_engine->getRenderSystem().createTexture3D("Resources/Textures/perlinNoiseBC4.dds");
+		m_engine->getRenderSystem().updateTexture3DData();
+
 
 		g_globalFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f, g_heightFogEnabled, g_heightFogStart, g_heightFogFalloff);
@@ -160,7 +163,7 @@ public:
 		g_localFogEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 2.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)));
 		entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(18.0f, 2.0f, 11.0f));
-		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, /*glm::vec3(222, 184, 135) / 255.0f*/glm::vec3(1.0f), 6.0f, glm::vec3(1.0f), 0.0f, 0.0f, true, 0.0f, 12.0f, 1.0f, glm::vec3(18.0f, 2.0f, 11.0f) * 2.0f);
+		entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 6.0f, glm::vec3(1.0f), 0.0f, 0.0f, true, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f);
 		entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 
 
@@ -268,7 +271,7 @@ public:
 			time += timeDelta;
 
 			auto &localMediaC = entityRegistry.get<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity);
-			localMediaC.m_noiseBias = glm::vec3(time, 0.0f, time * 0.5f);
+			localMediaC.m_textureBias = glm::vec3(time, 0.0f, time * 0.5f) * 0.2;
 		}
 		ImGui::End();
 

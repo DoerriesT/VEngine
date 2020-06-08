@@ -690,9 +690,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_heightFogStart = mediumComponent.m_heightFogStart;
 						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
 						medium.m_maxHeight = mediumComponent.m_maxHeight;
-						medium.m_noiseScale = mediumComponent.m_noiseScale;
-						medium.m_noiseBias = mediumComponent.m_noiseBias;
-						medium.m_noiseIntensity = mediumComponent.m_noiseIntensity;
+						medium.m_textureScale = mediumComponent.m_textureScale;
+						medium.m_textureBias = mediumComponent.m_textureBias;
+						medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
 
 
 						m_lightData.m_globalParticipatingMedia.push_back(medium);
@@ -723,9 +723,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_phase = mediumComponent.m_phaseAnisotropy;
 						medium.m_heightFogStart = mediumComponent.m_heightFogEnabled ? mediumComponent.m_heightFogStart : 1.0f;
 						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
-						medium.m_noiseIntensity = mediumComponent.m_noiseIntensity;
-						medium.m_noiseScale = mediumComponent.m_noiseScale;
-						medium.m_noiseBias = mediumComponent.m_noiseBias;
+						medium.m_textureScale = mediumComponent.m_textureScale;
+						medium.m_textureBias = mediumComponent.m_textureBias;
+						medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
 
 						m_lightData.m_localParticipatingMedia.push_back(medium);
 
@@ -936,7 +936,17 @@ VEngine::Texture2DHandle VEngine::RenderSystem::createTexture(const char *filepa
 	return m_renderer->loadTexture(filepath);
 }
 
+VEngine::Texture3DHandle VEngine::RenderSystem::createTexture3D(const char *filepath)
+{
+	return m_renderer->loadTexture3D(filepath);
+}
+
 void VEngine::RenderSystem::destroyTexture(Texture2DHandle handle)
+{
+	m_renderer->freeTexture(handle);
+}
+
+void VEngine::RenderSystem::destroyTexture(Texture3DHandle handle)
 {
 	m_renderer->freeTexture(handle);
 }
@@ -944,6 +954,11 @@ void VEngine::RenderSystem::destroyTexture(Texture2DHandle handle)
 void VEngine::RenderSystem::updateTextureData()
 {
 	m_renderer->updateTextureData();
+}
+
+void VEngine::RenderSystem::updateTexture3DData()
+{
+	m_renderer->updateTexture3DData();
 }
 
 void VEngine::RenderSystem::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)

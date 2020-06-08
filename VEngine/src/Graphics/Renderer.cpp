@@ -973,9 +973,19 @@ VEngine::Texture2DHandle VEngine::Renderer::loadTexture(const char *filepath)
 	return m_textureLoader->loadTexture2D(filepath);
 }
 
-void VEngine::Renderer::freeTexture(Texture2DHandle id)
+VEngine::Texture3DHandle VEngine::Renderer::loadTexture3D(const char *filepath)
 {
-	m_textureLoader->free(id);
+	return m_textureLoader->loadTexture3D(filepath);
+}
+
+void VEngine::Renderer::freeTexture(Texture2DHandle handle)
+{
+	m_textureLoader->free(handle);
+}
+
+void VEngine::Renderer::freeTexture(Texture3DHandle handle)
+{
+	m_textureLoader->free(handle);
 }
 
 void VEngine::Renderer::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
@@ -1006,6 +1016,11 @@ void VEngine::Renderer::destroySubMeshes(uint32_t count, SubMeshHandle *handles)
 void VEngine::Renderer::updateTextureData()
 {
 	m_renderResources->updateTextureArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->get2DViews());
+}
+
+void VEngine::Renderer::updateTexture3DData()
+{
+	m_renderResources->updateTexture3DArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->get3DViews());
 }
 
 const uint32_t *VEngine::Renderer::getLuminanceHistogram() const

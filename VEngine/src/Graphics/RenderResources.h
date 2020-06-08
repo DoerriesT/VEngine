@@ -62,12 +62,15 @@ namespace VEngine
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_computeTexture3DDescriptorSetLayout = {};
 		gal::DescriptorSet *m_textureDescriptorSet = {};
 		gal::DescriptorSet *m_computeTextureDescriptorSet = {};
+		gal::DescriptorSet *m_computeTexture3DDescriptorSet = {};
 		gal::DescriptorSetLayout *m_imGuiDescriptorSetLayout = {};
 		gal::DescriptorSet *m_imGuiDescriptorSet = {};
 		gal::DescriptorSetPool *m_textureDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_computeTextureDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_computeTexture3DDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_imguiDescriptorSetPool = {};
 
 		// proxy mesh info
@@ -90,6 +93,7 @@ namespace VEngine
 		void init(uint32_t width, uint32_t height);
 		void resize(uint32_t width, uint32_t height);
 		void updateTextureArray(uint32_t count, gal::ImageView **data);
+		void updateTexture3DArray(uint32_t count, gal::ImageView **data);
 		void createImGuiFontsTexture();
 		void setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles);
 	};

@@ -39,13 +39,16 @@ namespace VEngine
 		~Renderer();
 		void render(const CommonRenderData &commonData, const RenderData &renderData, const LightData &lightData);
 		Texture2DHandle loadTexture(const char *filepath);
-		void freeTexture(Texture2DHandle id);
+		Texture3DHandle loadTexture3D(const char *filepath);
+		void freeTexture(Texture2DHandle handle);
+		void freeTexture(Texture3DHandle handle);
 		void createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void updateMaterials(uint32_t count, const Material *materials, MaterialHandle *handles);
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
 		void updateTextureData();
+		void updateTexture3DData();
 		const uint32_t *getLuminanceHistogram() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;

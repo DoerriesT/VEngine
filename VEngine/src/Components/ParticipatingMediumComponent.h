@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/vec3.hpp>
+#include "Handles.h"
 
 namespace VEngine
 {
@@ -14,9 +15,9 @@ namespace VEngine
 		float m_heightFogStart;
 		float m_heightFogFalloff;
 		float m_maxHeight;
-		float m_noiseIntensity;
-		float m_noiseScale;
-		glm::vec3 m_noiseBias;
+		Texture3DHandle m_densityTexture;
+		float m_textureScale;
+		glm::vec3 m_textureBias;
 	};
 
 	struct LocalParticipatingMediumComponent
@@ -29,8 +30,8 @@ namespace VEngine
 		bool m_heightFogEnabled;
 		float m_heightFogStart;
 		float m_heightFogFalloff;
-		float m_noiseIntensity;
-		glm::vec3 m_noiseScale;
-		glm::vec3 m_noiseBias;
+		Texture3DHandle m_densityTexture;
+		glm::vec3 m_textureScale;
+		glm::vec3 m_textureBias;
 	};
 }

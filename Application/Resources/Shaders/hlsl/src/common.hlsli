@@ -87,9 +87,9 @@ struct GlobalParticipatingMedium
 	float heightFogStart;
 	float heightFogFalloff;
 	float maxHeight;
-	float3 noiseBias;
-	float noiseScale;
-	float noiseIntensity;
+	float3 textureBias;
+	float textureScale;
+	uint densityTexture;
 	float pad0;
 	float pad1;
 	float pad2;
@@ -105,10 +105,10 @@ struct LocalParticipatingMedium
 	float3 emissive;
 	float extinction;
 	float3 scattering;
-	float noiseIntensity;
-	float3 noiseScale;
+	uint densityTexture;
+	float3 textureScale;
 	float heightFogStart;
-	float3 noiseBias;
+	float3 textureBias;
 	float heightFogFalloff;
 };
 
