@@ -152,15 +152,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 			data.m_internalData->m_rendered = true;
 			++probeRenderCount;
 
-			const glm::mat4 vulkanCorrection =
-			{
-				{ 1.0f, 0.0f, 0.0f, 0.0f },
-				{ 0.0f, 1.0f, 0.0f, 0.0f },
-				{ 0.0f, 0.0f, 0.5f, 0.0f },
-				{ 0.0f, 0.0f, 0.5f, 1.0f }
-			};
-
-			glm::mat4 projection = vulkanCorrection * glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
+			glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
 			glm::mat4 matrices[6];
 			matrices[0] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 			matrices[1] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));

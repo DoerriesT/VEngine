@@ -110,12 +110,5 @@ void VEngine::Camera::updateViewMatrix()
 
 void VEngine::Camera::updateProjectionMatrix()
 {
-	glm::mat4 vulkanCorrection =
-	{
-		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 1.0f }
-	};
-	m_cameraComponent.m_projectionMatrix = vulkanCorrection * glm::perspective(m_cameraComponent.m_fovy, m_cameraComponent.m_aspectRatio, m_cameraComponent.m_far, m_cameraComponent.m_near);
+	m_cameraComponent.m_projectionMatrix = glm::perspective(m_cameraComponent.m_fovy, m_cameraComponent.m_aspectRatio, m_cameraComponent.m_far, m_cameraComponent.m_near);
 }

@@ -26,15 +26,7 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
-	const glm::mat4 vulkanCorrection =
-	{
-		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 1.0f }
-	};
-
-	glm::mat4 projection = vulkanCorrection * glm::perspectiveLH(glm::radians(90.0f), 1.0f, data.m_probeNearPlane, data.m_probeFarPlane);
+	glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, data.m_probeNearPlane, data.m_probeFarPlane);
 
 	Constants consts;
 	consts.viewMatrix = data.m_passRecordContext->m_commonRenderData->m_viewMatrix;

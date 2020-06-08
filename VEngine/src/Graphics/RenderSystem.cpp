@@ -228,14 +228,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 								m_lightData.m_directionalLightsShadowedProbe.push_back(directionalLight);
 
-								const glm::mat4 vulkanCorrection =
-								{
-									{ 1.0f, 0.0f, 0.0f, 0.0f },
-									{ 0.0f, 1.0f, 0.0f, 0.0f },
-									{ 0.0f, 0.0f, 0.5f, 0.0f },
-									{ 0.0f, 0.0f, 0.5f, 1.0f }
-								};
-
 								// calculate shadow matrix
 								glm::vec3 upDir(0.0f, 1.0f, 0.0f);
 								// choose different up vector if light direction would be linearly dependent otherwise
@@ -255,7 +247,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								lightView[3].y -= fmodf(lightView[3].y, (probeShadowRadius / shadowMapRes) * 2.0f);
 								lightView[3].z -= fmodf(lightView[3].z, depthRange / precisionRange);
 
-								glm::mat4 shadowMatrix = vulkanCorrection * glm::ortho(-probeShadowRadius, probeShadowRadius, -probeShadowRadius, probeShadowRadius, 0.0f, depthRange) * lightView;
+								glm::mat4 shadowMatrix = glm::ortho(-probeShadowRadius, probeShadowRadius, -probeShadowRadius, probeShadowRadius, 0.0f, depthRange) * lightView;
 
 								m_shadowMatrices.push_back(shadowMatrix);
 
@@ -345,15 +337,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						if ((renderLists.size() + 6) < 256 && pointLightComponent.m_shadows && shadowMapAllocationSucceeded)
 						{
-							const glm::mat4 vulkanCorrection =
-							{
-								{ 1.0f, 0.0f, 0.0f, 0.0f },
-								{ 0.0f, 1.0f, 0.0f, 0.0f },
-								{ 0.0f, 0.0f, 0.5f, 0.0f },
-								{ 0.0f, 0.0f, 0.5f, 1.0f }
-							};
-
-							glm::mat4 projection = vulkanCorrection * glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
+							glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
 							glm::mat4 shadowMatrices[6];
 							shadowMatrices[0] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 							shadowMatrices[1] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -513,15 +497,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								upDir = glm::vec3(1.0f, 0.0f, 0.0f);
 							}
 
-							const glm::mat4 vulkanCorrection =
-							{
-								{ 1.0f, 0.0f, 0.0f, 0.0f },
-								{ 0.0f, 1.0f, 0.0f, 0.0f },
-								{ 0.0f, 0.0f, 0.5f, 0.0f },
-								{ 0.0f, 0.0f, 0.5f, 1.0f }
-							};
-
-							glm::mat4 shadowMatrix = vulkanCorrection * glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
+							glm::mat4 shadowMatrix = glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
 								* glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + directionWS, upDir);
 
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
@@ -1080,14 +1056,6 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		splits[i] = splitLambda * (log - uniform) + uniform;
 	}
 
-	const glm::mat4 vulkanCorrection =
-	{
-		{ 1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 0.0f },
-		{ 0.0f, 0.0f, 0.5f, 1.0f }
-	};
-
 	const float aspectRatio = m_commonRenderData.m_width * (1.0f / m_commonRenderData.m_height);
 	float previousSplit = nearPlane;
 	for (size_t i = 0; i < cascadeCount; ++i)
@@ -1137,7 +1105,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 
 
 
-		viewProjectionMatrices[i] = vulkanCorrection * glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
+		viewProjectionMatrices[i] = glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
 
 		// depthNormalBiases[i] holds the depth/normal offset biases in texel units
 		const float unitsPerTexel = radius * 2.0f / shadowTextureSize;
