@@ -1,5 +1,6 @@
 #include "GTAOModule.h"
 #include "Graphics/Pass/GTAOPass.h"
+#include "Graphics/Pass/GTAO2Pass.h"
 #include "Graphics/Pass/GTAOSpatialFilterPass.h"
 #include "Graphics/Pass/GTAOTemporalFilterPass.h"
 #include "Utility/Utility.h"
@@ -61,12 +62,12 @@ void VEngine::GTAOModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 
 
 	// gtao
-	GTAOPass::Data gtaoPassData;
+	GTAO2Pass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassData.m_depthImageHandle = data.m_depthImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
-	GTAOPass::addToGraph(graph, gtaoPassData);
+	GTAO2Pass::addToGraph(graph, gtaoPassData);
 
 
 	// gtao spatial filter

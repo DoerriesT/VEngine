@@ -16,7 +16,7 @@ namespace VEngine
 	GlobalVar<float> g_bloomStrength = 0.04f;
 	GlobalVar<unsigned int> g_ssaoEnabled = 1;
 	GlobalVar<float> g_gtaoRadius = 2.0f;
-	GlobalVar<unsigned int> g_gtaoSteps = 4;
+	GlobalVar<unsigned int> g_gtaoSteps = 6;
 	GlobalVar<unsigned int> g_gtaoMaxRadiusPixels = 256;
 	GlobalConst<unsigned int> g_shadowAtlasSize = 4096;
 	GlobalVar<float> g_ExposureHistogramLogMin = -10.0f;

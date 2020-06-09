@@ -57,5 +57,6 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeInd
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main atmosphereComputeMultipleScattering_cs.hlsl -Fo ./../atmosphereComputeMultipleScattering_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main fourierOpacityVolume_cs.hlsl -Fo ./../fourierOpacityVolume_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main fourierOpacityBlur_cs.hlsl -Fo ./../fourierOpacityBlur_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main gtao2_cs.hlsl -Fo ./../gtao2_cs.spv
 
 pause
