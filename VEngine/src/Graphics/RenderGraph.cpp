@@ -456,6 +456,7 @@ void VEngine::rg::RenderGraph::reset()
 		MemoryRange range{ 0, TIMESTAMP_QUERY_COUNT * 3 * 8 };
 		m_queryResultBuffer->invalidate(1, &range);
 
+		uint32_t queryOffsets[3] = {};
 		for (uint32_t i = 0; i < m_passHandleOrder.size(); ++i)
 		{
 			const Queue *queue = m_passRecordInfo[m_passHandleOrder[i]].m_queue;
@@ -470,9 +471,11 @@ void VEngine::rg::RenderGraph::reset()
 				// mask value by valid timestamp bits
 				for (size_t j = 0; j < 4; ++j)
 				{
-					data[j] = queryResultData[queueIndex * TIMESTAMP_QUERY_COUNT + i * 4 + j];
+					data[j] = queryResultData[queueIndex * TIMESTAMP_QUERY_COUNT + queryOffsets[queueIndex] + j];
 					data[j] = data[j] & m_queueTimestampMasks[queueIndex];
 				}
+
+				queryOffsets[queueIndex] += 4;
 			}
 
 			const float timestampPeriod = queue->getTimestampPeriod();
@@ -1152,7 +1155,7 @@ void VEngine::rg::RenderGraph::record()
 
 			cmdList->beginDebugLabel(m_passNames[passHandle]);
 
-			const uint32_t queryIndex = (i + batch.m_passIndexOffset) * 4;
+			const uint32_t queryIndex = queryCounts[queueTypeIndex];// (i + batch.m_passIndexOffset) * 4;
 			
 			// disable timestamps if the queue doesnt support it
 			if (recordTimings && !resetQueryPools[queueTypeIndex])

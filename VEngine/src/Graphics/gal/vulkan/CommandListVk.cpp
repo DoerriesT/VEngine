@@ -463,8 +463,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 
 				auto &imageBarrier = imageBarriers[imageBarrierCount++];
 				imageBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-				imageBarrier.srcAccessMask = beforeStateInfo.m_accessMask;
-				imageBarrier.dstAccessMask = afterStateInfo.m_accessMask;
+				imageBarrier.srcAccessMask = barrier.m_queueOwnershipAcquireBarrier ? 0 : beforeStateInfo.m_accessMask;
+				imageBarrier.dstAccessMask = barrier.m_queueOwnershipReleaseBarrier ? 0 : afterStateInfo.m_accessMask;
 				imageBarrier.oldLayout = beforeStateInfo.m_layout;
 				imageBarrier.newLayout = afterStateInfo.m_layout;
 				imageBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? srcQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
@@ -476,8 +476,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			{
 				auto &bufferBarrier = bufferBarriers[bufferBarrierCount++];
 				bufferBarrier = { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
-				bufferBarrier.srcAccessMask = beforeStateInfo.m_accessMask;
-				bufferBarrier.dstAccessMask = afterStateInfo.m_accessMask;
+				bufferBarrier.srcAccessMask = barrier.m_queueOwnershipAcquireBarrier ? 0 : beforeStateInfo.m_accessMask;
+				bufferBarrier.dstAccessMask = barrier.m_queueOwnershipReleaseBarrier ? 0 : afterStateInfo.m_accessMask;
 				bufferBarrier.srcQueueFamilyIndex = barrier.m_srcQueue ? srcQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
 				bufferBarrier.dstQueueFamilyIndex = barrier.m_dstQueue ? dstQueueVk->m_queueFamily : VK_QUEUE_FAMILY_IGNORED;
 				bufferBarrier.buffer = (VkBuffer)barrier.m_buffer->getNativeHandle();
@@ -493,8 +493,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 
 			if (executionBarrierRequired)
 			{
-				srcStages |= beforeStateInfo.m_stageMask;
-				dstStages |= afterStateInfo.m_stageMask;
+				srcStages |= barrier.m_queueOwnershipAcquireBarrier ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : beforeStateInfo.m_stageMask;
+				dstStages |= barrier.m_queueOwnershipReleaseBarrier ? VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT : afterStateInfo.m_stageMask;
 			}
 		}
 
