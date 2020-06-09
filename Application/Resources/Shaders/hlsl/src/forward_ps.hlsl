@@ -25,8 +25,8 @@ struct PSInput
 struct PSOutput
 {
 	float4 color : SV_Target0;
-	float4 normal : SV_Target1;
-	float4 specularRoughness : SV_Target2;
+	float4 normalRoughness : SV_Target1;
+	float4 albedoMetalness : SV_Target2;
 };
 
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
@@ -149,12 +149,12 @@ PSOutput main(PSInput input)
 	
 	
 	float3 result = 0.0;
-	float ao = 1.0;
-	if (g_Constants.ambientOcclusion != 0)
-	{
-		ao = g_AmbientOcclusionImage.Load(int3((int2)input.position.xy, 0)).x;
-	}
-	result = (1.0 / PI) * (1.0 - lightingParams.metalness) * lightingParams.albedo * ao;
+	//float ao = 1.0;
+	//if (g_Constants.ambientOcclusion != 0)
+	//{
+	//	ao = g_AmbientOcclusionImage.Load(int3((int2)input.position.xy, 0)).x;
+	//}
+	//result = (1.0 / PI) * (1.0 - lightingParams.metalness) * lightingParams.albedo * ao;
 	
 	// directional lights
 	{
@@ -295,8 +295,8 @@ PSOutput main(PSInput input)
 	PSOutput output;
 	
 	output.color = float4(result, 1.0);
-	output.normal = float4(encodeOctahedron(lightingParams.N), 1.0, 1.0);
-	output.specularRoughness = approximateLinearToSRGB(float4(lerp(0.04, lightingParams.albedo, lightingParams.metalness), lightingParams.roughness));
+	output.normalRoughness = float4(encodeOctahedron24(lightingParams.N), lightingParams.roughness);
+	output.albedoMetalness = approximateLinearToSRGB(float4(lightingParams.albedo, lightingParams.metalness));
 	
 	return output;
 }

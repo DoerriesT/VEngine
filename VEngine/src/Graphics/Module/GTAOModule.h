@@ -16,6 +16,7 @@ namespace VEngine
 			bool m_ignoreHistory;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_velocityImageViewHandle;
+			rg::ImageViewHandle m_normalImageViewHandle;
 		};
 
 		explicit GTAOModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height);

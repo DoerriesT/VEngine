@@ -12,11 +12,12 @@
 
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
 Texture2D<float4> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
+Texture2D<float4> g_SSAOImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
 Texture2D<float4> g_IndirectSpecularLightImage : REGISTER_SRV(INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING, INDIRECT_SPECULAR_LIGHT_IMAGE_SET);
 Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT_IMAGE_SET);
-Texture2D<float4> g_SpecularRoughnessImage : REGISTER_SRV(SPEC_ROUGHNESS_IMAGE_BINDING, SPEC_ROUGHNESS_IMAGE_SET);
-Texture2D<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
+Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, ALBEDO_METALNESS_IMAGE_SET);
+Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, NORMAL_ROUGHNESS_IMAGE_SET);
 TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
 
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, REFLECTION_PROBE_DATA_SET);
@@ -79,11 +80,15 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// skip sky pixels
 	if (depth != 0.0)
 	{
-		const float4 specularRoughness = approximateSRGBToLinear(g_SpecularRoughnessImage.Load(int3(threadID.xy, 0)));
-		const float3 F0 = specularRoughness.xyz;
-		const float roughness = max(specularRoughness.w, 0.04); // avoid precision problems
+		float4 normalRoughness = g_NormalRoughnessImage.Load(int3(threadID.xy, 0));
+		float4 albedoMetalness = approximateSRGBToLinear(g_AlbedoMetalnessImage.Load(int3(threadID.xy, 0)));
+		const float3 F0 = lerp(0.04, albedoMetalness.rgb, albedoMetalness.w);
+		const float roughness = max(normalRoughness.w, 0.04); // avoid precision problems
+		float metalness = albedoMetalness.w;
+		float3 albedo = albedoMetalness.rgb;
 		const float3 V = -normalize(viewSpacePosition.xyz);
-		const float3 N = decodeOctahedron(g_NormalImage.Load(int3(threadID.xy, 0)).xy);
+		
+		const float3 N = decodeOctahedron24(normalRoughness.xyz);
 		
 		float4 indirectSpecular = depth == 50.0 ? g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0)) : 0.0;
 		
@@ -144,6 +149,13 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
 		
 		result += indirectSpecular.rgb;
+		
+		float ao = 1.0;
+		if (g_PushConsts.ssao != 0)
+		{
+			ao = g_SSAOImage.Load(int3(threadID.xy, 0)).x;
+		}
+		result += (1.0 / PI) * (1.0 - metalness) * albedo * ao * preExposureFactor;
 	}
 	
 	// volumetric fog

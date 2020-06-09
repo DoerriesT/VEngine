@@ -81,7 +81,7 @@ float3 decodeOctahedron(float2 v)
     return normalize(result);
 }
 
-float3 decode24(float3 v) 
+float3 decodeOctahedron24(float3 v) 
 {
     return decodeOctahedron(twoSnorm12sEncodedAsUint3InFloat3FormatToFloat2(v));
 }

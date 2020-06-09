@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_ssao;
 			uint32_t m_noiseTextureHandle;
 			gal::DescriptorBufferInfo m_reflectionProbeDataBufferInfo;
 			gal::DescriptorBufferInfo m_reflectionProbeZBinsBufferInfo;
@@ -20,8 +21,9 @@ namespace VEngine
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;
 			rg::ImageViewHandle m_brdfLutImageViewHandle;
-			rg::ImageViewHandle m_specularRoughnessImageViewHandle;
-			rg::ImageViewHandle m_normalImageViewHandle;
+			rg::ImageViewHandle m_albedoMetalnessImageViewHandle;
+			rg::ImageViewHandle m_normalRoughnessImageViewHandle;
+			rg::ImageViewHandle m_ssaoImageViewHandle;
 			rg::ImageViewHandle m_resultImageHandle;
 		};
 

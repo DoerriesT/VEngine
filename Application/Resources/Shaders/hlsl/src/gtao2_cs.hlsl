@@ -1,9 +1,11 @@
 #include "bindingHelper.hlsli"
 #include "gtao2.hlsli"
 #include "common.hlsli"
+#include "commonEncoding.hlsli"
 
 RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
 
@@ -77,17 +79,19 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 centerPos = getViewSpacePos(texCoord);
 	float3 V = normalize(-centerPos);
 	
-	// Sample neighboring pixels
-	const float3 Pr = getViewSpacePos((float2(threadID.xy + 0.5) + float2(1.0, 0.0)) * g_Constants.texelSize);
-	const float3 Pl = getViewSpacePos((float2(threadID.xy + 0.5) + float2(-1.0, 0.0)) * g_Constants.texelSize);
-	const float3 Pb = getViewSpacePos((float2(threadID.xy + 0.5) + float2(0.0, 1.0)) * g_Constants.texelSize);
-	const float3 Pt = getViewSpacePos((float2(threadID.xy + 0.5) + float2(0.0, -1.0)) * g_Constants.texelSize);
+	const float3 N = decodeOctahedron24(g_NormalImage.Load(int3(threadID.xy, 0)).xyz);
 	
-	// Calculate tangent basis vectors using the minimum difference
-	const float3 dPdu = minDiff(centerPos, Pr, Pl);
-	const float3 dPdv = minDiff(centerPos, Pt, Pb);
-	
-	const float3 N = normalize(cross(dPdu, dPdv));
+	//// Sample neighboring pixels
+	//const float3 Pr = getViewSpacePos((float2(threadID.xy + 0.5) + float2(1.0, 0.0)) * g_Constants.texelSize);
+	//const float3 Pl = getViewSpacePos((float2(threadID.xy + 0.5) + float2(-1.0, 0.0)) * g_Constants.texelSize);
+	//const float3 Pb = getViewSpacePos((float2(threadID.xy + 0.5) + float2(0.0, 1.0)) * g_Constants.texelSize);
+	//const float3 Pt = getViewSpacePos((float2(threadID.xy + 0.5) + float2(0.0, -1.0)) * g_Constants.texelSize);
+	//
+	//// Calculate tangent basis vectors using the minimum difference
+	//const float3 dPdu = minDiff(centerPos, Pr, Pl);
+	//const float3 dPdv = minDiff(centerPos, Pt, Pb);
+	//
+	//const float3 N = normalize(cross(dPdu, dPdv));
 	
 	float scaling = g_Constants.radiusScale / -centerPos.z;
 	scaling = min(scaling, g_Constants.texelSize.x * g_Constants.maxTexelRadius);

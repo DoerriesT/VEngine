@@ -17,8 +17,8 @@ namespace VEngine
 			rg::ImageViewHandle m_rayHitPDFImageHandle;
 			rg::ImageViewHandle m_maskImageHandle;
 			rg::ImageViewHandle m_depthImageHandle;
-			rg::ImageViewHandle m_normalImageHandle;
-			rg::ImageViewHandle m_specularRoughnessImageHandle;
+			rg::ImageViewHandle m_normalRoughnessImageHandle;
+			rg::ImageViewHandle m_albedoMetalnessImageHandle;
 			rg::ImageViewHandle m_prevColorImageHandle;
 			rg::ImageViewHandle m_velocityImageHandle;
 			rg::ImageViewHandle m_resultImageHandle;

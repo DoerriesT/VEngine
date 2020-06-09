@@ -35,7 +35,6 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.punctualLightCount = commonData->m_punctualLightCount;
 	consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
-	consts.ambientOcclusion = data.m_ssao;
 	consts.width = commonData->m_width;
 	consts.coordScale = 4.0f;
 	consts.coordBias = (glm::vec3(64.0f) * 0.5f + 0.5f);// *4.0f;
@@ -51,22 +50,18 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 		//{rg::ResourceViewHandle(data.m_indirectBufferHandle), {gal::ResourceState::READ_INDIRECT_BUFFER, PipelineStageFlagBits::DRAW_INDIRECT_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_DEPTH_STENCIL, PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT}},
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT }},
-		{rg::ResourceViewHandle(data.m_normalImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT}},
-		{rg::ResourceViewHandle(data.m_specularRoughnessImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} },
+		{rg::ResourceViewHandle(data.m_normalRoughnessImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT}},
+		{rg::ResourceViewHandle(data.m_albedoMetalnessImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT} },
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_deferredShadowImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		//{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_extinctionVolumeImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_fomImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_atmosphereScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_atmosphereTransmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
-
-	uint32_t usageCount = data.m_ssao ? sizeof(passUsages) / sizeof(passUsages[0]) : sizeof(passUsages) / sizeof(passUsages[0]) - 1;
 
 	graph.addPass("Forward Lighting", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
@@ -79,8 +74,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 			ColorAttachmentDescription colorAttachDescs[]
 			{
 				{registry.getImageView(data.m_resultImageViewHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} },
-				{registry.getImageView(data.m_normalImageViewHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} },
-				{registry.getImageView(data.m_specularRoughnessImageViewHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} },
+				{registry.getImageView(data.m_normalRoughnessImageViewHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} },
+				{registry.getImageView(data.m_albedoMetalnessImageViewHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} },
 			};
 			cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, &depthAttachDesc, { {}, {width, height} });
 
@@ -94,8 +89,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 			Format colorAttachmentFormats[]
 			{
 				registry.getImageView(data.m_resultImageViewHandle)->getImage()->getDescription().m_format,
-				registry.getImageView(data.m_normalImageViewHandle)->getImage()->getDescription().m_format,
-				registry.getImageView(data.m_specularRoughnessImageViewHandle)->getImage()->getDescription().m_format,
+				registry.getImageView(data.m_normalRoughnessImageViewHandle)->getImage()->getDescription().m_format,
+				registry.getImageView(data.m_albedoMetalnessImageViewHandle)->getImage()->getDescription().m_format,
 			};
 
 			// sky
@@ -190,7 +185,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 					ImageView *shadowImageView = registry.getImageView(data.m_deferredShadowImageViewHandle);
 					//ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
-					ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
+					//ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
 					ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
 					ImageView *extinctionVolumeImageViewHandle = registry.getImageView(data.m_extinctionVolumeImageViewHandle);
 					ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
@@ -210,7 +205,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
 						Initializers::sampledImage(&shadowImageView, DEFERRED_SHADOW_IMAGE_BINDING),
 						//Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
-						Initializers::sampledImage(&ssaoImageViewHandle, SSAO_IMAGE_BINDING),
+						//Initializers::sampledImage(&ssaoImageViewHandle, SSAO_IMAGE_BINDING),
 						Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
 						Initializers::sampledImage(&extinctionVolumeImageViewHandle, EXTINCTION_IMAGE_BINDING),
 						Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),

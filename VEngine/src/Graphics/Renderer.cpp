@@ -228,26 +228,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// create graph managed resources
 
-	rg::ImageViewHandle normalImageViewHandle;
+	rg::ImageViewHandle normalRoughnessImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
-		desc.m_name = "Normals Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R16G16_SFLOAT;
-
-		normalImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-	}
-
-	rg::ImageViewHandle specularRoughnessImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Specular/Roughness Image";
+		desc.m_name = "Normal/Roughness Image";
 		desc.m_clear = false;
 		desc.m_clearValue.m_imageClearValue = {};
 		desc.m_width = m_width;
@@ -257,7 +241,23 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		desc.m_samples = SampleCount::_1;
 		desc.m_format = Format::R8G8B8A8_UNORM;
 
-		specularRoughnessImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+		normalRoughnessImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+	}
+
+	rg::ImageViewHandle albedoMetalnessImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Albedo/Metalness Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::R8G8B8A8_UNORM;
+
+		albedoMetalnessImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}
 
 	rg::ImageHandle deferredShadowsImageHandle;
@@ -674,21 +674,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 
-
-	// gtao
-	GTAOModule::Data gtaoModuleData;
-	gtaoModuleData.m_passRecordContext = &passRecordContext;
-	gtaoModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
-	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	//gtaoModuleData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
-	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
-
-	if (g_ssaoEnabled)
-	{
-		m_gtaoModule->addToGraph(graph, gtaoModuleData);
-	}
-
-
 	if (!lightData.m_fomAtlasDrawInfos.empty())
 	{
 		FourierOpacityPass::Data fourierOpacityPassData;
@@ -733,7 +718,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// forward lighting
 	ForwardLightingPass::Data forwardPassData;
 	forwardPassData.m_passRecordContext = &passRecordContext;
-	forwardPassData.m_ssao = g_ssaoEnabled;
 	forwardPassData.m_instanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount
 		+ renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount; // masked entities come right after opaque entities in the list, so we can just add the counts
 	forwardPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
@@ -753,10 +737,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
 	forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
-	forwardPassData.m_normalImageViewHandle = normalImageViewHandle;
-	forwardPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
+	forwardPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	forwardPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
 	//forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
+	//forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	forwardPassData.m_probeImageView = m_reflectionProbeModule->getCubeArrayView();
 	forwardPassData.m_atmosphereConstantBufferInfo = m_atmosphericScatteringModule->getConstantBufferInfo();
@@ -787,18 +771,33 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
 	ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
-	ssrModuleData.m_normalImageViewHandle = normalImageViewHandle;
+	ssrModuleData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
 	ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	ssrModuleData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle; 
+	ssrModuleData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle; 
 	ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
 	ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
 	
 	m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
+	// gtao
+	GTAOModule::Data gtaoModuleData;
+	gtaoModuleData.m_passRecordContext = &passRecordContext;
+	gtaoModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
+	gtaoModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	gtaoModuleData.m_normalImageViewHandle = normalRoughnessImageViewHandle;
+	gtaoModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
+
+	if (g_ssaoEnabled)
+	{
+		m_gtaoModule->addToGraph(graph, gtaoModuleData);
+	}
+
+
 	// apply volumetric fog and indirect specular light to scene
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPassData.m_ssao = g_ssaoEnabled;
 	volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
 	volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
 	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
@@ -809,8 +808,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
 	volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
-	volumetricFogApplyPassData.m_specularRoughnessImageViewHandle = specularRoughnessImageViewHandle;
-	volumetricFogApplyPassData.m_normalImageViewHandle = normalImageViewHandle;
+	volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
+	volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	volumetricFogApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);

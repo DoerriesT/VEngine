@@ -84,8 +84,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		{rg::ResourceViewHandle(data.m_rayHitPDFImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_maskImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_hiZPyramidImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_normalImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_specularRoughnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_normalRoughnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("SSR", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -109,8 +108,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				ImageView *rayHitPDFImageView = registry.getImageView(data.m_rayHitPDFImageHandle);
 				ImageView *maskImageView = registry.getImageView(data.m_maskImageHandle);
 				ImageView *hiZImageView = registry.getImageView(data.m_hiZPyramidImageHandle);
-				ImageView *normalImageView = registry.getImageView(data.m_normalImageHandle);
-				ImageView *specularRoughnessImageView = registry.getImageView(data.m_specularRoughnessImageHandle);
+				ImageView *normalRoughnessImageView = registry.getImageView(data.m_normalRoughnessImageHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
@@ -118,8 +116,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 					Initializers::storageImage(&rayHitPDFImageView, RAY_HIT_PDF_IMAGE_BINDING),
 					Initializers::storageImage(&maskImageView, MASK_IMAGE_BINDING),
 					Initializers::sampledImage(&hiZImageView, HIZ_PYRAMID_IMAGE_BINDING),
-					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
-					Initializers::sampledImage(&specularRoughnessImageView, SPEC_ROUGHNESS_IMAGE_BINDING),
+					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 

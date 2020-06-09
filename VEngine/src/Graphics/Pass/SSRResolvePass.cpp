@@ -48,8 +48,8 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 		{rg::ResourceViewHandle(data.m_rayHitPDFImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_maskImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_normalImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_specularRoughnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_normalRoughnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_albedoMetalnessImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_prevColorImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_velocityImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -78,8 +78,8 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 				ImageView *rayHitPdfImageView = registry.getImageView(data.m_rayHitPDFImageHandle);
 				ImageView *maskImageView = registry.getImageView(data.m_maskImageHandle);
 				ImageView *depthImageView = registry.getImageView(data.m_depthImageHandle);
-				ImageView *normalImageView = registry.getImageView(data.m_normalImageHandle);
-				ImageView *specularRoughnessImageView = registry.getImageView(data.m_specularRoughnessImageHandle);
+				ImageView *normalRoughnessImageView = registry.getImageView(data.m_normalRoughnessImageHandle);
+				ImageView *albedoMetalnessImageView = registry.getImageView(data.m_albedoMetalnessImageHandle);
 				ImageView *prevColorImageView = registry.getImageView(data.m_prevColorImageHandle);
 				ImageView *velocityImageView = registry.getImageView(data.m_velocityImageHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
@@ -91,8 +91,8 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					Initializers::sampledImage(&rayHitPdfImageView, RAY_HIT_PDF_IMAGE_BINDING),
 					Initializers::sampledImage(&maskImageView, MASK_IMAGE_BINDING),
 					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
-					Initializers::sampledImage(&specularRoughnessImageView, SPEC_ROUGHNESS_IMAGE_BINDING),
+					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
+					//Initializers::sampledImage(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
 					Initializers::sampledImage(&prevColorImageView, PREV_COLOR_IMAGE_BINDING),
 					Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),

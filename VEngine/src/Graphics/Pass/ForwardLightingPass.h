@@ -12,7 +12,6 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_ssao;
 			uint32_t m_instanceDataCount;
 			uint32_t m_instanceDataOffset;
 			const SubMeshInstanceData *m_instanceData;
@@ -35,10 +34,8 @@ namespace VEngine
 			rg::ImageViewHandle m_deferredShadowImageViewHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
-			rg::ImageViewHandle m_normalImageViewHandle;
-			rg::ImageViewHandle m_specularRoughnessImageViewHandle;
-			//rg::ImageViewHandle m_volumetricFogImageViewHandle;
-			rg::ImageViewHandle m_ssaoImageViewHandle;
+			rg::ImageViewHandle m_normalRoughnessImageViewHandle;
+			rg::ImageViewHandle m_albedoMetalnessImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			gal::ImageView *m_probeImageView;
 			rg::ImageViewHandle m_extinctionVolumeImageViewHandle;

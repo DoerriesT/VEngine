@@ -45,6 +45,7 @@ void VEngine::GTAO2Pass::addToGraph(rg::RenderGraph &graph, const Data &data)
 	{
 		{rg::ResourceViewHandle(data.m_resultImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_normalImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		//{rg::ResourceViewHandle(data.m_tangentSpaceImageHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 
@@ -67,12 +68,13 @@ void VEngine::GTAO2Pass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 				ImageView *depthImageView = registry.getImageView(data.m_depthImageHandle);
-				//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageHandle);
+				ImageView *normalImageView = registry.getImageView(data.m_normalImageViewHandle);
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),

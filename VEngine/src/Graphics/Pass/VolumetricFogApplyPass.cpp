@@ -38,11 +38,12 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 	{
 		{rg::ResourceViewHandle(data.m_resultImageHandle), {gal::ResourceState::READ_WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_indirectSpecularLightImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_brdfLutImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
-		{rg::ResourceViewHandle(data.m_specularRoughnessImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
-		{rg::ResourceViewHandle(data.m_normalImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_albedoMetalnessImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_normalRoughnessImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_reflectionProbeBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
@@ -67,11 +68,12 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
+				ImageView *ssaoImageView = registry.getImageView(data.m_ssaoImageViewHandle);
 				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 				ImageView *indirectSpecularImageView = registry.getImageView(data.m_indirectSpecularLightImageViewHandle);
 				ImageView *brdfLutImageView = registry.getImageView(data.m_brdfLutImageViewHandle);
-				ImageView *specularRoughnessImageView = registry.getImageView(data.m_specularRoughnessImageViewHandle);
-				ImageView *normalImageView = registry.getImageView(data.m_normalImageViewHandle);
+				ImageView *albedoMetalnessImageView = registry.getImageView(data.m_albedoMetalnessImageViewHandle);
+				ImageView *normalRoughnessImageView = registry.getImageView(data.m_normalRoughnessImageViewHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 				DescriptorBufferInfo reflProbeMaskBufferInfo = registry.getBufferInfo(data.m_reflectionProbeBitMaskBufferHandle);
 
@@ -79,12 +81,13 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 				{
 					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
 					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
+					Initializers::sampledImage(&ssaoImageView, SSAO_IMAGE_BINDING),
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::sampledImage(&indirectSpecularImageView, INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING),
 					Initializers::sampledImage(&brdfLutImageView, BRDF_LUT_IMAGE_BINDING),
-					Initializers::sampledImage(&specularRoughnessImageView, SPEC_ROUGHNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&normalImageView, NORMAL_IMAGE_BINDING),
+					Initializers::sampledImage(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
+					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
 					Initializers::sampledImage(&data.m_reflectionProbeImageView, REFLECTION_PROBE_IMAGE_BINDING),
 					Initializers::storageBuffer(&data.m_reflectionProbeDataBufferInfo, REFLECTION_PROBE_DATA_BINDING),
 					Initializers::storageBuffer(&reflProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
@@ -113,6 +116,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			pushConsts.texelHeight = 1.0f / height;
 			pushConsts.useNoise = g_fogLookupDithering;
 			pushConsts.probeCount = data.m_passRecordContext->m_commonRenderData->m_reflectionProbeCount;
+			pushConsts.ssao = data.m_ssao;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

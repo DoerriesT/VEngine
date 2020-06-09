@@ -65,6 +65,7 @@ void VEngine::GTAOModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 	GTAO2Pass::Data gtaoPassData;
 	gtaoPassData.m_passRecordContext = data.m_passRecordContext;
 	gtaoPassData.m_depthImageHandle = data.m_depthImageViewHandle;
+	gtaoPassData.m_normalImageViewHandle = data.m_normalImageViewHandle;
 	gtaoPassData.m_resultImageHandle = gtaoRawImageViewHandle;
 
 	GTAO2Pass::addToGraph(graph, gtaoPassData);
