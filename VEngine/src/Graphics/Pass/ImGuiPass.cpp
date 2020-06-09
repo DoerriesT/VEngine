@@ -135,10 +135,10 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				// for directx-style ndc space (y up)
 				float scale[2];
 				scale[0] = (1.0f / (data.m_imGuiDrawData->DisplaySize.x - data.m_imGuiDrawData->DisplayPos.x)) * 2.0f;
-				scale[1] = (1.0f / (data.m_imGuiDrawData->DisplaySize.y - data.m_imGuiDrawData->DisplayPos.y)) * 2.0f;
+				scale[1] = (1.0f / (data.m_imGuiDrawData->DisplaySize.y - data.m_imGuiDrawData->DisplayPos.y)) * -2.0f;
 				float translate[2];
 				translate[0] = -1.0f;
-				translate[1] = -1.0f;
+				translate[1] = 1.0f;
 #endif
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, sizeof(float) * 0, sizeof(float) * 2, scale);
 				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, sizeof(float) * 2, sizeof(float) * 2, translate);
