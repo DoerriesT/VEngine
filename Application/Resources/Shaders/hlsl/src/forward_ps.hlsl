@@ -2,6 +2,7 @@
 #include "forward.hlsli"
 #include "packing.hlsli"
 #include "common.hlsli"
+#define SPECULAR_AA 1
 #include "lighting.hlsli"
 #include "srgb.hlsli"
 #include "commonFilter.hlsli"
