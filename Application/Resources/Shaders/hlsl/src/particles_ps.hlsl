@@ -86,7 +86,7 @@ PSOutput main(PSInput input)
 	// ambient
 	{
 		float3 ambientLight = (1.0 / PI) * albedo;
-		result += ambientLight * (1.0 / (4.0 * PI));
+		result += ambientLight;
 	}
 	
 	// directional lights
@@ -234,6 +234,8 @@ PSOutput main(PSInput input)
 			}
 		}
 	}
+	
+	result *= (1.0 / (4.0 * PI));
 	
 	// apply pre-exposure
 	result *= asfloat(g_ExposureData.Load(0));

@@ -34,7 +34,7 @@ VEngine::ParticleEmitterManager::ParticleEmitterManager(entt::registry &entityRe
 	m_entityRegistry.on_remove<ParticleEmitterComponent>().connect<&ParticleEmitterManager::removeInternalComponent>(this);
 }
 
-void VEngine::ParticleEmitterManager::update(float timeDelta)
+void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 viewMatrix)
 {
 	m_time += timeDelta;
 	m_particleDrawDataLists.clear();
@@ -141,6 +141,12 @@ void VEngine::ParticleEmitterManager::update(float timeDelta)
 			}
 
 			internalComponent.m_activeParticleCount = particleCount;
+
+			glm::vec4 viewMatrixRow2 = glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], viewMatrix[3][2]);
+			std::sort(internalComponent.m_drawData, internalComponent.m_drawData + particleCount, [&](const auto &lhs, const auto &rhs)
+				{
+					return glm::dot(glm::vec4(lhs.m_position, 1.0f), viewMatrixRow2) < glm::dot(glm::vec4(rhs.m_position, 1.0f), viewMatrixRow2);
+				});
 
 			m_particleDrawDataLists.push_back(internalComponent.m_drawData);
 			m_particleDrawDataListSizes.push_back(internalComponent.m_activeParticleCount);

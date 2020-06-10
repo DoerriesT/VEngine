@@ -876,7 +876,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		m_commonRenderData.m_localParticipatingMediaCount = static_cast<uint32_t>(m_lightData.m_localParticipatingMedia.size());
 		m_commonRenderData.m_reflectionProbeCount = static_cast<uint32_t>(m_lightData.m_localReflectionProbes.size());
 
-		m_particleEmitterManager->update(timeDelta);
+		m_particleEmitterManager->update(timeDelta, m_commonRenderData.m_viewMatrix);
 
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());

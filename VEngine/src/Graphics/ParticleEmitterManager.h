@@ -2,6 +2,7 @@
 #include <entt/entity/registry.hpp>
 #include <random>
 #include <vector>
+#include <glm/mat4x4.hpp>
 #include "ParticleDrawData.h"
 
 namespace VEngine
@@ -10,7 +11,7 @@ namespace VEngine
 	{
 	public:
 		explicit ParticleEmitterManager(entt::registry &entityRegistry);
-		void update(float timeDelta);
+		void update(float timeDelta, const glm::mat4 viewMatrix);
 		void getParticleDrawData(uint32_t &listCount, ParticleDrawData **&particleLists, uint32_t *&listSizes);
 
 	private:
