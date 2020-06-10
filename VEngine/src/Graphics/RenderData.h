@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <glm/mat4x4.hpp>
+#include "ParticleDrawData.h"
 
 namespace VEngine
 {
@@ -98,5 +99,8 @@ namespace VEngine
 		uint32_t m_probeShadowViewRenderListOffset;
 		uint32_t m_probeShadowViewRenderListCount;
 		ViewRenderList *m_renderLists;
+		uint32_t m_particleDataDrawListCount;
+		uint32_t *m_particleDrawDataListSizes;
+		ParticleDrawData **m_particleDrawDataLists;
 	};
 }

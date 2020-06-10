@@ -13,6 +13,7 @@
 #include <Components/ParticipatingMediumComponent.h>
 #include <Components/BoundingBoxComponent.h>
 #include <Components/ReflectionProbeComponent.h>
+#include <Components/ParticleEmitterComponent.h>
 #include <iostream>
 #include <GlobalVar.h>
 #include <Scene.h>
@@ -179,6 +180,20 @@ public:
 		dlc.m_normalOffsetBias[2] = 2.0f;
 		dlc.m_normalOffsetBias[3] = 2.0f;
 		entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
+
+		auto particleEmitter = entityRegistry.create();
+		entityRegistry.assign<VEngine::TransformationComponent>(particleEmitter, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
+		VEngine::ParticleEmitterComponent emitterC{};
+		emitterC.m_direction = glm::vec3(0.0f, 5.0f, 0.0f);
+		emitterC.m_particleCount = 128;
+		emitterC.m_particleLifetime = 10.0f;
+		emitterC.m_velocityMagnitude = 1.0f;
+		emitterC.m_spawnType = VEngine::ParticleEmitterComponent::DISK;
+		emitterC.m_spawnAreaSize = 0.2f;
+
+		entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
+		
+		entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
 
 		std::default_random_engine e;
 		std::uniform_real_distribution<float> px(-14.0f, 14.0f);

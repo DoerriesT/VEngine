@@ -10,6 +10,7 @@
 #include "BVH.h"
 #include "Renderer.h"
 #include "ReflectionProbeManager.h"
+#include "ParticleEmitterManager.h"
 
 namespace VEngine
 {
@@ -47,6 +48,7 @@ namespace VEngine
 		entt::registry &m_entityRegistry;
 		std::unique_ptr<Renderer> m_renderer;
 		std::unique_ptr<ReflectionProbeManager> m_reflectionProbeManager;
+		std::unique_ptr<ParticleEmitterManager> m_particleEmitterManager;
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;

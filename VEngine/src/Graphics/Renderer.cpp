@@ -32,6 +32,7 @@
 #include "Pass/GaussianDownsamplePass.h"
 #include "Pass/VolumetricFogExtinctionVolumeDebugPass.h"
 #include "Pass/FourierOpacityPass.h"
+#include "Pass/ParticlesPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -751,7 +752,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
-
 	// Hi-Z nearest depth pyramid
 	HiZPyramidPass::OutData hiZMaxPyramidPassOutData;
 	HiZPyramidPass::Data hiZMaxPyramidPassData;
@@ -815,6 +815,19 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
+
+	ParticlesPass::Data particlesPassData;
+	particlesPassData.m_passRecordContext = &passRecordContext;
+	particlesPassData.m_listCount = renderData.m_particleDataDrawListCount;
+	particlesPassData.m_particleLists = renderData.m_particleDrawDataLists;
+	particlesPassData.m_listSizes = renderData.m_particleDrawDataListSizes;
+	particlesPassData.m_depthImageViewHandle = depthImageViewHandle;
+	particlesPassData.m_resultImageViewHandle = lightImageViewHandle;
+
+	if (renderData.m_particleDataDrawListCount)
+	{
+		ParticlesPass::addToGraph(graph, particlesPassData);
+	}
 
 
 	//VolumetricFogExtinctionVolumeDebugPass::Data extinctionVolumeDebugData;

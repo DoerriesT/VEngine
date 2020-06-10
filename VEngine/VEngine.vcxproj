@@ -147,6 +147,7 @@
     <ClInclude Include="src\Components\DirectionalLightComponent.h" />
     <ClInclude Include="src\Components\MeshComponent.h" />
     <ClInclude Include="src\Components\ParticipatingMediumComponent.h" />
+    <ClInclude Include="src\Components\ParticleEmitterComponent.h" />
     <ClInclude Include="src\Components\PointLightComponent.h" />
     <ClInclude Include="src\Components\ReflectionProbeComponent.h" />
     <ClInclude Include="src\Components\RenderableComponent.h" />
@@ -211,6 +212,8 @@
     <ClInclude Include="src\Graphics\Module\ReflectionProbeModule.h" />
     <ClInclude Include="src\Graphics\Module\SSRModule.h" />
     <ClInclude Include="src\Graphics\Module\VolumetricFogModule.h" />
+    <ClInclude Include="src\Graphics\ParticleDrawData.h" />
+    <ClInclude Include="src\Graphics\ParticleEmitterManager.h" />
     <ClInclude Include="src\Graphics\PassRecordContext.h" />
     <ClInclude Include="src\Graphics\PassTimingInfo.h" />
     <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h" />
@@ -232,6 +235,7 @@
     <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h" />
     <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
+    <ClInclude Include="src\Graphics\Pass\ParticlesPass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass2.h" />
@@ -339,6 +343,7 @@
     <ClCompile Include="src\Graphics\Module\ReflectionProbeModule.cpp" />
     <ClCompile Include="src\Graphics\Module\SSRModule.cpp" />
     <ClCompile Include="src\Graphics\Module\VolumetricFogModule.cpp" />
+    <ClCompile Include="src\Graphics\ParticleEmitterManager.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp" />
@@ -358,6 +363,7 @@
     <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ParticlesPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp" />

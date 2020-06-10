@@ -480,6 +480,18 @@
     <ClInclude Include="src\Graphics\Pass\GTAO2Pass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ParticlesPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Components\ParticleEmitterComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\ParticleEmitterManager.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\ParticleDrawData.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -814,6 +826,12 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\GTAO2Pass.cpp">
       <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ParticlesPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\ParticleEmitterManager.cpp">
+      <Filter>src\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
