@@ -9,6 +9,8 @@
 
 using namespace VEngine::gal;
 
+extern int g_volumetricShadow;
+
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
@@ -39,9 +41,16 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 		Constants consts;
+		consts.viewMatrix = commonData->m_viewMatrix;
 		consts.viewProjectionMatrix = commonData->m_jitteredViewProjectionMatrix;
 		consts.cameraPosition = commonData->m_cameraPosition;
 		consts.cameraUp = glm::vec3(commonData->m_viewMatrix[0][1], commonData->m_viewMatrix[1][1], commonData->m_viewMatrix[2][1]);
+		consts.width = commonData->m_width;
+		consts.volumetricShadow = g_volumetricShadow;
+		consts.directionalLightCount = commonData->m_directionalLightCount;
+		consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
+		consts.punctualLightCount = commonData->m_punctualLightCount;
+		consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
 
 		memcpy(uboDataPtr, &consts, sizeof(consts));
 	}
@@ -63,6 +72,13 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 
 	rg::ResourceUsageDescription passUsages[]
 	{
+		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_DEPTH_STENCIL, PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT}},
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT }},
 	};
@@ -118,16 +134,41 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 
 			// update descriptor sets
 			{
+				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
+				ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
+				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
+				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
+				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
+				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
+				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
+				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
+
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::storageBuffer(&particleBufferInfo, PARTICLES_BINDING),
+					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
+					Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
+					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
+					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),
+					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
+					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
+					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
+					Initializers::storageBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::storageBuffer(&data.m_punctualLightsBufferInfo, PUNCTUAL_LIGHTS_BINDING),
+					Initializers::storageBuffer(&data.m_punctualLightsZBinsBufferInfo, PUNCTUAL_LIGHTS_Z_BINS_BINDING),
+					Initializers::storageBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
+					Initializers::storageBuffer(&data.m_punctualLightsShadowedBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::storageBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
+					Initializers::storageBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 			}
 
-			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
 
 			Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 			Rect scissor{ { 0, 0 }, { width, height } };
@@ -138,9 +179,12 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			uint32_t particleOffset = 0;
 			for (size_t i = 0; i < data.m_listCount; ++i)
 			{
-				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, 4, &particleOffset);
-				cmdList->draw(6 * data.m_listSizes[i], 1, 0, 0);
-				particleOffset += data.m_listSizes[i];
+				if (data.m_listSizes[i])
+				{
+					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(particleOffset), &particleOffset);
+					cmdList->draw(6 * data.m_listSizes[i], 1, 0, 0);
+					particleOffset += data.m_listSizes[i];
+				}
 			}
 
 			cmdList->endRenderPass();

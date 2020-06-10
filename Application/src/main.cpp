@@ -153,7 +153,9 @@ public:
 
 
 		auto perlinNoiseTexture = m_engine->getRenderSystem().createTexture3D("Resources/Textures/perlinNoiseBC4.dds");
+		auto smokeTexture = m_engine->getRenderSystem().createTexture("Resources/Textures/smoke.dds");
 		m_engine->getRenderSystem().updateTexture3DData();
+		m_engine->getRenderSystem().updateTextureData();
 
 
 		g_globalFogEntity = entityRegistry.create();
@@ -190,6 +192,7 @@ public:
 		emitterC.m_velocityMagnitude = 1.0f;
 		emitterC.m_spawnType = VEngine::ParticleEmitterComponent::DISK;
 		emitterC.m_spawnAreaSize = 0.2f;
+		emitterC.m_textureHandle = smokeTexture;
 
 		entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
 		

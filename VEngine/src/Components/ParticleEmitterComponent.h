@@ -17,5 +17,6 @@ namespace VEngine
 		float m_velocityMagnitude;
 		SpawnType m_spawnType;
 		float m_spawnAreaSize;
+		Texture2DHandle m_textureHandle;
 	};
 }

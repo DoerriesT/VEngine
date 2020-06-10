@@ -66,8 +66,10 @@ void VEngine::ParticleEmitterManager::update(float timeDelta)
 					curBufferParticle = particle;
 
 					auto &drawData = internalComponent.m_drawData[particleCount - 1];
+					drawData = {};
 					drawData.m_position = particle.m_position;
 					drawData.m_opacity = opacity;
+					drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
 				}
 			}
 
@@ -130,6 +132,12 @@ void VEngine::ParticleEmitterManager::update(float timeDelta)
 
 				assert(particleCount < emitterComponent.m_particleCount);
 				internalComponent.m_curParticles[particleCount++] = particle;
+
+				auto &drawData = internalComponent.m_drawData[particleCount - 1];
+				drawData = {};
+				drawData.m_position = particle.m_position;
+				drawData.m_opacity = 1.0f;
+				drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
 			}
 
 			internalComponent.m_activeParticleCount = particleCount;
