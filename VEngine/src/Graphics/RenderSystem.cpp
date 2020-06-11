@@ -373,6 +373,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 							for (size_t i = 0; i < 6; ++i)
 							{
+								// make sure the shadow map has a small border to account for filtering
+								constexpr uint32_t texelBorderSize = 4;
+								const float scale = (atlasDrawInfo[i].m_size - texelBorderSize * 2) / static_cast<float>(atlasDrawInfo[i].m_size);
+								shadowMatrices[i] = glm::scale(glm::vec3(scale, scale, 1.0f)) * shadowMatrices[i];
+
 								atlasDrawInfo[i].m_shadowMatrixIdx = static_cast<uint32_t>(m_shadowMatrices.size());
 								atlasDrawInfo[i].m_drawListIdx = static_cast<uint32_t>(renderLists.size());
 
@@ -393,6 +398,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								punctualLightShadowed.m_shadowAtlasParams[i].x = atlasDrawInfo[i].m_size * (1.0f / 8192.0f);
 								punctualLightShadowed.m_shadowAtlasParams[i].y = atlasDrawInfo[i].m_offsetX / atlasDrawInfo[i].m_size * punctualLightShadowed.m_shadowAtlasParams[i].x;
 								punctualLightShadowed.m_shadowAtlasParams[i].z = atlasDrawInfo[i].m_offsetY / atlasDrawInfo[i].m_size * punctualLightShadowed.m_shadowAtlasParams[i].x;
+								punctualLightShadowed.m_shadowAtlasParams[i].w = scale;
 
 								m_lightData.m_shadowAtlasDrawInfos.push_back(atlasDrawInfo[i]);
 							}
@@ -498,7 +504,11 @@ void VEngine::RenderSystem::update(float timeDelta)
 								upDir = glm::vec3(1.0f, 0.0f, 0.0f);
 							}
 
-							glm::mat4 shadowMatrix = glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
+							// make sure the shadow map has a small border to account for filtering
+							constexpr uint32_t texelBorderSize = 4;
+							const float scale = (tileSize - texelBorderSize * 2) / static_cast<float>(tileSize);
+
+							glm::mat4 shadowMatrix = glm::scale(glm::vec3(scale, scale, 1.0f)) * glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
 								* glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + directionWS, upDir);
 
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };

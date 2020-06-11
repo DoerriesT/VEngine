@@ -180,6 +180,8 @@ PSOutput main(PSInput input)
 					float3 lightToPoint = worldSpacePos - lightShadowed.positionWS;
 					int faceIdx = 0;
 					shadowPos.xy = sampleCube(lightToPoint, faceIdx);
+					// scale down the coord to account for the border area required for filtering
+					shadowPos.xy = ((shadowPos.xy * 2.0 - 1.0) * lightShadowed.shadowAtlasParams[faceIdx].w) * 0.5 + 0.5;
 					shadowPos.x = 1.0 - shadowPos.x; // correct for handedness (cubemap coordinate system is left-handed, our world space is right-handed)
 					shadowPos.xy = shadowPos.xy * lightShadowed.shadowAtlasParams[faceIdx].x + lightShadowed.shadowAtlasParams[faceIdx].yz;
 					

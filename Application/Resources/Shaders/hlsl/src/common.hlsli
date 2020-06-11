@@ -59,7 +59,7 @@ struct PunctualLightShadowed
 	float4 shadowMatrix1;
 	float4 shadowMatrix2;
 	float4 shadowMatrix3;
-	float4 shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: unused
+	float4 shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: point light border correction scale
 	float4 fomShadowAtlasParams; // x: scale, y: biasX, z: biasY, w: volumetric shadows enabled
 	float3 positionWS;
 	float radius;
