@@ -5,6 +5,7 @@
 
 void fourierOpacityAccumulate(float depth, float transmittance, inout float4 result0, inout float4 result1)
 {
+	transmittance = max(transmittance, 1e-5);
 	const float depthTwoPi = depth * 2.0 * PI;
 
 	const float lnTransmittance = -2.0 * log(transmittance);

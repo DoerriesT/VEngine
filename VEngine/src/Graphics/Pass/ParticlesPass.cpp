@@ -54,21 +54,6 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 
 		memcpy(uboDataPtr, &consts, sizeof(consts));
 	}
-	
-	// particle buffer
-	DescriptorBufferInfo particleBufferInfo{ nullptr, 0, sizeof(ParticleDrawData) * totalParticleCount };
-	{
-		auto *storageBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
-
-		uint8_t *particleDataPtr = nullptr;
-		storageBuffer->allocate(particleBufferInfo.m_range, particleBufferInfo.m_offset, particleBufferInfo.m_buffer, particleDataPtr);
-
-		for (size_t i = 0; i < data.m_listCount; ++i)
-		{
-			memcpy(particleDataPtr, data.m_particleLists[i], data.m_listSizes[i] * sizeof(ParticleDrawData));
-			particleDataPtr += data.m_listSizes[i] * sizeof(ParticleDrawData);
-		}
-	}
 
 	rg::ResourceUsageDescription passUsages[]
 	{
@@ -146,7 +131,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::storageBuffer(&particleBufferInfo, PARTICLES_BINDING),
+					Initializers::storageBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
 					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),

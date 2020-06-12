@@ -476,6 +476,29 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
+	// particle buffer
+	uint32_t totalParticleCount = 0;
+	DescriptorBufferInfo particleBufferInfo{ nullptr, 0, 0 };
+	{
+		for (size_t i = 0; i < renderData.m_particleDataDrawListCount; ++i)
+		{
+			totalParticleCount += renderData.m_particleDrawDataListSizes[i];
+		}
+
+		particleBufferInfo.m_range = sizeof(ParticleDrawData) * totalParticleCount;
+
+		auto *storageBuffer = m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx].get();
+
+		uint8_t *particleDataPtr = nullptr;
+		storageBuffer->allocate(particleBufferInfo.m_range, particleBufferInfo.m_offset, particleBufferInfo.m_buffer, particleDataPtr);
+
+		for (size_t i = 0; i < renderData.m_particleDataDrawListCount; ++i)
+		{
+			memcpy(particleDataPtr, renderData.m_particleDrawDataLists[i], renderData.m_particleDrawDataListSizes[i] * sizeof(ParticleDrawData));
+			particleDataPtr += renderData.m_particleDrawDataListSizes[i] * sizeof(ParticleDrawData);
+		}
+	}
+
 	PassRecordContext passRecordContext{};
 	passRecordContext.m_renderResources = m_renderResources.get();
 	passRecordContext.m_pipelineCache = m_pipelineCache.get();
@@ -675,14 +698,18 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
 
+
+	// fourier opacity
 	if (!lightData.m_fomAtlasDrawInfos.empty())
 	{
 		FourierOpacityPass::Data fourierOpacityPassData;
 		fourierOpacityPassData.m_passRecordContext = &passRecordContext;
 		fourierOpacityPassData.m_drawCount = static_cast<uint32_t>(lightData.m_fomAtlasDrawInfos.size());
+		fourierOpacityPassData.m_particleCount = totalParticleCount;
 		fourierOpacityPassData.m_drawInfo = lightData.m_fomAtlasDrawInfos.data();
 		fourierOpacityPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
 		fourierOpacityPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
+		fourierOpacityPassData.m_particleBufferInfo = particleBufferInfo;
 		fourierOpacityPassData.m_fomImageViewHandle = fomImageViewHandle;
 
 		FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
@@ -835,6 +862,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	particlesPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
 	particlesPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
 	particlesPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
+	particlesPassData.m_particleBufferInfo = particleBufferInfo;
 	particlesPassData.m_depthImageViewHandle = depthImageViewHandle;
 	particlesPassData.m_resultImageViewHandle = lightImageViewHandle;
 

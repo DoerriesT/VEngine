@@ -49,7 +49,7 @@ VSOutput main(uint vertexID : SV_VertexID)
 	ParticleData particle = g_Particles[particleID + g_PushConsts.particleOffset];
 	float3 pos = float3(positions[positionIndex], 0.0) * 0.4;
 	
-	float3 normal = normalize(g_Constants.cameraPosition - (pos + particle.position));
+	float3 normal = normalize(g_Constants.cameraPosition - particle.position);
 	float3 tangent = cross(g_Constants.cameraUp, normal);
 	
 	float3x3 rotation = float3x3(tangent, g_Constants.cameraUp, normal);
