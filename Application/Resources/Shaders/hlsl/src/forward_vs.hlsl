@@ -29,7 +29,7 @@ VSOutput main(uint vertexID : SV_VertexID)
 	
 	output.position = mul(g_Constants.jitteredViewProjectionMatrix, mul(modelMatrix, float4(position, 1.0)));
 	output.texCoord = float2(g_TexCoords[vertexID * 2 + 0], g_TexCoords[vertexID * 2 + 1]);
-	output.normal = mul((float3x3)g_Constants.viewMatrix, float3(g_Normals[vertexID * 3 + 0], g_Normals[vertexID * 3 + 1], g_Normals[vertexID * 3 + 2]));
+	output.normal = mul((float3x3)g_Constants.viewMatrix, mul((float3x3)modelMatrix, float3(g_Normals[vertexID * 3 + 0], g_Normals[vertexID * 3 + 1], g_Normals[vertexID * 3 + 2])));
 	output.worldPos = mul(modelViewMatrix, float4(position, 1.0));
 	output.materialIndex = g_PushConsts.materialIndex;
 	
