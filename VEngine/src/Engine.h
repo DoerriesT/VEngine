@@ -26,6 +26,8 @@ namespace VEngine
 		UserInput &getUserInput();
 		CameraControllerSystem &getCameraControllerSystem();
 		RenderSystem &getRenderSystem();
+		uint32_t getWindowWidth() const;
+		uint32_t getWindowHeight() const;
 
 	private:
 		IGameLogic &m_gameLogic;

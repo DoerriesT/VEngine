@@ -61,9 +61,8 @@ void VEngine::Engine::start()
 	Timer timer;
 	uint64_t previousTickCount = timer.getElapsedTicks();
 	uint64_t frameCount = 0;
-	Editor editor(this, width, height);
 	
-	m_renderSystem->setCameraEntity(editor.getEditorCameraEntity());
+	//m_renderSystem->setCameraEntity(editor.getEditorCameraEntity());
 
 	while (!m_shutdown && !m_window->shouldClose())
 	{
@@ -76,7 +75,6 @@ void VEngine::Engine::start()
 			width = m_window->getWidth();
 			height = m_window->getHeight();
 			m_renderSystem->resize(width, height);
-			editor.resize(width, height);
 		}
 
 		ImGui_ImplGlfw_NewFrame();
@@ -86,7 +84,6 @@ void VEngine::Engine::start()
 		m_userInput->input();
 		m_cameraControllerSystem->update(timeDelta);
 		m_gameLogic.update(timeDelta);
-		editor.update(timeDelta);
 
 		ImGui::ShowDemoWindow();
 
@@ -128,4 +125,14 @@ VEngine::CameraControllerSystem &VEngine::Engine::getCameraControllerSystem()
 VEngine::RenderSystem &VEngine::Engine::getRenderSystem()
 {
 	return *m_renderSystem;
+}
+
+uint32_t VEngine::Engine::getWindowWidth() const
+{
+	return m_window->getWidth();
+}
+
+uint32_t VEngine::Engine::getWindowHeight() const
+{
+	return m_window->getHeight();
 }

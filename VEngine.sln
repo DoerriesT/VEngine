@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2042
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VEngine", "VEngine\VEngine.vcxproj", "{8F9CD343-F4EE-4C3B-B1E2-5B0025D5F362}"
 EndProject
@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application", "Application\
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AssetImporter", "AssetImporter\AssetImporter.vcxproj", "{036966DE-4199-4BF6-8F0F-487969A863BE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Editor", "Editor\Editor.vcxproj", "{F00F951C-A59B-49E5-9682-EA2C11095E46}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,14 @@ Global
 		{036966DE-4199-4BF6-8F0F-487969A863BE}.Release|x64.Build.0 = Release|x64
 		{036966DE-4199-4BF6-8F0F-487969A863BE}.Release|x86.ActiveCfg = Release|Win32
 		{036966DE-4199-4BF6-8F0F-487969A863BE}.Release|x86.Build.0 = Release|Win32
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Debug|x64.ActiveCfg = Debug|x64
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Debug|x64.Build.0 = Debug|x64
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Debug|x86.ActiveCfg = Debug|Win32
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Debug|x86.Build.0 = Debug|Win32
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Release|x64.ActiveCfg = Release|x64
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Release|x64.Build.0 = Release|x64
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Release|x86.ActiveCfg = Release|Win32
+		{F00F951C-A59B-49E5-9682-EA2C11095E46}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
