@@ -16,6 +16,57 @@
 
 using namespace VEngine;
 
+template <typename T>
+static bool beginComponent(entt::registry &registry, entt::entity entity, const char *title, T *&component)
+{
+	ImGui::PushID((void *)title);
+	component = registry.try_get<T>(entity);
+	bool result = component != nullptr;
+
+	bool open = true;
+	if (result)
+	{
+		result = ImGui::CollapsingHeader(title, &open, ImGuiTreeNodeFlags_DefaultOpen);
+
+		if (!open)
+		{
+			ImGui::OpenPopup("Delete Component?");
+		}
+		if (ImGui::BeginPopupModal("Delete Component?", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("Delete %s Component.\nThis operation cannot be undone!\n\n", title);
+			ImGui::Separator();
+
+			if (ImGui::Button("OK", ImVec2(120, 0)))
+			{
+				registry.remove<T>(entity);
+				result = false;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SetItemDefaultFocus();
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
+	}
+
+	ImGui::PopID();
+
+	return result;
+}
+
+template<typename T>
+static void selectableAddComponent(entt::registry &registry, entt::entity entity, const char *title)
+{
+	if (!registry.has<T>(entity) && ImGui::Selectable(title))
+	{
+		registry.assign<T>(entity);
+	}
+}
+
 VEditor::EntityDetailWindow::EntityDetailWindow(VEngine::Engine *engine)
 	:m_engine(engine),
 	m_lastDisplayedEntity(entt::null),
@@ -41,8 +92,37 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 
 	if (entity != entt::null)
 	{
+		if (ImGui::Button("Add Component"))
+		{
+			ImGui::OpenPopup("add_component_popup");
+		}
+
+		if (ImGui::BeginPopup("add_component_popup"))
+		{
+
+			ImGui::Text("Component to add:");
+			ImGui::Separator();
+
+			selectableAddComponent<TransformationComponent>(entityRegistry, entity, "Transformation");
+			selectableAddComponent<DirectionalLightComponent>(entityRegistry, entity, "Directional Light");
+			selectableAddComponent<PointLightComponent>(entityRegistry, entity, "Point Light");
+			selectableAddComponent<SpotLightComponent>(entityRegistry, entity, "Spot Light");
+			selectableAddComponent<CameraComponent>(entityRegistry, entity, "Camera");
+			selectableAddComponent<LocalParticipatingMediumComponent>(entityRegistry, entity, "Local Participating Medium");
+			selectableAddComponent<GlobalParticipatingMediumComponent>(entityRegistry, entity, "Global Participating Medium");
+			selectableAddComponent<ParticleEmitterComponent>(entityRegistry, entity, "Particle Emitter");
+			selectableAddComponent<LocalReflectionProbeComponent>(entityRegistry, entity, "Local Reflection Probe");
+			selectableAddComponent<RenderableComponent>(entityRegistry, entity, "Renderable");
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::NewLine();
+		ImGui::Separator();
+		ImGui::NewLine();
+
 		// transformation
-		if (auto tc = entityRegistry.try_get<TransformationComponent>(entity); tc != nullptr && ImGui::CollapsingHeader("Transformation"))
+		if (TransformationComponent *tc = nullptr; beginComponent(entityRegistry, entity, "Transformation", tc))
 		{
 			showGuizmo = true;
 
@@ -67,7 +147,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// directional light
-		if (auto dlc = entityRegistry.try_get<DirectionalLightComponent>(entity); dlc != nullptr && ImGui::CollapsingHeader("Directional Light"))
+		if (DirectionalLightComponent *dlc = nullptr; beginComponent(entityRegistry, entity, "Directional Light", dlc))
 		{
 			ImGui::ColorEdit3("Color", &dlc->m_color[0]);
 			ImGui::DragFloat("Intensity", &dlc->m_intensity, 1.0f, 0.0f, 130000.0f);
@@ -103,15 +183,20 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// point light
-		if (auto plc = entityRegistry.try_get<PointLightComponent>(entity); plc != nullptr && ImGui::CollapsingHeader("Point Light"))
+		if (PointLightComponent *plc = nullptr; beginComponent(entityRegistry, entity, "Point Light", plc))
 		{
 			ImGui::ColorEdit3("Color", &plc->m_color[0]);
 			ImGui::DragFloat("Luminous Power", &plc->m_luminousPower, 1.0f, 0.0f, 130000.0f);
 			ImGui::DragFloat("Radius", &plc->m_radius, 0.05f, 0.0f, 128.0f);
+			ImGui::Checkbox("Shadows", &plc->m_shadows);
+			if (plc->m_shadows)
+			{
+				ImGui::Checkbox("Volumetric Shadows", &plc->m_volumetricShadows);
+			}
 		}
 
 		// spot light
-		if (auto slc = entityRegistry.try_get<SpotLightComponent>(entity); slc != nullptr && ImGui::CollapsingHeader("Spot Light"))
+		if (SpotLightComponent *slc = nullptr; beginComponent(entityRegistry, entity, "Spot Light", slc))
 		{
 			ImGui::ColorEdit3("Color", &slc->m_color[0]);
 			ImGui::DragFloat("Luminous Power", &slc->m_luminousPower, 1.0f, 0.0f, 130000.0f);
@@ -126,10 +211,16 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			{
 				slc->m_innerAngle = glm::radians(glm::clamp(innerAngleDegrees, 0.0f, outerAngleDegrees));
 			}
+
+			ImGui::Checkbox("Shadows", &slc->m_shadows);
+			if (slc->m_shadows)
+			{
+				ImGui::Checkbox("Volumetric Shadows", &slc->m_volumetricShadows);
+			}
 		}
 
 		// camera
-		if (auto cc = entityRegistry.try_get<CameraComponent>(entity); cc != nullptr && ImGui::CollapsingHeader("Camera"))
+		if (CameraComponent *cc = nullptr; beginComponent(entityRegistry, entity, "Camera", cc))
 		{
 			if (ImGui::DragFloat("Aspect Ratio", &cc->m_aspectRatio))
 			{
@@ -151,7 +242,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// local participating medium
-		if (auto lpmc = entityRegistry.try_get<LocalParticipatingMediumComponent>(entity); lpmc != nullptr && ImGui::CollapsingHeader("Local Participating Medium"))
+		if (LocalParticipatingMediumComponent *lpmc = nullptr; beginComponent(entityRegistry, entity, "Local Participating Medium", lpmc))
 		{
 			ImGui::ColorEdit3("Albedo", &lpmc->m_albedo[0]);
 			ImGui::DragFloat("Extinction", &lpmc->m_extinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
@@ -164,7 +255,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// global participating medium
-		if (auto gpmc = entityRegistry.try_get<GlobalParticipatingMediumComponent>(entity); gpmc != nullptr && ImGui::CollapsingHeader("Global Participating Medium"))
+		if (GlobalParticipatingMediumComponent *gpmc = nullptr; beginComponent(entityRegistry, entity, "Global Participating Medium", gpmc))
 		{
 			ImGui::ColorEdit3("Albedo", &gpmc->m_albedo[0]);
 			ImGui::DragFloat("Extinction", &gpmc->m_extinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
@@ -178,11 +269,12 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// particle emitter
-		if (auto pec = entityRegistry.try_get<ParticleEmitterComponent>(entity); pec != nullptr && ImGui::CollapsingHeader("Particle Emitter"))
+		if (ParticleEmitterComponent *pec = nullptr; beginComponent(entityRegistry, entity, "Particle Emitter", pec))
 		{
 			ImGui::InputFloat3("Spawn Direction", &pec->m_direction[0]);
 			int particleCount = static_cast<int>(pec->m_particleCount);
 			ImGui::InputInt("Particle Count", &particleCount);
+			pec->m_particleCount = particleCount;
 			ImGui::DragFloat("Particle Lifetime", &pec->m_particleLifetime, 0.1f, 0.01f, 100.0f);
 			ImGui::DragFloat("Particle Speed", &pec->m_velocityMagnitude, 0.1f, 0.01f, 100.0f);
 			const char *spawnTypeItems[] = { "SPHERE", "CUBE", "DISK" };
@@ -195,17 +287,16 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		}
 
 		// local reflection probe
-		if (auto lrpc = entityRegistry.try_get<LocalReflectionProbeComponent>(entity); lrpc != nullptr && ImGui::CollapsingHeader("Local Reflection Probe"))
+		if (LocalReflectionProbeComponent *lrpc = nullptr; beginComponent(entityRegistry, entity, "Local Reflection Probe", lrpc))
 		{
 			ImGui::DragFloat3("Capture Offset", &lrpc->m_captureOffset[0], 0.1f);
 			ImGui::DragFloat("Transition Distance", &lrpc->m_transitionDistance, 0.05f);
 		}
 
-
 		// renderable
-		if (entityRegistry.try_get<RenderableComponent>(entity) != nullptr)
+		if (RenderableComponent *rc = nullptr; beginComponent(entityRegistry, entity, "Renderable", rc))
 		{
-			ImGui::CollapsingHeader("Renderable");
+			// empty
 		}
 	}
 

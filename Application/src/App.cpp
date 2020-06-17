@@ -67,18 +67,20 @@ void App::initialize(VEngine::Engine *engine)
 	//entityRegistry.assign<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
 	//m_engine->getRenderSystem().setCameraEntity(cameraEntity);
 
-	VEngine::Scene scene = {};
+	auto &scene = m_engine->getScene();
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 	entt::entity sponzaEntity = entityRegistry.create();
 	entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
 	entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
 	entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
+	scene.m_entities.push_back({ "Sponza", sponzaEntity });
 
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
 	entt::entity orbEntity = entityRegistry.create();
 	entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
 	entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
 	entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
+	scene.m_entities.push_back({ "Test Orb", orbEntity });
 
 	/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 	entt::entity giHouseEntity = entityRegistry.create();
@@ -129,6 +131,7 @@ void App::initialize(VEngine::Engine *engine)
 		entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), bboxMax - probeCenter);
 		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset, 0.0f);
 		entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
+		scene.m_entities.push_back({ "Reflection Probe", reflectionProbeEntity });
 		return reflectionProbeEntity;
 	};
 
@@ -161,6 +164,7 @@ void App::initialize(VEngine::Engine *engine)
 	g_globalFogEntity = entityRegistry.create();
 	entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f, g_heightFogEnabled, g_heightFogStart, g_heightFogFalloff);
 	entityRegistry.assign<VEngine::RenderableComponent>(g_globalFogEntity);
+	scene.m_entities.push_back({ "Global Fog", g_globalFogEntity });
 
 
 	g_localFogEntity = entityRegistry.create();
@@ -168,6 +172,7 @@ void App::initialize(VEngine::Engine *engine)
 	entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(18.0f, 2.0f, 11.0f));
 	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 6.0f, glm::vec3(1.0f), 0.0f, 0.0f, true, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f);
 	entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
+	scene.m_entities.push_back({ "Local Fog", g_localFogEntity });
 
 
 	g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
@@ -182,6 +187,7 @@ void App::initialize(VEngine::Engine *engine)
 	dlc.m_normalOffsetBias[2] = 2.0f;
 	dlc.m_normalOffsetBias[3] = 2.0f;
 	entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
+	scene.m_entities.push_back({ "Sun Light", m_sunLightEntity });
 
 	auto particleEmitter = entityRegistry.create();
 	entityRegistry.assign<VEngine::TransformationComponent>(particleEmitter, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
@@ -199,6 +205,7 @@ void App::initialize(VEngine::Engine *engine)
 	entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
 
 	entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
+	scene.m_entities.push_back({ "Particle Emitter", particleEmitter });
 
 	std::default_random_engine e;
 	std::uniform_real_distribution<float> px(-14.0f, 14.0f);
@@ -228,6 +235,7 @@ void App::initialize(VEngine::Engine *engine)
 	//entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
 	entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true, true);
 	entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
+	scene.m_entities.push_back({ "Local Light", spotLightEntity });
 
 	//for (size_t i = 0; i < 64; ++i)
 	//{

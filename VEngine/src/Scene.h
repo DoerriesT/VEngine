@@ -12,7 +12,7 @@ namespace VEngine
 
 	struct Scene
 	{
-		std::map<std::string, entt::entity> m_entities;
+		std::vector<std::pair<std::string, entt::entity>> m_entities;
 		std::map<std::string, std::vector<std::pair<SubMeshHandle, MaterialHandle>>> m_meshInstances;
 		std::map<std::string, Texture2DHandle> m_textures;
 		std::map<std::string, std::vector<MaterialHandle>> m_materials;

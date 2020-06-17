@@ -159,11 +159,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\EntityDetailWindow.cpp" />
+    <ClCompile Include="src\EntityWindow.cpp" />
     <ClCompile Include="src\UndoRedoManager.cpp" />
     <ClCompile Include="src\VEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\EntityDetailWindow.h" />
+    <ClInclude Include="src\EntityWindow.h" />
     <ClInclude Include="src\UndoRedoManager.h" />
     <ClInclude Include="src\VEditor.h" />
   </ItemGroup>

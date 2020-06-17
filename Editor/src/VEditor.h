@@ -5,6 +5,7 @@
 namespace VEditor
 {
 	class EntityDetailWindow;
+	class EntityWindow;
 
 	class VEditor : public VEngine::IGameLogic
 	{
@@ -19,5 +20,6 @@ namespace VEditor
 		VEngine::Engine *m_engine;
 		entt::entity m_editorCameraEntity;
 		EntityDetailWindow *m_entityDetailWindow;
+		EntityWindow *m_entityWindow;
 	};
 }

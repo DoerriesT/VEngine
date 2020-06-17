@@ -20,6 +20,7 @@ namespace
 		ParticleState *m_prevParticles; // offset into m_particleData
 		ParticleState *m_curParticles; // offset into m_particleData
 		uint32_t m_activeParticleCount;
+		uint32_t m_totalParticleCount;
 		VEngine::ParticleDrawData *m_drawData; // owns memory
 	};
 }
@@ -44,9 +45,63 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 
 	view.each([&](entt::entity entity, TransformationComponent &transformationComponent, ParticleEmitterComponent &emitterComponent, ParticleEmitterInternalDataComponent &internalComponent, RenderableComponent &)
 		{
+			// particle count was changed
+			if (emitterComponent.m_particleCount != internalComponent.m_totalParticleCount)
+			{
+				// delete memory and exit early
+				if (emitterComponent.m_particleCount == 0)
+				{
+					if (internalComponent.m_totalParticleCount > 0)
+					{
+						delete[] internalComponent.m_particleData;
+						delete[] internalComponent.m_drawData;
+					}
+
+					internalComponent = {};
+
+					return;
+				}
+
+				ParticleState *newParticleStateMemory = new ParticleState[emitterComponent.m_particleCount * 2];
+				ParticleDrawData *newParticleDrawData = new ParticleDrawData[emitterComponent.m_particleCount];
+
+				// try to copy as much as possible of the old state to the new memory
+				if (internalComponent.m_totalParticleCount > 0)
+				{
+					memcpy(newParticleStateMemory, internalComponent.m_particleData, sizeof(ParticleState) * emitterComponent.m_particleCount);
+					memcpy(newParticleStateMemory + emitterComponent.m_particleCount, internalComponent.m_particleData + internalComponent.m_totalParticleCount, sizeof(ParticleState) * emitterComponent.m_particleCount);
+				}
+			
+				// create new pointers to double buffer halfs
+				ParticleState *prevParticles = (internalComponent.m_particleData && internalComponent.m_prevParticles == internalComponent.m_particleData) ? newParticleStateMemory : newParticleStateMemory + emitterComponent.m_particleCount;
+				ParticleState *curParticles = (prevParticles == newParticleStateMemory) ? newParticleStateMemory + emitterComponent.m_particleCount : newParticleStateMemory;
+
+				// free old memory
+				if (internalComponent.m_totalParticleCount > 0)
+				{
+					delete[] internalComponent.m_particleData;
+					delete[] internalComponent.m_drawData;
+				}
+
+				// update internal data
+				internalComponent.m_particleData = newParticleStateMemory;
+				internalComponent.m_prevParticles = prevParticles;
+				internalComponent.m_curParticles = curParticles;
+				internalComponent.m_activeParticleCount = glm::min(internalComponent.m_activeParticleCount, emitterComponent.m_particleCount);
+				internalComponent.m_totalParticleCount = emitterComponent.m_particleCount;
+				internalComponent.m_drawData = newParticleDrawData;
+			}
+
+			// early exit when emitter has 0 particles: the particle pointers are null
+			if (emitterComponent.m_particleCount == 0)
+			{
+				return;
+			}
+
 			// swap buffers
 			std::swap(internalComponent.m_curParticles, internalComponent.m_prevParticles);
 
+			const float particleLifetime = glm::max(0.0001f, emitterComponent.m_particleLifetime);
 			uint32_t particleCount = 0;
 
 			// simulate particles
@@ -56,7 +111,7 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				if ((m_time - particle.m_timeOfBirth) < particle.m_lifeTime)
 				{
 					particle.m_position += particle.m_velocity * timeDelta;
-					particle.m_velocity.y -= 0.1f * timeDelta / emitterComponent.m_particleLifetime;
+					particle.m_velocity.y -= 0.1f * timeDelta / particleLifetime;
 
 					const float lifePercentage = (m_time - particle.m_timeOfBirth) / particle.m_lifeTime;
 					const float opacity = lifePercentage > 0.9f ? 10.0f * (1.0f - lifePercentage) : 1.0f;
@@ -69,13 +124,13 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 					drawData = {};
 					drawData.m_position = particle.m_position;
 					drawData.m_opacity = opacity;
-					drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
+					drawData.m_textureIndex = 50;//emitterComponent.m_textureHandle.m_handle;
 				}
 			}
 
 			// spawn new particles
 			const uint32_t deadParticleCount = emitterComponent.m_particleCount - particleCount;
-			const float emissionRate = emitterComponent.m_particleCount / emitterComponent.m_particleLifetime;
+			const float emissionRate = emitterComponent.m_particleCount / particleLifetime;
 			const uint32_t particlesToEmit = deadParticleCount;// glm::min(deadParticleCount, static_cast<uint32_t>(emissionRate * timeDelta));
 
 			std::normal_distribution<float> sphereNormalD(0.5f, 1.0f);
@@ -127,7 +182,7 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				particle.m_velocity = rotation * particle.m_velocity;
 
 				// determine particle lifetime
-				particle.m_lifeTime = uniformD(m_randomEngine) * emitterComponent.m_particleLifetime;
+				particle.m_lifeTime = uniformD(m_randomEngine) * particleLifetime;
 				particle.m_timeOfBirth = m_time;
 
 				assert(particleCount < emitterComponent.m_particleCount);
@@ -137,7 +192,7 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				drawData = {};
 				drawData.m_position = particle.m_position;
 				drawData.m_opacity = 1.0f;
-				drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
+				drawData.m_textureIndex = 50;// emitterComponent.m_textureHandle.m_handle;
 			}
 
 			internalComponent.m_activeParticleCount = particleCount;
@@ -162,21 +217,29 @@ void VEngine::ParticleEmitterManager::getParticleDrawData(uint32_t &listCount, P
 
 void VEngine::ParticleEmitterManager::addInternalComponent(entt::registry &registry, entt::entity entity)
 {
-	const auto &emitterC = registry.get<ParticleEmitterComponent>(entity);
-	assert(emitterC.m_particleCount > 0);
+	auto &emitterC = registry.get<ParticleEmitterComponent>(entity);
+	//assert(emitterC.m_particleCount > 0);
 
 	auto &internalC = registry.assign<ParticleEmitterInternalDataComponent>(entity);
-	internalC.m_particleData = new ParticleState[emitterC.m_particleCount * 2];
-	internalC.m_prevParticles = internalC.m_particleData;
-	internalC.m_curParticles = internalC.m_particleData + emitterC.m_particleCount;
-	internalC.m_activeParticleCount = 0;
-	internalC.m_drawData = new ParticleDrawData[emitterC.m_particleCount];
+	internalC = {};
+	if (emitterC.m_particleCount > 0)
+	{
+		internalC.m_particleData = new ParticleState[emitterC.m_particleCount * 2];
+		internalC.m_prevParticles = internalC.m_particleData;
+		internalC.m_curParticles = internalC.m_particleData + emitterC.m_particleCount;
+		internalC.m_activeParticleCount = 0;
+		internalC.m_totalParticleCount = emitterC.m_particleCount;
+		internalC.m_drawData = new ParticleDrawData[emitterC.m_particleCount];
+	}
 }
 
 void VEngine::ParticleEmitterManager::removeInternalComponent(entt::registry &registry, entt::entity entity)
 {
 	const auto &internalC = registry.get<ParticleEmitterInternalDataComponent>(entity);
-	delete[] internalC.m_particleData;
-	delete[] internalC.m_drawData;
+	if (internalC.m_totalParticleCount > 0)
+	{
+		delete[] internalC.m_particleData;
+		delete[] internalC.m_drawData;
+	}
 	registry.remove<ParticleEmitterInternalDataComponent>(entity);
 }

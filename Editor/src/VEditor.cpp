@@ -5,6 +5,7 @@
 #include <Graphics/RenderSystem.h>
 #include <Graphics/imgui/imgui.h>
 #include "EntityDetailWindow.h"
+#include "EntityWindow.h"
 
 using namespace VEngine;
 
@@ -34,6 +35,8 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 
 	m_entityDetailWindow = new EntityDetailWindow(m_engine);
 	m_entityDetailWindow->setVisible(true);
+	m_entityWindow = new EntityWindow(m_engine);
+	m_entityWindow->setVisible(true);
 
 	m_engine->getRenderSystem().setCameraEntity(m_editorCameraEntity);
 
@@ -246,16 +249,14 @@ void VEditor::VEditor::update(float timeDelta)
 	//	ImGui::End();
 	//}
 
-	//if (m_showEntityWindow)
+	if (m_entityWindow->isVisible())
 	{
-		ImGui::Begin("Entities");
-
-		ImGui::End();
+		m_entityWindow->draw();
 	}
 
 	if (m_entityDetailWindow->isVisible())
 	{
-		m_entityDetailWindow->draw(g_localLightEntity, m_editorCameraEntity);
+		m_entityDetailWindow->draw(m_entityWindow->getSelectedEntity(), m_editorCameraEntity);
 	}
 }
 

@@ -136,3 +136,8 @@ uint32_t VEngine::Engine::getWindowHeight() const
 {
 	return m_window->getHeight();
 }
+
+VEngine::Scene &VEngine::Engine::getScene()
+{
+	return m_scene;
+}

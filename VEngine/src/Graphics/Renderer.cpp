@@ -485,7 +485,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			totalParticleCount += renderData.m_particleDrawDataListSizes[i];
 		}
 
-		particleBufferInfo.m_range = sizeof(ParticleDrawData) * totalParticleCount;
+		particleBufferInfo.m_range = std::max(sizeof(ParticleDrawData) * totalParticleCount, size_t(1));
 
 		auto *storageBuffer = m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx].get();
 

@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <entt/entity/registry.hpp>
+#include "Scene.h"
 
 namespace VEngine
 {
@@ -28,6 +29,7 @@ namespace VEngine
 		RenderSystem &getRenderSystem();
 		uint32_t getWindowWidth() const;
 		uint32_t getWindowHeight() const;
+		Scene &getScene();
 
 	private:
 		IGameLogic &m_gameLogic;
@@ -38,5 +40,6 @@ namespace VEngine
 		std::unique_ptr<RenderSystem> m_renderSystem;
 		bool m_shutdown;
 		std::string m_windowTitle;
+		Scene m_scene = {};
 	};
 }
