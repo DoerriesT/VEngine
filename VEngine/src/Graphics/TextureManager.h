@@ -20,6 +20,8 @@ namespace VEngine
 		Texture3DHandle addTexture3D(gal::Image *image, gal::ImageView *imageView);
 		void free(Texture2DHandle handle);
 		void free(Texture3DHandle handle);
+		void update(Texture2DHandle handle, gal::Image *image, gal::ImageView *imageView);
+		void update(Texture3DHandle handle, gal::Image *image, gal::ImageView *imageView);
 		gal::ImageView **get2DViews();
 		gal::ImageView **get3DViews();
 

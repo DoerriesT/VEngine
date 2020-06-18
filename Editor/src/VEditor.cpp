@@ -4,6 +4,9 @@
 #include <Components/CameraComponent.h>
 #include <Graphics/RenderSystem.h>
 #include <Graphics/imgui/imgui.h>
+#include <Graphics/imgui/imgui_impl_glfw.h>
+#include <Graphics/imgui/ImGuizmo.h>
+#include <Window/Window.h>
 #include "EntityDetailWindow.h"
 #include "EntityWindow.h"
 #include "AssetBrowserWindow.h"
@@ -17,6 +20,7 @@ VEditor::VEditor::VEditor(VEngine::IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
 	m_engine(),
 	m_editorCameraEntity(),
+	m_editorImGuiContext(),
 	m_entityDetailWindow()
 {
 }
@@ -24,6 +28,36 @@ VEditor::VEditor::VEditor(VEngine::IGameLogic &gameLogic)
 void VEditor::VEditor::initialize(VEngine::Engine *engine)
 {
 	m_engine = engine;
+
+	// create editor imgui context
+	{
+		auto *prevImGuiContext = ImGui::GetCurrentContext();
+
+		IMGUI_CHECKVERSION();
+		m_editorImGuiContext = ImGui::CreateContext();
+
+		ImGui::SetCurrentContext(m_editorImGuiContext);
+
+		ImGuiIO &io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+		io.ConfigDockingWithShift = true;
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsClassic();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_engine->getWindow()->getWindowHandle(), false);
+
+		ImGui::SetCurrentContext(prevImGuiContext);
+
+		// register editor context with renderer
+		// IMPORTANT: renderer expects main context to be current, so this needs to happen after switching back to the main context
+		m_engine->getRenderSystem().initEditorImGuiCtx(m_editorImGuiContext);
+	}
 
 	uint32_t width = m_engine->getWindowWidth();
 	uint32_t height = m_engine->getWindowHeight();
@@ -46,11 +80,21 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 	m_gameLogic.initialize(engine);
 
 	m_engine->getRenderSystem().setCameraEntity(m_editorCameraEntity);
+	m_engine->getRenderSystem().setEditorMode(true);
 }
 
 void VEditor::VEditor::update(float timeDelta)
 {
 	m_gameLogic.update(timeDelta);
+
+
+	// set editor imgui context
+	auto *prevImGuiContext = ImGui::GetCurrentContext();
+	ImGui::SetCurrentContext(m_editorImGuiContext);
+
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	// make sure aspect ratio of editor camera is correct
 	{
@@ -61,7 +105,7 @@ void VEditor::VEditor::update(float timeDelta)
 
 	// make sure we use the editor camera
 	m_engine->getRenderSystem().setCameraEntity(m_editorCameraEntity);
-	
+
 
 	auto &renderSystem = m_engine->getRenderSystem();
 
@@ -271,9 +315,13 @@ void VEditor::VEditor::update(float timeDelta)
 
 	// viewport
 	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
 
+		ImGui::Image((ImTextureID)(size_t)m_engine->getRenderSystem().getEditorSceneTextureHandle().m_handle, ImGui::GetContentRegionAvail());
+
 		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	// modes
@@ -289,6 +337,11 @@ void VEditor::VEditor::update(float timeDelta)
 
 		ImGui::End();
 	}
+
+	ImGui::Render();
+
+	// restore context
+	ImGui::SetCurrentContext(prevImGuiContext);
 }
 
 void VEditor::VEditor::shutdown()

@@ -12,6 +12,8 @@
 #include "ReflectionProbeManager.h"
 #include "ParticleEmitterManager.h"
 
+struct ImGuiContext;
+
 namespace VEngine
 {
 	class Renderer;
@@ -43,6 +45,9 @@ namespace VEngine
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 		void resize(uint32_t width, uint32_t height);
+		void setEditorMode(bool editorMode);
+		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
+		Texture2DHandle getEditorSceneTextureHandle();
 
 	private:
 		entt::registry &m_entityRegistry;

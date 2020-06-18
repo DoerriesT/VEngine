@@ -495,6 +495,9 @@
     <ClInclude Include="src\Graphics\TextureManager.h">
       <Filter>src\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SwapChainCopyPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -838,6 +841,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\TextureManager.cpp">
       <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SwapChainCopyPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

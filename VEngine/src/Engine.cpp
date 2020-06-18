@@ -141,3 +141,8 @@ VEngine::Scene &VEngine::Engine::getScene()
 {
 	return m_scene;
 }
+
+VEngine::Window *VEngine::Engine::getWindow()
+{
+	return m_window.get();
+}

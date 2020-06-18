@@ -34,6 +34,7 @@
 #include "Pass/VolumetricFogExtinctionVolumeDebugPass.h"
 #include "Pass/FourierOpacityPass.h"
 #include "Pass/ParticlesPass.h"
+#include "Pass/SwapChainCopyPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -85,8 +86,10 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds", blueNoiseImage, blueNoiseImageView);
 	m_blueNoiseTextureIndex = m_textureManager->addTexture2D(blueNoiseImage, blueNoiseImageView);
 
+	m_editorSceneTextureHandle = m_textureManager->addTexture2D(nullptr, m_renderResources->m_editorSceneTextureView);
+
 	auto imguiFontTextureHandle = m_textureManager->addTexture2D(nullptr, m_renderResources->m_imGuiFontsTextureView);
-	ImGui::GetIO().Fonts->SetTexID((ImTextureID)imguiFontTextureHandle.m_handle);
+	ImGui::GetIO().Fonts->SetTexID((ImTextureID)(size_t)imguiFontTextureHandle.m_handle);
 
 	updateTextureData();
 
@@ -1016,10 +1019,43 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// ImGui
 	ImGuiPass::Data imGuiPassData;
 	imGuiPassData.m_passRecordContext = &passRecordContext;
+	imGuiPassData.m_clear = false;
 	imGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
 	imGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
 
 	ImGuiPass::addToGraph(graph, imGuiPassData);
+
+
+	// render editor
+	if (m_editorMode)
+	{
+		// copy result from swapchain to a texture that can be read by imgui
+		SwapChainCopyPass::Data swapChainCopyPassData;
+		swapChainCopyPassData.m_passRecordContext = &passRecordContext;
+		swapChainCopyPassData.m_inputImageViewHandle = swapchainImageViewHandle;
+		swapChainCopyPassData.m_resultImageView = m_renderResources->m_editorSceneTextureView;
+
+		SwapChainCopyPass::addToGraph(graph, swapChainCopyPassData);
+
+
+		// switch contexts
+		auto *prevImGuiContext = ImGui::GetCurrentContext();
+		ImGui::SetCurrentContext(m_editorImGuiContext);
+
+
+		// draw editor gui
+		ImGuiPass::Data editorImGuiPassData;
+		editorImGuiPassData.m_passRecordContext = &passRecordContext;
+		editorImGuiPassData.m_clear = true;
+		editorImGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
+		editorImGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+
+		ImGuiPass::addToGraph(graph, editorImGuiPassData);
+
+
+		// switch contexts back to main context
+		ImGui::SetCurrentContext(prevImGuiContext);
+	}
 
 	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() }, true, m_semaphoreValues[0]);
 
@@ -1129,6 +1165,41 @@ void VEngine::Renderer::resize(uint32_t width, uint32_t height)
 		m_gtaoModule->resize(width, height);
 		m_ssrModule->resize(width, height);
 		m_volumetricFogModule->resize(width, height);
+		m_textureManager->update(m_editorSceneTextureHandle, nullptr, m_renderResources->m_editorSceneTextureView);
+		updateTextureData();
 	}
 	m_framesSinceLastResize = 0;
+}
+
+void VEngine::Renderer::setEditorMode(bool editorMode)
+{
+	m_editorMode = editorMode;
+}
+
+void VEngine::Renderer::initEditorImGuiCtx(ImGuiContext *editorImGuiCtx)
+{
+	if (!m_editorImGuiContext)
+	{
+		// get font texture of main context
+		auto fontTexture = ImGui::GetIO().Fonts->TexID;
+
+		// switch contexts
+		auto *prevImGuiContext = ImGui::GetCurrentContext();
+		ImGui::SetCurrentContext(editorImGuiCtx);
+
+		// set font texture of editor context (we dont create an additional texture, so we just ignore the pixels return value)
+		unsigned char *pixels;
+		ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, nullptr, nullptr);
+		ImGui::GetIO().Fonts->SetTexID(fontTexture);
+
+		// switch contexts back to main context
+		ImGui::SetCurrentContext(prevImGuiContext);
+
+		m_editorImGuiContext = editorImGuiCtx;
+	}
+}
+
+VEngine::Texture2DHandle VEngine::Renderer::getEditorSceneTextureHandle()
+{
+	return m_editorSceneTextureHandle;
 }

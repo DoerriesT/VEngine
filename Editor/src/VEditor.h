@@ -2,6 +2,8 @@
 #include <IGameLogic.h>
 #include <entt/entity/registry.hpp>
 
+struct ImGuiContext;
+
 namespace VEditor
 {
 	class EntityDetailWindow;
@@ -20,6 +22,7 @@ namespace VEditor
 		IGameLogic &m_gameLogic;
 		VEngine::Engine *m_engine;
 		entt::entity m_editorCameraEntity;
+		ImGuiContext *m_editorImGuiContext;
 		EntityDetailWindow *m_entityDetailWindow;
 		EntityWindow *m_entityWindow;
 		AssetBrowserWindow *m_assetBrowserWindow;

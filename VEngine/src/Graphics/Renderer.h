@@ -4,6 +4,8 @@
 #include "Graphics/PassTimingInfo.h"
 #include "gal/FwdDecl.h"
 
+struct ImGuiContext;
+
 namespace VEngine
 {
 	namespace rg
@@ -53,6 +55,9 @@ namespace VEngine
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 		void setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles);
 		void resize(uint32_t width, uint32_t height);
+		void setEditorMode(bool editorMode);
+		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
+		Texture2DHandle getEditorSceneTextureHandle();
 
 	private:
 		gal::GraphicsDevice *m_graphicsDevice;
@@ -78,11 +83,15 @@ namespace VEngine
 		uint32_t m_width;
 		uint32_t m_height;
 		Texture2DHandle m_blueNoiseTextureIndex;
+		Texture2DHandle m_editorSceneTextureHandle;
 		size_t m_passTimingCount;
 		const PassTimingInfo *m_passTimingData;
 		uint32_t m_opaqueDraws;
 		uint32_t m_totalOpaqueDraws;
 		uint32_t m_totalOpaqueDrawsPending[RendererConsts::FRAMES_IN_FLIGHT];
 		uint32_t m_framesSinceLastResize;
+
+		bool m_editorMode = false;
+		ImGuiContext *m_editorImGuiContext; // non-owning and can be null
 	};
 }

@@ -178,6 +178,32 @@ void VEngine::TextureManager::free(Texture3DHandle handle)
 	image = nullptr;
 }
 
+void VEngine::TextureManager::update(Texture2DHandle handle, gal::Image *image, gal::ImageView *imageView)
+{
+	// destroy resources
+	if (m_2DImages[handle.m_handle - 1])
+	{
+		m_graphicsDevice->destroyImageView(m_2DViews[handle.m_handle - 1]);
+		m_graphicsDevice->destroyImage(m_2DImages[handle.m_handle - 1]);
+	}
+
+	m_2DImages[handle.m_handle - 1] = image;
+	m_2DViews[handle.m_handle - 1] = imageView;
+}
+
+void VEngine::TextureManager::update(Texture3DHandle handle, gal::Image *image, gal::ImageView *imageView)
+{
+	// destroy resources
+	if (m_3DImages[handle.m_handle - 1])
+	{
+		m_graphicsDevice->destroyImageView(m_3DViews[handle.m_handle - 1]);
+		m_graphicsDevice->destroyImage(m_3DImages[handle.m_handle - 1]);
+	}
+
+	m_3DImages[handle.m_handle - 1] = image;
+	m_3DViews[handle.m_handle - 1] = imageView;
+}
+
 VEngine::gal::ImageView **VEngine::TextureManager::get2DViews()
 {
 	return m_2DViews;

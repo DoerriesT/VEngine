@@ -23,9 +23,11 @@ namespace VEngine
 		gal::Image *m_taaHistoryTextures[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_imGuiFontsTexture = {};
 		gal::Image *m_brdfLUT = {};
+		gal::Image *m_editorSceneTexture = {};
 
 		// views
 		gal::ImageView *m_imGuiFontsTextureView = {};
+		gal::ImageView *m_editorSceneTextureView = {};
 
 		// buffers
 		gal::Buffer *m_lightProxyVertexBuffer = {};

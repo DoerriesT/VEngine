@@ -1,20 +1,17 @@
 #pragma once
 #include "Graphics/RenderGraph.h"
 
-struct ImDrawData;
-
 namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace ImGuiPass
+	namespace SwapChainCopyPass
 	{
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_clear;
-			ImDrawData *m_imGuiDrawData;
-			rg::ImageViewHandle m_resultImageViewHandle;
+			rg::ImageViewHandle m_inputImageViewHandle;
+			gal::ImageView *m_resultImageView;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

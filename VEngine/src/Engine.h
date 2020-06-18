@@ -30,6 +30,7 @@ namespace VEngine
 		uint32_t getWindowWidth() const;
 		uint32_t getWindowHeight() const;
 		Scene &getScene();
+		Window *getWindow();
 
 	private:
 		IGameLogic &m_gameLogic;

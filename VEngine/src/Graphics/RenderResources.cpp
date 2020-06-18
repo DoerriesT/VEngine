@@ -50,9 +50,11 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyImage(m_shadowAtlasImage);
 	m_graphicsDevice->destroyImage(m_imGuiFontsTexture);
 	m_graphicsDevice->destroyImage(m_brdfLUT);
+	m_graphicsDevice->destroyImage(m_editorSceneTexture);
 
 	// views
 	m_graphicsDevice->destroyImageView(m_imGuiFontsTextureView);
+	m_graphicsDevice->destroyImageView(m_editorSceneTextureView);
 
 	// buffers
 	m_graphicsDevice->destroyBuffer(m_lightProxyVertexBuffer);
@@ -557,6 +559,44 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 				m_graphicsDevice->destroyImage(m_taaHistoryTextures[i]);
 			}
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_taaHistoryTextures[i]);
+		}
+	}
+
+	// editor scene image
+	{
+		ImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.m_width = width;
+		imageCreateInfo.m_height = height;
+		imageCreateInfo.m_depth = 1;
+		imageCreateInfo.m_levels = 1;
+		imageCreateInfo.m_layers = 1;
+		imageCreateInfo.m_samples = SampleCount::_1;
+		imageCreateInfo.m_imageType = ImageType::_2D;
+		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
+		imageCreateInfo.m_createFlags = 0;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+
+		if (m_editorSceneTexture)
+		{
+			m_graphicsDevice->destroyImage(m_editorSceneTexture);
+			m_graphicsDevice->destroyImageView(m_editorSceneTextureView);
+		}
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_editorSceneTexture);
+
+		// create view
+		m_graphicsDevice->createImageView(m_editorSceneTexture, &m_editorSceneTextureView);
+
+		// set correct layout
+		{
+			m_commandListPool->reset();
+			m_commandList->begin();
+			{
+				// transition from UNDEFINED to TEXTURE
+				Barrier b0 = Initializers::imageBarrier(m_editorSceneTexture, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::FRAGMENT_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE);
+				m_commandList->barrier(1, &b0);
+			}
+			m_commandList->end();
+			Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_commandList);
 		}
 	}
 }

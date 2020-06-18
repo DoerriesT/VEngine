@@ -1037,6 +1037,21 @@ void VEngine::RenderSystem::resize(uint32_t width, uint32_t height)
 	m_renderer->resize(width, height);
 }
 
+void VEngine::RenderSystem::setEditorMode(bool editorMode)
+{
+	m_renderer->setEditorMode(editorMode);
+}
+
+void VEngine::RenderSystem::initEditorImGuiCtx(ImGuiContext *editorImGuiCtx)
+{
+	m_renderer->initEditorImGuiCtx(editorImGuiCtx);
+}
+
+VEngine::Texture2DHandle VEngine::RenderSystem::getEditorSceneTextureHandle()
+{
+	return m_renderer->getEditorSceneTextureHandle();
+}
+
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
 {
 	for (size_t i = 0; i < count; ++i)

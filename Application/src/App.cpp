@@ -62,10 +62,10 @@ void App::initialize(VEngine::Engine *engine)
 	m_engine = engine;
 
 	auto &entityRegistry = m_engine->getEntityRegistry();
-	//entt::entity cameraEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
-	//entityRegistry.assign<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, VEngine::g_windowWidth / (float)VEngine::g_windowHeight, glm::radians(60.0f), 0.1f, 300.0f);
-	//m_engine->getRenderSystem().setCameraEntity(cameraEntity);
+	entt::entity cameraEntity = entityRegistry.create();
+	entityRegistry.assign<VEngine::TransformationComponent>(cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
+	entityRegistry.assign<VEngine::CameraComponent>(cameraEntity, VEngine::CameraComponent::ControllerType::FPS, m_engine->getWindowWidth() / (float)m_engine->getWindowHeight(), glm::radians(60.0f), 0.1f, 300.0f);
+	m_engine->getRenderSystem().setCameraEntity(cameraEntity);
 
 	auto &scene = m_engine->getScene();
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
@@ -303,40 +303,42 @@ void App::update(float timeDelta)
 	}
 	ImGui::End();
 
-	entt::entity entities[] = { m_spotLightEntity, m_sunLightEntity, g_localFogEntity };
-
-	auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
-	auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
-	VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
-
-	auto viewMatrix = camera.getViewMatrix();
-	auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
-
-	auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(entities[entityIdx]);
-
-	auto &io = ImGui::GetIO();
-
-	static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
-	static ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
-
 	auto &input = m_engine->getUserInput();
-	if (input.isKeyPressed(InputKey::ONE))
-	{
-		operation = ImGuizmo::OPERATION::TRANSLATE;
-	}
-	else if (input.isKeyPressed(InputKey::TWO))
-	{
-		operation = ImGuizmo::OPERATION::ROTATE;
-	}
 
-	if (input.isKeyPressed(InputKey::F1))
-	{
-		mode = ImGuizmo::MODE::WORLD;
-	}
-	else if (input.isKeyPressed(InputKey::F2))
-	{
-		mode = ImGuizmo::MODE::LOCAL;
-	}
+	//entt::entity entities[] = { m_spotLightEntity, m_sunLightEntity, g_localFogEntity };
+	//
+	//auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
+	//auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
+	//VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
+	//
+	//auto viewMatrix = camera.getViewMatrix();
+	//auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
+	//
+	//auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(entities[entityIdx]);
+	//
+	//auto &io = ImGui::GetIO();
+	//
+	//static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
+	//static ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
+	//
+	//auto &input = m_engine->getUserInput();
+	//if (input.isKeyPressed(InputKey::ONE))
+	//{
+	//	operation = ImGuizmo::OPERATION::TRANSLATE;
+	//}
+	//else if (input.isKeyPressed(InputKey::TWO))
+	//{
+	//	operation = ImGuizmo::OPERATION::ROTATE;
+	//}
+	//
+	//if (input.isKeyPressed(InputKey::F1))
+	//{
+	//	mode = ImGuizmo::MODE::WORLD;
+	//}
+	//else if (input.isKeyPressed(InputKey::F2))
+	//{
+	//	mode = ImGuizmo::MODE::LOCAL;
+	//}
 
 	if (input.isKeyPressed(InputKey::V))
 	{
