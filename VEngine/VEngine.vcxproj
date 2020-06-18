@@ -271,6 +271,7 @@
     <ClInclude Include="src\Graphics\RenderSystem.h" />
     <ClInclude Include="src\Graphics\ResourceDefinitions.h" />
     <ClInclude Include="src\Graphics\TextureLoader.h" />
+    <ClInclude Include="src\Graphics\TextureManager.h" />
     <ClInclude Include="src\Graphics\ViewRenderList.h" />
     <ClInclude Include="src\Gui\MemoryAllocatorPlot.h" />
     <ClInclude Include="src\Handles.h" />
@@ -395,6 +396,7 @@
     <ClCompile Include="src\Graphics\RenderResources.cpp" />
     <ClCompile Include="src\Graphics\RenderSystem.cpp" />
     <ClCompile Include="src\Graphics\TextureLoader.cpp" />
+    <ClCompile Include="src\Graphics\TextureManager.cpp" />
     <ClCompile Include="src\Gui\MemoryAllocatorPlot.cpp" />
     <ClCompile Include="src\Input\CameraControllerSystem.cpp" />
     <ClCompile Include="src\Input\UserInput.cpp" />

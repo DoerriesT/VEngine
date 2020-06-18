@@ -5,6 +5,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/LightData.h"
 #include "TextureLoader.h"
+#include "TextureManager.h"
 #include "GlobalVar.h"
 #include "Pass/IntegrateBrdfPass.h"
 #include "Pass/ProbeGBufferPass.h"
@@ -69,31 +70,33 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_width = m_swapChain->getExtent().m_width;
 	m_height = m_swapChain->getExtent().m_height;
 
-	m_renderResources = std::make_unique<RenderResources>(m_graphicsDevice);
+	m_renderResources = new RenderResources(m_graphicsDevice);
 	m_renderResources->init(m_width, m_height);
 
-	m_pipelineCache = std::make_unique<PipelineCache>(m_graphicsDevice);
-	m_descriptorSetCache = std::make_unique<DescriptorSetCache>(m_graphicsDevice);
-	m_textureLoader = std::make_unique<TextureLoader>(m_graphicsDevice, m_renderResources->m_stagingBuffer);
-	m_materialManager = std::make_unique<MaterialManager>(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
-	m_meshManager = std::make_unique<MeshManager>(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
+	m_pipelineCache = new PipelineCache(m_graphicsDevice);
+	m_descriptorSetCache = new DescriptorSetCache(m_graphicsDevice);
+	m_textureLoader = new TextureLoader(m_graphicsDevice, m_renderResources->m_stagingBuffer);
+	m_textureManager = new TextureManager(m_graphicsDevice);
+	m_materialManager = new MaterialManager(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
+	m_meshManager = new MeshManager(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
 
-
-	m_fontAtlasTextureIndex = m_textureLoader->loadTexture2D("Resources/Textures/fontConsolas.dds");
-	m_blueNoiseTextureIndex = m_textureLoader->loadTexture2D("Resources/Textures/blue_noise_LDR_RGBA_0.dds");
+	Image *blueNoiseImage;
+	ImageView *blueNoiseImageView;
+	m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds", blueNoiseImage, blueNoiseImageView);
+	m_blueNoiseTextureIndex = m_textureManager->addTexture2D(blueNoiseImage, blueNoiseImageView);
 
 	updateTextureData();
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i] = std::make_unique<rg::RenderGraph>(m_graphicsDevice, m_semaphores, m_semaphoreValues);
+		m_frameGraphs[i] = new rg::RenderGraph(m_graphicsDevice, m_semaphores, m_semaphoreValues);
 	}
 
-	m_gtaoModule = std::make_unique<GTAOModule>(m_graphicsDevice, m_width, m_height);
-	m_ssrModule = std::make_unique<SSRModule>(m_graphicsDevice, m_width, m_height);
-	m_volumetricFogModule = std::make_unique<VolumetricFogModule>(m_graphicsDevice, m_width, m_height);
-	m_reflectionProbeModule = std::make_unique<ReflectionProbeModule>(m_graphicsDevice, m_renderResources.get());
-	m_atmosphericScatteringModule = std::make_unique<AtmosphericScatteringModule>(m_graphicsDevice);
+	m_gtaoModule = new GTAOModule(m_graphicsDevice, m_width, m_height);
+	m_ssrModule = new SSRModule(m_graphicsDevice, m_width, m_height);
+	m_volumetricFogModule = new VolumetricFogModule(m_graphicsDevice, m_width, m_height);
+	m_reflectionProbeModule = new ReflectionProbeModule(m_graphicsDevice, m_renderResources);
+	m_atmosphericScatteringModule = new AtmosphericScatteringModule(m_graphicsDevice);
 }
 
 VEngine::Renderer::~Renderer()
@@ -101,19 +104,20 @@ VEngine::Renderer::~Renderer()
 	m_graphicsDevice->waitIdle();
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_frameGraphs[i].reset();
+		delete m_frameGraphs[i];
 	}
-	m_pipelineCache.reset();
-	m_descriptorSetCache.reset();
-	m_textureLoader.reset();
-	m_materialManager.reset();
-	m_meshManager.reset();
-	m_gtaoModule.reset();
-	m_ssrModule.reset();
-	m_renderResources.reset();
-	m_volumetricFogModule.reset();
-	m_reflectionProbeModule.reset();
-	m_atmosphericScatteringModule.reset();
+	delete m_pipelineCache;
+	delete m_descriptorSetCache;
+	delete m_textureLoader;
+	delete m_textureManager;
+	delete m_materialManager;
+	delete m_meshManager;
+	delete m_gtaoModule;
+	delete m_ssrModule;
+	delete m_renderResources;
+	delete m_volumetricFogModule;
+	delete m_reflectionProbeModule;
+	delete m_atmosphericScatteringModule;
 
 	m_graphicsDevice->destroySemaphore(m_semaphores[0]);
 	m_graphicsDevice->destroySemaphore(m_semaphores[1]);
@@ -500,9 +504,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	PassRecordContext passRecordContext{};
-	passRecordContext.m_renderResources = m_renderResources.get();
-	passRecordContext.m_pipelineCache = m_pipelineCache.get();
-	passRecordContext.m_descriptorSetCache = m_descriptorSetCache.get();
+	passRecordContext.m_renderResources = m_renderResources;
+	passRecordContext.m_pipelineCache = m_pipelineCache;
+	passRecordContext.m_descriptorSetCache = m_descriptorSetCache;
 	passRecordContext.m_commonRenderData = &commonData;
 
 	m_atmosphericScatteringModule->registerResources(graph);
@@ -1025,22 +1029,28 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 VEngine::Texture2DHandle VEngine::Renderer::loadTexture(const char *filepath)
 {
-	return m_textureLoader->loadTexture2D(filepath);
+	Image *image;
+	ImageView *imageView;
+	m_textureLoader->load(filepath, image, imageView);
+	return m_textureManager->addTexture2D(image, imageView);
 }
 
 VEngine::Texture3DHandle VEngine::Renderer::loadTexture3D(const char *filepath)
 {
-	return m_textureLoader->loadTexture3D(filepath);
+	Image *image;
+	ImageView *imageView;
+	m_textureLoader->load(filepath, image, imageView);
+	return m_textureManager->addTexture3D(image, imageView);
 }
 
 void VEngine::Renderer::freeTexture(Texture2DHandle handle)
 {
-	m_textureLoader->free(handle);
+	m_textureManager->free(handle);
 }
 
 void VEngine::Renderer::freeTexture(Texture3DHandle handle)
 {
-	m_textureLoader->free(handle);
+	m_textureManager->free(handle);
 }
 
 void VEngine::Renderer::createMaterials(uint32_t count, const Material *materials, MaterialHandle *handles)
@@ -1070,12 +1080,12 @@ void VEngine::Renderer::destroySubMeshes(uint32_t count, SubMeshHandle *handles)
 
 void VEngine::Renderer::updateTextureData()
 {
-	m_renderResources->updateTextureArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->get2DViews());
+	m_renderResources->updateTextureArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureManager->get2DViews());
 }
 
 void VEngine::Renderer::updateTexture3DData()
 {
-	m_renderResources->updateTexture3DArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureLoader->get3DViews());
+	m_renderResources->updateTexture3DArray(RendererConsts::TEXTURE_ARRAY_SIZE, m_textureManager->get3DViews());
 }
 
 const uint32_t *VEngine::Renderer::getLuminanceHistogram() const

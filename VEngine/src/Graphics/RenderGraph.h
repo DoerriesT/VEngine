@@ -252,6 +252,7 @@ namespace VEngine
 			bool m_recordTimings = true;
 			std::unique_ptr<PassTimingInfo[]> m_timingInfos;
 			gal::Buffer *m_queryResultBuffer;
+			bool m_readyToRecord = true;
 
 			///////////////////////////////////////////////////
 			// everything below needs to be reset before use //

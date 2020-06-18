@@ -408,6 +408,12 @@ VEngine::rg::BufferHandle VEngine::rg::RenderGraph::importBuffer(Buffer *buffer,
 
 void VEngine::rg::RenderGraph::reset()
 {
+	// dont try to reset if already in ready-to-record state
+	if (m_readyToRecord)
+	{
+		return;
+	}
+
 	// wait on semaphores for queue completion
 	for (size_t i = 0; i < 3; ++i)
 	{
@@ -516,6 +522,8 @@ void VEngine::rg::RenderGraph::reset()
 	}
 
 	m_commandListFramePool.reset();
+	
+	m_readyToRecord = true;
 }
 
 void VEngine::rg::RenderGraph::execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData, bool forceWaitOnSemaphore, uint64_t waitValue)
@@ -524,6 +532,7 @@ void VEngine::rg::RenderGraph::execute(ResourceViewHandle finalResourceHandle, c
 	createResources();
 	createSynchronization(finalResourceHandle, forceWaitOnSemaphore, waitValue);
 	record();
+	m_readyToRecord = false;
 }
 
 void VEngine::rg::RenderGraph::getTimingInfo(size_t *count, const PassTimingInfo **data) const

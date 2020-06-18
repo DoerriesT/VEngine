@@ -258,6 +258,35 @@ void VEditor::VEditor::update(float timeDelta)
 	{
 		m_entityDetailWindow->draw(m_entityWindow->getSelectedEntity(), m_editorCameraEntity);
 	}
+
+	// asset browser
+	{
+		ImGui::Begin("Assets");
+
+		ImGui::End();
+	}
+
+
+	// viewport
+	{
+		ImGui::Begin("Viewport");
+
+		ImGui::End();
+	}
+
+	// modes
+	{
+		ImGui::Begin("Modes");
+
+		ImGui::End();
+	}
+
+	// quick menu
+	{
+		ImGui::Begin("Quick Menu");
+
+		ImGui::End();
+	}
 }
 
 void VEditor::VEditor::shutdown()
