@@ -18,6 +18,9 @@
     <ClCompile Include="src\EntityWindow.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\AssetBrowserWindow.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\VEditor.h">
@@ -30,6 +33,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\EntityWindow.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\AssetBrowserWindow.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

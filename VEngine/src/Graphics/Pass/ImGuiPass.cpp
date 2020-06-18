@@ -102,7 +102,7 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// Bind pipeline and descriptor sets:
 			{
 				cmdList->bindPipeline(pipeline);
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &data.m_passRecordContext->m_renderResources->m_imGuiDescriptorSet);
+				cmdList->bindDescriptorSets(pipeline, 0, 1, &data.m_passRecordContext->m_renderResources->m_textureDescriptorSet);
 			}
 
 			// Bind Vertex And Index Buffer:
@@ -197,6 +197,11 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 						cmdList->setScissor(0, 1, &scissor);
 
 						// Draw
+						uint32_t textureIndex = (uint32_t)pcmd->TextureId;
+						assert(textureIndex != 0);
+						textureIndex -= 1;
+
+						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 4 * sizeof(float), sizeof(textureIndex), &textureIndex);
 						cmdList->drawIndexed(pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
 					}
 				}

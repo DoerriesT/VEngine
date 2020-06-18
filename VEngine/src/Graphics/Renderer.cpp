@@ -85,6 +85,9 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds", blueNoiseImage, blueNoiseImageView);
 	m_blueNoiseTextureIndex = m_textureManager->addTexture2D(blueNoiseImage, blueNoiseImageView);
 
+	auto imguiFontTextureHandle = m_textureManager->addTexture2D(nullptr, m_renderResources->m_imGuiFontsTextureView);
+	ImGui::GetIO().Fonts->SetTexID((ImTextureID)imguiFontTextureHandle.m_handle);
+
 	updateTextureData();
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)

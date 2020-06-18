@@ -77,12 +77,10 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyDescriptorSetPool(m_textureDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTextureDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTexture3DDescriptorSetPool);
-	m_graphicsDevice->destroyDescriptorSetPool(m_imguiDescriptorSetPool);
 	
 	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTextureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTexture3DDescriptorSetLayout);
-	m_graphicsDevice->destroyDescriptorSetLayout(m_imGuiDescriptorSetLayout);
 }
 
 void VEngine::RenderResources::init(uint32_t width, uint32_t height)
@@ -397,24 +395,6 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_computeTexture3DDescriptorSetPool->allocateDescriptorSets(1, &m_computeTexture3DDescriptorSet);
 	}
 
-	// create ImGui descriptor set
-	{
-		DescriptorSetLayoutBinding bindings[]
-		{
-			{0, DescriptorType::SAMPLED_IMAGE, 1, ShaderStageFlagBits::FRAGMENT_BIT},
-			{1, DescriptorType::SAMPLER, 1, ShaderStageFlagBits::FRAGMENT_BIT},
-		};
-		
-		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_imGuiDescriptorSetLayout);
-		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "ImGui DSet Layout");
-		m_graphicsDevice->createDescriptorSetPool(1, m_imGuiDescriptorSetLayout, &m_imguiDescriptorSetPool);
-		m_imguiDescriptorSetPool->allocateDescriptorSets(1, &m_imGuiDescriptorSet);
-
-		DescriptorSetUpdate update = Initializers::samplerDescriptor(&m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 1);
-
-		m_imGuiDescriptorSet->update(1, &update);
-	}
-
 	createImGuiFontsTexture();
 
 	// light proxy vertex/index buffer
@@ -647,18 +627,6 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 		m_graphicsDevice->createImageView(m_imGuiFontsTexture, &m_imGuiFontsTextureView);
 	}
 
-	// Update the Descriptor Set:
-	{
-		DescriptorSetUpdate update{};
-		update.m_dstBinding = 0;
-		update.m_dstArrayElement = 0;
-		update.m_descriptorCount = 1;
-		update.m_descriptorType = DescriptorType::SAMPLED_IMAGE;
-		update.m_imageViews = &m_imGuiFontsTextureView;
-
-		m_imGuiDescriptorSet->update(1, &update);
-	}
-
 	// Upload to Buffer:
 	{
 		uint8_t *map = nullptr;
@@ -695,7 +663,7 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 	}
 
 	// Store our identifier
-	io.Fonts->TexID = (ImTextureID)m_imGuiFontsTexture;
+	//io.Fonts->TexID = (ImTextureID)m_imGuiFontsTexture;
 }
 
 void VEngine::RenderResources::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles)

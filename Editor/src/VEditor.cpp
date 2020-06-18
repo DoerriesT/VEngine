@@ -6,6 +6,7 @@
 #include <Graphics/imgui/imgui.h>
 #include "EntityDetailWindow.h"
 #include "EntityWindow.h"
+#include "AssetBrowserWindow.h"
 
 using namespace VEngine;
 
@@ -37,6 +38,8 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 	m_entityDetailWindow->setVisible(true);
 	m_entityWindow = new EntityWindow(m_engine);
 	m_entityWindow->setVisible(true);
+	m_assetBrowserWindow = new AssetBrowserWindow(m_engine);
+	m_assetBrowserWindow->setVisible(true);
 
 	m_engine->getRenderSystem().setCameraEntity(m_editorCameraEntity);
 
@@ -260,10 +263,9 @@ void VEditor::VEditor::update(float timeDelta)
 	}
 
 	// asset browser
+	if (m_assetBrowserWindow->isVisible())
 	{
-		ImGui::Begin("Assets");
-
-		ImGui::End();
+		m_assetBrowserWindow->draw();
 	}
 
 
