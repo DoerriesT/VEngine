@@ -7,9 +7,10 @@
 #include "GlobalVar.h"
 #include "Utility/Timer.h"
 #include "graphics/imgui/imgui.h"
-#include "graphics/imgui/imgui_impl_glfw.h"
+//#include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
 #include "Editor/Editor.h"
+#include "Input/ImGuiInputAdapter.h"
 
 float g_ssrBias = 0.7f;
 
@@ -30,8 +31,8 @@ void VEngine::Engine::start()
 	m_window = std::make_unique<Window>(1600, 900, m_windowTitle);
 	uint32_t width = m_window->getWidth();
 	uint32_t height = m_window->getHeight();
-	m_userInput = std::make_unique<UserInput>();
-	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->grabMouse(grab); });
+	m_userInput = std::make_unique<UserInput>(*m_window.get());
+	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->setMouseCursorMode(grab ? Window::MouseCursorMode::DISABLED : Window::MouseCursorMode::NORMAL); });
 
 	// Setup Dear ImGui context
 	{
@@ -49,12 +50,13 @@ void VEngine::Engine::start()
 		//ImGui::StyleColorsClassic();
 	
 		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
+		//ImGui_ImplGlfw_InitForVulkan((GLFWwindow *)m_window->getWindowHandle(), true);
 	}
 
-	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
+	ImGuiInputAdapter imguiInputAdapter(ImGui::GetCurrentContext(), *m_userInput.get(), *m_window.get());
+	imguiInputAdapter.resize(m_window->getWidth(), m_window->getHeight(), m_window->getWindowWidth(), m_window->getWindowHeight());
 
-	m_window->addInputListener(m_userInput.get());
+	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
 
 	m_gameLogic.initialize(this);
 	
@@ -74,10 +76,27 @@ void VEngine::Engine::start()
 		{
 			width = m_window->getWidth();
 			height = m_window->getHeight();
+			uint32_t windowWidth = m_window->getWindowWidth();
+			uint32_t windowHeight = m_window->getWindowHeight();
+			if (!m_editorMode)
+			{
+				imguiInputAdapter.resize(width, height, windowWidth, windowHeight);
+				m_userInput->resize(0, 0, windowWidth, windowHeight);
+			}
+		}
+		if (m_editorMode)
+		{
+			imguiInputAdapter.resize(m_editorViewportWidth, m_editorViewportHeight, m_editorViewportWidth, m_editorViewportHeight);
+			m_userInput->resize(m_editorViewportOffsetX, m_editorViewportOffsetY, m_editorViewportWidth, m_editorViewportHeight);
+			m_renderSystem->resize(m_editorViewportWidth, m_editorViewportHeight, width, height);
+		}
+		else
+		{
 			m_renderSystem->resize(width, height);
 		}
 
-		ImGui_ImplGlfw_NewFrame();
+		//ImGui_ImplGlfw_NewFrame();
+		imguiInputAdapter.update();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
@@ -137,6 +156,16 @@ uint32_t VEngine::Engine::getWindowHeight() const
 	return m_window->getHeight();
 }
 
+uint32_t VEngine::Engine::getWidth() const
+{
+	return m_editorMode ? m_editorViewportWidth : m_window->getWidth();
+}
+
+uint32_t VEngine::Engine::getHeight() const
+{
+	return m_editorMode ? m_editorViewportHeight : m_window->getHeight();
+}
+
 VEngine::Scene &VEngine::Engine::getScene()
 {
 	return m_scene;
@@ -145,4 +174,18 @@ VEngine::Scene &VEngine::Engine::getScene()
 VEngine::Window *VEngine::Engine::getWindow()
 {
 	return m_window.get();
+}
+
+void VEngine::Engine::setEditorMode(bool editorMode)
+{
+	m_editorMode = editorMode;
+	m_renderSystem->setEditorMode(m_editorMode);
+}
+
+void VEngine::Engine::setEditorViewport(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height)
+{
+	m_editorViewportOffsetX = offsetX;
+	m_editorViewportOffsetY = offsetY;
+	m_editorViewportWidth = width;
+	m_editorViewportHeight = height;
 }

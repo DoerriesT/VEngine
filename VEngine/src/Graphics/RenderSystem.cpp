@@ -30,7 +30,9 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES)),
 	m_boundingSpheres(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES)),
 	m_width(width),
-	m_height(height)
+	m_height(height),
+	m_swapChainWidth(width),
+	m_swapChainHeight(height)
 {
 	for (size_t i = 0; i < RendererConsts::MAX_TAA_HALTON_SAMPLES; ++i)
 	{
@@ -108,6 +110,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 			m_commonRenderData.m_cameraDirection = -glm::vec4(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2], 1.0f);
 			m_commonRenderData.m_width = m_width;
 			m_commonRenderData.m_height = m_height;
+			m_commonRenderData.m_swapChainWidth = m_swapChainWidth;
+			m_commonRenderData.m_swapChainHeight = m_swapChainHeight;
 			m_commonRenderData.m_curResIdx = m_commonRenderData.m_frame % RendererConsts::FRAMES_IN_FLIGHT;
 			m_commonRenderData.m_prevResIdx = (m_commonRenderData.m_frame + RendererConsts::FRAMES_IN_FLIGHT - 1) % RendererConsts::FRAMES_IN_FLIGHT;
 			m_commonRenderData.m_timeDelta = static_cast<float>(timeDelta);
@@ -1005,9 +1009,11 @@ void VEngine::RenderSystem::destroySubMeshes(uint32_t count, SubMeshHandle *hand
 	m_renderer->destroySubMeshes(count, handles);
 }
 
-void VEngine::RenderSystem::setCameraEntity(entt::entity cameraEntity)
+entt::entity VEngine::RenderSystem::setCameraEntity(entt::entity cameraEntity)
 {
+	auto oldCamera = m_cameraEntity;
 	m_cameraEntity = cameraEntity;
+	return oldCamera;
 }
 
 entt::entity VEngine::RenderSystem::getCameraEntity() const
@@ -1035,6 +1041,15 @@ void VEngine::RenderSystem::resize(uint32_t width, uint32_t height)
 	m_width = width;
 	m_height = height;
 	m_renderer->resize(width, height);
+}
+
+void VEngine::RenderSystem::resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight)
+{
+	m_width = editorViewportWidth;
+	m_height = editorViewportHeight;
+	m_swapChainWidth = swapChainWidth;
+	m_swapChainHeight = swapChainHeight;
+	m_renderer->resize(m_width, m_height, m_swapChainWidth, m_swapChainHeight);
 }
 
 void VEngine::RenderSystem::setEditorMode(bool editorMode)

@@ -279,6 +279,7 @@
     <ClInclude Include="src\IGameLogic.h" />
     <ClInclude Include="src\Input\CameraControllerSystem.h" />
     <ClInclude Include="src\Input\IInputListener.h" />
+    <ClInclude Include="src\Input\ImGuiInputAdapter.h" />
     <ClInclude Include="src\Input\InputTokens.h" />
     <ClInclude Include="src\Input\UserInput.h" />
     <ClInclude Include="src\Level.h" />
@@ -401,6 +402,7 @@
     <ClCompile Include="src\Graphics\TextureManager.cpp" />
     <ClCompile Include="src\Gui\MemoryAllocatorPlot.cpp" />
     <ClCompile Include="src\Input\CameraControllerSystem.cpp" />
+    <ClCompile Include="src\Input\ImGuiInputAdapter.cpp" />
     <ClCompile Include="src\Input\UserInput.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Utility\QuadTreeAllocator.cpp" />

@@ -68,8 +68,10 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[1], "Compute Queue Semaphore");
 	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[2], "Transfer Queue Semaphore");
 
-	m_width = m_swapChain->getExtent().m_width;
-	m_height = m_swapChain->getExtent().m_height;
+	m_swapChainWidth = m_swapChain->getExtent().m_width;
+	m_swapChainHeight = m_swapChain->getExtent().m_height;
+	m_width = m_swapChainWidth;
+	m_height = m_swapChainHeight;
 
 	m_renderResources = new RenderResources(m_graphicsDevice);
 	m_renderResources->init(m_width, m_height);
@@ -1151,24 +1153,46 @@ void VEngine::Renderer::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_
 
 void VEngine::Renderer::resize(uint32_t width, uint32_t height)
 {
-	m_graphicsDevice->waitIdle();
-	m_width = width;
-	m_height = height;
-	if (m_width > 0 && m_height > 0)
+	resize(width, height, width, height);
+}
+
+void VEngine::Renderer::resize(uint32_t width, uint32_t height, uint32_t swapChainWidth, uint32_t swapChainHeight)
+{
+	if (!m_editorMode)
 	{
-		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
-		{
-			m_frameGraphs[i]->reset();
-		}
-		m_swapChain->resize(width, height);
-		m_renderResources->resize(width, height);
-		m_gtaoModule->resize(width, height);
-		m_ssrModule->resize(width, height);
-		m_volumetricFogModule->resize(width, height);
-		m_textureManager->update(m_editorSceneTextureHandle, nullptr, m_renderResources->m_editorSceneTextureView);
-		updateTextureData();
+		width = swapChainWidth;
+		height = swapChainHeight;
 	}
-	m_framesSinceLastResize = 0;
+	if (width != m_width || height != m_height || swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight)
+	{
+		m_graphicsDevice->waitIdle();
+		if (width > 0 && height > 0 && swapChainWidth > 0 && swapChainHeight > 0)
+		{
+			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+			{
+				m_frameGraphs[i]->reset();
+			}
+			if (swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight)
+			{
+				m_swapChain->resize(swapChainWidth, swapChainHeight);
+			}
+			if (width != m_width || height != m_height)
+			{
+				m_renderResources->resize(width, height);
+				m_gtaoModule->resize(width, height);
+				m_ssrModule->resize(width, height);
+				m_volumetricFogModule->resize(width, height);
+				m_textureManager->update(m_editorSceneTextureHandle, nullptr, m_renderResources->m_editorSceneTextureView);
+				updateTextureData();
+			}
+		}
+		m_framesSinceLastResize = 0;
+
+		m_width = width;
+		m_height = height;
+		m_swapChainWidth = swapChainWidth;
+		m_swapChainHeight = swapChainHeight;
+	}
 }
 
 void VEngine::Renderer::setEditorMode(bool editorMode)

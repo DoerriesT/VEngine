@@ -38,13 +38,14 @@ namespace VEngine
 		void destroyMaterials(uint32_t count, MaterialHandle *handles);
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
-		void setCameraEntity(entt::entity cameraEntity);
+		entt::entity setCameraEntity(entt::entity cameraEntity);
 		entt::entity getCameraEntity() const;
 		const uint32_t *getLuminanceHistogram() const;
 		//std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 		void resize(uint32_t width, uint32_t height);
+		void resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight);
 		void setEditorMode(bool editorMode);
 		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
 		Texture2DHandle getEditorSceneTextureHandle();
@@ -69,6 +70,8 @@ namespace VEngine
 		BVH m_bvh;
 		uint32_t m_width;
 		uint32_t m_height;
+		uint32_t m_swapChainWidth;
+		uint32_t m_swapChainHeight;
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
 		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices, glm::vec4 *cascadeParams);

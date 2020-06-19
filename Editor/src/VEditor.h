@@ -4,6 +4,12 @@
 
 struct ImGuiContext;
 
+namespace VEngine
+{
+	class ImGuiInputAdapter;
+	class UserInput;
+}
+
 namespace VEditor
 {
 	class EntityDetailWindow;
@@ -22,7 +28,10 @@ namespace VEditor
 		IGameLogic &m_gameLogic;
 		VEngine::Engine *m_engine;
 		entt::entity m_editorCameraEntity;
+		entt::entity m_lastGameCameraEntity;
 		ImGuiContext *m_editorImGuiContext;
+		VEngine::ImGuiInputAdapter *m_imguiInputAdapter;
+		VEngine::UserInput *m_userInput;
 		EntityDetailWindow *m_entityDetailWindow;
 		EntityWindow *m_entityWindow;
 		AssetBrowserWindow *m_assetBrowserWindow;

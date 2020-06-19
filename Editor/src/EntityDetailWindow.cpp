@@ -76,7 +76,7 @@ VEditor::EntityDetailWindow::EntityDetailWindow(VEngine::Engine *engine)
 {
 }
 
-void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorCameraEntity)
+void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorCameraEntity, float viewportX, float viewportY, float viewportWidth, float viewportHeight)
 {
 	if (entity != m_lastDisplayedEntity)
 	{
@@ -316,7 +316,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
+		ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
 
 		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, operation, m_localTransformMode ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD, (float *)&transform);
 		glm::vec3 position;

@@ -4,12 +4,14 @@
 #include <string>
 
 struct GLFWwindow;
+struct GLFWcursor;
 
 namespace VEngine
 {
 	class Window
 	{
 		friend void windowSizeCallback(GLFWwindow *window, int width, int height);
+		friend void framebufferSizeCallback(GLFWwindow *window, int width, int height);
 		friend void curserPosCallback(GLFWwindow *window, double xPos, double yPos);
 		friend void curserEnterCallback(GLFWwindow *window, int entered);
 		friend void scrollCallback(GLFWwindow *window, double xOffset, double yOffset);
@@ -18,25 +20,57 @@ namespace VEngine
 		friend void charCallback(GLFWwindow *window, unsigned int codepoint);
 		friend void joystickCallback(int joystickId, int event);
 	public:
+		enum class MouseCursor
+		{
+			ARROW, 
+			TEXT, 
+			RESIZE_ALL, 
+			RESIZE_VERTICAL, 
+			RESIZE_HORIZONTAL, 
+			RESIZE_TRBL, 
+			RESIZE_TLBR, 
+			HAND, 
+			CROSSHAIR
+		};
+
+		enum class MouseCursorMode
+		{
+			NORMAL, HIDDEN, DISABLED
+		};
+
 		explicit Window(unsigned int width, unsigned int height, const std::string &title);
 		~Window();
 		void pollEvents();
 		void *getWindowHandle() const;
+		void *getWindowHandleRaw() const;
 		unsigned int getWidth() const;
 		unsigned int getHeight() const;
+		unsigned int getWindowWidth() const;
+		unsigned int getWindowHeight() const;
 		bool shouldClose() const;
 		bool configurationChanged() const;
-		void grabMouse(bool grabMouse);
+		void setMouseCursorMode(MouseCursorMode mode);
+		MouseCursorMode getMouseCursorMode() const;
 		void setTitle(const std::string &title);
 		void addInputListener(IInputListener *listener);
 		void removeInputListener(IInputListener *listener);
+		const char *getClipboardText() const;
+		void setClipboardText(const char *text);
+		void setMouseCursor(MouseCursor cursor);
+		void setCursorPos(float x, float y);
+		InputAction getMouseButton(InputMouse mouseButton);
+		bool isFocused();
 
 	private:
 		GLFWwindow *m_windowHandle;
+		GLFWcursor *m_cursors[9];
+		unsigned int m_windowWidth;
+		unsigned int m_windowHeight;
 		unsigned int m_width;
 		unsigned int m_height;
 		std::string m_title;
 		std::vector<IInputListener*> m_inputListeners;
 		bool m_configurationChanged;
+		MouseCursorMode m_mouseCursorMode = MouseCursorMode::NORMAL;
 	};
 }

@@ -1,8 +1,19 @@
 #include "UserInput.h"
 #include "Utility/ContainerUtility.h"
+#include "Window/Window.h"
 
-VEngine::UserInput::UserInput()
+VEngine::UserInput::UserInput(Window &window)
+	:m_window(window)
 {
+	m_window.addInputListener(this);
+}
+
+void VEngine::UserInput::resize(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height)
+{
+	m_offsetX = offsetX;
+	m_offsetY = offsetY;
+	m_width = width;
+	m_height = height;
 }
 
 void VEngine::UserInput::input()
@@ -29,6 +40,27 @@ glm::vec2 VEngine::UserInput::getMousePosDelta() const
 glm::vec2 VEngine::UserInput::getScrollOffset() const
 {
 	return m_scrollOffset;
+}
+
+void VEngine::UserInput::setMousePos(float x, float y)
+{
+	if (m_width != 0 || m_height != 0)
+	{
+		x += m_offsetX;
+		y += m_offsetY;
+	}
+
+	m_window.setCursorPos(x, y);
+}
+
+const char *VEngine::UserInput::getClipboardText() const
+{
+	return m_window.getClipboardText();
+}
+
+void VEngine::UserInput::setClipboardText(const char *text)
+{
+	m_window.setClipboardText(text);
 }
 
 bool VEngine::UserInput::isKeyPressed(InputKey key, bool ignoreRepeated) const
@@ -146,6 +178,12 @@ void VEngine::UserInput::onMouseMove(double x, double y)
 {
 	m_mousePos.x = static_cast<float>(x);
 	m_mousePos.y = static_cast<float>(y);
+
+	if (m_width != 0 || m_height != 0)
+	{
+		m_mousePos.x -= m_offsetX;
+		m_mousePos.y -= m_offsetY;
+	}
 }
 
 void VEngine::UserInput::onMouseScroll(double xOffset, double yOffset)

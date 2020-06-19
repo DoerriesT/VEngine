@@ -37,6 +37,8 @@ namespace VEngine
 		glm::vec4 m_cameraDirection;
 		uint32_t m_width;
 		uint32_t m_height;
+		uint32_t m_swapChainWidth;
+		uint32_t m_swapChainHeight;
 		uint32_t m_frame;
 		uint32_t m_directionalLightCount;
 		uint32_t m_directionalLightShadowedCount;

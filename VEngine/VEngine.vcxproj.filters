@@ -498,6 +498,9 @@
     <ClInclude Include="src\Graphics\Pass\SwapChainCopyPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Input\ImGuiInputAdapter.h">
+      <Filter>src\Input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -844,6 +847,9 @@
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\SwapChainCopyPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Input\ImGuiInputAdapter.cpp">
+      <Filter>src\Input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
