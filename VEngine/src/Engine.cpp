@@ -34,6 +34,9 @@ void VEngine::Engine::start()
 	m_userInput = std::make_unique<UserInput>(*m_window.get());
 	m_cameraControllerSystem = std::make_unique<CameraControllerSystem>(*m_entityRegistry, *m_userInput, [=](bool grab) {m_window->setMouseCursorMode(grab ? Window::MouseCursorMode::DISABLED : Window::MouseCursorMode::NORMAL); });
 
+	constexpr size_t FRAME_TIME_ARRAY_SIZE = 64;
+	std::unique_ptr<float[]> frametimes = std::make_unique<float[]>(FRAME_TIME_ARRAY_SIZE);
+
 	// Setup Dear ImGui context
 	{
 		IMGUI_CHECKVERSION();
@@ -109,6 +112,36 @@ void VEngine::Engine::start()
 		m_gameLogic.update(timeDelta);
 
 		ImGui::ShowDemoWindow();
+
+		memmove(frametimes.get(), frametimes.get() + 1, (FRAME_TIME_ARRAY_SIZE - 1) * sizeof(float));
+		frametimes[FRAME_TIME_ARRAY_SIZE - 1] = timeDelta * 1000.0f;
+
+		// profiler window
+		{
+			ImGui::Begin("Profiler");
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+			char overlay[32];
+			sprintf_s(overlay, "%10.10f ms", frametimes[FRAME_TIME_ARRAY_SIZE - 1]);
+			ImGui::PlotLines("Frametime", frametimes.get(), FRAME_TIME_ARRAY_SIZE, 0, overlay, 0.0f, 50.0f, ImVec2(0, 80));
+
+			ImGui::Separator();
+			{
+				size_t passTimingCount;
+				const PassTimingInfo *passTimingInfo;
+				m_renderSystem->getTimingInfo(&passTimingCount, &passTimingInfo);
+				float total = 0.0f;
+				for (size_t i = 0; i < passTimingCount; ++i)
+				{
+					ImGui::Text("%30s : %f ms", passTimingInfo[i].m_passName, passTimingInfo[i].m_passTimeWithSync);
+					total += passTimingInfo[i].m_passTimeWithSync;
+				}
+				const char *totalStr = "Total";
+				ImGui::Text("%30s : %f ms", totalStr, total);
+			}
+
+			ImGui::End();
+		}
 
 		ImGui::Render();
 		m_renderSystem->update(timeDelta);
