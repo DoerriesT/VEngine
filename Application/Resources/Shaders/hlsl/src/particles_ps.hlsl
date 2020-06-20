@@ -5,6 +5,7 @@
 #include "commonFourierOpacity.hlsli"
 #include "lighting.hlsli"
 #include "commonFilter.hlsli"
+#include "srgb.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -76,6 +77,7 @@ PSOutput main(PSInput input)
 	if (input.textureIndex != 0)
 	{
 		albedoOpacity = g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord);
+		albedoOpacity.rgb = accurateSRGBToLinear(albedoOpacity.rgb);
 	}
 	albedoOpacity.a *= input.opacity;
 	
@@ -98,7 +100,7 @@ PSOutput main(PSInput input)
 		for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 		{
 			DirectionalLight directionalLight = g_DirectionalLights[i];
-			result += directionalLight.color;
+			result += directionalLight.color * albedo;
 		}
 	}
 	
@@ -108,7 +110,7 @@ PSOutput main(PSInput input)
 		{
 			DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
 			float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos);
-			result += directionalLight.color * shadow ;
+			result += directionalLight.color * albedo * shadow;
 		}
 	}
 	
@@ -140,7 +142,7 @@ PSOutput main(PSInput input)
 				{
 					att *= getAngleAtt(L, light.direction, light.angleScale, light.angleOffset);
 				}
-				result += light.color * att;
+				result += light.color * albedo * att;
 			}
 		}
 	}
@@ -236,7 +238,7 @@ PSOutput main(PSInput input)
 					shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
 				}
 				
-				result += shadow * lightShadowed.light.color * att;
+				result += shadow * lightShadowed.light.color * albedo * att;
 			}
 		}
 	}

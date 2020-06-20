@@ -284,6 +284,53 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				pec->m_spawnType = static_cast<ParticleEmitterComponent::SpawnType>(currentSpawnType);
 			}
 			ImGui::DragFloat("Spawn Area Size", &pec->m_spawnAreaSize, 0.01f, 0.01f, 100.0f);
+
+			if (pec->m_textureHandle.m_handle ? ImGui::ImageButton((ImTextureID)(size_t)pec->m_textureHandle.m_handle, ImVec2(64.0f, 64.0f)) : ImGui::Button("Add Texture"))
+			{
+				ImGui::OpenPopup("select_particle_texture_popup");
+			}
+			ImGui::SameLine();
+			ImGui::Text("Texture");
+
+
+			if (ImGui::BeginPopup("select_particle_texture_popup"))
+			{
+				ImGui::Text("Particle Texture:");
+				ImGui::Separator();
+
+				auto &scene = m_engine->getScene();
+				Texture2DHandle selectedTexture = {};
+
+				for (auto &texture : scene.m_textures)
+				{
+					if (ImGui::Selectable(texture.first.c_str(), texture.second.m_handle == pec->m_textureHandle.m_handle))
+					{
+						selectedTexture = texture.second;
+					}
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::BeginTooltip();
+						ImGui::Image((ImTextureID)(size_t)texture.second.m_handle, ImVec2(128.0f, 128.0f));
+						ImGui::EndTooltip();
+					}
+				}
+
+				if (selectedTexture.m_handle != 0)
+				{
+					// unselect texture
+					if (selectedTexture.m_handle == pec->m_textureHandle.m_handle)
+					{
+						pec->m_textureHandle = {};
+					}
+					// select different texture
+					else
+					{
+						pec->m_textureHandle = selectedTexture;
+					}
+				}
+
+				ImGui::EndPopup();
+			}
 		}
 
 		// local reflection probe

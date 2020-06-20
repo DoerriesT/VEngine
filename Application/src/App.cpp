@@ -160,6 +160,7 @@ void App::initialize(VEngine::Engine *engine)
 
 	auto perlinNoiseTexture = m_engine->getRenderSystem().createTexture3D("Resources/Textures/perlinNoiseBC4.dds");
 	auto smokeTexture = m_engine->getRenderSystem().createTexture("Resources/Textures/smoke.dds");
+	scene.m_textures["Resources/Textures/smoke.dds"] = smokeTexture;
 	m_engine->getRenderSystem().updateTexture3DData();
 	m_engine->getRenderSystem().updateTextureData();
 
