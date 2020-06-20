@@ -76,7 +76,7 @@ VEditor::EntityDetailWindow::EntityDetailWindow(VEngine::Engine *engine)
 {
 }
 
-void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorCameraEntity, float viewportX, float viewportY, float viewportWidth, float viewportHeight)
+void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorCameraEntity, ImGuiContext *gameContext)
 {
 	if (entity != m_lastDisplayedEntity)
 	{
@@ -306,7 +306,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 	{
 		ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(m_translateRotateScaleMode);
 		auto &tc = entityRegistry.get<TransformationComponent>(entity);
-		auto &io = ImGui::GetIO();
+		
 
 		glm::mat4 transform = glm::translate(tc.m_position) * glm::mat4_cast(tc.m_orientation) * glm::scale(glm::vec3(tc.m_scale));
 
@@ -316,9 +316,16 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 		auto viewMatrix = camera.getViewMatrix();
 		auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
 
-		ImGuizmo::SetRect(viewportX, viewportY, viewportWidth, viewportHeight);
+		auto *editorContext = ImGui::GetCurrentContext();
+		ImGui::SetCurrentContext(gameContext);
+		auto &io = ImGui::GetIO();
+
+		ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
 
 		ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, operation, m_localTransformMode ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD, (float *)&transform);
+
+		ImGui::SetCurrentContext(editorContext);
+
 		glm::vec3 position;
 		glm::vec3 eulerAngles;
 		glm::vec3 scale;

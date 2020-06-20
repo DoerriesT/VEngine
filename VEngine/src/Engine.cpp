@@ -95,12 +95,13 @@ void VEngine::Engine::start()
 			m_renderSystem->resize(width, height);
 		}
 
+		m_userInput->input();
 		//ImGui_ImplGlfw_NewFrame();
 		imguiInputAdapter.update();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 
-		m_userInput->input();
+		
 		m_cameraControllerSystem->update(timeDelta);
 		m_gameLogic.update(timeDelta);
 

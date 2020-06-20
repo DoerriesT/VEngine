@@ -114,7 +114,7 @@ void VEditor::VEditor::update(float timeDelta)
 
 		// ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
+		//ImGuizmo::BeginFrame();
 
 		// begin main dock space/main menu bar
 		{
@@ -178,19 +178,16 @@ void VEditor::VEditor::update(float timeDelta)
 
 		ImGui::End();
 
-		ImVec2 viewportOffset = {};
-		ImVec2 viewportSize = { 1, 1 };
-
 		// viewport
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 			ImGui::Begin("Viewport");
 
-			viewportOffset = ImGui::GetWindowContentRegionMin();
+			auto viewportOffset = ImGui::GetWindowContentRegionMin();
 			auto windowPos = ImGui::GetWindowPos();
 			viewportOffset.x += windowPos.x;
 			viewportOffset.y += windowPos.y;
-			viewportSize = ImGui::GetContentRegionAvail();
+			auto viewportSize = ImGui::GetContentRegionAvail();
 
 			ImGui::Image((ImTextureID)(size_t)renderSystem.getEditorSceneTextureHandle().m_handle, viewportSize);
 
@@ -210,7 +207,7 @@ void VEditor::VEditor::update(float timeDelta)
 
 		if (m_entityDetailWindow->isVisible())
 		{
-			m_entityDetailWindow->draw(m_entityWindow->getSelectedEntity(), m_editorCameraEntity, viewportOffset.x, viewportOffset.y, viewportSize.x, viewportSize.y);
+			m_entityDetailWindow->draw(m_entityWindow->getSelectedEntity(), m_editorCameraEntity, prevImGuiContext);
 		}
 
 		// asset browser

@@ -144,7 +144,7 @@ void VEngine::ImGuiInputAdapter::update()
 	}
 
 	// update mouse cursor
-	if (!((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) || m_window.getMouseCursorMode() != Window::MouseCursorMode::DISABLED))
+	if (!((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) || m_window.getMouseCursorMode() == Window::MouseCursorMode::DISABLED))
 	{
 		ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
 		ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();

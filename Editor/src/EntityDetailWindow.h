@@ -6,13 +6,15 @@ namespace VEngine
 	class Engine;
 }
 
+struct ImGuiContext;
+
 namespace VEditor
 {
 	class EntityDetailWindow
 	{
 	public:
 		explicit EntityDetailWindow(VEngine::Engine *engine);
-		void draw(entt::entity entity, entt::entity editorCameraEntity, float viewportX, float viewportY, float viewportWidth, float viewportHeight);
+		void draw(entt::entity entity, entt::entity editorCameraEntity, ImGuiContext *gameContext);
 		void setVisible(bool visible);
 		bool isVisible() const;
 
