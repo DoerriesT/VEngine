@@ -12,7 +12,7 @@ namespace VEngine
 	{
 	public:
 		explicit CameraControllerSystem(entt::registry &entityRegistry, UserInput &userInput, const std::function<void(bool)> &grabMouse);
-		void update(float timeDelta);
+		void update(float timeDelta, entt::entity cameraEntity);
 
 	private:
 		entt::registry &m_entityRegistry;

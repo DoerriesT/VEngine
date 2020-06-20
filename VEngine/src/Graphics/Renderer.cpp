@@ -519,8 +519,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	m_atmosphericScatteringModule->registerResources(graph);
 
-	if (commonData.m_frame == 0)
+	if (!m_startupComputationsDone)
 	{
+		m_startupComputationsDone = true;
+
 		IntegrateBrdfPass::Data integrateBrdfPassData;
 		integrateBrdfPassData.m_passRecordContext = &passRecordContext;
 		integrateBrdfPassData.m_resultImageViewHandle = brdfLUTImageViewHandle;

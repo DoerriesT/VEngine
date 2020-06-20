@@ -27,7 +27,8 @@ VEditor::VEditor::VEditor(VEngine::IGameLogic &gameLogic)
 	m_userInput(),
 	m_entityDetailWindow(),
 	m_entityWindow(),
-	m_assetBrowserWindow()
+	m_assetBrowserWindow(),
+	m_editorMode(true)
 {
 }
 
@@ -86,17 +87,31 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 	m_assetBrowserWindow->setVisible(true);
 
 	m_gameLogic.initialize(engine);
+
+	m_lastGameCameraEntity = m_engine->getRenderSystem().getCameraEntity();
+	m_engine->setEditorMode(m_editorMode);
 }
 
 void VEditor::VEditor::update(float timeDelta)
 {
 	auto &renderSystem = m_engine->getRenderSystem();
 
-	bool editorEnabled = true;
+	if (m_editorMode != m_newEditorMode)
+	{
+		m_editorMode = m_newEditorMode;
+		m_engine->setEditorMode(m_editorMode);
+		if (!m_editorMode)
+		{
+			renderSystem.setCameraEntity(m_lastGameCameraEntity);
+		}
+	}
 
-	m_engine->setEditorMode(editorEnabled);
+	if (!m_editorMode && m_userInput->isKeyPressed(InputKey::ESCAPE))
+	{
+		m_newEditorMode = true;
+	}
 
-	if (editorEnabled)
+	if (m_editorMode)
 	{
 		auto window = m_engine->getWindow();
 		//if (window->configurationChanged())
@@ -227,6 +242,11 @@ void VEditor::VEditor::update(float timeDelta)
 		{
 			ImGui::Begin("Quick Menu");
 
+			if (ImGui::Button("Start"))
+			{
+				m_newEditorMode = false;
+			}
+
 			ImGui::End();
 		}
 
@@ -234,11 +254,13 @@ void VEditor::VEditor::update(float timeDelta)
 
 		// restore context
 		ImGui::SetCurrentContext(prevImGuiContext);
+
+		renderSystem.setCameraEntity(m_lastGameCameraEntity);
 	}
 
 	m_gameLogic.update(timeDelta);
 
-	if (editorEnabled)
+	if (m_editorMode)
 	{
 		// make sure we use the editor camera
 		m_lastGameCameraEntity = renderSystem.setCameraEntity(m_editorCameraEntity);

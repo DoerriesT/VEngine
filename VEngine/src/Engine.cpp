@@ -72,27 +72,30 @@ void VEngine::Engine::start()
 		float timeDelta = static_cast<float>(timer.getTimeDelta());
 
 		m_window->pollEvents();
-		if (m_window->configurationChanged())
+		if (m_window->configurationChanged() || m_viewportParamsDirty)
 		{
 			width = m_window->getWidth();
 			height = m_window->getHeight();
 			uint32_t windowWidth = m_window->getWindowWidth();
 			uint32_t windowHeight = m_window->getWindowHeight();
-			if (!m_editorMode)
+			int32_t offsetX = 0;
+			int32_t offsetY = 0;
+
+			if (m_editorMode && m_viewportParamsDirty)
 			{
-				imguiInputAdapter.resize(width, height, windowWidth, windowHeight);
-				m_userInput->resize(0, 0, windowWidth, windowHeight);
+				width = m_editorViewportWidth;
+				height = m_editorViewportHeight;
+				windowWidth = m_editorViewportWidth;
+				windowHeight = m_editorViewportHeight;
+				offsetX = m_editorViewportOffsetX;
+				offsetY = m_editorViewportOffsetY;
 			}
-		}
-		if (m_editorMode)
-		{
-			imguiInputAdapter.resize(m_editorViewportWidth, m_editorViewportHeight, m_editorViewportWidth, m_editorViewportHeight);
-			m_userInput->resize(m_editorViewportOffsetX, m_editorViewportOffsetY, m_editorViewportWidth, m_editorViewportHeight);
-			m_renderSystem->resize(m_editorViewportWidth, m_editorViewportHeight, width, height);
-		}
-		else
-		{
-			m_renderSystem->resize(width, height);
+
+			m_viewportParamsDirty = false;
+
+			imguiInputAdapter.resize(width, height, windowWidth, windowHeight);
+			m_userInput->resize(offsetX, offsetY, windowWidth, windowHeight);
+			m_renderSystem->resize(width, height, m_window->getWidth(), m_window->getHeight());
 		}
 
 		m_userInput->input();
@@ -102,7 +105,7 @@ void VEngine::Engine::start()
 		ImGuizmo::BeginFrame();
 
 		
-		m_cameraControllerSystem->update(timeDelta);
+		m_cameraControllerSystem->update(timeDelta, m_renderSystem->getCameraEntity());
 		m_gameLogic.update(timeDelta);
 
 		ImGui::ShowDemoWindow();
@@ -180,11 +183,13 @@ VEngine::Window *VEngine::Engine::getWindow()
 void VEngine::Engine::setEditorMode(bool editorMode)
 {
 	m_editorMode = editorMode;
+	m_viewportParamsDirty = true;
 	m_renderSystem->setEditorMode(m_editorMode);
 }
 
 void VEngine::Engine::setEditorViewport(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height)
 {
+	m_viewportParamsDirty = true;
 	m_editorViewportOffsetX = offsetX;
 	m_editorViewportOffsetY = offsetY;
 	m_editorViewportWidth = width;

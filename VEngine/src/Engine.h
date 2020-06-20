@@ -47,6 +47,7 @@ namespace VEngine
 		std::string m_windowTitle;
 		Scene m_scene = {};
 		bool m_editorMode = false;
+		bool m_viewportParamsDirty = true;
 		int32_t m_editorViewportOffsetX = 0;
 		int32_t m_editorViewportOffsetY = 0;
 		uint32_t m_editorViewportWidth = 0;

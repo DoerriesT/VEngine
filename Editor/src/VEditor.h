@@ -28,12 +28,14 @@ namespace VEditor
 		IGameLogic &m_gameLogic;
 		VEngine::Engine *m_engine;
 		entt::entity m_editorCameraEntity;
-		entt::entity m_lastGameCameraEntity;
+		entt::entity m_lastGameCameraEntity = entt::null;
 		ImGuiContext *m_editorImGuiContext;
 		VEngine::ImGuiInputAdapter *m_imguiInputAdapter;
 		VEngine::UserInput *m_userInput;
 		EntityDetailWindow *m_entityDetailWindow;
 		EntityWindow *m_entityWindow;
 		AssetBrowserWindow *m_assetBrowserWindow;
+		bool m_editorMode = true;
+		bool m_newEditorMode = true;
 	};
 }
