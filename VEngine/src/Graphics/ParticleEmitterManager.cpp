@@ -124,7 +124,7 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 					drawData = {};
 					drawData.m_position = particle.m_position;
 					drawData.m_opacity = opacity;
-					drawData.m_textureIndex = 50;//emitterComponent.m_textureHandle.m_handle;
+					drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
 				}
 			}
 
@@ -192,7 +192,7 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				drawData = {};
 				drawData.m_position = particle.m_position;
 				drawData.m_opacity = 1.0f;
-				drawData.m_textureIndex = 50;// emitterComponent.m_textureHandle.m_handle;
+				drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
 			}
 
 			internalComponent.m_activeParticleCount = particleCount;

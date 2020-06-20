@@ -155,7 +155,12 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 			if (t > 0.0 && all(abs(localPos) < 1.0))
 			{
 				float opacity = particle.opacity * 0.2;
-				opacity *= g_Textures[particle.textureIndex - 1].SampleLevel(g_Samplers[SAMPLER_LINEAR_REPEAT], localPos * 0.5 + 0.5, 0.0).a;
+				
+				if (particle.textureIndex != 0)
+				{
+					opacity *= g_Textures[particle.textureIndex - 1].SampleLevel(g_Samplers[SAMPLER_LINEAR_REPEAT], localPos * 0.5 + 0.5, 0.0).a;
+				}
+				
 				float transmittance = 1.0 - opacity;
 				float depth = distToParticle * invRadius;
 				fourierOpacityAccumulate(depth, transmittance, result0, result1);

@@ -72,7 +72,11 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 [earlydepthstencil]
 PSOutput main(PSInput input)
 {
-	float4 albedoOpacity = g_Textures[NonUniformResourceIndex(input.textureIndex - 1)].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord);
+	float4 albedoOpacity = 1.0;
+	if (input.textureIndex != 0)
+	{
+		albedoOpacity = g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord);
+	}
 	albedoOpacity.a *= input.opacity;
 	
 	float3 albedo = albedoOpacity.rgb;
