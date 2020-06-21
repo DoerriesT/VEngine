@@ -501,6 +501,9 @@
     <ClInclude Include="src\Input\ImGuiInputAdapter.h">
       <Filter>src\Input</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -850,6 +853,9 @@
     </ClCompile>
     <ClCompile Include="src\Input\ImGuiInputAdapter.cpp">
       <Filter>src\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
