@@ -57,10 +57,8 @@ namespace VEngine
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
 		rg::ImageViewHandle m_extinctionVolumeImageViewHandle = 0;
 
-		gal::Image *m_inScatteringHistoryImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
-		gal::Image *m_inScatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		gal::Image *m_scatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 
-		rg::ResourceStateData m_inScatteringHistoryImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
-		rg::ResourceStateData m_inScatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		rg::ResourceStateData m_scatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 	};
 }

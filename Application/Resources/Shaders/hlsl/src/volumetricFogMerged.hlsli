@@ -18,12 +18,15 @@
 #define PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING 17
 #define SHADOW_ATLAS_IMAGE_BINDING 18
 #define EXPOSURE_DATA_BUFFER_BINDING 19
-#define EXTINCTION_IMAGE_BINDING 20
-#define FOM_IMAGE_BINDING 21
+#define FOM_IMAGE_BINDING 20
+#define HISTORY_IMAGE_BINDING 21
 
 struct Constants
 {
 	float4x4 viewMatrix;
+	float4x4 prevViewMatrix;
+	float4x4 prevProjMatrix;
+	float4 reprojectedTexCoordScaleBias;
 	float3 frustumCornerTL;
 	float jitterX;
 	float3 frustumCornerTR;
@@ -39,10 +42,9 @@ struct Constants
 	uint punctualLightShadowedCount;
 	uint useDithering;
 	uint sampleCount;
-	float extinctionVolumeTexelSize;
-	float3 coordBias;
-	float coordScale;
 	int volumetricShadow;
 	uint globalMediaCount;
 	uint localMediaCount;
+	uint ignoreHistory;
+	float alpha;
 };
