@@ -37,6 +37,8 @@ float g_heightFogStart = 0.0f;
 float g_heightFogFalloff = 1.0f;
 float g_fogMaxHeight = 100.0f;
 
+uint32_t g_fogLookupDitherType = 0;
+
 bool g_fogJittering = true;
 bool g_fogDithering = true;
 bool g_fogLookupDithering = false;
@@ -172,9 +174,9 @@ void App::initialize(VEngine::Engine *engine)
 
 
 	g_localFogEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 2.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)));
-	entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(18.0f, 2.0f, 11.0f));
-	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 6.0f, glm::vec3(1.0f), 0.0f, 0.0f, true, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f);
+	entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)));
+	entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1, 1, 1));
+	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 3.0f, glm::vec3(1.0f), 0.0f, 0.0f, false, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f);
 	entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 	scene.m_entities.push_back({ "Local Fog", g_localFogEntity });
 
@@ -266,6 +268,8 @@ void App::update(float timeDelta)
 
 		ImGui::NewLine();
 
+		ImGui::InputInt("Fog Lookup Dither Type", (int *)&g_fogLookupDitherType, 1, 1);
+		g_fogLookupDitherType = glm::clamp(g_fogLookupDitherType, 0u, 2u);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
 		ImGui::Checkbox("Fog Lookup Dithering", &g_fogLookupDithering);
 		ImGui::Checkbox("Fog Volume Dithering", &g_fogDithering);

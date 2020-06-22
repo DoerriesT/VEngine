@@ -79,6 +79,8 @@ namespace VEngine
 		ReflectionProbeModule *m_reflectionProbeModule;
 		AtmosphericScatteringModule *m_atmosphericScatteringModule;
 
+		gal::Image *m_blueNoiseArrayImage;
+		gal::ImageView *m_blueNoiseArrayImageView;
 		uint32_t m_luminanceHistogram[RendererConsts::LUMINANCE_HISTOGRAM_SIZE];
 
 		bool m_startupComputationsDone = false;

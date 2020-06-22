@@ -9,6 +9,7 @@
 #include "Graphics/gal/Initializers.h"
 
 extern bool g_fogLookupDithering;
+extern uint32_t g_fogLookupDitherType;
 
 using namespace VEngine::gal;
 
@@ -93,6 +94,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::storageBuffer(&reflProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
 					Initializers::storageBuffer(&data.m_reflectionProbeZBinsBufferInfo, REFLECTION_PROBE_Z_BINS_BINDING),
 					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -109,12 +111,12 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
 			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
 			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
-			pushConsts.noiseTexId = data.m_noiseTextureHandle - 1;
+			pushConsts.noiseTexId = data.m_passRecordContext->m_commonRenderData->m_frame;
 			pushConsts.width = width;
 			pushConsts.height = height;
 			pushConsts.texelWidth = 1.0f / width;
 			pushConsts.texelHeight = 1.0f / height;
-			pushConsts.useNoise = g_fogLookupDithering;
+			pushConsts.useNoise = g_fogLookupDitherType;
 			pushConsts.probeCount = data.m_passRecordContext->m_commonRenderData->m_reflectionProbeCount;
 			pushConsts.ssao = data.m_ssao;
 

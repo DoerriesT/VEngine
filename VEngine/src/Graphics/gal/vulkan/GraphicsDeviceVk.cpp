@@ -749,6 +749,33 @@ void VEngine::gal::GraphicsDeviceVk::createImageView(Image *image, ImageView **i
 	imageViewCreateInfo.m_baseArrayLayer = 0;
 	imageViewCreateInfo.m_layerCount = imageDesc.m_layers;
 
+	// array view
+	if (imageViewCreateInfo.m_viewType != ImageViewType::CUBE && imageViewCreateInfo.m_layerCount > 1 || imageViewCreateInfo.m_layerCount > 6)
+	{
+		ImageViewType arrayType = imageViewCreateInfo.m_viewType;
+		switch (imageViewCreateInfo.m_viewType)
+		{
+		case ImageViewType::_1D:
+			arrayType = ImageViewType::_1D_ARRAY;
+			break;
+		case ImageViewType::_2D:
+			arrayType = ImageViewType::_2D_ARRAY;
+			break;
+		case ImageViewType::_3D:
+			// 3d images dont support arrays
+			assert(false);
+			break;
+		case ImageViewType::CUBE:
+			arrayType = ImageViewType::CUBE_ARRAY;
+			break;
+		default:
+			assert(false);
+			break;
+		}
+
+		imageViewCreateInfo.m_viewType = arrayType;
+	}
+
 	createImageView(imageViewCreateInfo, imageView);
 }
 

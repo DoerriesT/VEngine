@@ -19,6 +19,7 @@ Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT
 Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, ALBEDO_METALNESS_IMAGE_SET);
 Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, NORMAL_ROUGHNESS_IMAGE_SET);
 TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
+Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, REFLECTION_PROBE_DATA_SET);
 ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, REFLECTION_PROBE_BIT_MASK_SET);
@@ -171,12 +172,24 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		
 		float3 volumetricFogTexCoord = float3((threadID.xy + 0.5) * scaledFogImageTexelSize, d);
 		
-		float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
-		float3 noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
-		
 		if (g_PushConsts.useNoise != 0)
 		{
-			volumetricFogTexCoord += (noise * 2.0 - 1.0) * 1.5 / imageDims;
+			float3 noise = 0.5;
+			if (g_PushConsts.useNoise == 4)
+			{
+				float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
+				noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
+			}
+			else if (g_PushConsts.useNoise == 2)
+			{
+				noise = g_BlueNoiseImage.SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], float3(float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter), 0.0), 0.0).xyz;
+			}
+			else
+			{
+				noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_PushConsts.noiseTexId & 1)) & 63, g_PushConsts.noiseTexId & 63, 0)).xyz;
+			}
+			
+			volumetricFogTexCoord += (noise * 2.0 - 1.0) * 0.75 / imageDims;
 		}
 		
 		float4 fog = sampleBicubic(g_VolumetricFogImage, g_LinearSampler, volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);

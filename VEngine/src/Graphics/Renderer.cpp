@@ -88,6 +88,8 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_textureLoader->load("Resources/Textures/blue_noise_LDR_RGBA_0.dds", blueNoiseImage, blueNoiseImageView);
 	m_blueNoiseTextureIndex = m_textureManager->addTexture2D(blueNoiseImage, blueNoiseImageView);
 
+	m_textureLoader->load("Resources/Textures/blue_noise.dds", m_blueNoiseArrayImage, m_blueNoiseArrayImageView);
+
 	m_editorSceneTextureHandle = m_textureManager->addTexture2D(nullptr, m_renderResources->m_editorSceneTextureView);
 
 	auto imguiFontTextureHandle = m_textureManager->addTexture2D(nullptr, m_renderResources->m_imGuiFontsTextureView);
@@ -126,6 +128,9 @@ VEngine::Renderer::~Renderer()
 	delete m_volumetricFogModule;
 	delete m_reflectionProbeModule;
 	delete m_atmosphericScatteringModule;
+
+	m_graphicsDevice->destroyImageView(m_blueNoiseArrayImageView);
+	m_graphicsDevice->destroyImage(m_blueNoiseArrayImage);
 
 	m_graphicsDevice->destroySemaphore(m_semaphores[0]);
 	m_graphicsDevice->destroySemaphore(m_semaphores[1]);
@@ -844,7 +849,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
 	volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
-	volumetricFogApplyPassData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
+	volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();

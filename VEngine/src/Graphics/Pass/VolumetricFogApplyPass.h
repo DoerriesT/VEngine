@@ -11,7 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			bool m_ssao;
-			uint32_t m_noiseTextureHandle;
+			gal::ImageView *m_blueNoiseImageView;
 			gal::DescriptorBufferInfo m_reflectionProbeDataBufferInfo;
 			gal::DescriptorBufferInfo m_reflectionProbeZBinsBufferInfo;
 			rg::BufferViewHandle m_exposureDataBufferHandle;

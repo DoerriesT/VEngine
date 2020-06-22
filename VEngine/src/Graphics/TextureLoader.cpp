@@ -56,7 +56,7 @@ void VEngine::TextureLoader::load(const char *filepath, gal::Image *&image, gal:
 		imageCreateInfo.m_layers = static_cast<uint32_t>(gliTex.layers());
 		imageCreateInfo.m_levels = static_cast<uint32_t>(gliTex.levels());
 		imageCreateInfo.m_samples = SampleCount::_1;
-		imageCreateInfo.m_imageType = gliTex.target() == gli::TARGET_2D ? ImageType::_2D : ImageType::_3D;
+		imageCreateInfo.m_imageType = (gliTex.target() == gli::TARGET_2D || gliTex.target() == gli::TARGET_2D_ARRAY) ? ImageType::_2D : ImageType::_3D;
 		imageCreateInfo.m_format = static_cast<Format>(gliTex.format());
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = (uint32_t)ImageUsageFlagBits::SAMPLED_BIT | (uint32_t)ImageUsageFlagBits::TRANSFER_DST_BIT;
@@ -74,24 +74,21 @@ void VEngine::TextureLoader::load(const char *filepath, gal::Image *&image, gal:
 
 	// copy from staging buffer to image
 	{
-		std::vector<BufferImageCopy> bufferCopyRegions(gliTex.levels() * gliTex.layers());
+		std::vector<BufferImageCopy> bufferCopyRegions(gliTex.levels());
 		size_t offset = 0;
 
-		for (size_t layer = 0; layer < gliTex.layers(); ++layer)
+		for (size_t level = 0; level < gliTex.levels(); ++level)
 		{
-			for (size_t level = 0; level < gliTex.levels(); ++level)
-			{
-				BufferImageCopy &bufferCopyRegion = bufferCopyRegions[level];
-				bufferCopyRegion.m_imageMipLevel = static_cast<uint32_t>(level);
-				bufferCopyRegion.m_imageBaseLayer = static_cast<uint32_t>(layer);
-				bufferCopyRegion.m_imageLayerCount = 1;
-				bufferCopyRegion.m_extent.m_width = static_cast<uint32_t>(gliTex.extent(level).x);
-				bufferCopyRegion.m_extent.m_height = static_cast<uint32_t>(gliTex.extent(level).y);
-				bufferCopyRegion.m_extent.m_depth = static_cast<uint32_t>(gliTex.extent(level).z);
-				bufferCopyRegion.m_bufferOffset = offset;
+			BufferImageCopy &bufferCopyRegion = bufferCopyRegions[level];
+			bufferCopyRegion.m_imageMipLevel = static_cast<uint32_t>(level);
+			bufferCopyRegion.m_imageBaseLayer = 0;
+			bufferCopyRegion.m_imageLayerCount = static_cast<uint32_t>(gliTex.layers());
+			bufferCopyRegion.m_extent.m_width = static_cast<uint32_t>(gliTex.extent(level).x);
+			bufferCopyRegion.m_extent.m_height = static_cast<uint32_t>(gliTex.extent(level).y);
+			bufferCopyRegion.m_extent.m_depth = static_cast<uint32_t>(gliTex.extent(level).z);
+			bufferCopyRegion.m_bufferOffset = offset;
 
-				offset += gliTex.size(level);
-			}
+			offset += gliTex.size(level);
 		}
 
 		// copy to image and transition to TEXTURE
