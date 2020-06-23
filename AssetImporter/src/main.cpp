@@ -96,7 +96,7 @@ int main()
 
 			// generate indices
 			std::vector<unsigned int> remap(totalIndices);
-			size_t totalVertices = meshopt_generateVertexRemapMulti(remap.data(), mesh.m_indices.data(), totalIndices, totalIndices, streams, 3);
+			size_t totalVertices = meshopt_generateVertexRemapMulti(remap.data(), mesh.m_indices.data(), totalIndices, mesh.m_positions.size(), streams, 3);
 
 			// fill new index and vertex buffers
 			std::vector<uint16_t> indices(totalIndices);

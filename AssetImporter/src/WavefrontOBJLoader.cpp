@@ -143,7 +143,7 @@ Model WavefrontOBJLoader::loadModel(const std::string &filepath, bool mergeByMat
 	resultModel.m_aabbMax = glm::vec3(std::numeric_limits<float>::lowest());
 
 	std::set<uint32_t> shapeIndices;
-	std::unordered_map<Vertex, uint16_t, VertexHash> m_vertexToIndexMap;
+	std::unordered_map<Vertex, uint16_t, VertexHash> vertexToIndexMap;
 
 	Mesh mesh = {};
 
@@ -184,11 +184,11 @@ Model WavefrontOBJLoader::loadModel(const std::string &filepath, bool mergeByMat
 			mesh.m_aabbMin = glm::min(mesh.m_aabbMin, vertex.position);
 			mesh.m_aabbMax = glm::max(mesh.m_aabbMax, vertex.position);
 
-			auto it = m_vertexToIndexMap.find(vertex);
+			auto it = vertexToIndexMap.find(vertex);
 			// vertex is new
-			if (it == m_vertexToIndexMap.end())
+			if (it == vertexToIndexMap.end())
 			{
-				m_vertexToIndexMap[vertex] = static_cast<uint16_t>(mesh.m_positions.size());
+				vertexToIndexMap[vertex] = static_cast<uint16_t>(mesh.m_positions.size());
 				mesh.m_indices.push_back(static_cast<uint16_t>(mesh.m_positions.size()));
 
 				mesh.m_positions.push_back(vertex.position);
@@ -202,6 +202,8 @@ Model WavefrontOBJLoader::loadModel(const std::string &filepath, bool mergeByMat
 			{
 				mesh.m_indices.push_back(it->second);
 			}
+
+			assert(mesh.m_indices.back() < mesh.m_positions.size());
 
 			shapeIndices.insert(unifiedIdx.m_shapeIndex);
 		}
@@ -230,6 +232,7 @@ Model WavefrontOBJLoader::loadModel(const std::string &filepath, bool mergeByMat
 			// reset temp data
 			mesh = {};
 			shapeIndices.clear();
+			vertexToIndexMap.clear();
 		}
 	}
 
