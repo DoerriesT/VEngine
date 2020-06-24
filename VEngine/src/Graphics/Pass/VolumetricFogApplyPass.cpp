@@ -5,7 +5,6 @@
 #include "Graphics/DescriptorSetCache.h"
 #include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
-#include "Utility/Utility.h"
 #include "Graphics/gal/Initializers.h"
 
 extern bool g_fogLookupDithering;
@@ -15,26 +14,12 @@ using namespace VEngine::gal;
 
 namespace
 {
-	constexpr size_t numHaltonSamples = 32;
-	float haltonX[numHaltonSamples];
-	float haltonY[numHaltonSamples];
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
 #include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogApply.hlsli"
 }
 
 void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	static bool initialized = false;
-	if (!initialized)
-	{
-		initialized = true;
-		for (size_t i = 0; i < numHaltonSamples; ++i)
-		{
-			haltonX[i] = Utility::halton(i + 1, 2);
-			haltonY[i] = Utility::halton(i + 1, 3);
-		}
-	}
-
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageHandle), {gal::ResourceState::READ_WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -100,7 +85,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
 
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
@@ -108,15 +93,11 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			PushConsts pushConsts;
 			pushConsts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-			pushConsts.noiseScale = glm::vec2(1.0f / 64.0f);
-			const size_t haltonIdx = data.m_passRecordContext->m_commonRenderData->m_frame % numHaltonSamples;
-			pushConsts.noiseJitter = glm::vec2(haltonX[haltonIdx], haltonY[haltonIdx]);// *0.0f;
-			pushConsts.noiseTexId = data.m_passRecordContext->m_commonRenderData->m_frame;
+			pushConsts.frame = data.m_passRecordContext->m_commonRenderData->m_frame;
 			pushConsts.width = width;
 			pushConsts.height = height;
 			pushConsts.texelWidth = 1.0f / width;
 			pushConsts.texelHeight = 1.0f / height;
-			pushConsts.useNoise = g_fogLookupDitherType;
 			pushConsts.probeCount = data.m_passRecordContext->m_commonRenderData->m_reflectionProbeCount;
 			pushConsts.ssao = data.m_ssao;
 

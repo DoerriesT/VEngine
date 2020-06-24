@@ -37,16 +37,16 @@ float g_heightFogStart = 0.0f;
 float g_heightFogFalloff = 1.0f;
 float g_fogMaxHeight = 100.0f;
 
-uint32_t g_fogLookupDitherType = 0;
+uint32_t g_fogLookupDitherType = 1;
 
 bool g_fogJittering = true;
 bool g_fogDithering = true;
 bool g_fogLookupDithering = false;
-bool g_fogClamping = true;
-bool g_fogPrevFrameCombine = true;
-bool g_fogHistoryCombine = true;
-bool g_fogDoubleSample = true;
-float g_fogHistoryAlpha = 0.05f;
+bool g_fogClamping = false;
+bool g_fogPrevFrameCombine = false;
+bool g_fogHistoryCombine = false;
+bool g_fogDoubleSample = false;
+float g_fogHistoryAlpha = 0.2f;
 
 extern float g_ssrBias;
 
@@ -210,7 +210,7 @@ void App::initialize(VEngine::Engine *engine)
 
 	entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
 
-	entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
+	//entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
 	scene.m_entities.push_back({ "Particle Emitter", particleEmitter });
 
 	std::default_random_engine e;

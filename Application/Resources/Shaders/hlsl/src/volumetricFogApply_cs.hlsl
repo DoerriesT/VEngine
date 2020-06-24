@@ -28,9 +28,6 @@ ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_B
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
 
-Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
-
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
 float3 parallaxCorrectReflectionDir(const LocalReflectionProbe probeData, float3 position, float3 reflectedDir)
@@ -172,28 +169,36 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		
 		float3 volumetricFogTexCoord = float3((threadID.xy + 0.5) * scaledFogImageTexelSize, d);
 		
-		if (g_PushConsts.useNoise != 0)
+		float4 fog = 0.0;
+		
+		const int fogSampleCount = 1;
+		for (int i = 0; i < fogSampleCount; ++i)
 		{
-			float3 noise = 0.5;
-			if (g_PushConsts.useNoise == 4)
-			{
-				float2 noiseTexCoord = float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter);
-				noise = g_Textures[g_PushConsts.noiseTexId].SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], noiseTexCoord, 0.0).xyz;
-			}
-			else if (g_PushConsts.useNoise == 2)
-			{
-				noise = g_BlueNoiseImage.SampleLevel(g_Samplers[SAMPLER_POINT_REPEAT], float3(float2(threadID.xy + 0.5) * g_PushConsts.noiseScale + (g_PushConsts.noiseJitter), 0.0), 0.0).xyz;
-			}
-			else
-			{
-				noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_PushConsts.noiseTexId & 1)) & 63, g_PushConsts.noiseTexId & 63, 0)).xyz;
-			}
+			uint frame = g_PushConsts.frame * fogSampleCount + i;
+			float4 noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (frame & 1)) & 63, frame & 63, 0));
+			noise = (noise * 2.0 - 1.0) * 1.5;
+			float3 texelSize = 1.0 / imageDims;
 			
-			volumetricFogTexCoord += (noise * 2.0 - 1.0) * 0.75 / imageDims;
+			float3 tc;
+			
+			tc = volumetricFogTexCoord + noise.xyz * texelSize;
+			fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			noise = noise.yzwx;
+			
+			tc = volumetricFogTexCoord + noise.xyz * texelSize;
+			fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			noise = noise.yzwx;
+			
+			tc = volumetricFogTexCoord + noise.xyz * texelSize;
+			fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			noise = noise.yzwx;
+			
+			tc = volumetricFogTexCoord + noise.xyz * texelSize;
+			fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			noise = noise.yzwx;
 		}
 		
-		float4 fog = sampleBicubic(g_VolumetricFogImage, g_LinearSampler, volumetricFogTexCoord.xy, imageDims.xy, 1.0 / imageDims.xy, d);
-		//float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
+		fog /= float(fogSampleCount);
 		
 		fog.rgb = inverseSimpleTonemap(fog.rgb);
 		result = result * fog.aaa + fog.rgb;

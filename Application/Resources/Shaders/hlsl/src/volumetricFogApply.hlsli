@@ -28,23 +28,15 @@
 #define SSAO_IMAGE_BINDING 13
 #define BLUE_NOISE_IMAGE_BINDING 14
 
-#define TEXTURES_SET 1
-#define TEXTURES_BINDING 0
-#define SAMPLERS_SET 1
-#define SAMPLERS_BINDING 1
-
 struct PushConsts
 {
 	float4x4 invViewMatrix;
 	float4 unprojectParams;
-	float2 noiseScale;
-	float2 noiseJitter;
-	uint noiseTexId;
+	uint frame;
 	uint width;
 	uint height;
 	float texelWidth;
 	float texelHeight;
-	uint useNoise;
 	uint probeCount;
 	uint ssao;
 };
