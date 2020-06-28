@@ -35,7 +35,6 @@
 #include "Pass/FourierOpacityPass.h"
 #include "Pass/ParticlesPass.h"
 #include "Pass/SwapChainCopyPass.h"
-#include "Pass/VolumetricRaymarchPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -248,23 +247,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// create graph managed resources
-
-	rg::ImageViewHandle raymarchedVolumetricsImageViewHandle;
-	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "Raymarched Volumetrics Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = m_width;
-		desc.m_height = m_height;
-		desc.m_layers = 1;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
-
-		raymarchedVolumetricsImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
-	}
-
 	rg::ImageViewHandle normalRoughnessImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
@@ -760,9 +742,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_passRecordContext = &passRecordContext;
 	volumetricFogModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
 	volumetricFogModuleData.m_commonData = &commonData;
+	volumetricFogModuleData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
 	volumetricFogModuleData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	volumetricFogModuleData.m_fomImageViewHandle = fomImageViewHandle;
+	volumetricFogModuleData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
@@ -859,26 +843,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-
-	// volumetric raymarch
-	VolumetricRaymarchPass::Data volumetricRaymarchPassData;
-	volumetricRaymarchPassData.m_passRecordContext = &passRecordContext;
-	volumetricRaymarchPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
-	volumetricRaymarchPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
-	volumetricRaymarchPassData.m_globalMediaBufferInfo = globalMediaDataBufferInfo;
-	volumetricRaymarchPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	volumetricRaymarchPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	volumetricRaymarchPassData.m_resultImageViewHandle = raymarchedVolumetricsImageViewHandle;
-	volumetricRaymarchPassData.m_depthImageViewHandle = depthImageViewHandle;
-	volumetricRaymarchPassData.m_shadowImageViewHandle = shadowImageViewHandle;
-
-	if (g_raymarchedFog)
-	{
-		VolumetricRaymarchPass::addToGraph(graph, volumetricRaymarchPassData);
-	}
-
-
-
 	// apply volumetric fog and indirect specular light to scene
 	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
 	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
@@ -896,7 +860,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
 	volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
 	volumetricFogApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
-	volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = raymarchedVolumetricsImageViewHandle;
+	volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
 	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);

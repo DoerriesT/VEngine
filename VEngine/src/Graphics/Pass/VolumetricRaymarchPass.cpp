@@ -26,7 +26,7 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 
-	auto proj = glm::perspective(commonData->m_fovy, commonData->m_width / float(commonData->m_height), 0.5f, commonData->m_farPlane);
+	auto proj = glm::perspective(commonData->m_fovy, commonData->m_width / float(commonData->m_height), 64.0f, commonData->m_farPlane);
 	auto invViewProj = glm::inverse(proj * commonData->m_viewMatrix);
 
 	glm::vec4 frustumCorners[4];
@@ -49,15 +49,16 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 	consts.frustumCornerTR = frustumCorners[1];
 	consts.frustumCornerBL = frustumCorners[2];
 	consts.frustumCornerBR = frustumCorners[3];
-	consts.width = commonData->m_width;
-	consts.height = commonData->m_height;
-	consts.texelSize = 1.0f / glm::vec2(commonData->m_width, commonData->m_height);
+	consts.width = commonData->m_width / 2;
+	consts.height = commonData->m_height / 2;
+	consts.texelSize = 1.0f / glm::vec2(commonData->m_width / 2, commonData->m_height / 2);
 	consts.rayOriginFactor = 0.5f / commonData->m_farPlane;
 	consts.rayOriginDist = 0.5f;
 	consts.cameraPos = commonData->m_cameraPosition;
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.directionalLightCount = commonData->m_directionalLightCount;
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
+	consts.frame = commonData->m_frame & 63u;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
@@ -72,8 +73,8 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 
 	graph.addPass("Volumetric Raymarch", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
-			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
-			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width / 2;
+			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height / 2;
 
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
@@ -106,6 +107,7 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::storageBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
 					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 					Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+					Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

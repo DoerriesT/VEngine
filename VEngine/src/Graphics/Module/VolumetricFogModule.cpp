@@ -5,11 +5,16 @@
 #include "Graphics/Pass/VolumetricFogFilterPass.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
 #include "Graphics/Pass/VolumetricFogExtinctionVolumePass.h"
+#include "Graphics/Pass/VolumetricRaymarchPass.h"
 #include "Graphics/RenderData.h"
 #include "Utility/Utility.h"
 #include "Graphics/PassRecordContext.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+#include "Graphics/RenderResources.h"
+#include "Graphics/PipelineCache.h"
+#include "Graphics/DescriptorSetCache.h"
+#include "Graphics/gal/Initializers.h"
 
 extern bool g_fogLookupDithering;
 using namespace VEngine::gal;
@@ -36,6 +41,8 @@ VEngine::VolumetricFogModule::~VolumetricFogModule()
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_graphicsDevice->destroyImage(m_scatteringImages[i]);
+		m_graphicsDevice->destroyImage(m_raymarchedScatteringImages[i]);
+		m_graphicsDevice->destroyImage(m_downsampledDepthImages[i]);
 	}
 	delete[] m_haltonJitter;
 }
@@ -71,6 +78,18 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 		rg::ImageHandle prevScatteringImageHandle = graph.importImage(m_scatteringImages[commonData.m_prevResIdx], "Volumetric Fog Prev Scattering Image", false, {}, &m_scatteringImageState[commonData.m_prevResIdx]);
 		prevScatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Prev Scattering Image", prevScatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
+	}
+
+	// raymarched
+	{
+		rg::ImageHandle imageHandle = graph.importImage(m_raymarchedScatteringImages[commonData.m_curResIdx], "Volumetric Fog Raymarched Scattering Image", false, {}, &m_raymarchedScatteringImageState[commonData.m_curResIdx]);
+		m_raymarchedScatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Raymarched Scattering Image", imageHandle, { 0, 1, 0, 1 } });
+	}
+
+	rg::ImageViewHandle downsampledDepthImageViewHandle;
+	{
+		rg::ImageHandle imageHandle = graph.importImage(m_downsampledDepthImages[commonData.m_curResIdx], "CB-Min/Max Downsampled Depth Image", false, {}, &m_downsampledDepthImageState[commonData.m_curResIdx]);
+		downsampledDepthImageViewHandle = graph.createImageView({ "CB-Min/Max Downsampled Depth Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
 	// extinction volume
@@ -241,6 +260,82 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogIntegratePassData.m_resultImageViewHandle = m_volumetricScatteringImageViewHandle;
 
 	VolumetricFogIntegratePass::addToGraph(graph, volumetricFogIntegratePassData);
+
+
+	// downsample depth
+	{
+		rg::ResourceUsageDescription passUsages[]
+		{
+			{rg::ResourceViewHandle(downsampledDepthImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+			{rg::ResourceViewHandle(data.m_depthImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		};
+
+		graph.addPass("CB-Min/Max Downsample Depth", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+			{
+				const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
+				const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
+
+				// create pipeline description
+				ComputePipelineCreateInfo pipelineCreateInfo;
+				ComputePipelineBuilder builder(pipelineCreateInfo);
+				builder.setComputeShader("Resources/Shaders/hlsl/depthDownsampleCBMinMax_cs.spv");
+
+				auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
+
+				cmdList->bindPipeline(pipeline);
+
+				// update descriptor sets
+				{
+					DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
+
+					ImageView *resultImageView = registry.getImageView(downsampledDepthImageViewHandle);
+					ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
+
+					DescriptorSetUpdate updates[] =
+					{
+						Initializers::storageImage(&resultImageView, 0),
+						Initializers::sampledImage(&depthImageView, 1),
+						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], 2),
+					};
+
+					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+
+					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				}
+
+				struct PushConsts
+				{
+					glm::vec2 srcTexelSize;
+					uint32_t width;
+					uint32_t height;
+				};
+
+				PushConsts pushConsts;
+				pushConsts.width = width / 2;
+				pushConsts.height = height / 2;
+				pushConsts.srcTexelSize = 1.0f / glm::vec2(width, height);
+
+				cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+				cmdList->dispatch((width / 2 + 7) / 8, (height / 2 + 7) / 8, 1);;
+			}, true);
+	}
+
+
+	// volumetric raymarch
+	VolumetricRaymarchPass::Data volumetricRaymarchPassData;
+	volumetricRaymarchPassData.m_passRecordContext = data.m_passRecordContext;
+	volumetricRaymarchPassData.m_blueNoiseImageView = data.m_blueNoiseImageView;
+	volumetricRaymarchPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
+	volumetricRaymarchPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
+	volumetricRaymarchPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
+	volumetricRaymarchPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
+	volumetricRaymarchPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
+	volumetricRaymarchPassData.m_resultImageViewHandle = m_raymarchedScatteringImageViewHandle;
+	volumetricRaymarchPassData.m_depthImageViewHandle = downsampledDepthImageViewHandle;
+	volumetricRaymarchPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
+
+	VolumetricRaymarchPass::addToGraph(graph, volumetricRaymarchPassData);
 }
 
 void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
@@ -253,6 +348,14 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 		if (m_scatteringImages[i])
 		{
 			m_graphicsDevice->destroyImage(m_scatteringImages[i]);
+		}
+		if (m_raymarchedScatteringImages[i])
+		{
+			m_graphicsDevice->destroyImage(m_raymarchedScatteringImages[i]);
+		}
+		if (m_downsampledDepthImages[i])
+		{
+			m_graphicsDevice->destroyImage(m_downsampledDepthImages[i]);
 		}
 	}
 
@@ -273,17 +376,52 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
 
 
+	ImageCreateInfo raymarchedImageCreateInfo{};
+	raymarchedImageCreateInfo.m_width = m_width / 2;
+	raymarchedImageCreateInfo.m_height = m_height / 2;
+	raymarchedImageCreateInfo.m_depth = 1;
+	raymarchedImageCreateInfo.m_levels = 1;
+	raymarchedImageCreateInfo.m_layers = 1;
+	raymarchedImageCreateInfo.m_samples = SampleCount::_1;
+	raymarchedImageCreateInfo.m_imageType = ImageType::_2D;
+	raymarchedImageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
+	raymarchedImageCreateInfo.m_createFlags = 0;
+	raymarchedImageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+
+
+	ImageCreateInfo downsampledDepthImageCreateInfo{};
+	downsampledDepthImageCreateInfo.m_width = m_width / 2;
+	downsampledDepthImageCreateInfo.m_height = m_height / 2;
+	downsampledDepthImageCreateInfo.m_depth = 1;
+	downsampledDepthImageCreateInfo.m_levels = 1;
+	downsampledDepthImageCreateInfo.m_layers = 1;
+	downsampledDepthImageCreateInfo.m_samples = SampleCount::_1;
+	downsampledDepthImageCreateInfo.m_imageType = ImageType::_2D;
+	downsampledDepthImageCreateInfo.m_format = Format::R32_SFLOAT;
+	downsampledDepthImageCreateInfo.m_createFlags = 0;
+	downsampledDepthImageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+
+
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_scatteringImages[i]);
+		m_graphicsDevice->createImage(raymarchedImageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_raymarchedScatteringImages[i]);
+		m_graphicsDevice->createImage(downsampledDepthImageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_downsampledDepthImages[i]);
 
 		m_scatteringImageState[i] = {};
+		m_raymarchedScatteringImageState[i] = {};
+		m_downsampledDepthImageState[i] = {};
 	}
 }
 
 VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getVolumetricScatteringImageViewHandle()
 {
 	return m_volumetricScatteringImageViewHandle;
+}
+
+VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getRaymarchedScatteringImageViewHandle()
+{
+	return m_raymarchedScatteringImageViewHandle;
 }
 
 VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getExtinctionVolumeImageViewHandle()

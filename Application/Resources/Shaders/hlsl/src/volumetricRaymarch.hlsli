@@ -9,6 +9,7 @@
 #define DIRECTIONAL_LIGHTS_SHADOWED_BINDING 8
 #define EXPOSURE_DATA_BUFFER_BINDING 9
 #define DEPTH_IMAGE_BINDING 10
+#define BLUE_NOISE_IMAGE_BINDING 11
 
 struct Constants
 {
@@ -27,4 +28,5 @@ struct Constants
 	float2 texelSize;
 	uint directionalLightCount;
 	uint directionalLightShadowedCount;
+	uint frame;
 };

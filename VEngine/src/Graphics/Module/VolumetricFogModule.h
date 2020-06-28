@@ -17,9 +17,11 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			bool m_ignoreHistory;
 			const CommonRenderData *m_commonData;
+			gal::ImageView *m_blueNoiseImageView;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;
+			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
 			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
@@ -46,6 +48,7 @@ namespace VEngine
 		void addToGraph(rg::RenderGraph &graph, const Data &data);
 		void resize(uint32_t width, uint32_t height);
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
+		rg::ImageViewHandle getRaymarchedScatteringImageViewHandle();
 		rg::ImageViewHandle getExtinctionVolumeImageViewHandle();
 
 	private:
@@ -55,10 +58,15 @@ namespace VEngine
 		uint32_t m_height = 1;
 		float *m_haltonJitter;
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
+		rg::ImageViewHandle m_raymarchedScatteringImageViewHandle = 0;
 		rg::ImageViewHandle m_extinctionVolumeImageViewHandle = 0;
 
 		gal::Image *m_scatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		gal::Image *m_raymarchedScatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		gal::Image *m_downsampledDepthImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 
 		rg::ResourceStateData m_scatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		rg::ResourceStateData m_raymarchedScatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
+		rg::ResourceStateData m_downsampledDepthImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 	};
 }

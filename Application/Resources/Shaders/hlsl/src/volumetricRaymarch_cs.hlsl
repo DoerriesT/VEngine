@@ -10,6 +10,7 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0)
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 
 // media
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
@@ -83,10 +84,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 clipSpacePosition = float2(uv * float2(2.0, -2.0) - float2(1.0, -1.0));
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	float3 rayEndPosViewSpace = viewSpacePosition.xyz / viewSpacePosition.w;
+	float3 rayOriginViewSpace = mul(g_Constants.viewMatrix, float4(rayOrigin, 1.0)).xyz;
 	
-	float rayLength = max(length(rayEndPosViewSpace - mul(g_Constants.viewMatrix, float4(rayOrigin, 1.0)).xyz), 0.0);
+	float rayLength = rayEndPosViewSpace.z < rayOriginViewSpace.z ? length(rayEndPosViewSpace - rayOriginViewSpace) : 0.0;
 	
-	const float stepCount = 256.0;
+	const float stepCount = 16.0;
 	const float stepSize = rayLength / stepCount;
 	
 	
@@ -94,7 +96,9 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	float4 accum = float4(0.0, 0.0, 0.0, 1.0);
 	
-	for (float t = 0.0; t < rayLength; t += stepSize)
+	float noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0)).x;
+	
+	for (float t = noise * stepSize; t < rayLength; t += stepSize)
 	{
 		float3 worldSpacePos = rayOrigin + rayDir * t;
 		
