@@ -830,19 +830,19 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// screen space reflections
-	SSRModule::Data ssrModuleData;
-	ssrModuleData.m_passRecordContext = &passRecordContext;
-	ssrModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
-	ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
-	ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
-	ssrModuleData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	ssrModuleData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle; 
-	ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
-	ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
-	
-	m_ssrModule->addToGraph(graph, ssrModuleData);
+	//SSRModule::Data ssrModuleData;
+	//ssrModuleData.m_passRecordContext = &passRecordContext;
+	//ssrModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
+	//ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
+	//ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	//ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	//ssrModuleData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	//ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
+	//ssrModuleData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle; 
+	//ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
+	//ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
+	//
+	//m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
 	// gtao
@@ -891,7 +891,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
+	//volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
 	volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
 	volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
 	volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;

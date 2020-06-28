@@ -89,7 +89,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		
 		const float3 N = decodeOctahedron24(normalRoughness.xyz);
 		
-		float4 indirectSpecular = depth == 50.0 ? g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0)) : 0.0;
+		float4 indirectSpecular = 0.0;//depth == 50.0 ? g_IndirectSpecularLightImage.Load(int3(threadID.xy, 0)) : 0.0;
 		
 		float3 worldSpacePos = mul(g_PushConsts.invViewMatrix, float4(viewSpacePosition, 1.0)).xyz;
 		float3 worldSpaceNormal = mul(g_PushConsts.invViewMatrix, float4(N, 0.0)).xyz;

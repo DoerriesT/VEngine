@@ -99,7 +99,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		extinctionVolumePassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
 		extinctionVolumePassData.m_extinctionVolumeImageViewHandle = extinctionVolumeImageViewHandle;
 
-		VolumetricFogExtinctionVolumePass::addToGraph(graph, extinctionVolumePassData);
+		//VolumetricFogExtinctionVolumePass::addToGraph(graph, extinctionVolumePassData);
 	}
 
 	const size_t haltonIdx0 = (data.m_passRecordContext->m_commonRenderData->m_frame * 2) % s_haltonSampleCount;

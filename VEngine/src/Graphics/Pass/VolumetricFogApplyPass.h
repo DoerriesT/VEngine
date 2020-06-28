@@ -19,7 +19,7 @@ namespace VEngine
 			rg::BufferViewHandle m_reflectionProbeBitMaskBufferHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
-			rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;
+			//rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;
 			rg::ImageViewHandle m_brdfLutImageViewHandle;
 			rg::ImageViewHandle m_albedoMetalnessImageViewHandle;
 			rg::ImageViewHandle m_normalRoughnessImageViewHandle;
