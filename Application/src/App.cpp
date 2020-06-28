@@ -48,6 +48,8 @@ bool g_fogHistoryCombine = false;
 bool g_fogDoubleSample = false;
 float g_fogHistoryAlpha = 0.2f;
 
+bool g_raymarchedFog = false;
+
 extern float g_ssrBias;
 
 uint32_t g_dirLightEntity;
@@ -72,6 +74,20 @@ void App::initialize(VEngine::Engine *engine)
 	m_engine->getRenderSystem().setCameraEntity(m_cameraEntity);
 	scene.m_entities.push_back({ "Camera", m_cameraEntity });
 
+	scene.load(m_engine->getRenderSystem(), "Resources/Models/terrain");
+	entt::entity terrainEntity = entityRegistry.create();
+	entityRegistry.assign<VEngine::TransformationComponent>(terrainEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -5.0f, 0.0f));
+	entityRegistry.assign<VEngine::MeshComponent>(terrainEntity, scene.m_meshInstances["Resources/Models/terrain"]);
+	entityRegistry.assign<VEngine::RenderableComponent>(terrainEntity);
+	scene.m_entities.push_back({ "Terrain", terrainEntity });
+
+
+	//scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
+	//entt::entity quadEntity = entityRegistry.create();
+	//entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, 0.0f, 0.0f), glm::quat(), glm::vec3(2048.0f, 1.0f, 2048.0f));
+	//entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
+	//entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
+	//scene.m_entities.push_back({ "Quad", quadEntity });
 	
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 	entt::entity sponzaEntity = entityRegistry.create();
@@ -267,6 +283,8 @@ void App::update(float timeDelta)
 		ImGui::RadioButton("Local Fog Volume", &entityIdx, 2);
 
 		ImGui::NewLine();
+
+		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 
 		ImGui::InputInt("Fog Lookup Dither Type", (int *)&g_fogLookupDitherType, 1, 1);
 		g_fogLookupDitherType = glm::clamp(g_fogLookupDitherType, 0u, 2u);

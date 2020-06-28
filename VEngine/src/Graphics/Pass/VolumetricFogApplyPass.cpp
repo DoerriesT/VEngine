@@ -9,6 +9,7 @@
 
 extern bool g_fogLookupDithering;
 extern uint32_t g_fogLookupDitherType;
+extern bool g_raymarchedFog;
 
 using namespace VEngine::gal;
 
@@ -24,6 +25,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 	{
 		{rg::ResourceViewHandle(data.m_resultImageHandle), {gal::ResourceState::READ_WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
+		{rg::ResourceViewHandle(data.m_raymarchedVolumetricsImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_ssaoImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_indirectSpecularLightImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} },
@@ -54,6 +56,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
+				ImageView *raymarchedVolumetricsImageView = registry.getImageView(data.m_raymarchedVolumetricsImageViewHandle);
 				ImageView *ssaoImageView = registry.getImageView(data.m_ssaoImageViewHandle);
 				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 				ImageView *indirectSpecularImageView = registry.getImageView(data.m_indirectSpecularLightImageViewHandle);
@@ -67,6 +70,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 				{
 					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
 					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
+					Initializers::sampledImage(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
 					Initializers::sampledImage(&ssaoImageView, SSAO_IMAGE_BINDING),
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
@@ -100,6 +104,7 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 			pushConsts.texelHeight = 1.0f / height;
 			pushConsts.probeCount = data.m_passRecordContext->m_commonRenderData->m_reflectionProbeCount;
 			pushConsts.ssao = data.m_ssao;
+			pushConsts.raymarchedFog = g_raymarchedFog;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

@@ -27,6 +27,7 @@
 #define SSAO_IMAGE_SET 0
 #define SSAO_IMAGE_BINDING 13
 #define BLUE_NOISE_IMAGE_BINDING 14
+#define RAYMARCHED_VOLUMETRICS_IMAGE_BINDING 15
 
 struct PushConsts
 {
@@ -39,4 +40,5 @@ struct PushConsts
 	float texelHeight;
 	uint probeCount;
 	uint ssao;
+	uint raymarchedFog;
 };

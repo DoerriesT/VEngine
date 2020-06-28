@@ -1,0 +1,837 @@
+{
+    "materialLibraryFile": "Resources/Models/terrain.matlib",
+    "maxCorner": [
+        999.9996948242188,
+        103.27434539794922,
+        999.9988403320313
+    ],
+    "meshFile": "Resources/Models/terrain.mesh",
+    "minCorner": [
+        -1000.0106811523438,
+        -0.0003589999978430569,
+        -1000.0062866210938
+    ],
+    "subMeshInstances": [
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 0
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 1
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 2
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 3
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 4
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 5
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 6
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 7
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 8
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 9
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 10
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 11
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 12
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 13
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 14
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 15
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 16
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 17
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 18
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 19
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 20
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 21
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 22
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 23
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 24
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 25
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 26
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 27
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 28
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 29
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 30
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 31
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 32
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 33
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 34
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 35
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 36
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 37
+        },
+        {
+            "material": 0,
+            "name": "Plane.003_Plane.001_D",
+            "subMesh": 38
+        }
+    ],
+    "subMeshes": [
+        {
+            "dataOffset": 0,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979858398438,
+                100.0478515625,
+                999.9988403320313
+            ],
+            "minCorner": [
+                -999.998046875,
+                -0.00015700000221841037,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22177
+        },
+        {
+            "dataOffset": 840728,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.997802734375,
+                99.85321044921875,
+                930.254150390625
+            ],
+            "minCorner": [
+                -999.998291015625,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22328
+        },
+        {
+            "dataOffset": 1686288,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998291015625,
+                97.83077239990234,
+                868.7665405273438
+            ],
+            "minCorner": [
+                -999.9983520507813,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22223
+        },
+        {
+            "dataOffset": 2528488,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9981079101563,
+                89.52482604980469,
+                753.3361206054688
+            ],
+            "minCorner": [
+                -999.998779296875,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21897
+        },
+        {
+            "dataOffset": 3360256,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9981689453125,
+                92.96964263916016,
+                622.4503784179688
+            ],
+            "minCorner": [
+                -999.9987182617188,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21890
+        },
+        {
+            "dataOffset": 4191800,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                95.7038803100586,
+                512.885009765625
+            ],
+            "minCorner": [
+                -999.9990234375,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22205
+        },
+        {
+            "dataOffset": 5033424,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                97.68399810791016,
+                436.69482421875
+            ],
+            "minCorner": [
+                -999.9991455078125,
+                -0.0003589999978430569,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22351
+        },
+        {
+            "dataOffset": 5879720,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979858398438,
+                87.7206802368164,
+                354.123779296875
+            ],
+            "minCorner": [
+                -999.99951171875,
+                -9.999999747378752e-06,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22107
+        },
+        {
+            "dataOffset": 6718208,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.99853515625,
+                101.54318237304688,
+                266.0753173828125
+            ],
+            "minCorner": [
+                -999.999755859375,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22183
+        },
+        {
+            "dataOffset": 7559128,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9981079101563,
+                94.44737243652344,
+                139.17115783691406
+            ],
+            "minCorner": [
+                -999.9996948242188,
+                0.0,
+                -29.190324783325195
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22140
+        },
+        {
+            "dataOffset": 8398672,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                92.69908905029297,
+                22.416866302490234
+            ],
+            "minCorner": [
+                -1000.0000610351563,
+                0.0,
+                -124.51187133789063
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22039
+        },
+        {
+            "dataOffset": 9234984,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                100.00379943847656,
+                0.0
+            ],
+            "minCorner": [
+                -999.0772705078125,
+                0.0,
+                -206.38255310058594
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22169
+        },
+        {
+            "dataOffset": 10075456,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979858398438,
+                100.00621795654297,
+                0.0
+            ],
+            "minCorner": [
+                -999.2168579101563,
+                0.0,
+                -297.5923156738281
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22289
+        },
+        {
+            "dataOffset": 10919768,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                95.00059509277344,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0009155273438,
+                0.0,
+                -386.1744689941406
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22257
+        },
+        {
+            "dataOffset": 11763056,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                96.6663818359375,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0010375976563,
+                0.0,
+                -462.7702331542969
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22221
+        },
+        {
+            "dataOffset": 12605192,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                96.53975677490234,
+                0.0
+            ],
+            "minCorner": [
+                -1000.001220703125,
+                0.0,
+                -567.9273071289063
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22264
+        },
+        {
+            "dataOffset": 13448704,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                103.27434539794922,
+                0.0
+            ],
+            "minCorner": [
+                -1000.00146484375,
+                0.0,
+                -731.5070190429688
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22161
+        },
+        {
+            "dataOffset": 14288920,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9978637695313,
+                99.86041259765625,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0017700195313,
+                0.0,
+                -895.0629272460938
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22053
+        },
+        {
+            "dataOffset": 15125680,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                92.03870391845703,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0020141601563,
+                0.0,
+                -1000.0018920898438
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22371
+        },
+        {
+            "dataOffset": 15972616,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9996948242188,
+                100.0478515625,
+                999.9988403320313
+            ],
+            "minCorner": [
+                -1000.0106811523438,
+                -0.00015700000221841037,
+                -1000.0062866210938
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 23128
+        },
+        {
+            "dataOffset": 16843776,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.997802734375,
+                99.96932983398438,
+                938.832763671875
+            ],
+            "minCorner": [
+                -999.9982299804688,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22229
+        },
+        {
+            "dataOffset": 17686168,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998291015625,
+                97.83077239990234,
+                871.8329467773438
+            ],
+            "minCorner": [
+                -999.998291015625,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22237
+        },
+        {
+            "dataOffset": 18528816,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9981689453125,
+                89.52482604980469,
+                774.6346435546875
+            ],
+            "minCorner": [
+                -999.998779296875,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22179
+        },
+        {
+            "dataOffset": 19369608,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9981689453125,
+                92.96964263916016,
+                650.9405517578125
+            ],
+            "minCorner": [
+                -999.9987182617188,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22405
+        },
+        {
+            "dataOffset": 20217632,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                95.7038803100586,
+                545.408447265625
+            ],
+            "minCorner": [
+                -999.9989624023438,
+                -0.0003589999978430569,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22425
+        },
+        {
+            "dataOffset": 21066296,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                97.68399810791016,
+                452.23211669921875
+            ],
+            "minCorner": [
+                -999.9990844726563,
+                -0.0003589999978430569,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22103
+        },
+        {
+            "dataOffset": 21904656,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979858398438,
+                87.18961334228516,
+                368.705322265625
+            ],
+            "minCorner": [
+                -999.9994506835938,
+                -9.999999747378752e-06,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22247
+        },
+        {
+            "dataOffset": 22747624,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                101.54318237304688,
+                268.6839294433594
+            ],
+            "minCorner": [
+                -999.9996948242188,
+                0.0,
+                0.0
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21969
+        },
+        {
+            "dataOffset": 23581696,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.99853515625,
+                99.60557556152344,
+                158.18719482421875
+            ],
+            "minCorner": [
+                -999.999755859375,
+                0.0,
+                -9.970136642456055
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22134
+        },
+        {
+            "dataOffset": 24421048,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                92.4139633178711,
+                26.331117630004883
+            ],
+            "minCorner": [
+                -1000.0000610351563,
+                0.0,
+                -123.07472229003906
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22324
+        },
+        {
+            "dataOffset": 25266480,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                99.86327362060547,
+                0.0
+            ],
+            "minCorner": [
+                -999.1188354492188,
+                0.0,
+                -195.41749572753906
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22342
+        },
+        {
+            "dataOffset": 26112488,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9978637695313,
+                100.00621795654297,
+                0.0
+            ],
+            "minCorner": [
+                -1000.00048828125,
+                0.0,
+                -285.82147216796875
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22094
+        },
+        {
+            "dataOffset": 26950560,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                98.10537719726563,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0007934570313,
+                0.0,
+                -373.5685729980469
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22170
+        },
+        {
+            "dataOffset": 27791064,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                96.6663818359375,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0009155273438,
+                0.0,
+                -445.6497497558594
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22315
+        },
+        {
+            "dataOffset": 28636208,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9979248046875,
+                96.53975677490234,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0011596679688,
+                0.0,
+                -535.9037475585938
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21901
+        },
+        {
+            "dataOffset": 29468104,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9983520507813,
+                96.6720962524414,
+                0.0
+            ],
+            "minCorner": [
+                -1000.00146484375,
+                0.0,
+                -701.6351928710938
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21900
+        },
+        {
+            "dataOffset": 30299968,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.998046875,
+                103.27434539794922,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0017700195313,
+                0.0,
+                -856.709228515625
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 22045
+        },
+        {
+            "dataOffset": 31136472,
+            "indexCount": 65532,
+            "maxCorner": [
+                999.9978637695313,
+                92.23841094970703,
+                0.0
+            ],
+            "minCorner": [
+                -1000.0020141601563,
+                0.0,
+                -968.9903564453125
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 21866
+        },
+        {
+            "dataOffset": 31967248,
+            "indexCount": 26364,
+            "maxCorner": [
+                999.9996948242188,
+                100.00603485107422,
+                999.9984130859375
+            ],
+            "minCorner": [
+                -1000.0106811523438,
+                0.0,
+                -1000.0062866210938
+            ],
+            "name": "Plane.003_Plane.001_D",
+            "vertexCount": 9856
+        }
+    ]
+}

@@ -63,5 +63,6 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main partic
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main particles_ps.hlsl -Fo ./../particles_ps.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main fourierOpacityParticle_cs.hlsl -Fo ./../fourierOpacityParticle_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main swapChainCopy_cs.hlsl -Fo ./../swapChainCopy_cs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricRaymarch_cs.hlsl -Fo ./../volumetricRaymarch_cs.spv
 
 pause

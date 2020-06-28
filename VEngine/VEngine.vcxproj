@@ -262,6 +262,7 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricRaymarchPass.h" />
     <ClInclude Include="src\Graphics\PipelineCache.h" />
     <ClInclude Include="src\Graphics\ProxyMeshes.h" />
     <ClInclude Include="src\Graphics\ReflectionProbeManager.h" />
@@ -394,6 +395,7 @@
     <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricRaymarchPass.cpp" />
     <ClCompile Include="src\Graphics\PipelineCache.cpp" />
     <ClCompile Include="src\Graphics\ReflectionProbeManager.cpp" />
     <ClCompile Include="src\Graphics\Renderer.cpp" />

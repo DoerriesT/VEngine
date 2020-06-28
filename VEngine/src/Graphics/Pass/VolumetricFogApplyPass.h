@@ -24,6 +24,7 @@ namespace VEngine
 			rg::ImageViewHandle m_albedoMetalnessImageViewHandle;
 			rg::ImageViewHandle m_normalRoughnessImageViewHandle;
 			rg::ImageViewHandle m_ssaoImageViewHandle;
+			rg::ImageViewHandle m_raymarchedVolumetricsImageViewHandle;
 			rg::ImageViewHandle m_resultImageHandle;
 		};
 

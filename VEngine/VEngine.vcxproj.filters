@@ -504,6 +504,9 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricRaymarchPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -855,6 +858,9 @@
       <Filter>src\Input</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricRaymarchPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>
