@@ -43,6 +43,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 		consts.height = commonData->m_height;
 		consts.texelWidth = 1.0f / consts.width;
 		consts.texelHeight = 1.0f / consts.height;
+		consts.frame = commonData->m_frame & 63u;
 
 		memcpy(uboDataPtr, &consts, sizeof(consts));
 
@@ -98,6 +99,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 						Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
+						Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

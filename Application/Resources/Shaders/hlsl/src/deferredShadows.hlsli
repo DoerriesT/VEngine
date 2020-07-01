@@ -14,6 +14,7 @@
 #define CASCADE_PARAMS_BUFFER_BINDING 6
 #define CONSTANT_BUFFER_SET 0
 #define CONSTANT_BUFFER_BINDING 7
+#define BLUE_NOISE_IMAGE_BINDING 8
 
 
 struct Constants
@@ -27,4 +28,5 @@ struct Constants
 	uint height;
 	float texelWidth;
 	float texelHeight;
+	uint frame;
 };

@@ -709,6 +709,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
 	deferredShadowsPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
 	deferredShadowsPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+	deferredShadowsPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
 	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;

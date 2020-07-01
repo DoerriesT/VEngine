@@ -13,6 +13,7 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			uint32_t m_lightDataCount;
 			const DirectionalLight *m_lightData;
+			gal::ImageView *m_blueNoiseImageView;
 			rg::ImageHandle m_resultImageHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			//rg::ImageViewHandle m_tangentSpaceImageViewHandle;

@@ -9,6 +9,7 @@ SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING
 SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
 StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, CASCADE_PARAMS_BUFFER_SET);  // X: depth bias Y: normal bias Z: texelsPerMeter
+Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -150,7 +151,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	tc.z += g_CascadeParams[int(tc.w)].x;
 
 	float shadow = 0.0;
-	const float noise = interleavedGradientNoise(float2(threadID.xy) + 0.5) * 2.0 * 3.1415;
+	const float noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0)).x * 2.0 * 3.1415;
+	//const float noise = interleavedGradientNoise(float2(threadID.xy) + 0.5) * 2.0 * 3.1415;
 	const float filterScale = penumbra(noise, tc.xyz, 16, tc.w);
 	const float maxFilterRadiusTexelSpace = maxFilterRadiusWorldSpace * g_CascadeParams[int(tc.w)].z * texelSize;
 	for (uint j = 0; j < 16; ++j)
