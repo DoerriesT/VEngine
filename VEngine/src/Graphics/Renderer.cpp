@@ -872,6 +872,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogApplyPass2Data.m_passRecordContext = &passRecordContext;
 	volumetricFogApplyPass2Data.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	volumetricFogApplyPass2Data.m_depthImageViewHandle = depthImageViewHandle;
+	volumetricFogApplyPass2Data.m_downsampledDepthImageViewHandle = m_volumetricFogModule->getDownsampledDepthImageViewHandle();
 	volumetricFogApplyPass2Data.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	volumetricFogApplyPass2Data.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
 	volumetricFogApplyPass2Data.m_resultImageHandle = lightImageViewHandle;

@@ -14,7 +14,7 @@ float volumetricFogGetDensity(GlobalParticipatingMedium medium, float3 position,
 	}
 	if (medium.densityTexture != 0)
 	{
-		float3 uv = position * medium.textureScale + medium.textureBias;
+		float3 uv = frac(position * medium.textureScale + medium.textureBias);
 		float noise = tex[medium.densityTexture - 1].SampleLevel(linearSampler, uv, 0.0).x;
 		//float noise = saturate(perlinNoise() * 0.5 + 0.5) * saturate(medium.noiseIntensity);
 		density *= noise * noise;
@@ -33,7 +33,7 @@ float volumetricFogGetDensity(LocalParticipatingMedium medium, float3 position, 
 	}
 	if (medium.densityTexture != 0)
 	{
-		float3 uv = position * medium.textureScale + medium.textureBias;
+		float3 uv = frac(position * medium.textureScale + medium.textureBias);
 		float noise = tex[medium.densityTexture - 1].SampleLevel(linearSampler, uv, 0.0).x;
 		//float noise = saturate(perlinNoise() * 0.5 + 0.5) * saturate(medium.noiseIntensity);
 		density *= noise * noise;

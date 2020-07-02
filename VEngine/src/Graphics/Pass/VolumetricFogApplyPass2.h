@@ -12,6 +12,7 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			gal::ImageView *m_blueNoiseImageView;
 			rg::ImageViewHandle m_depthImageViewHandle;
+			rg::ImageViewHandle m_downsampledDepthImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			rg::ImageViewHandle m_raymarchedVolumetricsImageViewHandle;
 			rg::ImageViewHandle m_resultImageHandle;

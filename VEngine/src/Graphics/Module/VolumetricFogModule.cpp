@@ -89,7 +89,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	rg::ImageViewHandle downsampledDepthImageViewHandle;
 	{
 		rg::ImageHandle imageHandle = graph.importImage(m_downsampledDepthImages[commonData.m_curResIdx], "CB-Min/Max Downsampled Depth Image", false, {}, &m_downsampledDepthImageState[commonData.m_curResIdx]);
-		downsampledDepthImageViewHandle = graph.createImageView({ "CB-Min/Max Downsampled Depth Image", imageHandle, { 0, 1, 0, 1 } });
+		m_downsampledDepthImageViewHandle = downsampledDepthImageViewHandle = graph.createImageView({ "CB-Min/Max Downsampled Depth Image", imageHandle, { 0, 1, 0, 1 } });
 	}
 
 	// extinction volume
@@ -427,4 +427,9 @@ VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getRaymarchedScatteri
 VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getExtinctionVolumeImageViewHandle()
 {
 	return m_extinctionVolumeImageViewHandle;
+}
+
+VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getDownsampledDepthImageViewHandle()
+{
+	return m_downsampledDepthImageViewHandle;
 }

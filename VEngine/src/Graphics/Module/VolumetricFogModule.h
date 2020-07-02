@@ -50,6 +50,7 @@ namespace VEngine
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
 		rg::ImageViewHandle getRaymarchedScatteringImageViewHandle();
 		rg::ImageViewHandle getExtinctionVolumeImageViewHandle();
+		rg::ImageViewHandle getDownsampledDepthImageViewHandle();
 
 	private:
 		static constexpr size_t s_haltonSampleCount = 32;
@@ -60,6 +61,7 @@ namespace VEngine
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
 		rg::ImageViewHandle m_raymarchedScatteringImageViewHandle = 0;
 		rg::ImageViewHandle m_extinctionVolumeImageViewHandle = 0;
+		rg::ImageViewHandle m_downsampledDepthImageViewHandle = 0;
 
 		gal::Image *m_scatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Image *m_raymarchedScatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};
