@@ -53,7 +53,7 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 	consts.height = commonData->m_height / 2;
 	consts.texelSize = 1.0f / glm::vec2(commonData->m_width / 2, commonData->m_height / 2);
 	consts.rayOriginFactor = 0.5f / commonData->m_farPlane;
-	consts.rayOriginDist = 0.5f;
+	consts.rayOriginDist = 64.0f;
 	consts.cameraPos = commonData->m_cameraPosition;
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.directionalLightCount = commonData->m_directionalLightCount;

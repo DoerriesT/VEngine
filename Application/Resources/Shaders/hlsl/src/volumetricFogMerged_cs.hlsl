@@ -57,9 +57,11 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
 	
+	pos = normalize(pos);
+	
 	float d = texelCoord.z * (1.0 / VOLUME_DEPTH);
 	float z = VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
-	pos *= z / VOLUME_FAR;
+	pos *= z;
 	
 	pos += g_Constants.cameraPos;
 	
@@ -349,7 +351,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
 		
-		float z = -prevViewSpacePos.z;
+		float z = length(prevViewSpacePos.xyz);
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 
 		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);

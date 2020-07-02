@@ -29,7 +29,11 @@ PUSH_CONSTS(PushConsts, g_PushConsts);
 float4 main(PSInput input) : SV_Target0
 {
 	const float depth = g_DepthImage.Load(int3(input.position.xy, 0)).x;
-	float z = 1.0 / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
+	const float2 clipSpacePosition = input.position.xy * float2(g_PushConsts.texelWidth, g_PushConsts.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
+	float3 viewSpacePosition = float3(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0) / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
+	
+	//const float depth = g_DepthImage.Load(int3(input.position.xy, 0)).x;
+	float z = length(viewSpacePosition);//1.0 / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
 	float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 	
 	// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv

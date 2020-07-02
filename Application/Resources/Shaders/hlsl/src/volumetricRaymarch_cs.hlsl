@@ -80,6 +80,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	// world space ray dir
 	const float3 rayDir = normalize(rayOrigin - g_Constants.cameraPos);
 	
+	rayOrigin = g_Constants.cameraPos + rayDir * g_Constants.rayOriginDist;
+	
 	const float depth = g_DepthImage.Load(int3(threadID.xy, 0)).x;
 	float2 clipSpacePosition = float2(uv * float2(2.0, -2.0) - float2(1.0, -1.0));
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
