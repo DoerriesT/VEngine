@@ -28,6 +28,7 @@ bool VEngine::gal::Initializers::isReadAccess(ResourceState state)
 	case ResourceState::READ_IMAGE_HOST:
 	case ResourceState::READ_BUFFER_HOST:
 	case ResourceState::READ_DEPTH_STENCIL:
+	case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
 	case ResourceState::READ_TEXTURE:
 	case ResourceState::READ_STORAGE_IMAGE:
 	case ResourceState::READ_STORAGE_BUFFER:
@@ -88,6 +89,9 @@ uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
 
 	case ResourceState::READ_DEPTH_STENCIL:
 		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
+		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::SAMPLED_BIT;
 
 	case ResourceState::READ_TEXTURE:
 		return ImageUsageFlagBits::SAMPLED_BIT;

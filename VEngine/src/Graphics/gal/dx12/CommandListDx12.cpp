@@ -347,6 +347,8 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			return { D3D12_RESOURCE_STATE_COMMON, false, true, false };
 		case ResourceState::READ_DEPTH_STENCIL:
 			return { D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
+		case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
+			return { D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false, true, false };
 		case ResourceState::READ_TEXTURE:
 			// TODO
 			return { D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false, true, false };
