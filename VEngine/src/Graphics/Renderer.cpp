@@ -35,6 +35,8 @@
 #include "Pass/FourierOpacityPass.h"
 #include "Pass/ParticlesPass.h"
 #include "Pass/SwapChainCopyPass.h"
+#include "Pass/ApplyIndirectLightingPass.h"
+#include "Pass/VolumetricFogApplyPass2.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -844,27 +846,61 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	// apply volumetric fog and indirect specular light to scene
-	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
-	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
-	volumetricFogApplyPassData.m_ssao = g_ssaoEnabled;
-	volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
-	volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
-	volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
-	volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
-	volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
-	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
-	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	//volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
-	volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
-	volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
-	volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	volumetricFogApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
-	volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
-	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
+	// apply indirect lighting
+	ApplyIndirectLightingPass::Data indirectLightingApplyPassData;
+	indirectLightingApplyPassData.m_passRecordContext = &passRecordContext;
+	indirectLightingApplyPassData.m_ssao = g_ssaoEnabled;
+	indirectLightingApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
+	indirectLightingApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
+	indirectLightingApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	indirectLightingApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
+	indirectLightingApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
+	indirectLightingApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
+	indirectLightingApplyPassData.m_depthImageViewHandle2 = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
+	//indirectLightingApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
+	indirectLightingApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
+	indirectLightingApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
+	indirectLightingApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	indirectLightingApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
+	indirectLightingApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
-	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
+	ApplyIndirectLightingPass::addToGraph(graph, indirectLightingApplyPassData);
+
+
+	// apply volumetric fog
+	VolumetricFogApplyPass2::Data volumetricFogApplyPass2Data;
+	volumetricFogApplyPass2Data.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPass2Data.m_blueNoiseImageView = m_blueNoiseArrayImageView;
+	volumetricFogApplyPass2Data.m_depthImageViewHandle = depthImageViewHandle;
+	volumetricFogApplyPass2Data.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	volumetricFogApplyPass2Data.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
+	volumetricFogApplyPass2Data.m_resultImageHandle = lightImageViewHandle;
+
+	VolumetricFogApplyPass2::addToGraph(graph, volumetricFogApplyPass2Data);
+
+
+
+	//// apply volumetric fog and indirect specular light to scene
+	//VolumetricFogApplyPass::Data volumetricFogApplyPassData;
+	//volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	//volumetricFogApplyPassData.m_ssao = g_ssaoEnabled;
+	//volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
+	//volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
+	//volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	//volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
+	//volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
+	//volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
+	//volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
+	//volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	////volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
+	//volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
+	//volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
+	//volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	//volumetricFogApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
+	//volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
+	//volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
+	//
+	//VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
 
 	ParticlesPass::Data particlesPassData;
