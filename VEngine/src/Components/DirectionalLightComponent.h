@@ -6,13 +6,13 @@ namespace VEngine
 	struct DirectionalLightComponent
 	{
 		enum {MAX_CASCADES = 8};
-		glm::vec3 m_color;
-		float m_intensity;
-		bool m_shadows;
-		uint32_t m_cascadeCount;
-		float m_maxShadowDistance;
-		float m_splitLambda;
-		float m_depthBias[MAX_CASCADES];
-		float m_normalOffsetBias[MAX_CASCADES];
+		glm::vec3 m_color = glm::vec3(1.0f);
+		float m_intensity = 100.0f;
+		bool m_shadows = false;
+		uint32_t m_cascadeCount = 4;
+		float m_maxShadowDistance = 100.0f;
+		float m_splitLambda = 0.9f;
+		float m_depthBias[MAX_CASCADES] = {};
+		float m_normalOffsetBias[MAX_CASCADES] = {};
 	};
 }

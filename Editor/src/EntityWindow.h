@@ -20,6 +20,7 @@ namespace VEditor
 	private:
 		VEngine::Engine *m_engine;
 		entt::entity m_selectedEntity;
+		entt::entity m_toDeleteEntity;
 		bool m_visible;
 	};
 }

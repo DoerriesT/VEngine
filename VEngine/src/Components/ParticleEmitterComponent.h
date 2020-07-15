@@ -11,12 +11,12 @@ namespace VEngine
 		{
 			SPHERE, CUBE, DISK
 		};
-		glm::vec3 m_direction;
-		uint32_t m_particleCount;
-		float m_particleLifetime;
-		float m_velocityMagnitude;
-		SpawnType m_spawnType;
-		float m_spawnAreaSize;
-		Texture2DHandle m_textureHandle;
+		glm::vec3 m_direction = glm::vec3(0.0f, 5.0f, 0.0f);
+		uint32_t m_particleCount = 8;
+		float m_particleLifetime = 10.0f;
+		float m_velocityMagnitude = 1.0f;
+		SpawnType m_spawnType = SpawnType::DISK;
+		float m_spawnAreaSize = 0.1f;
+		Texture2DHandle m_textureHandle = {};
 	};
 }
