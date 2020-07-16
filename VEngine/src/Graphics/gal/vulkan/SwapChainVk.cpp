@@ -296,9 +296,10 @@ void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
 	imageCreateInfo.m_levels = 1;
 	imageCreateInfo.m_samples = SampleCount::_1;
 	imageCreateInfo.m_imageType = ImageType::_2D;
+	// TODO: this cast will fail once we modify the gal::Format enum, so create a VkFormat -> gal::Format function
 	imageCreateInfo.m_format = static_cast<Format>(surfaceFormat.format);
 	imageCreateInfo.m_createFlags = 0;
-	imageCreateInfo.m_usageFlags = createInfo.imageUsage;
+	imageCreateInfo.m_usageFlags = gal::ImageUsageFlagBits::TRANSFER_DST_BIT | gal::ImageUsageFlagBits::STORAGE_BIT | gal::ImageUsageFlagBits::COLOR_ATTACHMENT_BIT | gal::ImageUsageFlagBits::SAMPLED_BIT;
 
 	for (uint32_t i = 0; i < m_imageCount; ++i)
 	{
@@ -308,6 +309,7 @@ void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
 		m_images[i] = new(memory) ImageVk(imagesVk[i], nullptr, imageCreateInfo);
 	}
 
+	// TODO: this cast will fail once we modify the gal::Format enum, so create a VkFormat -> gal::Format function
 	m_imageFormat = static_cast<Format>(surfaceFormat.format);
 	m_extent = { extent.width, extent.height };
 

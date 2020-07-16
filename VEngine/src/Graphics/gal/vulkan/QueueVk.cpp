@@ -31,9 +31,11 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 {
 	size_t semaphoreCount = 0;
 	size_t commandBufferCount = 0;
+	size_t waitMaskCount = 0;
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		semaphoreCount += submitInfo[i].m_waitSemaphoreCount + submitInfo[i].m_signalSemaphoreCount;
+		waitMaskCount += submitInfo[i].m_waitSemaphoreCount;
 		commandBufferCount += submitInfo[i].m_commandListCount;
 	}
 
@@ -42,6 +44,8 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 	std::vector<VkTimelineSemaphoreSubmitInfo> timelineSemaphoreInfoVk(count);
 	std::vector<VkSemaphore> semaphores;
 	semaphores.reserve(semaphoreCount);
+	std::vector<VkPipelineStageFlags> waitDstStageMasks;
+	waitDstStageMasks.reserve(waitMaskCount);
 	std::vector<VkCommandBuffer> commandBuffers;
 	commandBuffers.reserve(commandBufferCount);
 
@@ -49,10 +53,12 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 	{
 		size_t waitSemaphoreOffset = semaphores.size();
 		size_t commandBuffersOffset = commandBuffers.size();
+		size_t waitMaskOffset = waitDstStageMasks.size();
 
 		for (uint32_t j = 0; j < submitInfo[i].m_waitSemaphoreCount; ++j)
 		{
 			semaphores.push_back((VkSemaphore)submitInfo[i].m_waitSemaphores[j]->getNativeHandle());
+			waitDstStageMasks.push_back(UtilityVk::translatePipelineStageFlags(submitInfo[i].m_waitDstStageMask[j]));
 		}
 
 		for (uint32_t j = 0; j < submitInfo[i].m_commandListCount; ++j)
@@ -79,7 +85,7 @@ void VEngine::gal::QueueVk::submit(uint32_t count, const SubmitInfo *submitInfo)
 		subInfo.pNext = &timelineSubInfo;
 		subInfo.waitSemaphoreCount = submitInfo[i].m_waitSemaphoreCount;
 		subInfo.pWaitSemaphores = semaphores.data() + waitSemaphoreOffset;
-		subInfo.pWaitDstStageMask = submitInfo[i].m_waitDstStageMask;
+		subInfo.pWaitDstStageMask = waitDstStageMasks.data() + waitMaskOffset;
 		subInfo.commandBufferCount = submitInfo[i].m_commandListCount;
 		subInfo.pCommandBuffers = commandBuffers.data() + commandBuffersOffset;
 		subInfo.signalSemaphoreCount = submitInfo[i].m_signalSemaphoreCount;

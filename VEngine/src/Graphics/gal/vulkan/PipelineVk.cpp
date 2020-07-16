@@ -107,7 +107,7 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 		{
 			auto &attachmentDesc = colorAttachments[i];
 			attachmentDesc = {};
-			attachmentDesc.m_format = static_cast<VkFormat>(createInfo.m_attachmentFormats.m_colorAttachmentFormats[i]);
+			attachmentDesc.m_format = UtilityVk::translate(createInfo.m_attachmentFormats.m_colorAttachmentFormats[i]);
 			attachmentDesc.m_samples = samples;
 
 			// these values dont actually matter, because they dont affect renderpass compatibility and are provided later by the actual renderpass used when drawing with this pipeline.
@@ -123,7 +123,7 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 		{
 			auto &attachmentDesc = depthStencilAttachment;
 			attachmentDesc = {};
-			attachmentDesc.m_format = static_cast<VkFormat>(createInfo.m_attachmentFormats.m_depthStencilFormat);
+			attachmentDesc.m_format = UtilityVk::translate(createInfo.m_attachmentFormats.m_depthStencilFormat);
 			attachmentDesc.m_samples = samples;
 
 			// these values dont actually matter, because they dont affect renderpass compatibility and are provided later by the actual renderpass used when drawing with this pipeline.
@@ -155,65 +155,141 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 	createPipelineLayout(deviceVk, reflectionInfo, m_pipelineLayout, m_descriptorSetLayouts);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputState{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-	vertexInputState.vertexBindingDescriptionCount = createInfo.m_vertexInputState.m_vertexBindingDescriptionCount;
-	vertexInputState.pVertexBindingDescriptions = reinterpret_cast<const VkVertexInputBindingDescription *>(createInfo.m_vertexInputState.m_vertexBindingDescriptions);
-	vertexInputState.vertexAttributeDescriptionCount = createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount;
-	vertexInputState.pVertexAttributeDescriptions = reinterpret_cast<const VkVertexInputAttributeDescription *>(createInfo.m_vertexInputState.m_vertexAttributeDescriptions);
+	VkVertexInputBindingDescription vertexBindingDescriptions[VertexInputState::MAX_VERTEX_BINDING_DESCRIPTIONS];
+	VkVertexInputAttributeDescription vertexAttributeDescriptions[VertexInputState::MAX_VERTEX_ATTRIBUTE_DESCRIPTIONS];
+	{
+		vertexInputState.vertexBindingDescriptionCount = createInfo.m_vertexInputState.m_vertexBindingDescriptionCount;
+		vertexInputState.pVertexBindingDescriptions = vertexBindingDescriptions;
+		vertexInputState.vertexAttributeDescriptionCount = createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount;
+		vertexInputState.pVertexAttributeDescriptions = vertexAttributeDescriptions;
+
+		for (size_t i = 0; i < createInfo.m_vertexInputState.m_vertexBindingDescriptionCount; ++i)
+		{
+			auto &binding = vertexBindingDescriptions[i];
+			binding.binding = createInfo.m_vertexInputState.m_vertexBindingDescriptions[i].m_binding;
+			binding.stride = createInfo.m_vertexInputState.m_vertexBindingDescriptions[i].m_stride;
+			binding.inputRate = UtilityVk::translate(createInfo.m_vertexInputState.m_vertexBindingDescriptions[i].m_inputRate);
+		}
+
+		for (size_t i = 0; i < createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount; ++i)
+		{
+			auto &attribute = vertexAttributeDescriptions[i];
+			attribute.location = createInfo.m_vertexInputState.m_vertexAttributeDescriptions[i].m_location;
+			attribute.binding = createInfo.m_vertexInputState.m_vertexAttributeDescriptions[i].m_binding;
+			attribute.format = UtilityVk::translate(createInfo.m_vertexInputState.m_vertexAttributeDescriptions[i].m_format);
+			attribute.offset = createInfo.m_vertexInputState.m_vertexAttributeDescriptions[i].m_offset;
+		}
+	}
+	
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-	inputAssemblyState.topology = static_cast<VkPrimitiveTopology>(createInfo.m_inputAssemblyState.m_primitiveTopology);
-	inputAssemblyState.primitiveRestartEnable = createInfo.m_inputAssemblyState.m_primitiveRestartEnable;
+	{
+		inputAssemblyState.topology = UtilityVk::translate(createInfo.m_inputAssemblyState.m_primitiveTopology);
+		inputAssemblyState.primitiveRestartEnable = createInfo.m_inputAssemblyState.m_primitiveRestartEnable;
+	}
+
 
 	VkPipelineViewportStateCreateInfo viewportState = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-	viewportState.viewportCount = createInfo.m_viewportState.m_viewportCount;
-	viewportState.pViewports = reinterpret_cast<const VkViewport *>(createInfo.m_viewportState.m_viewports);
-	viewportState.scissorCount = createInfo.m_viewportState.m_viewportCount;
-	viewportState.pScissors = reinterpret_cast<const VkRect2D *>(createInfo.m_viewportState.m_scissors);
+	{
+		viewportState.viewportCount = createInfo.m_viewportState.m_viewportCount;
+		viewportState.pViewports = reinterpret_cast<const VkViewport *>(createInfo.m_viewportState.m_viewports);
+		viewportState.scissorCount = createInfo.m_viewportState.m_viewportCount;
+		viewportState.pScissors = reinterpret_cast<const VkRect2D *>(createInfo.m_viewportState.m_scissors);
+	}
+
 
 	VkPipelineRasterizationStateCreateInfo rasterizationState = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-	rasterizationState.depthClampEnable = createInfo.m_rasterizationState.m_depthClampEnable;
-	rasterizationState.rasterizerDiscardEnable = createInfo.m_rasterizationState.m_rasterizerDiscardEnable;
-	rasterizationState.polygonMode = static_cast<VkPolygonMode>(createInfo.m_rasterizationState.m_polygonMode);
-	rasterizationState.cullMode = createInfo.m_rasterizationState.m_cullMode;
-	rasterizationState.frontFace = static_cast<VkFrontFace>(createInfo.m_rasterizationState.m_frontFace);
-	rasterizationState.depthBiasEnable = createInfo.m_rasterizationState.m_depthBiasEnable;
-	rasterizationState.depthBiasConstantFactor = createInfo.m_rasterizationState.m_depthBiasConstantFactor;
-	rasterizationState.depthBiasClamp = createInfo.m_rasterizationState.m_depthBiasClamp;
-	rasterizationState.depthBiasSlopeFactor = createInfo.m_rasterizationState.m_depthBiasSlopeFactor;
-	rasterizationState.lineWidth = createInfo.m_rasterizationState.m_lineWidth;
+	{
+		rasterizationState.depthClampEnable = createInfo.m_rasterizationState.m_depthClampEnable;
+		rasterizationState.rasterizerDiscardEnable = createInfo.m_rasterizationState.m_rasterizerDiscardEnable;
+		rasterizationState.polygonMode = UtilityVk::translate(createInfo.m_rasterizationState.m_polygonMode);
+		rasterizationState.cullMode = UtilityVk::translateCullModeFlags(createInfo.m_rasterizationState.m_cullMode);
+		rasterizationState.frontFace = UtilityVk::translate(createInfo.m_rasterizationState.m_frontFace);
+		rasterizationState.depthBiasEnable = createInfo.m_rasterizationState.m_depthBiasEnable;
+		rasterizationState.depthBiasConstantFactor = createInfo.m_rasterizationState.m_depthBiasConstantFactor;
+		rasterizationState.depthBiasClamp = createInfo.m_rasterizationState.m_depthBiasClamp;
+		rasterizationState.depthBiasSlopeFactor = createInfo.m_rasterizationState.m_depthBiasSlopeFactor;
+		rasterizationState.lineWidth = createInfo.m_rasterizationState.m_lineWidth;
+	}
+	
 
 	VkPipelineMultisampleStateCreateInfo multisamplingState = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-	multisamplingState.rasterizationSamples = static_cast<VkSampleCountFlagBits>(createInfo.m_multiSampleState.m_rasterizationSamples);
-	multisamplingState.sampleShadingEnable = createInfo.m_multiSampleState.m_sampleShadingEnable;
-	multisamplingState.minSampleShading = createInfo.m_multiSampleState.m_minSampleShading;
-	multisamplingState.pSampleMask = &createInfo.m_multiSampleState.m_sampleMask;
-	multisamplingState.alphaToCoverageEnable = createInfo.m_multiSampleState.m_alphaToCoverageEnable;
-	multisamplingState.alphaToOneEnable = createInfo.m_multiSampleState.m_alphaToOneEnable;
+	{
+		multisamplingState.rasterizationSamples = static_cast<VkSampleCountFlagBits>(createInfo.m_multiSampleState.m_rasterizationSamples);
+		multisamplingState.sampleShadingEnable = createInfo.m_multiSampleState.m_sampleShadingEnable;
+		multisamplingState.minSampleShading = createInfo.m_multiSampleState.m_minSampleShading;
+		multisamplingState.pSampleMask = &createInfo.m_multiSampleState.m_sampleMask;
+		multisamplingState.alphaToCoverageEnable = createInfo.m_multiSampleState.m_alphaToCoverageEnable;
+		multisamplingState.alphaToOneEnable = createInfo.m_multiSampleState.m_alphaToOneEnable;
+	}
+	
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilState = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-	depthStencilState.depthTestEnable = createInfo.m_depthStencilState.m_depthTestEnable;
-	depthStencilState.depthWriteEnable = createInfo.m_depthStencilState.m_depthWriteEnable;
-	depthStencilState.depthCompareOp = static_cast<VkCompareOp>(createInfo.m_depthStencilState.m_depthCompareOp);
-	depthStencilState.depthBoundsTestEnable = createInfo.m_depthStencilState.m_depthBoundsTestEnable;
-	depthStencilState.stencilTestEnable = createInfo.m_depthStencilState.m_stencilTestEnable;
-	depthStencilState.front = *reinterpret_cast<const VkStencilOpState *>(&createInfo.m_depthStencilState.m_front);
-	depthStencilState.back = *reinterpret_cast<const VkStencilOpState *>(&createInfo.m_depthStencilState.m_back);
-	depthStencilState.minDepthBounds = createInfo.m_depthStencilState.m_minDepthBounds;
-	depthStencilState.maxDepthBounds = createInfo.m_depthStencilState.m_maxDepthBounds;
+	{
+		auto translateStencilOpState = [](const StencilOpState &state)
+		{
+			VkStencilOpState result{};
+			result.failOp = UtilityVk::translate(state.m_failOp);
+			result.passOp = UtilityVk::translate(state.m_passOp);
+			result.depthFailOp = UtilityVk::translate(state.m_depthFailOp);
+			result.compareOp = UtilityVk::translate(state.m_compareOp);
+			result.compareMask = state.m_compareMask;
+			result.writeMask = state.m_writeMask;
+			result.reference = state.m_reference;
+			return result;
+		};
+
+		depthStencilState.depthTestEnable = createInfo.m_depthStencilState.m_depthTestEnable;
+		depthStencilState.depthWriteEnable = createInfo.m_depthStencilState.m_depthWriteEnable;
+		depthStencilState.depthCompareOp = UtilityVk::translate(createInfo.m_depthStencilState.m_depthCompareOp);
+		depthStencilState.depthBoundsTestEnable = createInfo.m_depthStencilState.m_depthBoundsTestEnable;
+		depthStencilState.stencilTestEnable = createInfo.m_depthStencilState.m_stencilTestEnable;
+		depthStencilState.front = translateStencilOpState(createInfo.m_depthStencilState.m_front);
+		depthStencilState.back = translateStencilOpState(createInfo.m_depthStencilState.m_back);
+		depthStencilState.minDepthBounds = createInfo.m_depthStencilState.m_minDepthBounds;
+		depthStencilState.maxDepthBounds = createInfo.m_depthStencilState.m_maxDepthBounds;
+	}
+	
 
 	VkPipelineColorBlendStateCreateInfo blendState = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-	blendState.logicOpEnable = createInfo.m_blendState.m_logicOpEnable;
-	blendState.logicOp = static_cast<VkLogicOp>(createInfo.m_blendState.m_logicOp);
-	blendState.attachmentCount = createInfo.m_blendState.m_attachmentCount;
-	blendState.pAttachments = reinterpret_cast<const VkPipelineColorBlendAttachmentState *>(createInfo.m_blendState.m_attachments);
-	blendState.blendConstants[0] = createInfo.m_blendState.m_blendConstants[0];
-	blendState.blendConstants[1] = createInfo.m_blendState.m_blendConstants[1];
-	blendState.blendConstants[2] = createInfo.m_blendState.m_blendConstants[2];
-	blendState.blendConstants[3] = createInfo.m_blendState.m_blendConstants[3];
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[8];
+	{
+		blendState.logicOpEnable = createInfo.m_blendState.m_logicOpEnable;
+		blendState.logicOp = UtilityVk::translate(createInfo.m_blendState.m_logicOp);
+		blendState.attachmentCount = createInfo.m_blendState.m_attachmentCount;
+		blendState.pAttachments = colorBlendAttachmentStates;
+		blendState.blendConstants[0] = createInfo.m_blendState.m_blendConstants[0];
+		blendState.blendConstants[1] = createInfo.m_blendState.m_blendConstants[1];
+		blendState.blendConstants[2] = createInfo.m_blendState.m_blendConstants[2];
+		blendState.blendConstants[3] = createInfo.m_blendState.m_blendConstants[3];
+
+		for (size_t i = 0; i < createInfo.m_blendState.m_attachmentCount; ++i)
+		{
+			auto &state = colorBlendAttachmentStates[i];
+			state.blendEnable = createInfo.m_blendState.m_attachments[i].m_blendEnable;
+			state.srcColorBlendFactor = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_srcColorBlendFactor);
+			state.dstColorBlendFactor = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_dstColorBlendFactor);
+			state.colorBlendOp = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_colorBlendOp);
+			state.srcAlphaBlendFactor = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_srcAlphaBlendFactor);
+			state.dstAlphaBlendFactor = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_dstAlphaBlendFactor);
+			state.alphaBlendOp = UtilityVk::translate(createInfo.m_blendState.m_attachments[i].m_alphaBlendOp);
+			state.colorWriteMask = UtilityVk::translateColorComponentFlags(createInfo.m_blendState.m_attachments[i].m_colorWriteMask);
+		}
+	}
+	
 
 	VkPipelineDynamicStateCreateInfo dynamicState = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-	dynamicState.dynamicStateCount = createInfo.m_dynamicState.m_dynamicStateCount;
-	dynamicState.pDynamicStates = reinterpret_cast<const VkDynamicState *>(createInfo.m_dynamicState.m_dynamicStates);
+	VkDynamicState dynamicStatesArray[DynamicStates::MAX_DYNAMIC_STATES];
+	{
+		dynamicState.dynamicStateCount = createInfo.m_dynamicState.m_dynamicStateCount;
+		dynamicState.pDynamicStates = dynamicStatesArray;
+
+		for (size_t i = 0; i < createInfo.m_dynamicState.m_dynamicStateCount; ++i)
+		{
+			dynamicStatesArray[i] = UtilityVk::translate(createInfo.m_dynamicState.m_dynamicStates[i]);
+		}
+	}
+	
 
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipelineInfo.stageCount = stageCount;

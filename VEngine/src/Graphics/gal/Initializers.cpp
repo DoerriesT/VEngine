@@ -156,6 +156,12 @@ uint32_t VEngine::gal::Initializers::getUsageFlags(ResourceState state)
 	case ResourceState::WRITE_IMAGE_TRANSFER:
 		return ImageUsageFlagBits::TRANSFER_DST_BIT;
 
+	case ResourceState::CLEAR_BUFFER:
+		return BufferUsageFlagBits::CLEAR_BIT;
+
+	case ResourceState::CLEAR_IMAGE:
+		return ImageUsageFlagBits::CLEAR_BIT;
+
 	case ResourceState::PRESENT_IMAGE:
 		return 0;
 

@@ -625,20 +625,20 @@ void VEngine::gal::GraphicsDeviceVk::createImage(const ImageCreateInfo &imageCre
 	assert(memory);
 
 	AllocationCreateInfoVk allocInfo;
-	allocInfo.m_requiredFlags = requiredMemoryPropertyFlags;
-	allocInfo.m_preferredFlags = preferredMemoryPropertyFlags;
+	allocInfo.m_requiredFlags = UtilityVk::translateMemoryPropertyFlags(requiredMemoryPropertyFlags);
+	allocInfo.m_preferredFlags = UtilityVk::translateMemoryPropertyFlags(preferredMemoryPropertyFlags);
 	allocInfo.m_dedicatedAllocation = dedicated;
 
 	VkImageCreateInfo createInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-	createInfo.flags = imageCreateInfo.m_createFlags;
-	createInfo.imageType = static_cast<VkImageType>(imageCreateInfo.m_imageType);
-	createInfo.format = static_cast<VkFormat>(imageCreateInfo.m_format);
+	createInfo.flags = UtilityVk::translateImageCreateFlags(imageCreateInfo.m_createFlags);
+	createInfo.imageType = UtilityVk::translate(imageCreateInfo.m_imageType);
+	createInfo.format = UtilityVk::translate(imageCreateInfo.m_format);
 	createInfo.extent = { imageCreateInfo.m_width, imageCreateInfo.m_height, imageCreateInfo.m_depth };
 	createInfo.mipLevels = imageCreateInfo.m_levels;
 	createInfo.arrayLayers = imageCreateInfo.m_layers;
 	createInfo.samples = static_cast<VkSampleCountFlagBits>(imageCreateInfo.m_samples);
 	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	createInfo.usage = imageCreateInfo.m_usageFlags;
+	createInfo.usage = UtilityVk::translateImageUsageFlags(imageCreateInfo.m_usageFlags);
 	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	createInfo.queueFamilyIndexCount = 0;
 	createInfo.pQueueFamilyIndices = nullptr;
@@ -658,8 +658,8 @@ void VEngine::gal::GraphicsDeviceVk::createBuffer(const BufferCreateInfo &buffer
 	assert(memory);
 
 	AllocationCreateInfoVk allocInfo;
-	allocInfo.m_requiredFlags = requiredMemoryPropertyFlags;
-	allocInfo.m_preferredFlags = preferredMemoryPropertyFlags;
+	allocInfo.m_requiredFlags = UtilityVk::translateMemoryPropertyFlags(requiredMemoryPropertyFlags);
+	allocInfo.m_preferredFlags = UtilityVk::translateMemoryPropertyFlags(preferredMemoryPropertyFlags);
 	allocInfo.m_dedicatedAllocation = dedicated;
 
 	uint32_t queueFamilyIndices[] =
@@ -684,9 +684,9 @@ void VEngine::gal::GraphicsDeviceVk::createBuffer(const BufferCreateInfo &buffer
 	}
 
 	VkBufferCreateInfo createInfo{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-	createInfo.flags = bufferCreateInfo.m_createFlags;
+	createInfo.flags = UtilityVk::translateBufferCreateFlags(bufferCreateInfo.m_createFlags);
 	createInfo.size = bufferCreateInfo.m_size;
-	createInfo.usage = bufferCreateInfo.m_usageFlags;
+	createInfo.usage = UtilityVk::translateBufferUsageFlags(bufferCreateInfo.m_usageFlags);
 	createInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 	createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
 	createInfo.pQueueFamilyIndices = uniqueQueueFamilyIndices;
@@ -918,7 +918,7 @@ void VEngine::gal::GraphicsDeviceVk::createDescriptorSetLayout(uint32_t bindingC
 			assert(false);
 			break;
 		}
-		bindingsVk.push_back({ b.m_binding, typeVk , b.m_descriptorCount, b.m_stageFlags, nullptr });
+		bindingsVk.push_back({ b.m_binding, typeVk , b.m_descriptorCount, UtilityVk::translateShaderStageFlags(b.m_stageFlags), nullptr });
 	}
 
 	*descriptorSetLayout = new(memory) DescriptorSetLayoutVk(m_device, bindingCount, bindingsVk.data());

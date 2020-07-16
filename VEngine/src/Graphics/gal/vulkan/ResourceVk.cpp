@@ -10,20 +10,20 @@ VEngine::gal::SamplerVk::SamplerVk(VkDevice device, const SamplerCreateInfo &cre
 	m_sampler(VK_NULL_HANDLE)
 {
 	VkSamplerCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-	createInfoVk.magFilter = static_cast<VkFilter>(createInfo.m_magFilter);
-	createInfoVk.minFilter = static_cast<VkFilter>(createInfo.m_minFilter);
-	createInfoVk.mipmapMode = static_cast<VkSamplerMipmapMode>(createInfo.m_mipmapMode);
-	createInfoVk.addressModeU = static_cast<VkSamplerAddressMode>(createInfo.m_addressModeU);
-	createInfoVk.addressModeV = static_cast<VkSamplerAddressMode>(createInfo.m_addressModeV);
-	createInfoVk.addressModeW = static_cast<VkSamplerAddressMode>(createInfo.m_addressModeW);
+	createInfoVk.magFilter = UtilityVk::translate(createInfo.m_magFilter);
+	createInfoVk.minFilter = UtilityVk::translate(createInfo.m_minFilter);
+	createInfoVk.mipmapMode = UtilityVk::translate(createInfo.m_mipmapMode);
+	createInfoVk.addressModeU = UtilityVk::translate(createInfo.m_addressModeU);
+	createInfoVk.addressModeV = UtilityVk::translate(createInfo.m_addressModeV);
+	createInfoVk.addressModeW = UtilityVk::translate(createInfo.m_addressModeW);
 	createInfoVk.mipLodBias = createInfo.m_mipLodBias;
 	createInfoVk.anisotropyEnable = createInfo.m_anisotropyEnable;
 	createInfoVk.maxAnisotropy = createInfo.m_maxAnisotropy;
 	createInfoVk.compareEnable = createInfo.m_compareEnable;
-	createInfoVk.compareOp = static_cast<VkCompareOp>(createInfo.m_compareOp);
+	createInfoVk.compareOp = UtilityVk::translate(createInfo.m_compareOp);
 	createInfoVk.minLod = createInfo.m_minLod;
 	createInfoVk.maxLod = createInfo.m_maxLod;
-	createInfoVk.borderColor = static_cast<VkBorderColor>(createInfo.m_borderColor);
+	createInfoVk.borderColor = UtilityVk::translate(createInfo.m_borderColor);
 	createInfoVk.unnormalizedCoordinates = createInfo.m_unnormalizedCoordinates;
 
 	UtilityVk::checkResult(vkCreateSampler(m_device, &createInfoVk, nullptr, &m_sampler), "Failed to create Sampler!");
@@ -159,12 +159,15 @@ VEngine::gal::ImageViewVk::ImageViewVk(VkDevice device, const ImageViewCreateInf
 
 	VkImageViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
 	createInfoVk.image = (VkImage)imageVk->getNativeHandle();
-	createInfoVk.viewType = static_cast<VkImageViewType>(createInfo.m_viewType);
-	createInfoVk.format = static_cast<VkFormat>(createInfo.m_format == Format::UNDEFINED ? imageVk->getDescription().m_format : createInfo.m_format);
-	createInfoVk.components = *reinterpret_cast<const VkComponentMapping *>(&createInfo.m_components);
+	createInfoVk.viewType = UtilityVk::translate(createInfo.m_viewType);
+	createInfoVk.format = UtilityVk::translate(createInfo.m_format == Format::UNDEFINED ? imageVk->getDescription().m_format : createInfo.m_format);
+	createInfoVk.components.r = UtilityVk::translate(createInfo.m_components.m_r);
+	createInfoVk.components.g = UtilityVk::translate(createInfo.m_components.m_g);
+	createInfoVk.components.b = UtilityVk::translate(createInfo.m_components.m_b);
+	createInfoVk.components.a = UtilityVk::translate(createInfo.m_components.m_a);
 	createInfoVk.subresourceRange =
 	{
-		UtilityVk::getImageAspectMask(static_cast<VkFormat>(imageVk->getDescription().m_format)),
+		UtilityVk::getImageAspectMask(UtilityVk::translate(imageVk->getDescription().m_format)),
 		createInfo.m_baseMipLevel,
 		createInfo.m_levelCount,
 		createInfo.m_baseArrayLayer,
@@ -204,7 +207,7 @@ VEngine::gal::BufferViewVk::BufferViewVk(VkDevice device, const BufferViewCreate
 
 	VkBufferViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	createInfoVk.buffer = (VkBuffer)bufferVk->getNativeHandle();
-	createInfoVk.format = static_cast<VkFormat>(createInfo.m_format);
+	createInfoVk.format = UtilityVk::translate(createInfo.m_format);
 	createInfoVk.offset = createInfo.m_offset;
 	createInfoVk.range = createInfo.m_range;
 

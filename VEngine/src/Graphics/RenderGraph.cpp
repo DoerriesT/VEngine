@@ -730,8 +730,8 @@ void VEngine::rg::RenderGraph::createPasses(ResourceViewHandle finalResourceHand
 						for (uint32_t subresourceIdx = usageOffset; subresourceIdx < subresourceCount + usageOffset; ++subresourceIdx)
 						{
 							const auto state = resDesc.m_image ?
-								ResourceStateStageMask{ ResourceState::WRITE_IMAGE_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT } :
-								ResourceStateStageMask{ ResourceState::WRITE_BUFFER_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT };
+								ResourceStateStageMask{ ResourceState::CLEAR_IMAGE, PipelineStageFlagBits::CLEAR_BIT } :
+								ResourceStateStageMask{ ResourceState::CLEAR_BUFFER, PipelineStageFlagBits::CLEAR_BIT };
 							m_resourceUsages[subresourceIdx].insert(m_resourceUsages[subresourceIdx].cbegin(), { clearPassHandle, state, state });
 							m_passSubresourceIndices.push_back(subresourceIdx);
 						}

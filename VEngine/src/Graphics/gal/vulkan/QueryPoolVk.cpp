@@ -8,7 +8,7 @@ VEngine::gal::QueryPoolVk::QueryPoolVk(VkDevice device, QueryType queryType, uin
 	VkQueryPoolCreateInfo createInfo{ VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
 	createInfo.queryType = static_cast<VkQueryType>(queryType);
 	createInfo.queryCount = queryCount;
-	createInfo.pipelineStatistics = pipelineStatistics;
+	createInfo.pipelineStatistics = UtilityVk::translateQueryPipelineStatisticFlags(pipelineStatistics);
 
 	UtilityVk::checkResult(vkCreateQueryPool(device, &createInfo, nullptr, &m_queryPool), "Failed to create Query Pool!");
 }

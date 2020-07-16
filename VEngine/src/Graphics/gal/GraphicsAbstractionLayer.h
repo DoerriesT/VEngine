@@ -99,14 +99,16 @@ namespace VEngine
 		{
 			SAMPLER = 0,
 			TEXTURE = 1,
-			RW_TEXTURE = 2,
-			TYPED_BUFFER = 3,
-			RW_TYPED_BUFFER = 4,
-			CONSTANT_BUFFER = 5,
-			BYTE_BUFFER = 6,
-			RW_BYTE_BUFFER = 7,
-			STRUCTURED_BUFFER = 8,
-			RW_STRUCTURED_BUFFER = 9
+			DEPTH_STENCIL_TEXTURE = 2,
+			RW_TEXTURE = 3,
+			TYPED_BUFFER = 4,
+			RW_TYPED_BUFFER = 5,
+			CONSTANT_BUFFER = 6,
+			BYTE_BUFFER = 7,
+			RW_BYTE_BUFFER = 8,
+			STRUCTURED_BUFFER = 9,
+			RW_STRUCTURED_BUFFER = 10,
+			RANGE_SIZE = RW_STRUCTURED_BUFFER + 1
 		};
 
 		enum class IndexType
@@ -150,6 +152,8 @@ namespace VEngine
 			WRITE_STORAGE_BUFFER,
 			WRITE_BUFFER_TRANSFER,
 			WRITE_IMAGE_TRANSFER,
+			CLEAR_BUFFER,
+			CLEAR_IMAGE,
 			PRESENT_IMAGE,
 		};
 
@@ -546,6 +550,7 @@ namespace VEngine
 				TRANSFER_BIT = 0x00001000,
 				BOTTOM_OF_PIPE_BIT = 0x00002000,
 				HOST_BIT = 0x00004000,
+				CLEAR_BIT = 0x00050000,
 			};
 		}
 		using PipelineStageFlags = uint32_t;
@@ -561,6 +566,7 @@ namespace VEngine
 				STORAGE_BIT = 0x00000008,
 				COLOR_ATTACHMENT_BIT = 0x00000010,
 				DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
+				CLEAR_BIT = 0x00000040,
 			};
 		}
 		using ImageUsageFlags = uint32_t;
@@ -589,6 +595,7 @@ namespace VEngine
 				INDEX_BUFFER_BIT = 0x00000040,
 				VERTEX_BUFFER_BIT = 0x00000080,
 				INDIRECT_BUFFER_BIT = 0x00000100,
+				CLEAR_BIT = 0x00000200,
 				SHADER_DEVICE_ADDRESS_BIT = 0x00020000,
 			};
 		}
@@ -899,7 +906,7 @@ namespace VEngine
 			uint32_t m_depthClampEnable = false;
 			uint32_t m_rasterizerDiscardEnable = false;
 			PolygonMode m_polygonMode = PolygonMode::FILL;
-			CullModeFlags m_cullMode = (uint32_t)CullModeFlagBits::NONE;
+			CullModeFlags m_cullMode = static_cast<CullModeFlags>(CullModeFlagBits::NONE);
 			FrontFace m_frontFace = FrontFace::COUNTER_CLOCKWISE;
 			uint32_t m_depthBiasEnable = false;
 			float m_depthBiasConstantFactor = 1.0f;

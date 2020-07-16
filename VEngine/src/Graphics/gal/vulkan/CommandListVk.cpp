@@ -75,17 +75,17 @@ void VEngine::gal::CommandListVk::setDepthBounds(float minDepthBounds, float max
 
 void VEngine::gal::CommandListVk::setStencilCompareMask(StencilFaceFlags faceMask, uint32_t compareMask)
 {
-	vkCmdSetStencilCompareMask(m_commandBuffer, faceMask, compareMask);
+	vkCmdSetStencilCompareMask(m_commandBuffer, UtilityVk::translateStencilFaceFlags(faceMask), compareMask);
 }
 
 void VEngine::gal::CommandListVk::setStencilWriteMask(StencilFaceFlags faceMask, uint32_t writeMask)
 {
-	vkCmdSetStencilWriteMask(m_commandBuffer, faceMask, writeMask);
+	vkCmdSetStencilWriteMask(m_commandBuffer, UtilityVk::translateStencilFaceFlags(faceMask), writeMask);
 }
 
 void VEngine::gal::CommandListVk::setStencilReference(StencilFaceFlags faceMask, uint32_t reference)
 {
-	vkCmdSetStencilReference(m_commandBuffer, faceMask, reference);
+	vkCmdSetStencilReference(m_commandBuffer, UtilityVk::translateStencilFaceFlags(faceMask), reference);
 }
 
 void VEngine::gal::CommandListVk::bindDescriptorSets(const GraphicsPipeline *pipeline, uint32_t firstSet, uint32_t count, const DescriptorSet *const *sets)
@@ -133,7 +133,7 @@ void VEngine::gal::CommandListVk::bindIndexBuffer(const Buffer *buffer, uint64_t
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(buffer);
 	assert(bufferVk);
 
-	vkCmdBindIndexBuffer(m_commandBuffer, (VkBuffer)bufferVk->getNativeHandle(), offset, static_cast<VkIndexType>(indexType));
+	vkCmdBindIndexBuffer(m_commandBuffer, (VkBuffer)bufferVk->getNativeHandle(), offset, UtilityVk::translate(indexType));
 }
 
 void VEngine::gal::CommandListVk::bindVertexBuffers(uint32_t firstBinding, uint32_t count, const Buffer *const *buffers, uint64_t *offsets)
@@ -192,8 +192,8 @@ void VEngine::gal::CommandListVk::copyImage(const Image *srcImage, const Image *
 	constexpr uint32_t batchSize = 16;
 	const VkImage srcImageVk = (VkImage)srcImage->getNativeHandle();
 	const VkImage dstImageVk = (VkImage)dstImage->getNativeHandle();
-	const VkImageAspectFlags srcAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(srcImage->getDescription().m_format));
-	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(dstImage->getDescription().m_format));
+	const VkImageAspectFlags srcAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(srcImage->getDescription().m_format));
+	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(dstImage->getDescription().m_format));
 	const uint32_t iterations = (regionCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
 	{
@@ -224,7 +224,7 @@ void VEngine::gal::CommandListVk::copyBufferToImage(const Buffer *srcBuffer, con
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(srcBuffer);
 	assert(bufferVk);
 
-	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(dstImage->getDescription().m_format));
+	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(dstImage->getDescription().m_format));
 	const uint32_t iterations = (regionCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
 	{
@@ -257,7 +257,7 @@ void VEngine::gal::CommandListVk::copyImageToBuffer(const Image *srcImage, const
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(dstBuffer);
 	assert(bufferVk);
 
-	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(srcImage->getDescription().m_format));
+	const VkImageAspectFlags dstAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(srcImage->getDescription().m_format));
 	const uint32_t iterations = (regionCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
 	{
@@ -282,7 +282,7 @@ void VEngine::gal::CommandListVk::copyImageToBuffer(const Image *srcImage, const
 
 void VEngine::gal::CommandListVk::updateBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t dataSize, const void *data)
 {
-	
+
 	vkCmdUpdateBuffer(m_commandBuffer, (VkBuffer)dstBuffer->getNativeHandle(), dstOffset, dataSize, data);
 }
 
@@ -313,7 +313,7 @@ void VEngine::gal::CommandListVk::clearDepthStencilImage(const Image *image, con
 {
 	constexpr uint32_t batchSize = 8;
 	const VkImage imageVk = (VkImage)image->getNativeHandle();
-	const VkImageAspectFlags imageAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(image->getDescription().m_format));
+	const VkImageAspectFlags imageAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(image->getDescription().m_format));
 	const uint32_t iterations = (rangeCount + (batchSize - 1)) / batchSize;
 	for (uint32_t i = 0; i < iterations; ++i)
 	{
@@ -364,7 +364,7 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 		bool m_writeAccess;
 	};
 
-	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags) -> ResourceStateInfo
+	auto getResourceStateInfo = [](ResourceState state, VkPipelineStageFlags stageFlags) -> ResourceStateInfo
 	{
 		switch (state)
 		{
@@ -420,6 +420,10 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, false, true };
 		case ResourceState::WRITE_IMAGE_TRANSFER:
 			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, false, true };
+		case ResourceState::CLEAR_BUFFER:
+			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, false, true };
+		case ResourceState::CLEAR_IMAGE:
+			return { VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, false, true };
 		case ResourceState::PRESENT_IMAGE:
 			return { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, true, false };
 		default:
@@ -447,8 +451,8 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			const auto &barrier = barriers[i];
 			assert(bool(barrier.m_image) != bool(barrier.m_buffer));
 
-			const auto beforeStateInfo = getResourceStateInfo(barrier.m_stateBefore, barrier.m_stagesBefore);
-			const auto afterStateInfo = getResourceStateInfo(barrier.m_stateAfter, barrier.m_stagesAfter);
+			const auto beforeStateInfo = getResourceStateInfo(barrier.m_stateBefore, UtilityVk::translatePipelineStageFlags(barrier.m_stagesBefore));
+			const auto afterStateInfo = getResourceStateInfo(barrier.m_stateAfter, UtilityVk::translatePipelineStageFlags(barrier.m_stagesAfter));
 
 			const bool imageBarrierRequired = barrier.m_image && (beforeStateInfo.m_layout != afterStateInfo.m_layout || barrier.m_queueOwnershipAcquireBarrier || barrier.m_queueOwnershipReleaseBarrier);
 			const bool bufferBarrierRequired = barrier.m_buffer && (barrier.m_queueOwnershipAcquireBarrier || barrier.m_queueOwnershipReleaseBarrier);
@@ -461,7 +465,7 @@ void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barrier
 			if (imageBarrierRequired)
 			{
 				const auto &subResRange = barrier.m_imageSubresourceRange;
-				const VkImageAspectFlags imageAspectMask = UtilityVk::getImageAspectMask(static_cast<VkFormat>(barrier.m_image->getDescription().m_format));
+				const VkImageAspectFlags imageAspectMask = UtilityVk::getImageAspectMask(UtilityVk::translate(barrier.m_image->getDescription().m_format));
 
 				auto &imageBarrier = imageBarriers[imageBarrierCount++];
 				imageBarrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
@@ -524,7 +528,7 @@ void VEngine::gal::CommandListVk::resetQueryPool(const QueryPool *queryPool, uin
 
 void VEngine::gal::CommandListVk::writeTimestamp(PipelineStageFlags pipelineStage, const QueryPool *queryPool, uint32_t query)
 {
-	vkCmdWriteTimestamp(m_commandBuffer, static_cast<VkPipelineStageFlagBits>(pipelineStage), (VkQueryPool)queryPool->getNativeHandle(), query);
+	vkCmdWriteTimestamp(m_commandBuffer, static_cast<VkPipelineStageFlagBits>(UtilityVk::translatePipelineStageFlags(pipelineStage)), (VkQueryPool)queryPool->getNativeHandle(), query);
 }
 
 void VEngine::gal::CommandListVk::copyQueryPoolResults(const QueryPool *queryPool, uint32_t firstQuery, uint32_t queryCount, const Buffer *dstBuffer, uint64_t dstOffset)
@@ -536,14 +540,14 @@ void VEngine::gal::CommandListVk::pushConstants(const GraphicsPipeline *pipeline
 {
 	const auto *pipelineVk = dynamic_cast<const GraphicsPipelineVk *>(pipeline);
 	assert(pipelineVk);
-	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), stageFlags, offset, size, values);
+	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), UtilityVk::translateShaderStageFlags(stageFlags), offset, size, values);
 }
 
 void VEngine::gal::CommandListVk::pushConstants(const ComputePipeline *pipeline, ShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *values)
 {
 	const auto *pipelineVk = dynamic_cast<const ComputePipelineVk *>(pipeline);
 	assert(pipelineVk);
-	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), stageFlags, offset, size, values);
+	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), UtilityVk::translateShaderStageFlags(stageFlags), offset, size, values);
 }
 
 void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea)
@@ -564,34 +568,6 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 	uint32_t framebufferWidth = -1;
 	uint32_t framebufferHeight = -1;
 
-	auto translateLoadOp = [](AttachmentLoadOp loadOp)
-	{
-		switch (loadOp)
-		{
-		case AttachmentLoadOp::LOAD:
-			return VK_ATTACHMENT_LOAD_OP_LOAD;
-		case AttachmentLoadOp::CLEAR:
-			return VK_ATTACHMENT_LOAD_OP_CLEAR;
-		case AttachmentLoadOp::DONT_CARE:
-			return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		default:
-			return VK_ATTACHMENT_LOAD_OP_LOAD;
-		}
-	};
-
-	auto translateStoreOp = [](AttachmentStoreOp storeOp)
-	{
-		switch (storeOp)
-		{
-		case AttachmentStoreOp::STORE:
-			return VK_ATTACHMENT_STORE_OP_STORE;
-		case AttachmentStoreOp::DONT_CARE:
-			return VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		default:
-			return VK_ATTACHMENT_STORE_OP_STORE;
-		}
-	};
-
 	// fill out color attachment info structs
 	for (uint32_t i = 0; i < colorAttachmentCount; ++i)
 	{
@@ -607,17 +583,17 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 
 		auto &attachmentDesc = colorAttachmentDescsVk[i];
 		attachmentDesc = {};
-		attachmentDesc.m_format = static_cast<VkFormat>(imageDesc.m_format);
+		attachmentDesc.m_format = UtilityVk::translate(imageDesc.m_format);
 		attachmentDesc.m_samples = static_cast<VkSampleCountFlagBits>(imageDesc.m_samples);
-		attachmentDesc.m_loadOp = translateLoadOp(attachment.m_loadOp);
-		attachmentDesc.m_storeOp = translateStoreOp(attachment.m_storeOp);
+		attachmentDesc.m_loadOp = UtilityVk::translate(attachment.m_loadOp);
+		attachmentDesc.m_storeOp = UtilityVk::translate(attachment.m_storeOp);
 
 		const auto &viewDesc = attachment.m_imageView->getDescription();
 
 		auto &fbAttachInfo = fbAttachmentInfoVk[i];
 		fbAttachInfo = {};
-		fbAttachInfo.m_flags = static_cast<VkImageCreateFlags>(imageDesc.m_createFlags);
-		fbAttachInfo.m_usage = static_cast<VkImageUsageFlags>(imageDesc.m_usageFlags);
+		fbAttachInfo.m_flags = UtilityVk::translateImageCreateFlags(imageDesc.m_createFlags);
+		fbAttachInfo.m_usage = UtilityVk::translateImageUsageFlags(imageDesc.m_usageFlags);
 		fbAttachInfo.m_width = imageDesc.m_width;
 		fbAttachInfo.m_height = imageDesc.m_height;
 		fbAttachInfo.m_layerCount = viewDesc.m_layerCount;
@@ -641,20 +617,20 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 
 		auto &attachmentDesc = depthStencilAttachmentDescVk;
 		attachmentDesc = {};
-		attachmentDesc.m_format = static_cast<VkFormat>(imageDesc.m_format);
+		attachmentDesc.m_format = UtilityVk::translate(imageDesc.m_format);
 		attachmentDesc.m_samples = static_cast<VkSampleCountFlagBits>(imageDesc.m_samples);
-		attachmentDesc.m_loadOp = translateLoadOp(attachment.m_loadOp);
-		attachmentDesc.m_storeOp = translateStoreOp(attachment.m_storeOp);
-		attachmentDesc.m_stencilLoadOp = translateLoadOp(attachment.m_stencilLoadOp);
-		attachmentDesc.m_stencilStoreOp = translateStoreOp(attachment.m_stencilStoreOp);
+		attachmentDesc.m_loadOp = UtilityVk::translate(attachment.m_loadOp);
+		attachmentDesc.m_storeOp = UtilityVk::translate(attachment.m_storeOp);
+		attachmentDesc.m_stencilLoadOp = UtilityVk::translate(attachment.m_stencilLoadOp);
+		attachmentDesc.m_stencilStoreOp = UtilityVk::translate(attachment.m_stencilStoreOp);
 		attachmentDesc.m_layout = attachment.m_readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		const auto &viewDesc = attachment.m_imageView->getDescription();
 
 		auto &fbAttachInfo = fbAttachmentInfoVk[attachmentCount];
 		fbAttachInfo = {};
-		fbAttachInfo.m_flags = static_cast<VkImageCreateFlags>(imageDesc.m_createFlags);
-		fbAttachInfo.m_usage = static_cast<VkImageUsageFlags>(imageDesc.m_usageFlags);
+		fbAttachInfo.m_flags = UtilityVk::translateImageCreateFlags(imageDesc.m_createFlags);
+		fbAttachInfo.m_usage = UtilityVk::translateImageUsageFlags(imageDesc.m_usageFlags);
 		fbAttachInfo.m_width = imageDesc.m_width;
 		fbAttachInfo.m_height = imageDesc.m_height;
 		fbAttachInfo.m_layerCount = viewDesc.m_layerCount;
@@ -683,13 +659,13 @@ void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount,
 			framebufferWidth = renderArea.m_offset.m_x + renderArea.m_extent.m_width;
 			framebufferHeight = renderArea.m_offset.m_y + renderArea.m_extent.m_height;
 		}
-	
+
 		FramebufferDescriptionVk framebufferDescription;
 		framebufferDescription.setRenderPass(renderPass);
 		framebufferDescription.setAttachments(attachmentCount, fbAttachmentInfoVk);
 		framebufferDescription.setExtent(framebufferWidth, framebufferHeight, 1);
 		framebufferDescription.finalize();
-	
+
 		framebuffer = m_device->getFramebuffer(framebufferDescription);
 	}
 
