@@ -47,6 +47,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	consts.prevViewMatrix = commonData->m_prevViewMatrix;
 	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
 	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
+	consts.volumeResResultRes = glm::vec4(160.0f, 90.0f, commonData->m_width, commonData->m_height);
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;
 	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };

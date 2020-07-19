@@ -27,6 +27,7 @@ struct Constants
 	float4x4 prevViewMatrix;
 	float4x4 prevProjMatrix;
 	float4 reprojectedTexCoordScaleBias;
+	float4 volumeResResultRes;
 	float3 frustumCornerTL;
 	float jitterX;
 	float3 frustumCornerTR;

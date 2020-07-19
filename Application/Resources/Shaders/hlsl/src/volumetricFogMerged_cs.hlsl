@@ -139,7 +139,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(threadID.xy * 8, targetImageWidth, wordCount);
+		const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -211,7 +211,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			const uint address = getTileAddress(threadID.xy * 8, targetImageWidth, wordCount);
+			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
@@ -247,7 +247,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			const uint address = getTileAddress(threadID.xy * 8, targetImageWidth, wordCount);
+			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
@@ -356,7 +356,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
 		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
 		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
-		prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
+		//prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
 		float4 prevResult = 0.0;

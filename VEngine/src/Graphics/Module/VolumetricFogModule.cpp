@@ -51,8 +51,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 {
 	auto &commonData = *data.m_commonData;
 
-	const uint32_t imageWidth = (m_width + 7) / 8;
-	const uint32_t imageHeight = (m_height + 7) / 8;
+	const uint32_t imageWidth = 160;// (m_width + 7) / 8;
+	const uint32_t imageHeight = 90;// (m_height + 7) / 8;
 	const uint32_t imageDepth = 64;
 
 	rg::ImageViewHandle scatteringImageViewHandle;
@@ -132,8 +132,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 	// we may need to expand the frustum a little to the right and a little downwards, so that each froxel corresponds
 	// exactly to a single tile from the tiled lighting setup
-	const float overSizeX = imageWidth * 8.0f / m_width - 1.0f;
-	const float overSizeY = imageHeight * 8.0f / m_height - 1.0f;
+	const float overSizeX = 0.0f;// imageWidth * 8.0f / m_width - 1.0f;
+	const float overSizeY = 0.0f;//imageHeight * 8.0f / m_height - 1.0f;
 
 	auto proj = glm::perspective(commonData.m_fovy, m_width / float(m_height), commonData.m_nearPlane, 64.0f);
 	auto invViewProj = glm::inverse(proj * commonData.m_viewMatrix);
@@ -359,8 +359,8 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 		}
 	}
 
-	const uint32_t imageWidth = (m_width + 7) / 8;
-	const uint32_t imageHeight = (m_height + 7) / 8;
+	const uint32_t imageWidth = 160;// (m_width + 7) / 8;
+	const uint32_t imageHeight = 90;// (m_height + 7) / 8;
 	const uint32_t imageDepth = 64;
 
 	ImageCreateInfo imageCreateInfo{};

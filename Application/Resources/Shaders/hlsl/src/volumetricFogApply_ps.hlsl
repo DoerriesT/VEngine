@@ -85,7 +85,7 @@ float4 main(PSInput input) : SV_Target0
 	g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 	float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
 	
-	float3 volumetricFogTexCoord = float3(input.position.xy * scaledFogImageTexelSize, d);
+	float3 volumetricFogTexCoord = float3(input.texCoord/*input.position.xy * scaledFogImageTexelSize*/, d);
 	
 	float4 fog = 0.0;
 	
