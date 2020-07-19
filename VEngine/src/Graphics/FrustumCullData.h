@@ -23,9 +23,10 @@ namespace VEngine
 		uint32_t m_planeCount;
 		uint32_t m_renderListIndex;
 		uint32_t m_contentTypeFlags;
+		glm::vec4 m_viewMatrixDepthRow;
 		float m_depthRange;
 
 		FrustumCullData() = default;
-		explicit FrustumCullData(const glm::mat4 &matrix, uint32_t planeCount, uint32_t renderListIndex, uint32_t flags, float depthRange);
+		explicit FrustumCullData(const glm::mat4 &matrix, uint32_t planeCount, uint32_t renderListIndex, uint32_t flags, const glm::vec4 viewMatrixDepthRow, float depthRange);
 	};
 }

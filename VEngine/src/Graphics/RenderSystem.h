@@ -74,6 +74,6 @@ namespace VEngine
 		uint32_t m_swapChainHeight;
 
 		void updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles);
-		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices, glm::vec4 *cascadeParams);
+		void calculateCascadeViewProjectionMatrices(const glm::vec3 &lightDir, float maxShadowDistance, float splitLambda, float shadowTextureSize, size_t cascadeCount, glm::mat4 *viewProjectionMatrices, glm::vec4 *cascadeParams, glm::vec4 *viewMatrixDepthRows);
 	};
 }

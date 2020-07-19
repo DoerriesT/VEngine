@@ -152,28 +152,29 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 			data.m_internalData->m_rendered = true;
 			++probeRenderCount;
 
-			glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
-			glm::mat4 matrices[6];
-			matrices[0] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			matrices[1] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			matrices[2] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-			matrices[3] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			matrices[4] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			matrices[5] = projection * glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 viewMatrices[6];
+			viewMatrices[0] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			viewMatrices[1] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			viewMatrices[2] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+			viewMatrices[3] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			viewMatrices[4] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			viewMatrices[5] = glm::lookAtLH(data.m_capturePosition, data.m_capturePosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 			m_probeMatrices.reserve(m_probeMatrices.size() + 6);
 
+			glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
 			for (size_t i = 0; i < 6; ++i)
 			{
+				glm::mat4 shadowMatrix = projection * viewMatrices[i];
 				// extract view frustum plane equations from matrix
 				{
 					uint32_t contentTypeFlags = FrustumCullData::STATIC_OPAQUE_CONTENT_TYPE_BIT | FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-					FrustumCullData cullData(matrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 20.0f);
+					FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(viewMatrices[i][0][2], viewMatrices[i][1][2], viewMatrices[i][2][2], viewMatrices[i][3][2]), 20.0f);
 
 					frustumCullData.push_back(cullData);
 					renderLists.push_back({});
 				}
-				m_probeMatrices.push_back(matrices[i]);
+				m_probeMatrices.push_back(shadowMatrix);
 			}
 		}
 

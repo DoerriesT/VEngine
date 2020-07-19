@@ -1,9 +1,10 @@
 #include "FrustumCullData.h"
 
-VEngine::FrustumCullData::FrustumCullData(const glm::mat4 &matrix, uint32_t planeCount, uint32_t renderListIndex, uint32_t flags, float depthRange)
+VEngine::FrustumCullData::FrustumCullData(const glm::mat4 &matrix, uint32_t planeCount, uint32_t renderListIndex, uint32_t flags, const glm::vec4 viewMatrixDepthRow, float depthRange)
 	:m_planeCount(planeCount),
 	m_renderListIndex(renderListIndex),
 	m_contentTypeFlags(flags),
+	m_viewMatrixDepthRow(viewMatrixDepthRow),
 	m_depthRange(depthRange)
 {
 	glm::mat4 proj = glm::transpose(matrix);

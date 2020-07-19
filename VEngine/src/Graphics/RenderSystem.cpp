@@ -119,7 +119,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		// extract view frustum plane equations from matrix
 		{
-			FrustumCullData cullData(m_commonRenderData.m_jitteredViewProjectionMatrix, 6, 0, FrustumCullData::ALL_CONTENT_TYPE_BIT, m_commonRenderData.m_farPlane - m_commonRenderData.m_nearPlane);
+			FrustumCullData cullData(m_commonRenderData.m_jitteredViewProjectionMatrix, 6, 0, FrustumCullData::ALL_CONTENT_TYPE_BIT, 
+				glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]), 
+				m_commonRenderData.m_farPlane - m_commonRenderData.m_nearPlane);
 			frustumCullData.push_back(cullData);
 			renderLists.push_back({});
 		}
@@ -171,6 +173,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 							// calculate shadow matrices
 							glm::mat4 shadowMatrices[DirectionalLightComponent::MAX_CASCADES];
 							glm::vec4 cascadeParams[DirectionalLightComponent::MAX_CASCADES];
+							glm::vec4 depthRows[DirectionalLightComponent::MAX_CASCADES];
 
 							for (uint32_t i = 0; i < directionalLightComponent.m_cascadeCount; ++i)
 							{
@@ -184,7 +187,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 								2048.0f,
 								directionalLightComponent.m_cascadeCount,
 								shadowMatrices,
-								cascadeParams);
+								cascadeParams,
+								depthRows);
 
 							m_shadowMatrices.reserve(m_shadowMatrices.size() + directionalLightComponent.m_cascadeCount);
 							m_shadowCascadeParams.reserve(m_shadowCascadeParams.size() + directionalLightComponent.m_cascadeCount);
@@ -200,7 +204,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 										| FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
 										| FrustumCullData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
 										| FrustumCullData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-									FrustumCullData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 300.0f);
+									FrustumCullData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, depthRows[i], 300.0f);
 
 									frustumCullData.push_back(cullData);
 									renderLists.push_back({});
@@ -260,7 +264,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								// extract view frustum plane equations from matrix
 								{
 									uint32_t contentTypeFlags = FrustumCullData::STATIC_OPAQUE_CONTENT_TYPE_BIT | FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-									FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, 300.0f);
+									FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(lightView[0][2], lightView[1][2], lightView[2][2], lightView[3][2]), 300.0f);
 
 									frustumCullData.push_back(cullData);
 									renderLists.push_back({});
@@ -342,14 +346,13 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						if ((renderLists.size() + 6) < 256 && pointLightComponent.m_shadows && shadowMapAllocationSucceeded)
 						{
-							glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
-							glm::mat4 shadowMatrices[6];
-							shadowMatrices[0] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-							shadowMatrices[1] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-							shadowMatrices[2] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-							shadowMatrices[3] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-							shadowMatrices[4] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-							shadowMatrices[5] = projection * glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							glm::mat4 viewMatrices[6];
+							viewMatrices[0] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							viewMatrices[1] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							viewMatrices[2] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+							viewMatrices[3] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+							viewMatrices[4] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+							viewMatrices[5] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
 							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
@@ -375,17 +378,19 @@ void VEngine::RenderSystem::update(float timeDelta)
 							}
 							
 
+							glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
 							for (size_t i = 0; i < 6; ++i)
 							{
 								// make sure the shadow map has a small border to account for filtering
 								constexpr uint32_t texelBorderSize = 4;
 								const float scale = (atlasDrawInfo[i].m_size - texelBorderSize * 2) / static_cast<float>(atlasDrawInfo[i].m_size);
-								shadowMatrices[i] = glm::scale(glm::vec3(scale, scale, 1.0f)) * shadowMatrices[i];
+								glm::mat4 shadowMatrix = projection * viewMatrices[i];
+								shadowMatrix = glm::scale(glm::vec3(scale, scale, 1.0f)) * shadowMatrix;
 
 								atlasDrawInfo[i].m_shadowMatrixIdx = static_cast<uint32_t>(m_shadowMatrices.size());
 								atlasDrawInfo[i].m_drawListIdx = static_cast<uint32_t>(renderLists.size());
 
-								m_shadowMatrices.push_back(shadowMatrices[i]);
+								m_shadowMatrices.push_back(shadowMatrix);
 
 								// extract view frustum plane equations from matrix
 								{
@@ -393,7 +398,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 										| FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
 										| FrustumCullData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
 										| FrustumCullData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-									FrustumCullData cullData(shadowMatrices[i], 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, pointLightComponent.m_radius);
+									FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(viewMatrices[i][0][2], viewMatrices[i][1][2], viewMatrices[i][2][2], viewMatrices[i][3][2]), pointLightComponent.m_radius);
 
 									frustumCullData.push_back(cullData);
 									renderLists.push_back({});
@@ -512,8 +517,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 							constexpr uint32_t texelBorderSize = 4;
 							const float scale = (tileSize - texelBorderSize * 2) / static_cast<float>(tileSize);
 
-							glm::mat4 shadowMatrix = glm::scale(glm::vec3(scale, scale, 1.0f)) * glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius)
-								* glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + directionWS, upDir);
+							glm::mat4 viewMat = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + directionWS, upDir);
+							glm::mat4 shadowMatrix = glm::scale(glm::vec3(scale, scale, 1.0f)) * glm::perspective(spotLightComponent.m_outerAngle, 1.0f, 0.1f, spotLightComponent.m_radius) * viewMat;
 
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
 							punctualLightShadowed.m_shadowMatrix0 = { shadowMatrix[0][0], shadowMatrix[1][0], shadowMatrix[2][0], shadowMatrix[3][0] };
@@ -566,7 +571,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 									| FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT
 									| FrustumCullData::DYNAMIC_OPAQUE_CONTENT_TYPE_BIT
 									| FrustumCullData::DYNAMIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-								FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, spotLightComponent.m_radius);
+								FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(viewMat[0][2], viewMat[1][2], viewMat[2][2], viewMat[3][2]), spotLightComponent.m_radius);
 
 								frustumCullData.push_back(cullData);
 								renderLists.push_back({});
@@ -845,7 +850,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 								auto createMask = [](uint32_t size) {return size == 64 ? ~uint64_t() : (uint64_t(1) << size) - 1; };
 
-								const uint32_t depth = 0;// (0.0f / planes.m_depthRange) * createMask(22);
+								float viewSpaceDepth = -glm::dot(cullData.m_viewMatrixDepthRow, glm::vec4(boundingSpherePos, 1.0f));
+								const uint32_t depth = 0;// (1.0f - glm::clamp(viewSpaceDepth / cullData.m_depthRange, 0.0f, 1.0f)) *createMask(22);
 
 								// key:
 								// [drawListIdx 8][type 2][depth 22][instanceIdx 32]
@@ -1081,7 +1087,8 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 	float shadowTextureSize,
 	size_t cascadeCount,
 	glm::mat4 *viewProjectionMatrices,
-	glm::vec4 *cascadeParams)
+	glm::vec4 *cascadeParams,
+	glm::vec4 *viewMatrixDepthRows)
 {
 	float splits[DirectionalLightComponent::MAX_CASCADES];
 
@@ -1148,7 +1155,7 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		lightView[3].y -= fmodf(lightView[3].y, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
 		lightView[3].z -= fmodf(lightView[3].z, depthRange / precisionRange);
 
-
+		viewMatrixDepthRows[i] = glm::vec4(lightView[0][2], lightView[1][2], lightView[2][2], lightView[3][2]);
 
 		viewProjectionMatrices[i] = glm::ortho(-radius, radius, -radius, radius, 0.0f, depthRange) * lightView;
 
