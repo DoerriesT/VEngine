@@ -25,7 +25,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		//{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
@@ -68,6 +68,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
 	consts.ignoreHistory = data.m_ignoreHistory;
 	consts.alpha = g_fogHistoryAlpha;
+	consts.checkerBoardCondition = (commonData->m_frame & 1) ? 1 : 0;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
@@ -87,7 +88,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
-				ImageView *historyImageView = registry.getImageView(data.m_historyImageViewHandle);
+				//ImageView *historyImageView = registry.getImageView(data.m_historyImageViewHandle);
 				ImageView *shadowImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
 				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
@@ -99,7 +100,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
+					//Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowImageView, SHADOW_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
 					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),

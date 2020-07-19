@@ -106,7 +106,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	dither = g_Constants.useDithering != 0 ? dither : 0.0;
 	
-	const float3 worldSpacePos = calcWorldSpacePos(threadID + float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither)));
+	float3 texelCoord = threadID;
+	texelCoord.z *= 2.0;
+	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
+	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither));
+	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
 	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
 
 	uint3 imageDims;
@@ -347,29 +351,29 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	result.rgb *= asfloat(g_ExposureData.Load(0));
 	
 	// reproject and combine with previous result from previous frame
-	if (g_Constants.ignoreHistory == 0)
-	{
-		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
-		
-		float z = length(prevViewSpacePos.xyz);
-		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-
-		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
-		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
-		//prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
-		
-		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
-		float4 prevResult = 0.0;
-		if (validCoord)
-		{
-			prevResult = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
-			
-			// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
-			prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
-		}
-		
-		result = lerp(prevResult, result, validCoord ? g_Constants.alpha : 1.0);
-	}
+	//if (g_Constants.ignoreHistory == 0)
+	//{
+	//	float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
+	//	
+	//	float z = length(prevViewSpacePos.xyz);
+	//	float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
+	//
+	//	float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
+	//	float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
+	//	//prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
+	//	
+	//	bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
+	//	float4 prevResult = 0.0;
+	//	if (validCoord)
+	//	{
+	//		prevResult = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+	//		
+	//		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
+	//		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
+	//	}
+	//	
+	//	result = lerp(prevResult, result, validCoord ? g_Constants.alpha : 1.0);
+	//}
 	
 	g_ResultImage[threadID] = result;
 }

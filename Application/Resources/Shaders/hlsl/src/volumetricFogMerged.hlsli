@@ -48,4 +48,5 @@ struct Constants
 	uint localMediaCount;
 	uint ignoreHistory;
 	float alpha;
+	uint checkerBoardCondition;
 };

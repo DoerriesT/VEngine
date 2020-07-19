@@ -3,6 +3,7 @@
 #include "Graphics/Pass/VolumetricFogScatterPass.h"
 #include "Graphics/Pass/VolumetricFogMergedPass.h"
 #include "Graphics/Pass/VolumetricFogFilterPass.h"
+#include "Graphics/Pass/VolumetricFogFilterPass2.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
 #include "Graphics/Pass/VolumetricFogExtinctionVolumePass.h"
 #include "Graphics/Pass/VolumetricRaymarchPass.h"
@@ -57,6 +58,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 	rg::ImageViewHandle scatteringImageViewHandle;
 	rg::ImageViewHandle prevScatteringImageViewHandle;
+	rg::ImageViewHandle checkerboardImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
 		desc.m_clear = false;
@@ -72,6 +74,10 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 		desc.m_name = "Volumetric Fog Integrated Scattering Image";
 		m_volumetricScatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+
+		desc.m_name = "Volumetric Fog Checkerboard Scattering Image";
+		desc.m_depth /= 2;
+		checkerboardImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 
 		rg::ImageHandle scatteringImageHandle = graph.importImage(m_scatteringImages[commonData.m_curResIdx], "Volumetric Fog Scattering Image", false, {}, &m_scatteringImageState[commonData.m_curResIdx]);
 		scatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Scattering Image", scatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
@@ -224,7 +230,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_punctualLightsBitMaskBufferHandle = data.m_punctualLightsBitMaskBufferHandle;
 	volumetricFogMergedPassData.m_punctualLightsShadowedBitMaskBufferHandle = data.m_punctualLightsShadowedBitMaskBufferHandle;
 	volumetricFogMergedPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
-	volumetricFogMergedPassData.m_resultImageViewHandle = scatteringImageViewHandle;
+	volumetricFogMergedPassData.m_resultImageViewHandle = checkerboardImageViewHandle;
 	volumetricFogMergedPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
 	volumetricFogMergedPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
 	volumetricFogMergedPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
@@ -236,6 +242,19 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_localMediaBitMaskBufferHandle = data.m_localMediaBitMaskBufferHandle;
 
 	VolumetricFogMergedPass::addToGraph(graph, volumetricFogMergedPassData);
+
+
+	// volumetric fog temporal filter
+	VolumetricFogFilterPass2::Data volumetricFogFilterPass2Data;
+	volumetricFogFilterPass2Data.m_passRecordContext = data.m_passRecordContext;
+	volumetricFogFilterPass2Data.m_ignoreHistory = data.m_ignoreHistory;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPass2Data.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	volumetricFogFilterPass2Data.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
+	volumetricFogFilterPass2Data.m_resultImageViewHandle = scatteringImageViewHandle;
+	volumetricFogFilterPass2Data.m_inputImageViewHandle = checkerboardImageViewHandle;
+	volumetricFogFilterPass2Data.m_historyImageViewHandle = prevScatteringImageViewHandle;
+	
+	VolumetricFogFilterPass2::addToGraph(graph, volumetricFogFilterPass2Data);
 
 
 	//// volumetric fog temporal filter
