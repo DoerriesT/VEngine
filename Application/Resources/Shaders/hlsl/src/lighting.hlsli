@@ -4,6 +4,10 @@
 #include "common.hlsli"
 #include "shadingModel.hlsli"
 
+#ifndef SKIP_DERIVATIVES_FUNCTIONS
+#define SKIP_DERIVATIVES_FUNCTIONS 0
+#endif // SKIP_DERIVATIVES_FUNCTIONS
+
 struct LightingParams
 {
 	float3 albedo;
@@ -156,6 +160,7 @@ float2 sampleCube(float3 dir, out int faceIndex)
 	return uv * ma + 0.5;
 }
 
+#if !SKIP_DERIVATIVES_FUNCTIONS
 // based on http://www.thetenthplanet.de/archives/1180
 float3x3 calculateTBN(float3 N, float3 p, float2 uv)
 {
@@ -164,6 +169,27 @@ float3x3 calculateTBN(float3 N, float3 p, float2 uv)
     float3 dp2 = ddy(p);
     float2 duv1 = ddx(uv);
     float2 duv2 = ddy(uv);
+ 
+    // solve the linear system
+    float3 dp2perp = cross(dp2, N);
+    float3 dp1perp = cross(N, dp1);
+    float3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+    // construct a scale-invariant frame 
+    float invmax = rsqrt( max( dot(T,T), dot(B,B) ) );
+    return float3x3(T * invmax, B * invmax, N);
+}
+#endif // SKIP_DERIVATIVES_FUNCTIONS
+
+// based on http://www.thetenthplanet.de/archives/1180
+float3x3 calculateTBN(float3 N, float3 pddx, float3 pddy, float2 uvddx, float2 uvddy)
+{
+    // get edge vectors of the pixel triangle
+    float3 dp1 = pddx;
+    float3 dp2 = pddy;
+    float2 duv1 = uvddx;
+    float2 duv2 = uvddy;
  
     // solve the linear system
     float3 dp2perp = cross(dp2, N);

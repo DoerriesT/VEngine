@@ -37,6 +37,9 @@
 #include "Pass/SwapChainCopyPass.h"
 #include "Pass/ApplyIndirectLightingPass.h"
 #include "Pass/VolumetricFogApplyPass2.h"
+#include "Pass/VisibilityBufferPass.h"
+#include "Pass/ShadeVisibilityBufferPass.h"
+#include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -249,6 +252,39 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// create graph managed resources
+	rg::ImageViewHandle triangleImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Triangle Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::R8G8B8A8_UNORM;
+
+		triangleImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+	}
+
+	rg::ImageViewHandle triangleDepthBufferImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Triangle Depth Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = m_width;
+		desc.m_height = m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::D32_SFLOAT;
+
+		triangleDepthBufferImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
+	}
+
+
 	rg::ImageViewHandle normalRoughnessImageViewHandle;
 	{
 		rg::ImageDescription desc = {};
@@ -603,6 +639,24 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	rg::ImageViewHandle depthPyramidImageViewHandle = hiZMinPyramidPassOutData.m_resultImageViewHandle;
 
 
+
+	// visibility buffer
+	VisibilityBufferPass::Data visibilityBufferPassData;
+	visibilityBufferPassData.m_passRecordContext = &passRecordContext;
+	visibilityBufferPassData.m_opaqueInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	visibilityBufferPassData.m_opaqueInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	visibilityBufferPassData.m_maskedInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+	visibilityBufferPassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+	visibilityBufferPassData.m_instanceData = sortedInstanceData.data();
+	visibilityBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	visibilityBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	visibilityBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	visibilityBufferPassData.m_triangleImageHandle = triangleImageViewHandle;
+	visibilityBufferPassData.m_depthImageHandle = triangleDepthBufferImageViewHandle;
+
+	VisibilityBufferPass::addToGraph(graph, visibilityBufferPassData);
+
+
 	// depth prepass
 	DepthPrepassPass::Data depthPrePassData;
 	depthPrePassData.m_passRecordContext = &passRecordContext;
@@ -803,6 +857,64 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_fomImageViewHandle = fomImageViewHandle;
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
+
+
+	//// shade visibility buffer
+	//ShadeVisibilityBufferPass::Data shadeVisBufferPassData;
+	//shadeVisBufferPassData.m_passRecordContext = &passRecordContext;
+	//shadeVisBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
+	//shadeVisBufferPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
+	//shadeVisBufferPassData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
+	//shadeVisBufferPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
+	//shadeVisBufferPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
+	//shadeVisBufferPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
+	//shadeVisBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	//shadeVisBufferPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//shadeVisBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//shadeVisBufferPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size };
+	//shadeVisBufferPassData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size };
+	//shadeVisBufferPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
+	//shadeVisBufferPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	//shadeVisBufferPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	//shadeVisBufferPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	//shadeVisBufferPassData.m_resultImageViewHandle = lightImageViewHandle;
+	//shadeVisBufferPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	//shadeVisBufferPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
+	//shadeVisBufferPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
+	//shadeVisBufferPassData.m_fomImageViewHandle = fomImageViewHandle;
+	//shadeVisBufferPassData.m_triangleImageViewHandle = triangleImageViewHandle;
+	//
+	//ShadeVisibilityBufferPass::addToGraph(graph, shadeVisBufferPassData);
+
+
+	//// shade visibility buffer PS
+	//ShadeVisibilityBufferPassPS::Data shadeVisBufferPassPSData;
+	//shadeVisBufferPassPSData.m_passRecordContext = &passRecordContext;
+	//shadeVisBufferPassPSData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
+	//shadeVisBufferPassPSData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
+	//shadeVisBufferPassPSData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
+	//shadeVisBufferPassPSData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
+	//shadeVisBufferPassPSData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
+	//shadeVisBufferPassPSData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
+	//shadeVisBufferPassPSData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	//shadeVisBufferPassPSData.m_instanceDataBufferInfo = instanceDataBufferInfo;
+	//shadeVisBufferPassPSData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size };
+	//shadeVisBufferPassPSData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size };
+	//shadeVisBufferPassPSData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
+	//shadeVisBufferPassPSData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	//shadeVisBufferPassPSData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
+	//shadeVisBufferPassPSData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
+	//shadeVisBufferPassPSData.m_resultImageViewHandle = lightImageViewHandle;
+	//shadeVisBufferPassPSData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
+	//shadeVisBufferPassPSData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
+	//shadeVisBufferPassPSData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
+	//shadeVisBufferPassPSData.m_fomImageViewHandle = fomImageViewHandle;
+	//shadeVisBufferPassPSData.m_triangleImageViewHandle = triangleImageViewHandle;
+	//shadeVisBufferPassPSData.m_depthImageViewHandle = triangleDepthBufferImageViewHandle;
+	//
+	//ShadeVisibilityBufferPassPS::addToGraph(graph, shadeVisBufferPassPSData);
+
 
 	// Hi-Z nearest depth pyramid
 	HiZPyramidPass::OutData hiZMaxPyramidPassOutData;

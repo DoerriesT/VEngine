@@ -1,8 +1,9 @@
 #include "bindingHelper.hlsli"
-#include "forward.hlsli"
+#include "shadeVisibilityBuffer.hlsli"
 #include "packing.hlsli"
 #include "common.hlsli"
 #define SPECULAR_AA 1
+#define SKIP_DERIVATIVES_FUNCTIONS 1
 #include "lighting.hlsli"
 #include "srgb.hlsli"
 #include "commonFilter.hlsli"
@@ -13,24 +14,43 @@
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
 
-struct PSInput
+
+struct SurfaceData
 {
-	float4 position : SV_Position;
-	float2 texCoord : TEXCOORD;
-	float3 normal : NORMAL;
-	float4 worldPos : WORLD_POSITION;
-	nointerpolation uint materialIndex : MATERIAL_INDEX;
+	float3 position;
+	float3 normal;
+	float2 texCoord;
+	uint materialIndex;
+	float2 texCoordDdx;
+	float2 texCoordDdy;
+	float3 positionDdx;
+	float3 positionDdy;
 };
 
-struct PSOutput
+struct SubMeshInfo
 {
-	float4 color : SV_Target0;
-	float4 normalRoughness : SV_Target1;
-	float4 albedoMetalness : SV_Target2;
+	uint indexCount;
+	uint firstIndex;
+	int vertexOffset;
 };
+
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+RWTexture2D<float4> g_NormalRoughnessImage : REGISTER_UAV(NORMAL_ROUGHNESS_IMAGE_BINDING, 0);
+RWTexture2D<float4> g_AlbedoMetalnessImage : REGISTER_UAV(ALBEDO_METALNESS_IMAGE_BINDING, 0);
 
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
 StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
+
+Texture2D<float4> g_TriangleImage : REGISTER_SRV(TRIANGLE_IMAGE_BINDING, 0);
+StructuredBuffer<float4x4> g_TransformMatrices : REGISTER_SRV(TRANSFORM_DATA_BINDING, 0);
+StructuredBuffer<float> g_Positions : REGISTER_SRV(VERTEX_POSITIONS_BINDING, 0);
+StructuredBuffer<float> g_Normals : REGISTER_SRV(VERTEX_NORMALS_BINDING, 0);
+StructuredBuffer<float> g_TexCoords : REGISTER_SRV(VERTEX_TEXCOORDS_BINDING, 0);
+StructuredBuffer<uint> g_IndicexBuffer : REGISTER_SRV(INDEX_BUFFER_BINDING, 0);
+StructuredBuffer<SubMeshInstanceData> g_InstanceData : REGISTER_SRV(INSTANCE_DATA_BINDING, 0);
+StructuredBuffer<SubMeshInfo> g_SubMeshInfo : REGISTER_SRV(SUB_MESH_DATA_BINDING, 0);
+
+
 Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
@@ -57,41 +77,147 @@ ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGH
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
 
-float raymarch(const float3 origin, const float3 dst)
+
+SurfaceData loadVertex(uint index)
 {
-	const int NUM_STEPS = 16;
-	
-	float3 dir = normalize(dst - origin);
-	float stepSize = distance(origin, dst) / float(NUM_STEPS);
-	
-	float accumulatedTransmittance = 1.0;
-	for (int i = 0; i <= NUM_STEPS; ++i)
-	{
-		float3 coord = (origin + dir * stepSize * i) * g_Constants.coordScale + g_Constants.coordBias;
-		coord *= g_Constants.extinctionVolumeTexelSize;
-		
-		if (all(coord >= 0.0) && all(coord < 1.0))
-		{
-			float extinction = g_ExtinctionImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], coord, 0.0).x;
-			
-			extinction = max(extinction, 1e-5);
-			float transmittance = exp(-extinction * stepSize);
-			accumulatedTransmittance *= transmittance;
-		}
-	}
-	
-	return accumulatedTransmittance;
+	SurfaceData result = (SurfaceData)0;
+	result.position = float3(g_Positions[index * 3 + 0], g_Positions[index * 3 + 1], g_Positions[index * 3 + 2]);
+	result.normal = float3(g_Normals[index * 3 + 0], g_Normals[index * 3 + 1], g_Normals[index * 3 + 2]);
+	result.texCoord = float2(g_TexCoords[index * 2 + 0], g_TexCoords[index * 2 + 1]);
+	return result;
 }
 
-[earlydepthstencil]
-PSOutput main(PSInput input)
+float __dot3(float3 a, float3 b)
+{ 
+	return mad(a.x, b.x, mad(a.y, b.y, a.z*b.z));
+}
+
+float3 __cross3(float3 a, float3 b)
+{ 
+	return mad(a, b.yzx, -a.yzx * b).yzx;
+}
+
+float3 intersectTriangle(float3 p0, float3 p1, float3 p2, float3 o, float3 d)
 {
-	const MaterialData materialData = g_MaterialData[input.materialIndex];
+   float3 eo =  o - p0;
+   float3 e2 = p2 - p0;
+   float3 e1 = p1 - p0;
+   float3 r  = __cross3(d, e2);
+   float3 s  = __cross3(eo, e1);
+   float iV  = 1.0f / __dot3(r, e1);
+   float V1  = __dot3(r, eo);
+   float V2  = __dot3(s,  d);
+   float b   = V1 * iV;
+   float c   = V2 * iV;
+   float a   = 1.0f - b - c;
+   return float3(a, b, c);
+}
+
+SurfaceData computeSurfaceData(uint triangleData, int2 pixelCoord)
+{
+	uint instanceID = triangleData >> 16;
+	
+	SubMeshInstanceData instanceData = g_InstanceData[instanceID];
+	
+	uint triangleID = triangleData & 0xFFFF;
+	
+	SubMeshInfo submeshInfo = g_SubMeshInfo[instanceData.subMeshIndex];
+	
+	uint indexBaseOffset = submeshInfo.firstIndex + triangleID * 3;
+	bool lower = (indexBaseOffset & 1) == 0;
+	indexBaseOffset /= 2;
+	uint indices16_0 = g_IndicexBuffer[indexBaseOffset + 0];
+	uint indices16_1 = g_IndicexBuffer[indexBaseOffset + 1];
+	
+	// get indices from packed 16bit indices
+	uint index0 = submeshInfo.vertexOffset + (lower ? (indices16_0 & 0xFFFF) : (indices16_0 >> 16));
+	uint index1 = submeshInfo.vertexOffset + (lower ? (indices16_0 >> 16) : (indices16_1 & 0xFFFF));
+	uint index2 = submeshInfo.vertexOffset + (lower ? (indices16_1 & 0xFFFF) : (indices16_1 >> 16));
+	
+	SurfaceData v0 = loadVertex(index0);
+	SurfaceData v1 = loadVertex(index1);
+	SurfaceData v2 = loadVertex(index2);
+
+	const float4x4 modelMatrix = g_TransformMatrices[instanceData.transformIndex];
+	float3 p0;// = mul(modelMatrix, float4(v0.position, 1.0));
+	p0.x = dot(modelMatrix._m00_m10_m20_m30, float4(v0.position, 1.0));
+	p0.y = dot(modelMatrix._m01_m11_m21_m31, float4(v0.position, 1.0));
+	p0.z = dot(modelMatrix._m02_m12_m22_m32, float4(v0.position, 1.0));
+	float3 p1;// = mul(modelMatrix, float4(v1.position, 1.0));
+	p1.x = dot(modelMatrix._m00_m10_m20_m30, float4(v1.position, 1.0));
+	p1.y = dot(modelMatrix._m01_m11_m21_m31, float4(v1.position, 1.0));
+	p1.z = dot(modelMatrix._m02_m12_m22_m32, float4(v1.position, 1.0));
+	float3 p2;// = mul(modelMatrix, float4(v2.position, 1.0));
+	p2.x = dot(modelMatrix._m00_m10_m20_m30, float4(v2.position, 1.0));
+	p2.y = dot(modelMatrix._m01_m11_m21_m31, float4(v2.position, 1.0));
+	p2.z = dot(modelMatrix._m02_m12_m22_m32, float4(v2.position, 1.0));
+	
+	float3 cameraPosWS = float3(g_Constants.cameraPosWSX, g_Constants.cameraPosWSY, g_Constants.cameraPosWSZ);
+	
+	float3 d = g_Constants.frustumDirDeltaX * (pixelCoord.x + 0.5)
+			+ g_Constants.frustumDirDeltaY * (pixelCoord.y + 0.5)
+			+ g_Constants.frustumDirTL;
+	
+	// barycentric coordinates
+	float3 H = intersectTriangle(p0.xyz, p1.xyz, p2.xyz, cameraPosWS, d);
+	
+	SurfaceData result = (SurfaceData)0;
+	result.position = mad(p0.xyz, H.x, mad(p1.xyz, H.y, (p2.xyz * H.z)));
+	result.normal = mad(v0.normal, H.x, mad(v1.normal, H.y, (v2.normal * H.z)));
+	result.normal = mul((float3x3)g_Constants.viewMatrix, mul((float3x3)modelMatrix, result.normal));
+	result.texCoord = mad(v0.texCoord,  H.x, mad(v1.texCoord,  H.y, (v2.texCoord  * H.z)));
+
+	// derivatives
+	float3 dx = g_Constants.frustumDirDeltaX * (pixelCoord.x + 1.5)
+			+ g_Constants.frustumDirDeltaY * (pixelCoord.y + 0.5)
+			+ g_Constants.frustumDirTL;
+	
+	float3 dy = g_Constants.frustumDirDeltaX * (pixelCoord.x + 0.5)
+			+ g_Constants.frustumDirDeltaY * (pixelCoord.y + 1.5)
+			+ g_Constants.frustumDirTL;
+	
+	float3 Hx = intersectTriangle(p0.xyz, p1.xyz, p2.xyz, cameraPosWS, dx);
+	float3 Hy = intersectTriangle(p0.xyz, p1.xyz, p2.xyz, cameraPosWS, dy);
+	
+	float2 tCoordDX = mad(v0.texCoord.xy, Hx.x, mad(v1.texCoord.xy, Hx.y, (v2.texCoord.xy * Hx.z)));
+	float2 tCoordDY = mad(v0.texCoord.xy, Hy.x, mad(v1.texCoord.xy, Hy.y, (v2.texCoord.xy * Hy.z)));
+	result.texCoordDdx = result.texCoord - tCoordDX;
+	result.texCoordDdy = result.texCoord - tCoordDY;
+	
+	float3 posDX = mad(p0.xyz, Hx.x, mad(p1.xyz, Hx.y, (p2.xyz * Hx.z)));
+	float3 posDY = mad(p0.xyz, Hy.x, mad(p1.xyz, Hy.y, (p2.xyz * Hy.z)));
+	result.positionDdx = result.position - posDX;
+	result.positionDdy = result.position - posDY;
+	
+	result.materialIndex = instanceData.materialIndex;
+	
+	return result;
+}
+
+
+[numthreads(8, 8, 1)]
+void main(uint3 threadID : SV_DispatchThreadID)
+{
+	if (threadID.x >= g_Constants.width || threadID.y >= g_Constants.height)
+	{
+		return;
+	}
+
+	uint triangleData = packUnorm4x8(g_TriangleImage.Load(uint3(threadID.xy, 0)));
+	
+	if (triangleData == ~0u)
+	{
+		return;
+	}
+	
+	SurfaceData surfaceData = computeSurfaceData(triangleData, threadID.xy);
+	
+	const MaterialData materialData = g_MaterialData[surfaceData.materialIndex];
 	
 	LightingParams lightingParams;
-	lightingParams.viewSpacePosition = input.worldPos.xyz / input.worldPos.w;
+	lightingParams.viewSpacePosition = mul(g_Constants.viewMatrix, float4(surfaceData.position, 1.0)).xyz;
 	lightingParams.V = -normalize(lightingParams.viewSpacePosition);
-	float4 derivatives = float4(ddx(input.texCoord), ddy(input.texCoord));
+	float4 derivatives = float4(surfaceData.texCoordDdx, surfaceData.texCoordDdy);
 	
 	// albedo
 	{
@@ -99,12 +225,12 @@ PSOutput main(PSInput input)
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			albedo = g_Textures[NonUniformResourceIndex(albedoTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).rgb;
+			albedo = g_Textures[NonUniformResourceIndex(albedoTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], surfaceData.texCoord, derivatives.xy, derivatives.zw).rgb;
 		}
 		lightingParams.albedo = accurateSRGBToLinear(albedo);
 	}
 	
-	float3 normal = normalize(input.normal);
+	float3 normal = normalize(surfaceData.normal);
 	float3 normalWS =  mul(g_Constants.invViewMatrix, float4(normal, 0.0)).xyz;
 	// normal
 	{
@@ -113,11 +239,12 @@ PSOutput main(PSInput input)
 		if (normalTextureIndex != 0)
 		{
 			float3 tangentSpaceNormal;
-			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
+			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], surfaceData.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1.0 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			normal = mul(tangentSpaceNormal, calculateTBN(normal, lightingParams.viewSpacePosition, float2(input.texCoord.x, -input.texCoord.y)));
+			float3x3 tbn = calculateTBN(normal, surfaceData.positionDdx, surfaceData.positionDdy, surfaceData.texCoordDdx, surfaceData.texCoordDdy);
+			normal = mul(tangentSpaceNormal, tbn);
 			normal = normalize(normal);
-			normal = any(isnan(normal)) ? normalize(input.normal) : normal;
+			normal = any(isnan(normal)) ? normalize(surfaceData.normal) : normal;
 		}
 		lightingParams.N = normal;
 	}
@@ -128,7 +255,7 @@ PSOutput main(PSInput input)
 		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
 		if (metalnessTextureIndex != 0)
 		{
-			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).z;
+			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], surfaceData.texCoord, derivatives.xy, derivatives.zw).z;
 			metalness = accurateSRGBToLinear(metalness.xxx).x;
 		}
 		lightingParams.metalness = metalness;
@@ -140,7 +267,7 @@ PSOutput main(PSInput input)
 		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
 		if (roughnessTextureIndex != 0)
 		{
-			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).y;
+			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], surfaceData.texCoord, derivatives.xy, derivatives.zw).y;
 			roughness = accurateSRGBToLinear(roughness.xxx).x;
 		}
 		lightingParams.roughness = roughness;
@@ -170,7 +297,7 @@ PSOutput main(PSInput input)
 		for (uint i = 0; i < g_Constants.directionalLightShadowedCount; ++i)
 		{
 			const float3 contribution = evaluateDirectionalLight(lightingParams, g_DirectionalLightsShadowed[i]);
-			result += contribution * g_DeferredShadowImage.Load(int4((int2)input.position.xy, i, 0)).x;
+			result += contribution * g_DeferredShadowImage.Load(int4(threadID.xy, i, 0)).x;
 		}
 	}
 	
@@ -180,7 +307,7 @@ PSOutput main(PSInput input)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(uint2(input.position.xy), g_Constants.width, wordCount);
+		const uint address = getTileAddress(threadID.xy, g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -202,7 +329,7 @@ PSOutput main(PSInput input)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(uint2(input.position.xy), g_Constants.width, wordCount);
+		const uint address = getTileAddress(threadID.xy, g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -254,11 +381,11 @@ PSOutput main(PSInput input)
 				
 				if (shadow > 0.0 && g_Constants.volumetricShadow && lightShadowed.fomShadowAtlasParams.w != 0.0)
 				{
-					if (g_Constants.volumetricShadow == 2)
-					{
-						shadow *= raymarch(worldSpacePos, lightShadowed.positionWS);
-					}
-					else
+					//if (g_Constants.volumetricShadow == 2)
+					//{
+					//	shadow *= raymarch(worldSpacePos, lightShadowed.positionWS);
+					//}
+					//else
 					{
 						float2 uv;
 						// spot light
@@ -295,11 +422,12 @@ PSOutput main(PSInput input)
 	// apply pre-exposure
 	result *= asfloat(g_ExposureData.Load(0));
 
-	PSOutput output;
+	g_ResultImage[threadID.xy] = float4(result, 1.0);
+	g_NormalRoughnessImage[threadID.xy] = float4(encodeOctahedron24(lightingParams.N), lightingParams.roughness);
+	g_AlbedoMetalnessImage[threadID.xy] = approximateLinearToSRGB(float4(lightingParams.albedo, lightingParams.metalness));
 	
-	output.color = float4(result, 1.0);
-	output.normalRoughness = float4(encodeOctahedron24(lightingParams.N), lightingParams.roughness);
-	output.albedoMetalness = approximateLinearToSRGB(float4(lightingParams.albedo, lightingParams.metalness));
-	
-	return output;
+	//if (g_Constants.width != 50000)
+	//{
+	//	g_ResultImage[threadID.xy] = float4(saturate(surfaceData.position * 0.1), 1.0);
+	//}
 }

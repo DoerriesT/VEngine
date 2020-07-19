@@ -245,6 +245,8 @@
     <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h" />
     <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h" />
+    <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPass.h" />
+    <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.h" />
     <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h" />
     <ClInclude Include="src\Graphics\Pass\ShadowPass.h" />
     <ClInclude Include="src\Graphics\Pass\SharpenFfxCasPass.h" />
@@ -255,6 +257,7 @@
     <ClInclude Include="src\Graphics\Pass\TemporalAAPass.h" />
     <ClInclude Include="src\Graphics\Pass\TonemapPass.h" />
     <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VisibilityBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass2.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.h" />
@@ -380,6 +383,8 @@
     <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.cpp" />
     <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ShadowPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\SharpenFfxCasPass.cpp" />
@@ -390,6 +395,7 @@
     <ClCompile Include="src\Graphics\Pass\TemporalAAPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VisibilityBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass2.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.cpp" />

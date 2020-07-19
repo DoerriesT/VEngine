@@ -513,6 +513,15 @@
     <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass2.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VisibilityBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -873,6 +882,15 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass2.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VisibilityBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

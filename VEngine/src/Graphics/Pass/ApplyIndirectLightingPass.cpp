@@ -104,6 +104,12 @@ void VEngine::ApplyIndirectLightingPass::addToGraph(rg::RenderGraph &graph, cons
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
 
+			Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
+			Rect scissor{ { 0, 0 }, { width, height } };
+
+			cmdList->setViewport(0, 1, &viewport);
+			cmdList->setScissor(0, 1, &scissor);
+
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 
 			PushConsts pushConsts;
