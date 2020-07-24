@@ -20,7 +20,7 @@ namespace VEngine
 		private:
 			VkDevice m_device;
 			VkDescriptorSetLayout m_descriptorSetLayout;
-			uint32_t m_typeCounts[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+			uint32_t m_typeCounts[(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT - VK_DESCRIPTOR_TYPE_SAMPLER + 1)];
 		};
 
 		class DescriptorSetVk : public DescriptorSet

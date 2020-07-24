@@ -239,13 +239,13 @@ VEngine::gal::DescriptorSetPoolVk::DescriptorSetPoolVk(VkDevice device, uint32_t
 	m_currentOffset(),
 	m_descriptorSetMemory()
 {
-	VkDescriptorPoolSize poolSizes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+	VkDescriptorPoolSize poolSizes[(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT - VK_DESCRIPTOR_TYPE_SAMPLER + 1)];
 
 	uint32_t poolSizeCount = 0;
 
 	const uint32_t *typeCounts = layout->getTypeCounts();
 
-	for (size_t i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
+	for (size_t i = 0; i < (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT - VK_DESCRIPTOR_TYPE_SAMPLER + 1); ++i)
 	{
 		if (typeCounts[i])
 		{

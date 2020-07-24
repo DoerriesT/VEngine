@@ -22,7 +22,7 @@ namespace VEngine
 
 		struct DescriptorSetLayoutDataVk
 		{
-			uint32_t m_counts[DescriptorSetLayoutsVk::MAX_SET_COUNT][VK_DESCRIPTOR_TYPE_RANGE_SIZE] = {};
+			uint32_t m_counts[DescriptorSetLayoutsVk::MAX_SET_COUNT][(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT - VK_DESCRIPTOR_TYPE_SAMPLER + 1)] = {};
 		};
 
 		class GraphicsPipelineVk : public GraphicsPipeline
