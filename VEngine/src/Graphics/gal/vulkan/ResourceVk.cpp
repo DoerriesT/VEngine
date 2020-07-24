@@ -205,7 +205,7 @@ VEngine::gal::BufferViewVk::BufferViewVk(VkDevice device, const BufferViewCreate
 	const auto *bufferVk = dynamic_cast<const BufferVk *>(createInfo.m_buffer);
 	assert(bufferVk);
 
-	VkBufferViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+	VkBufferViewCreateInfo createInfoVk{ VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO };
 	createInfoVk.buffer = (VkBuffer)bufferVk->getNativeHandle();
 	createInfoVk.format = UtilityVk::translate(createInfo.m_format);
 	createInfoVk.offset = createInfo.m_offset;
