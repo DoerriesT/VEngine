@@ -17,6 +17,7 @@
 
 #include "Utility.h"
 #include "WavefrontOBJLoader.h"
+#include "BinaryMeshLoader.h"
 
 // Returns the number of faces (triangles/quads) on the mesh to be processed.
 int mikktGetNumFaces(const SMikkTSpaceContext *pContext)
@@ -88,7 +89,7 @@ void createMaterialLibrary(const std::vector<Material> &materials, const std::st
 		j["materials"].push_back(
 			{
 				{ "name", mat.m_name },
-				{ "alphaMode", 0 },
+				{ "alphaMode", (int)mat.m_alpha },
 				{ "albedo", { mat.m_albedoFactor[0], mat.m_albedoFactor[1], mat.m_albedoFactor[2] } },
 				{ "metalness", mat.m_metalnessFactor },
 				{ "roughness", mat.m_roughnessFactor },
@@ -234,8 +235,11 @@ int main()
 		std::cin >> invertTexcoordY;
 
 		// load scene
-		WavefrontOBJLoader objLoader;
-		auto model = objLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
+		//WavefrontOBJLoader objLoader;
+		//auto model = objLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
+		BinaryMeshLoader bmLoader;
+		auto model = bmLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
+
 
 		// create material library
 		createMaterialLibrary(model.m_materials, dstFileName + ".matlib");

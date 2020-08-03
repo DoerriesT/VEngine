@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\BinaryMeshLoader.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\allocator.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\clusterizer.cpp" />
@@ -155,6 +156,7 @@
     <ClCompile Include="src\WavefrontOBJLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\BinaryMeshLoader.h" />
     <ClInclude Include="src\IModelLoader.h" />
     <ClInclude Include="src\meshoptimizer-0.12\meshoptimizer.h" />
     <ClInclude Include="src\mikktspace.h" />
