@@ -194,7 +194,7 @@ void App::initialize(VEngine::Engine *engine)
 	g_localFogEntity = entityRegistry.create();
 	entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)));
 	entityRegistry.assign<VEngine::BoundingBoxComponent>(g_localFogEntity, glm::vec3(1, 1, 1));
-	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 3.0f, glm::vec3(1.0f), 0.0f, 0.0f, false, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f);
+	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 3.0f, glm::vec3(1.0f), 0.0f, 0.0f, false, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f, glm::vec3(), true);
 	entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
 	scene.m_entities.push_back({ "Local Fog", g_localFogEntity });
 

@@ -157,7 +157,13 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			pushConsts.index = static_cast<uint32_t>(i);
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, offsetof(PushConsts, alignedDomainSizeX), &pushConsts);
-			cmdList->drawIndexed(boxProxyMeshIndexCount, 1, boxProxyMeshFirstIndex, boxProxyMeshVertexOffset, 0);
+
+			bool spherical = lightData.m_localParticipatingMedia[lightData.m_localMediaOrder[i]].m_spherical;
+			uint32_t indexCount = spherical ? pointLightProxyMeshIndexCount : boxProxyMeshIndexCount;
+			uint32_t firstIndex = spherical ? pointLightProxyMeshFirstIndex : boxProxyMeshFirstIndex;
+			uint32_t vertexOffset = spherical ? pointLightProxyMeshVertexOffset : boxProxyMeshVertexOffset;
+
+			cmdList->drawIndexed(indexCount, 1, firstIndex, vertexOffset, 0);
 		}
 
 		// reflection probes

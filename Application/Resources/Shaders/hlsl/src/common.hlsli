@@ -110,6 +110,10 @@ struct LocalParticipatingMedium
 	float heightFogStart;
 	float3 textureBias;
 	float heightFogFalloff;
+	uint spherical;
+	float pad0;
+	float pad1;
+	float pad2;
 };
 
 struct LocalReflectionProbe

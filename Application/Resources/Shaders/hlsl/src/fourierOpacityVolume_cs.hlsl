@@ -145,7 +145,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 									dot(medium.worldToLocal1, float4(rayPos, 1.0)), 
 									dot(medium.worldToLocal2, float4(rayPos, 1.0)));
 									
-			if (all(abs(localPos) <= 1.0))
+			if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
 			{
 				float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
 				extinction += medium.extinction * density;

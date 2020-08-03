@@ -278,6 +278,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				ImGui::Checkbox("Height Fog", &lpmc->m_heightFogEnabled);
 				ImGui::DragFloat("Height Fog Start", &lpmc->m_heightFogStart, 0.1f);
 				ImGui::DragFloat("Height Fog Falloff", &lpmc->m_heightFogFalloff, 0.1f);
+				ImGui::Checkbox("Spherical", &lpmc->m_spherical);
 			}
 
 			// global participating medium

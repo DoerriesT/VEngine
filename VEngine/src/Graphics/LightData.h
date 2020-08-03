@@ -91,6 +91,10 @@ namespace VEngine
 		float m_heightFogStart;
 		glm::vec3 m_textureBias;
 		float m_heightFogFalloff;
+		uint32_t m_spherical;
+		float m_pad0;
+		float m_pad1;
+		float m_pad2;
 	};
 
 	struct LocalReflectionProbe

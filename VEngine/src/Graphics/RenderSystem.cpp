@@ -723,6 +723,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_textureScale = mediumComponent.m_textureScale;
 						medium.m_textureBias = mediumComponent.m_textureBias;
 						medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
+						medium.m_spherical = mediumComponent.m_spherical;
 
 						m_lightData.m_localParticipatingMedia.push_back(medium);
 

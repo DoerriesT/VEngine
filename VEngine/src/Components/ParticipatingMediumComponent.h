@@ -33,5 +33,6 @@ namespace VEngine
 		Texture3DHandle m_densityTexture = {};
 		glm::vec3 m_textureScale = glm::vec3(1.0f);
 		glm::vec3 m_textureBias = glm::vec3(0.0f);
+		bool m_spherical = false;
 	};
 }

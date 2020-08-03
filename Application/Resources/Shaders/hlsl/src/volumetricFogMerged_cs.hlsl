@@ -161,7 +161,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 								dot(medium.worldToLocal1, float4(worldSpacePos, 1.0)), 
 								dot(medium.worldToLocal2, float4(worldSpacePos, 1.0)));
 								
-				if (all(abs(localPos) <= 1.0))
+				if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
 				{
 					float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
 					scattering += medium.scattering * density;
