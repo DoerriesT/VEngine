@@ -77,7 +77,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 		// sort by distance to camera
 		std::sort(sortData.begin(), sortData.end(), [&](const ProbeSortData &lhs, const ProbeSortData &rhs)
 			{
-				return lhs.m_cameraDistance2 < lhs.m_cameraDistance2;
+				return lhs.m_cameraDistance2 < rhs.m_cameraDistance2;
 			});
 
 		// remove far away probes from cache

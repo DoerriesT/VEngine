@@ -222,9 +222,12 @@ void VEngine::Engine::setEditorMode(bool editorMode)
 
 void VEngine::Engine::setEditorViewport(int32_t offsetX, int32_t offsetY, uint32_t width, uint32_t height)
 {
-	m_viewportParamsDirty = true;
-	m_editorViewportOffsetX = offsetX;
-	m_editorViewportOffsetY = offsetY;
-	m_editorViewportWidth = width;
-	m_editorViewportHeight = height;
+	if (m_editorViewportOffsetX != offsetX || m_editorViewportOffsetY != offsetY || m_editorViewportWidth != width || m_editorViewportHeight != height)
+	{
+		m_viewportParamsDirty = true;
+		m_editorViewportOffsetX = offsetX;
+		m_editorViewportOffsetY = offsetY;
+		m_editorViewportWidth = width;
+		m_editorViewportHeight = height;
+	}
 }

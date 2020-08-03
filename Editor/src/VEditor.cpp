@@ -209,7 +209,7 @@ void VEditor::VEditor::update(float timeDelta)
 			ImGui::End();
 			ImGui::PopStyleVar();
 
-			m_engine->setEditorViewport(viewportOffset.x, viewportOffset.y, viewportSize.x, viewportSize.y);
+			m_engine->setEditorViewport(viewportOffset.x, viewportOffset.y, std::max(viewportSize.x, 0.0f), std::max(viewportSize.y, 0.0f));
 
 			// make sure aspect ratio of editor camera is correct
 			m_engine->getEntityRegistry().get<CameraComponent>(m_editorCameraEntity).m_aspectRatio = (viewportSize.x > 0 && viewportSize.y > 0) ? viewportSize.x / (float)viewportSize.y : 1.0f;
