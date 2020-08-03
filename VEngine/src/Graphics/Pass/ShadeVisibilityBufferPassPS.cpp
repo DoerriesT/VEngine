@@ -130,7 +130,7 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 			{
 				Buffer *vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer;
 				DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-				DescriptorBufferInfo normalsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent) };
+				DescriptorBufferInfo tangentsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent) };
 				DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 				ImageView *shadowImageView = registry.getImageView(data.m_deferredShadowImageViewHandle);
 				//ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
@@ -141,12 +141,13 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
+				DescriptorBufferInfo texCoordScaleBiasBufferInfo{ data.m_passRecordContext->m_renderResources->m_subMeshTexCoordScaleBiasBuffer, 0, RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4 };
 
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-					Initializers::storageBuffer(&normalsBufferInfo, VERTEX_NORMALS_BINDING),
+					Initializers::storageBuffer(&tangentsBufferInfo, VERTEX_QTANGENTS_BINDING),
 					Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
 					Initializers::storageBuffer(&data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING),
 					Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
@@ -167,6 +168,7 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					Initializers::sampledImage(&triangleImageViewHandle, TRIANGLE_IMAGE_BINDING),
 					Initializers::storageBuffer(&data.m_indexBufferInfo, INDEX_BUFFER_BINDING),
+					Initializers::storageBuffer(&texCoordScaleBiasBufferInfo, TEXCOORD_SCALE_BIAS_BINDING),
 				};
 
 				descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);

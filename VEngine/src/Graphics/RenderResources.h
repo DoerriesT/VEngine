@@ -42,6 +42,7 @@ namespace VEngine
 		gal::Buffer *m_indexBuffer = {};
 		gal::Buffer *m_subMeshDataInfoBuffer = {};
 		gal::Buffer *m_subMeshBoundingBoxBuffer = {};
+		gal::Buffer *m_subMeshTexCoordScaleBiasBuffer = {};
 		gal::Buffer *m_uboBuffers[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		gal::Buffer *m_ssboBuffers[RendererConsts::FRAMES_IN_FLIGHT] = {};
 

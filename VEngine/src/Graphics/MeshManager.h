@@ -11,7 +11,13 @@ namespace VEngine
 	class MeshManager
 	{
 	public:
-		explicit MeshManager(gal::GraphicsDevice *graphicsDevice, gal::Buffer *stagingBuffer, gal::Buffer *vertexBuffer, gal::Buffer *indexBuffer, gal::Buffer *subMeshInfoBuffer, gal::Buffer *subMeshBoundingBoxesBuffer);
+		explicit MeshManager(gal::GraphicsDevice *graphicsDevice, 
+			gal::Buffer *stagingBuffer, 
+			gal::Buffer *vertexBuffer, 
+			gal::Buffer *indexBuffer, 
+			gal::Buffer *subMeshInfoBuffer, 
+			gal::Buffer *subMeshBoundingBoxesBuffer,
+			gal::Buffer *subMeshTexCoordScaleBiasBuffer);
 		~MeshManager();
 		void createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles);
 		void destroySubMeshes(uint32_t count, SubMeshHandle *handles);
@@ -28,6 +34,7 @@ namespace VEngine
 		gal::Buffer *m_indexBuffer;
 		gal::Buffer *m_subMeshInfoBuffer;
 		gal::Buffer *m_subMeshBoundingBoxesBuffer;
+		gal::Buffer *m_subMeshTexCoordScaleBiasBuffer;
 		uint32_t *m_freeHandles;
 		uint32_t m_freeHandleCount;
 		uint32_t m_vertexCount;

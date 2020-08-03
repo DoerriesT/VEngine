@@ -88,7 +88,13 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_textureLoader = new TextureLoader(m_graphicsDevice, m_renderResources->m_stagingBuffer);
 	m_textureManager = new TextureManager(m_graphicsDevice);
 	m_materialManager = new MaterialManager(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
-	m_meshManager = new MeshManager(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_vertexBuffer, m_renderResources->m_indexBuffer, m_renderResources->m_subMeshDataInfoBuffer, m_renderResources->m_subMeshBoundingBoxBuffer);
+	m_meshManager = new MeshManager(m_graphicsDevice,
+		m_renderResources->m_stagingBuffer, 
+		m_renderResources->m_vertexBuffer,
+		m_renderResources->m_indexBuffer,
+		m_renderResources->m_subMeshDataInfoBuffer,
+		m_renderResources->m_subMeshBoundingBoxBuffer,
+		m_renderResources->m_subMeshTexCoordScaleBiasBuffer);
 
 	Image *blueNoiseImage;
 	ImageView *blueNoiseImageView;
@@ -649,6 +655,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//visibilityBufferPassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
 	//visibilityBufferPassData.m_instanceData = sortedInstanceData.data();
 	//visibilityBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	//visibilityBufferPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
 	//visibilityBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 	//visibilityBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	//visibilityBufferPassData.m_triangleImageHandle = triangleImageViewHandle;

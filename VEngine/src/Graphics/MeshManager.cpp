@@ -8,7 +8,14 @@
 
 using namespace VEngine::gal;
 
-VEngine::MeshManager::MeshManager(GraphicsDevice *graphicsDevice, Buffer *stagingBuffer, Buffer *vertexBuffer, Buffer *indexBuffer, Buffer *subMeshInfoBuffer, Buffer *subMeshBoundingBoxesBuffer)
+VEngine::MeshManager::MeshManager(
+	GraphicsDevice *graphicsDevice, 
+	Buffer *stagingBuffer, 
+	Buffer *vertexBuffer, 
+	Buffer *indexBuffer,
+	Buffer *subMeshInfoBuffer,
+	Buffer *subMeshBoundingBoxesBuffer,
+	gal::Buffer *subMeshTexCoordScaleBiasBuffer)
 	:m_graphicsDevice(graphicsDevice),
 	m_cmdListPool(),
 	m_cmdList(), m_vertexDataAllocator(RendererConsts::MAX_VERTICES, 1),
@@ -18,6 +25,7 @@ VEngine::MeshManager::MeshManager(GraphicsDevice *graphicsDevice, Buffer *stagin
 	m_indexBuffer(indexBuffer),
 	m_subMeshInfoBuffer(subMeshInfoBuffer),
 	m_subMeshBoundingBoxesBuffer(subMeshBoundingBoxesBuffer),
+	m_subMeshTexCoordScaleBiasBuffer(subMeshTexCoordScaleBiasBuffer),
 	m_freeHandles(new uint32_t[RendererConsts::MAX_SUB_MESHES]),
 	m_freeHandleCount(RendererConsts::MAX_SUB_MESHES),
 	m_vertexCount(),
@@ -45,7 +53,7 @@ VEngine::MeshManager::~MeshManager()
 
 void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, SubMeshHandle *handles)
 {
-	BufferCopy *bufferCopies = new BufferCopy[count * 6];
+	BufferCopy *bufferCopies = new BufferCopy[count * 7];
 
 	// map staging buffer
 	uint8_t *stagingBufferPtr;
@@ -186,6 +194,22 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 			assert(boundingBoxCopy.m_dstOffset + boundingBoxCopy.m_size <= m_subMeshBoundingBoxesBuffer->getDescription().m_size);
 		}
 
+		// texcoord scale/bias
+		{
+			glm::vec4 scaleBiasData = glm::vec4(subMeshes[i].m_maxTexCoord - subMeshes[i].m_minTexCoord, subMeshes[i].m_minTexCoord);
+
+			auto &scaleBiasCopy = bufferCopies[i + count * 6];
+			scaleBiasCopy.m_srcOffset = currentStagingBufferOffset;
+			scaleBiasCopy.m_dstOffset = handles[i].m_handle * sizeof(scaleBiasData);
+			scaleBiasCopy.m_size = sizeof(scaleBiasData);
+
+			// copy to staging buffer
+			memcpy(stagingBufferPtr + currentStagingBufferOffset, &scaleBiasData, scaleBiasCopy.m_size);
+
+			currentStagingBufferOffset += scaleBiasCopy.m_size;
+			assert(scaleBiasCopy.m_dstOffset + scaleBiasCopy.m_size <= m_subMeshTexCoordScaleBiasBuffer->getDescription().m_size);
+		}
+
 		m_vertexCount += subMeshes[i].m_vertexCount;
 		m_indexCount += subMeshes[i].m_indexCount;
 	}
@@ -202,6 +226,7 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 		m_cmdList->copyBuffer(m_stagingBuffer, m_indexBuffer, count, bufferCopies + count * 3);
 		m_cmdList->copyBuffer(m_stagingBuffer, m_subMeshInfoBuffer, count, bufferCopies + count * 4);
 		m_cmdList->copyBuffer(m_stagingBuffer, m_subMeshBoundingBoxesBuffer, count, bufferCopies + count * 5);
+		m_cmdList->copyBuffer(m_stagingBuffer, m_subMeshTexCoordScaleBiasBuffer, count, bufferCopies + count * 6);
 	}
 	m_cmdList->end();
 	Initializers::submitSingleTimeCommands(m_graphicsDevice->getGraphicsQueue(), m_cmdList);

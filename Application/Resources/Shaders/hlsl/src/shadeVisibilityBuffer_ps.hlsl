@@ -9,6 +9,7 @@
 #include "commonFilter.hlsli"
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
+#include "commonVertex.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
@@ -31,12 +32,11 @@ struct SurfaceData
 {
 	float3 position;
 	float3 normal;
+	float4 tangent;
 	float2 texCoord;
 	uint materialIndex;
 	float2 texCoordDdx;
 	float2 texCoordDdy;
-	float3 positionDdx;
-	float3 positionDdy;
 };
 
 struct SubMeshInfo
@@ -50,26 +50,26 @@ RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 RWTexture2D<float4> g_NormalRoughnessImage : REGISTER_UAV(NORMAL_ROUGHNESS_IMAGE_BINDING, 0);
 RWTexture2D<float4> g_AlbedoMetalnessImage : REGISTER_UAV(ALBEDO_METALNESS_IMAGE_BINDING, 0);
 
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, 0);
 
 Texture2D<float4> g_TriangleImage : REGISTER_SRV(TRIANGLE_IMAGE_BINDING, 0);
-StructuredBuffer<float4x4> g_TransformMatrices : REGISTER_SRV(TRANSFORM_DATA_BINDING, 0);
-StructuredBuffer<float> g_Positions : REGISTER_SRV(VERTEX_POSITIONS_BINDING, 0);
-StructuredBuffer<float> g_Normals : REGISTER_SRV(VERTEX_NORMALS_BINDING, 0);
-StructuredBuffer<float> g_TexCoords : REGISTER_SRV(VERTEX_TEXCOORDS_BINDING, 0);
-StructuredBuffer<uint> g_IndicexBuffer : REGISTER_SRV(INDEX_BUFFER_BINDING, 0);
+StructuredBuffer<float4> g_TransformData : REGISTER_SRV(TRANSFORM_DATA_BINDING, 0);
+StructuredBuffer<uint> g_Positions : REGISTER_SRV(VERTEX_POSITIONS_BINDING, 0);
+StructuredBuffer<uint> g_QTangents : REGISTER_SRV(VERTEX_QTANGENTS_BINDING, 0);
+StructuredBuffer<uint> g_TexCoords : REGISTER_SRV(VERTEX_TEXCOORDS_BINDING, 0);
+StructuredBuffer<uint> g_IndexBuffer : REGISTER_SRV(INDEX_BUFFER_BINDING, 0);
 StructuredBuffer<SubMeshInstanceData> g_InstanceData : REGISTER_SRV(INSTANCE_DATA_BINDING, 0);
 StructuredBuffer<SubMeshInfo> g_SubMeshInfo : REGISTER_SRV(SUB_MESH_DATA_BINDING, 0);
+StructuredBuffer<float4> g_TexCoordScaleBias : REGISTER_SRV(TEXCOORD_SCALE_BIAS_BINDING, 0);
 
 
-Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
-Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, DEFERRED_SHADOW_IMAGE_SET);
-Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, SHADOW_ATLAS_IMAGE_SET);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
-Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, EXTINCTION_IMAGE_SET);
-Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
+Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, 0);
+Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, 0);
+Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, 0);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
@@ -90,12 +90,21 @@ Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
 
 
-SurfaceData loadVertex(uint index)
+SurfaceData loadVertex(uint index, uint transformIndex)
 {
 	SurfaceData result = (SurfaceData)0;
-	result.position = float3(g_Positions[index * 3 + 0], g_Positions[index * 3 + 1], g_Positions[index * 3 + 2]);
-	result.normal = float3(g_Normals[index * 3 + 0], g_Normals[index * 3 + 1], g_Normals[index * 3 + 2]);
-	result.texCoord = float2(g_TexCoords[index * 2 + 0], g_TexCoords[index * 2 + 1]);
+	result.position = getPosition(index, g_Positions);
+	result.texCoord = getTexCoord(index, g_TexCoords);
+	
+	float4 qtangent = getQTangent(index, g_QTangents);
+	result.tangent.w = qtangent.w < 0.0 ? -1.0 : 1.0;
+	
+	// rotate to world space
+	qtangent = quaternionMult(g_TransformData[transformIndex * 4 + 3], qtangent);
+	
+	// extract normal and tangent
+	quaternionToNormalTangent(qtangent, result.normal, result.tangent.xyz);
+	
 	return result;
 }
 
@@ -138,31 +147,40 @@ SurfaceData computeSurfaceData(uint triangleData, int2 pixelCoord)
 	uint indexBaseOffset = submeshInfo.firstIndex + triangleID * 3;
 	bool lower = (indexBaseOffset & 1) == 0;
 	indexBaseOffset /= 2;
-	uint indices16_0 = g_IndicexBuffer[indexBaseOffset + 0];
-	uint indices16_1 = g_IndicexBuffer[indexBaseOffset + 1];
+	uint indices16_0 = g_IndexBuffer[indexBaseOffset + 0];
+	uint indices16_1 = g_IndexBuffer[indexBaseOffset + 1];
 	
 	// get indices from packed 16bit indices
 	uint index0 = submeshInfo.vertexOffset + (lower ? (indices16_0 & 0xFFFF) : (indices16_0 >> 16));
 	uint index1 = submeshInfo.vertexOffset + (lower ? (indices16_0 >> 16) : (indices16_1 & 0xFFFF));
 	uint index2 = submeshInfo.vertexOffset + (lower ? (indices16_1 & 0xFFFF) : (indices16_1 >> 16));
 	
-	SurfaceData v0 = loadVertex(index0);
-	SurfaceData v1 = loadVertex(index1);
-	SurfaceData v2 = loadVertex(index2);
+	SurfaceData v0 = loadVertex(index0, instanceData.transformIndex);
+	SurfaceData v1 = loadVertex(index1, instanceData.transformIndex);
+	SurfaceData v2 = loadVertex(index2, instanceData.transformIndex);
+	
+	float4 texCoordScaleBias = g_TexCoordScaleBias[instanceData.subMeshIndex];
+	
+	v0.texCoord = v0.texCoord * texCoordScaleBias.xy + texCoordScaleBias.zw;
+	v1.texCoord = v1.texCoord * texCoordScaleBias.xy + texCoordScaleBias.zw;
+	v2.texCoord = v2.texCoord * texCoordScaleBias.xy + texCoordScaleBias.zw;
+	
+	float4 transform0 = g_TransformData[instanceData.transformIndex * 4 + 0];
+	float4 transform1 = g_TransformData[instanceData.transformIndex * 4 + 1];
+	float4 transform2 = g_TransformData[instanceData.transformIndex * 4 + 2];
 
-	const float4x4 modelMatrix = g_TransformMatrices[instanceData.transformIndex];
-	float3 p0;// = mul(modelMatrix, float4(v0.position, 1.0));
-	p0.x = dot(modelMatrix._m00_m10_m20_m30, float4(v0.position, 1.0));
-	p0.y = dot(modelMatrix._m01_m11_m21_m31, float4(v0.position, 1.0));
-	p0.z = dot(modelMatrix._m02_m12_m22_m32, float4(v0.position, 1.0));
-	float3 p1;// = mul(modelMatrix, float4(v1.position, 1.0));
-	p1.x = dot(modelMatrix._m00_m10_m20_m30, float4(v1.position, 1.0));
-	p1.y = dot(modelMatrix._m01_m11_m21_m31, float4(v1.position, 1.0));
-	p1.z = dot(modelMatrix._m02_m12_m22_m32, float4(v1.position, 1.0));
-	float3 p2;// = mul(modelMatrix, float4(v2.position, 1.0));
-	p2.x = dot(modelMatrix._m00_m10_m20_m30, float4(v2.position, 1.0));
-	p2.y = dot(modelMatrix._m01_m11_m21_m31, float4(v2.position, 1.0));
-	p2.z = dot(modelMatrix._m02_m12_m22_m32, float4(v2.position, 1.0));
+	float3 p0;
+	p0.x = dot(transform0, float4(v0.position, 1.0));
+	p0.y = dot(transform1, float4(v0.position, 1.0));
+	p0.z = dot(transform2, float4(v0.position, 1.0));
+	float3 p1;
+	p1.x = dot(transform0, float4(v1.position, 1.0));
+	p1.y = dot(transform1, float4(v1.position, 1.0));
+	p1.z = dot(transform2, float4(v1.position, 1.0));
+	float3 p2;
+	p2.x = dot(transform0, float4(v2.position, 1.0));
+	p2.y = dot(transform1, float4(v2.position, 1.0));
+	p2.z = dot(transform2, float4(v2.position, 1.0));
 	
 	float3 cameraPosWS = float3(g_Constants.cameraPosWSX, g_Constants.cameraPosWSY, g_Constants.cameraPosWSZ);
 	
@@ -176,7 +194,9 @@ SurfaceData computeSurfaceData(uint triangleData, int2 pixelCoord)
 	SurfaceData result = (SurfaceData)0;
 	result.position = mad(p0.xyz, H.x, mad(p1.xyz, H.y, (p2.xyz * H.z)));
 	result.normal = mad(v0.normal, H.x, mad(v1.normal, H.y, (v2.normal * H.z)));
-	result.normal = mul((float3x3)g_Constants.viewMatrix, mul((float3x3)modelMatrix, result.normal));
+	result.normal = mul((float3x3)g_Constants.viewMatrix, result.normal);
+	result.tangent = mad(v0.tangent, H.x, mad(v1.tangent, H.y, (v2.tangent * H.z)));
+	result.tangent.xyz = mul((float3x3)g_Constants.viewMatrix, result.tangent.xyz);
 	result.texCoord = mad(v0.texCoord,  H.x, mad(v1.texCoord,  H.y, (v2.texCoord  * H.z)));
 
 	// derivatives
@@ -195,11 +215,6 @@ SurfaceData computeSurfaceData(uint triangleData, int2 pixelCoord)
 	float2 tCoordDY = mad(v0.texCoord.xy, Hy.x, mad(v1.texCoord.xy, Hy.y, (v2.texCoord.xy * Hy.z)));
 	result.texCoordDdx = result.texCoord - tCoordDX;
 	result.texCoordDdy = result.texCoord - tCoordDY;
-	
-	float3 posDX = mad(p0.xyz, Hx.x, mad(p1.xyz, Hx.y, (p2.xyz * Hx.z)));
-	float3 posDY = mad(p0.xyz, Hy.x, mad(p1.xyz, Hy.y, (p2.xyz * Hy.z)));
-	result.positionDdx = result.position - posDX;
-	result.positionDdy = result.position - posDY;
 	
 	result.materialIndex = instanceData.materialIndex;
 	
@@ -248,8 +263,10 @@ PSOutput main(PSInput input)
 			float3 tangentSpaceNormal;
 			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], surfaceData.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1.0 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			float3x3 tbn = calculateTBN(normal, surfaceData.positionDdx, surfaceData.positionDdy, ddx(float2(surfaceData.texCoord.x, surfaceData.texCoord.y)), ddy(float2(surfaceData.texCoord.x, surfaceData.texCoord.y)));
-			normal = mul(tangentSpaceNormal, tbn);
+			
+			float3 bitangent = cross(surfaceData.normal, surfaceData.tangent.xyz) * surfaceData.tangent.w;
+			normal = tangentSpaceNormal.x * surfaceData.tangent.xyz + tangentSpaceNormal.y * bitangent + tangentSpaceNormal.z * surfaceData.normal;
+			
 			normal = normalize(normal);
 			normal = any(isnan(normal)) ? normalize(surfaceData.normal) : normal;
 		}
@@ -411,8 +428,8 @@ PSOutput main(PSInput input)
 						
 						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 						
-						float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
-						float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
+						float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
+						float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
 						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);

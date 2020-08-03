@@ -68,6 +68,7 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyBuffer(m_indexBuffer);
 	m_graphicsDevice->destroyBuffer(m_subMeshDataInfoBuffer);
 	m_graphicsDevice->destroyBuffer(m_subMeshBoundingBoxBuffer);
+	m_graphicsDevice->destroyBuffer(m_subMeshTexCoordScaleBiasBuffer);
 
 	// samplers
 	m_graphicsDevice->destroySampler(m_samplers[0]);
@@ -270,6 +271,16 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_subMeshBoundingBoxBuffer);
+	}
+
+	// submesh texcoord scale/bias buffer
+	{
+		BufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.m_size = RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4;
+		bufferCreateInfo.m_createFlags = 0;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+
+		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_subMeshTexCoordScaleBiasBuffer);
 	}
 
 	// shadow sampler

@@ -17,6 +17,19 @@ namespace
 
 void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	Constants consts;
+	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		//{rg::ResourceViewHandle(data.m_indicesBufferHandle), {gal::ResourceState::READ_INDEX_BUFFER, PipelineStageFlagBits::VERTEX_INPUT_BIT}},
@@ -68,6 +81,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 					DescriptorSetUpdate updates[] =
 					{
+						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
 						Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
 
@@ -76,7 +90,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 						Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
 					};
 
-					descriptorSet->update(alphaMasked ? 4 : 2, updates);
+					descriptorSet->update(alphaMasked ? 5 : 3, updates);
 				}
 
 				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
@@ -91,11 +105,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 				//cmdList->bindIndexBuffer(registry.getBuffer(data.m_indicesBufferHandle), 0, IndexType::UINT32);
 				cmdList->bindIndexBuffer(data.m_passRecordContext->m_renderResources->m_indexBuffer, 0, IndexType::UINT16);
 
-				PushConsts pushConsts;
-				pushConsts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-
-				cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, offsetof(PushConsts, transformIndex), &pushConsts);
-
+				
 				const uint32_t instanceDataCount = alphaMasked ? data.m_maskedInstanceDataCount : data.m_opaqueInstanceDataCount;
 				const uint32_t instanceDataOffset = alphaMasked ? data.m_maskedInstanceDataOffset : data.m_opaqueInstanceDataOffset;
 
@@ -104,12 +114,22 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 					const auto &instanceData = data.m_instanceData[j + instanceDataOffset];
 					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
-
+					PushConsts pushConsts;
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
 					pushConsts.instanceID = j + instanceDataOffset;
 
-					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, transformIndex), sizeof(pushConsts) - offsetof(PushConsts, transformIndex), &pushConsts.transformIndex);
+					if (i == 0)
+					{
+						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, transformIndex), sizeof(pushConsts) - offsetof(PushConsts, transformIndex), &pushConsts.transformIndex);
+					}
+					else
+					{
+						pushConsts.texCoordScale = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 0], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 1]);
+						pushConsts.texCoordBias = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 2], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 3]);
+
+						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT,0, sizeof(pushConsts), &pushConsts);
+					}
 
 					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
 				}
