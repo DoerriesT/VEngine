@@ -150,12 +150,14 @@
     <ClCompile Include="src\meshoptimizer-0.12\vertexcodec.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vfetchanalyzer.cpp" />
     <ClCompile Include="src\meshoptimizer-0.12\vfetchoptimizer.cpp" />
+    <ClCompile Include="src\mikktspace.c" />
     <ClCompile Include="src\Utility.cpp" />
     <ClCompile Include="src\WavefrontOBJLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\IModelLoader.h" />
     <ClInclude Include="src\meshoptimizer-0.12\meshoptimizer.h" />
+    <ClInclude Include="src\mikktspace.h" />
     <ClInclude Include="src\Utility.h" />
     <ClInclude Include="src\WavefrontOBJLoader.h" />
   </ItemGroup>
