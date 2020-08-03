@@ -45,6 +45,8 @@
 #define EXTINCTION_IMAGE_SET 0
 #define EXTINCTION_IMAGE_BINDING 22
 #define FOM_IMAGE_BINDING 23
+#define VERTEX_QTANGENTS_BINDING 24
+
 
 #define TEXTURES_SET 1
 #define TEXTURES_BINDING 0
@@ -53,6 +55,8 @@
 
 struct PushConsts
 {
+	float2 texCoordScale;
+	float2 texCoordBias;
 	uint transformIndex;
 	uint materialIndex;
 };

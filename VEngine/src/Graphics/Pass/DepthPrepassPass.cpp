@@ -67,7 +67,7 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				// update descriptor sets
 				{
 					DescriptorBufferInfo positionsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-					DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+					DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 
 					DescriptorSetUpdate updates[] =
 					{
@@ -106,11 +106,20 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				{
 					const auto &instanceData = data.m_instanceData[j + instanceDataOffset];
 
-
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
 
-					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, transformIndex), sizeof(pushConsts) - offsetof(PushConsts, transformIndex), &pushConsts.transformIndex);
+					if (i == 0)
+					{
+						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, transformIndex), sizeof(pushConsts) - offsetof(PushConsts, transformIndex), &pushConsts.transformIndex);
+					}
+					else
+					{
+						pushConsts.texCoordScale = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 0], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 1]);
+						pushConsts.texCoordBias = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 2], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 3]);
+
+						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, texCoordScale), sizeof(pushConsts) - offsetof(PushConsts, texCoordScale), (uint8_t *)&pushConsts + offsetof(PushConsts, texCoordScale));
+					}
 
 					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 

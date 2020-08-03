@@ -114,15 +114,15 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 					// update descriptor sets
 					{
 						DescriptorBufferInfo positionsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-						DescriptorBufferInfo normalsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) };
-						DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+						DescriptorBufferInfo tangentsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent) };
+						DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 
 						DescriptorSetUpdate updates[] =
 						{
 							Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
 							Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
 							Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-							Initializers::storageBuffer(&normalsBufferInfo, VERTEX_NORMALS_BINDING),
+							Initializers::storageBuffer(&tangentsBufferInfo, VERTEX_QTANGENTS_BINDING),
 							Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
 							Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 						};
@@ -149,6 +149,8 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 						const auto &instanceData = data.m_instanceData[i + instanceDataOffset];
 
 						PushConsts pushConsts;
+						pushConsts.texCoordScale = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 0], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 1]);
+						pushConsts.texCoordBias = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 2], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 3]);
 						pushConsts.transformIndex = instanceData.m_transformIndex;
 						pushConsts.materialIndex = instanceData.m_materialIndex;
 						pushConsts.face = face;

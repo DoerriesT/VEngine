@@ -16,6 +16,7 @@ namespace VEngine
 			uint32_t m_instanceDataOffset;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
+			const float *m_texCoordScaleBias;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;

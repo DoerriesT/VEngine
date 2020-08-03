@@ -74,12 +74,12 @@ void App::initialize(VEngine::Engine *engine)
 	m_engine->getRenderSystem().setCameraEntity(m_cameraEntity);
 	scene.m_entities.push_back({ "Camera", m_cameraEntity });
 
-	scene.load(m_engine->getRenderSystem(), "Resources/Models/terrain");
-	entt::entity terrainEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(terrainEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -5.0f, 0.0f));
-	entityRegistry.assign<VEngine::MeshComponent>(terrainEntity, scene.m_meshInstances["Resources/Models/terrain"]);
-	entityRegistry.assign<VEngine::RenderableComponent>(terrainEntity);
-	scene.m_entities.push_back({ "Terrain", terrainEntity });
+	//scene.load(m_engine->getRenderSystem(), "Resources/Models/terrain");
+	//entt::entity terrainEntity = entityRegistry.create();
+	//entityRegistry.assign<VEngine::TransformationComponent>(terrainEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -5.0f, 0.0f));
+	//entityRegistry.assign<VEngine::MeshComponent>(terrainEntity, scene.m_meshInstances["Resources/Models/terrain"]);
+	//entityRegistry.assign<VEngine::RenderableComponent>(terrainEntity);
+	//scene.m_entities.push_back({ "Terrain", terrainEntity });
 
 
 	//scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
@@ -96,12 +96,12 @@ void App::initialize(VEngine::Engine *engine)
 	entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
 	scene.m_entities.push_back({ "Sponza", sponzaEntity });
 
-	scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
-	entt::entity orbEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
-	entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
-	entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
-	scene.m_entities.push_back({ "Test Orb", orbEntity });
+	//scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
+	//entt::entity orbEntity = entityRegistry.create();
+	//entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
+	//entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
+	//entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
+	//scene.m_entities.push_back({ "Test Orb", orbEntity });
 
 	/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
 	entt::entity giHouseEntity = entityRegistry.create();

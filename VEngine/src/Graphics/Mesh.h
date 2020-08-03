@@ -1,19 +1,21 @@
 #pragma once
+#include <glm/vec4.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
+#include <glm/fwd.hpp>
 #include <vector>
 #include "Handles.h"
 
 namespace VEngine
 {
-	typedef glm::vec3 VertexPosition;
-	typedef glm::vec3 VertexNormal;
-	typedef glm::vec2 VertexTexCoord;
+	typedef glm::u16vec3 VertexPosition;
+	typedef glm::u16vec4 VertexQTangent;
+	typedef glm::u16vec2 VertexTexCoord;
 
 	struct Vertex
 	{
 		VertexPosition position;
-		VertexNormal normal;
+		VertexQTangent qtangent;
 		VertexTexCoord texCoord;
 	};
 
@@ -42,10 +44,12 @@ namespace VEngine
 	{
 		glm::vec3 m_minCorner;
 		glm::vec3 m_maxCorner;
+		glm::vec2 m_minTexCoord;
+		glm::vec2 m_maxTexCoord;
 		uint32_t m_vertexCount;
 		uint16_t m_indexCount;
 		uint8_t *m_positions;
-		uint8_t *m_normals;
+		uint8_t *m_qtangents;
 		uint8_t *m_texCoords;
 		uint16_t *m_indices;
 	};

@@ -18,6 +18,7 @@ struct PSInput
 	float4 position : SV_Position;
 	float2 texCoord : TEXCOORD;
 	float3 normal : NORMAL;
+	float4 tangent : TANGENT;
 	float4 worldPos : WORLD_POSITION;
 	nointerpolation uint materialIndex : MATERIAL_INDEX;
 };
@@ -115,7 +116,10 @@ PSOutput main(PSInput input)
 			float3 tangentSpaceNormal;
 			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1.0 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
-			normal = mul(tangentSpaceNormal, calculateTBN(normal, lightingParams.viewSpacePosition, float2(input.texCoord.x, -input.texCoord.y)));
+
+			float3 bitangent = cross(input.normal, input.tangent.xyz) * input.tangent.w;
+			normal = tangentSpaceNormal.x * input.tangent.xyz + tangentSpaceNormal.y * bitangent + tangentSpaceNormal.z * input.normal;
+			
 			normal = normalize(normal);
 			normal = any(isnan(normal)) ? normalize(input.normal) : normal;
 		}
@@ -297,7 +301,7 @@ PSOutput main(PSInput input)
 
 	PSOutput output;
 	
-	output.color = float4(result, 1.0);
+	output.color = float4(dot(input.tangent, input.tangent) != 0.0 ? result : float3(1.0, 0.0, 0.0), 1.0);
 	output.normalRoughness = float4(encodeOctahedron24(lightingParams.N), lightingParams.roughness);
 	output.albedoMetalness = approximateLinearToSRGB(float4(lightingParams.albedo, lightingParams.metalness));
 	

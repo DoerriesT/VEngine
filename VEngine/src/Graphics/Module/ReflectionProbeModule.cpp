@@ -431,6 +431,7 @@ void VEngine::ReflectionProbeModule::addGBufferRenderingToGraph(rg::RenderGraph 
 		}
 		probeGBufferPassData.m_instanceData = data.m_instanceData;
 		probeGBufferPassData.m_subMeshInfo = data.m_subMeshInfo;
+		probeGBufferPassData.m_texCoordScaleBias = &data.m_renderData->m_texCoordScaleBias[0].x;
 		probeGBufferPassData.m_materialDataBufferInfo = { renderResources->m_materialBuffer, 0, renderResources->m_materialBuffer->getDescription().m_size };
 		probeGBufferPassData.m_transformDataBufferInfo = data.m_transformDataBufferInfo;
 
@@ -471,6 +472,7 @@ void VEngine::ReflectionProbeModule::addShadowRenderingToGraph(rg::RenderGraph &
 		shadowPassData.m_maskedInstanceDataOffset = drawList.m_maskedOffset;
 		shadowPassData.m_instanceData = data.m_instanceData;
 		shadowPassData.m_subMeshInfo = data.m_subMeshInfo;
+		shadowPassData.m_texCoordScaleBias = &data.m_renderData->m_texCoordScaleBias[0].x;
 		shadowPassData.m_materialDataBufferInfo = { data.m_passRecordContext->m_renderResources->m_materialBuffer, 0, data.m_passRecordContext->m_renderResources->m_materialBuffer->getDescription().m_size };
 		shadowPassData.m_transformDataBufferInfo = data.m_transformDataBufferInfo;
 		shadowPassData.m_shadowImageHandle = shadowLayer;

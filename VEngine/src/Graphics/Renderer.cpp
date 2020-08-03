@@ -377,13 +377,13 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// transform data write
-	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::mat4), size_t(1)) };
+	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), size_t(1)) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(transformDataBufferInfo.m_range, transformDataBufferInfo.m_offset, transformDataBufferInfo.m_buffer, bufferPtr);
 		if (renderData.m_transformDataCount)
 		{
-			memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::mat4));
+			memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::vec4));
 		}
 	}
 
@@ -640,21 +640,21 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 
-	// visibility buffer
-	VisibilityBufferPass::Data visibilityBufferPassData;
-	visibilityBufferPassData.m_passRecordContext = &passRecordContext;
-	visibilityBufferPassData.m_opaqueInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	visibilityBufferPassData.m_opaqueInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-	visibilityBufferPassData.m_maskedInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
-	visibilityBufferPassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
-	visibilityBufferPassData.m_instanceData = sortedInstanceData.data();
-	visibilityBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-	visibilityBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-	visibilityBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	visibilityBufferPassData.m_triangleImageHandle = triangleImageViewHandle;
-	visibilityBufferPassData.m_depthImageHandle = triangleDepthBufferImageViewHandle;
-
-	VisibilityBufferPass::addToGraph(graph, visibilityBufferPassData);
+	//// visibility buffer
+	//VisibilityBufferPass::Data visibilityBufferPassData;
+	//visibilityBufferPassData.m_passRecordContext = &passRecordContext;
+	//visibilityBufferPassData.m_opaqueInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
+	//visibilityBufferPassData.m_opaqueInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
+	//visibilityBufferPassData.m_maskedInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
+	//visibilityBufferPassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
+	//visibilityBufferPassData.m_instanceData = sortedInstanceData.data();
+	//visibilityBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	//visibilityBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	//visibilityBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
+	//visibilityBufferPassData.m_triangleImageHandle = triangleImageViewHandle;
+	//visibilityBufferPassData.m_depthImageHandle = triangleDepthBufferImageViewHandle;
+	//
+	//VisibilityBufferPass::addToGraph(graph, visibilityBufferPassData);
 
 
 	// depth prepass
@@ -666,6 +666,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	depthPrePassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
 	depthPrePassData.m_instanceData = sortedInstanceData.data();
 	depthPrePassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	depthPrePassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
 	depthPrePassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 	depthPrePassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	depthPrePassData.m_depthImageHandle = depthImageViewHandle;
@@ -708,6 +709,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	shadowAtlasPassData.m_shadowMatrices = renderData.m_shadowMatrices;
 	shadowAtlasPassData.m_instanceData = sortedInstanceData.data();
 	shadowAtlasPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	shadowAtlasPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
 	shadowAtlasPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 	shadowAtlasPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	shadowAtlasPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
@@ -751,6 +753,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			shadowPassData.m_maskedInstanceDataOffset = drawList.m_maskedOffset;
 			shadowPassData.m_instanceData = sortedInstanceData.data();
 			shadowPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+			shadowPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
 			shadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
 			shadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 			shadowPassData.m_shadowImageHandle = shadowLayer;
@@ -830,6 +833,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_instanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
 	forwardPassData.m_instanceData = sortedInstanceData.data();
 	forwardPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
+	forwardPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
 	forwardPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	forwardPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
 	forwardPassData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;

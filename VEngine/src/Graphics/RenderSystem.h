@@ -58,9 +58,10 @@ namespace VEngine
 		entt::entity m_cameraEntity;
 		std::unique_ptr<uint8_t[]> m_materialBatchAssignment;
 		std::unique_ptr<AxisAlignedBoundingBox[]> m_aabbs;
+		std::unique_ptr<glm::vec4[]> m_texCoordScaleBias;
 		std::unique_ptr<glm::vec4[]> m_boundingSpheres;
 		CommonRenderData m_commonRenderData;
-		std::vector<glm::mat4> m_transformData;
+		std::vector<glm::vec4> m_transformData;
 		std::vector<glm::mat4> m_shadowMatrices;
 		std::vector<glm::vec4> m_shadowCascadeParams;
 		std::vector<SubMeshInstanceData> m_subMeshInstanceData;

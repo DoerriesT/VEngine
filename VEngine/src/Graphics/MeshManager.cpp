@@ -95,25 +95,25 @@ void VEngine::MeshManager::createSubMeshes(uint32_t count, SubMesh *subMeshes, S
 				assert(positionsCopy.m_dstOffset + positionsCopy.m_size <= m_vertexBuffer->getDescription().m_size);
 			}
 
-			// normals
+			// qtangents
 			{
-				auto &normalsCopy = bufferCopies[i + count * 1];
-				normalsCopy.m_srcOffset = currentStagingBufferOffset;
-				normalsCopy.m_dstOffset = RendererConsts::MAX_VERTICES * sizeof(VertexPosition) + vertexOffset * sizeof(VertexNormal);
-				normalsCopy.m_size = vertexCount * sizeof(VertexNormal);
+				auto &qtangentsCopy = bufferCopies[i + count * 1];
+				qtangentsCopy.m_srcOffset = currentStagingBufferOffset;
+				qtangentsCopy.m_dstOffset = RendererConsts::MAX_VERTICES * sizeof(VertexPosition) + vertexOffset * sizeof(VertexQTangent);
+				qtangentsCopy.m_size = vertexCount * sizeof(VertexQTangent);
 
 				// copy to staging buffer
-				memcpy(stagingBufferPtr + currentStagingBufferOffset, subMeshes[i].m_normals, normalsCopy.m_size);
+				memcpy(stagingBufferPtr + currentStagingBufferOffset, subMeshes[i].m_qtangents, qtangentsCopy.m_size);
 
-				currentStagingBufferOffset += normalsCopy.m_size;
-				assert(normalsCopy.m_dstOffset + normalsCopy.m_size <= m_vertexBuffer->getDescription().m_size);
+				currentStagingBufferOffset += qtangentsCopy.m_size;
+				assert(qtangentsCopy.m_dstOffset + qtangentsCopy.m_size <= m_vertexBuffer->getDescription().m_size);
 			}
 
 			// texcoords
 			{
 				auto &texCoordsCopy = bufferCopies[i + count * 2];
 				texCoordsCopy.m_srcOffset = currentStagingBufferOffset;
-				texCoordsCopy.m_dstOffset = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)) + vertexOffset * sizeof(VertexTexCoord);
+				texCoordsCopy.m_dstOffset = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)) + vertexOffset * sizeof(VertexTexCoord);
 				texCoordsCopy.m_size = vertexCount * sizeof(VertexTexCoord);
 
 				// copy to staging buffer

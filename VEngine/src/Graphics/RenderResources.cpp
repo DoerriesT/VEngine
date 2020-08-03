@@ -235,7 +235,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	// vertex buffer
 	{
 		BufferCreateInfo bufferCreateInfo{};
-		bufferCreateInfo.m_size = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal) + sizeof(VertexTexCoord));
+		bufferCreateInfo.m_size = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent) + sizeof(VertexTexCoord));
 		bufferCreateInfo.m_createFlags = 0;
 		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::VERTEX_BUFFER_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
 

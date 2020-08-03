@@ -22,6 +22,7 @@ namespace VEngine
 			const glm::mat4 *m_shadowMatrices;
 			const SubMeshInstanceData *m_instanceData;
 			const SubMeshInfo *m_subMeshInfo;
+			const float *m_texCoordScaleBias;
 			gal::DescriptorBufferInfo m_materialDataBufferInfo;
 			gal::DescriptorBufferInfo m_transformDataBufferInfo;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;

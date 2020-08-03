@@ -15,6 +15,8 @@
 struct PushConsts
 {
 	float4x4 jitteredViewProjectionMatrix;
+	float2 texCoordScale;
+	float2 texCoordBias;
 	uint transformIndex;
 	uint materialIndex;
 };

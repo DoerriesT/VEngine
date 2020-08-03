@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
 #include "ParticleDrawData.h"
 
 namespace VEngine
@@ -82,7 +83,7 @@ namespace VEngine
 	struct RenderData
 	{
 		uint32_t m_transformDataCount;
-		glm::mat4 *m_transformData;
+		glm::vec4 *m_transformData;
 		uint32_t m_shadowMatrixCount;
 		glm::mat4 *m_shadowMatrices;
 		glm::vec4 *m_shadowCascadeParams;
@@ -104,5 +105,6 @@ namespace VEngine
 		uint32_t m_particleDataDrawListCount;
 		uint32_t *m_particleDrawDataListSizes;
 		ParticleDrawData **m_particleDrawDataLists;
+		const glm::vec4 *m_texCoordScaleBias;
 	};
 }

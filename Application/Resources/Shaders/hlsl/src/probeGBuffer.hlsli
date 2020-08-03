@@ -4,8 +4,8 @@
 #define MATERIAL_DATA_BINDING 1
 #define VERTEX_POSITIONS_SET 0
 #define VERTEX_POSITIONS_BINDING 2
-#define VERTEX_NORMALS_SET 0
-#define VERTEX_NORMALS_BINDING 3
+#define VERTEX_QTANGENTS_SET 0
+#define VERTEX_QTANGENTS_BINDING 3
 #define VERTEX_TEXCOORDS_SET 0
 #define VERTEX_TEXCOORDS_BINDING 4
 #define CONSTANT_BUFFER_SET 0
@@ -18,6 +18,8 @@
 
 struct PushConsts
 {
+	float2 texCoordScale;
+	float2 texCoordBias;
 	uint face;
 	uint transformIndex;
 	uint materialIndex;

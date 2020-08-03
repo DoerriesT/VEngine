@@ -94,19 +94,21 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 			size_t dataOffset = subMeshInfo["dataOffset"].get<size_t>();
 
 			SubMesh subMesh;
-			subMesh.m_minCorner = { subMeshInfo["minCorner"][0], subMeshInfo["minCorner"][1], subMeshInfo["minCorner"][2] };
-			subMesh.m_maxCorner = { subMeshInfo["maxCorner"][0], subMeshInfo["maxCorner"][1], subMeshInfo["maxCorner"][2] };
+			subMesh.m_minCorner = { subMeshInfo["minCorner"][0].get<float>(), subMeshInfo["minCorner"][1].get<float>(), subMeshInfo["minCorner"][2].get<float>() };
+			subMesh.m_maxCorner = { subMeshInfo["maxCorner"][0].get<float>(), subMeshInfo["maxCorner"][1].get<float>(), subMeshInfo["maxCorner"][2].get<float>() };
+			subMesh.m_minTexCoord = { subMeshInfo["texCoordMin"][0].get<float>(), subMeshInfo["texCoordMin"][1].get<float>() };
+			subMesh.m_maxTexCoord = { subMeshInfo["texCoordMax"][0].get<float>(), subMeshInfo["texCoordMax"][1].get<float>() };
 			subMesh.m_vertexCount = subMeshInfo["vertexCount"].get<uint32_t>();
 			subMesh.m_indexCount = subMeshInfo["indexCount"].get<uint32_t>();
 
 			subMesh.m_positions = (uint8_t *)meshData.data() + dataOffset;
-			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec3);
+			dataOffset += subMesh.m_vertexCount * sizeof(VertexPosition);
 
-			subMesh.m_normals = (uint8_t *)meshData.data() + dataOffset;
-			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec3);
+			subMesh.m_qtangents = (uint8_t *)meshData.data() + dataOffset;
+			dataOffset += subMesh.m_vertexCount * sizeof(VertexQTangent);
 
 			subMesh.m_texCoords = (uint8_t *)meshData.data() + dataOffset;
-			dataOffset += subMesh.m_vertexCount * sizeof(glm::vec2);
+			dataOffset += subMesh.m_vertexCount * sizeof(VertexTexCoord);
 
 			subMesh.m_indices = (uint16_t*)(meshData.data() + dataOffset);
 

@@ -28,6 +28,7 @@ VEngine::RenderSystem::RenderSystem(entt::registry &entityRegistry, void *window
 	m_cameraEntity(entt::null),
 	m_materialBatchAssignment(std::make_unique<uint8_t[]>(RendererConsts::MAX_MATERIALS)),
 	m_aabbs(std::make_unique<AxisAlignedBoundingBox[]>(RendererConsts::MAX_SUB_MESHES)),
+	m_texCoordScaleBias(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES)),
 	m_boundingSpheres(std::make_unique<glm::vec4[]>(RendererConsts::MAX_SUB_MESHES)),
 	m_width(width),
 	m_height(height),
@@ -778,12 +779,23 @@ void VEngine::RenderSystem::update(float timeDelta)
 					transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
 					transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
 
-					const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size());
-
-					m_transformData.push_back(transformationComponent.m_transformation);
+					glm::quat transposeInverseRotation = glm::quat_cast(glm::transpose(glm::inverse(glm::mat3(transformationComponent.m_transformation))));
 
 					for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 					{
+						const auto &aabb = m_aabbs[p.first.m_handle];
+						const glm::mat4 localScale = glm::scale(aabb.m_max - aabb.m_min);
+						const glm::mat4 localBias = glm::translate(aabb.m_min);
+
+						const uint32_t transformIndex = static_cast<uint32_t>(m_transformData.size() / 4);
+
+						glm::mat4 transform = glm::transpose(transformationComponent.m_transformation * localBias * localScale);
+
+						m_transformData.push_back(transform[0]);
+						m_transformData.push_back(transform[1]);
+						m_transformData.push_back(transform[2]);
+						m_transformData.push_back(glm::vec4(transposeInverseRotation.x, transposeInverseRotation.y, transposeInverseRotation.z, transposeInverseRotation.w));
+
 						SubMeshInstanceData instanceData;
 						instanceData.m_subMeshIndex = p.first.m_handle;
 						instanceData.m_transformIndex = transformIndex;
@@ -919,6 +931,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_probeShadowViewRenderListOffset = probeShadowsRenderListOffset;
 		renderData.m_probeShadowViewRenderListCount = probeShadowRenderListCount;
 		renderData.m_renderLists = renderLists.data();
+		renderData.m_texCoordScaleBias = m_texCoordScaleBias.get();
 
 		m_particleEmitterManager->getParticleDrawData(renderData.m_particleDataDrawListCount, renderData.m_particleDrawDataLists, renderData.m_particleDrawDataListSizes);
 
@@ -990,6 +1003,8 @@ void VEngine::RenderSystem::createSubMeshes(uint32_t count, SubMesh *subMeshes, 
 		const glm::vec3 center = minC + (maxC - minC) * 0.5f;
 		const float radius = glm::distance(center, maxC);
 		m_boundingSpheres[handles[i].m_handle] = glm::vec4(center, radius);
+
+		m_texCoordScaleBias[handles[i].m_handle] = glm::vec4(subMeshes[i].m_maxTexCoord - subMeshes[i].m_minTexCoord, subMeshes[i].m_minTexCoord);
 	}
 
 	// create BVH

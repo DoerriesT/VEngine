@@ -181,8 +181,9 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				{
 					Buffer *vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer;
 					DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-					DescriptorBufferInfo normalsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) };
-					DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexNormal)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+					//DescriptorBufferInfo normalsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexNormal) };
+					DescriptorBufferInfo tangentsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition)), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent) };
+					DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
 					ImageView *shadowImageView = registry.getImageView(data.m_deferredShadowImageViewHandle);
 					//ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 					//ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
@@ -197,7 +198,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					{
 						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-						Initializers::storageBuffer(&normalsBufferInfo, VERTEX_NORMALS_BINDING),
+						//Initializers::storageBuffer(&normalsBufferInfo, VERTEX_NORMALS_BINDING),
+						Initializers::storageBuffer(&tangentsBufferInfo, VERTEX_QTANGENTS_BINDING),
 						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
 						//Initializers::storageBuffer(&data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING),
 						Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
@@ -241,6 +243,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					const auto &instanceData = data.m_instanceData[i + data.m_instanceDataOffset];
 
 					PushConsts pushConsts;
+					pushConsts.texCoordScale = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 0], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 1]);
+					pushConsts.texCoordBias = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 2], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 3]);
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
 
