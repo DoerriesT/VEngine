@@ -780,7 +780,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 					transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
 					transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
 
-					glm::quat transposeInverseRotation = glm::quat_cast(glm::transpose(glm::inverse(glm::mat3(transformationComponent.m_transformation))));
+					glm::quat transposeInverseRotation = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(glm::mat3(transformationComponent.m_transformation)))));
 
 					for (const auto &p : meshComponent.m_subMeshMaterialPairs)
 					{
