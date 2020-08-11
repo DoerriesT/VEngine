@@ -64,12 +64,15 @@ namespace VEngine
 		rg::ResourceStateData m_brdfLutImageState = {};
 
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_texture3DDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTexture3DDescriptorSetLayout = {};
 		gal::DescriptorSet *m_textureDescriptorSet = {};
+		gal::DescriptorSet *m_texture3DDescriptorSet = {};
 		gal::DescriptorSet *m_computeTextureDescriptorSet = {};
 		gal::DescriptorSet *m_computeTexture3DDescriptorSet = {};
 		gal::DescriptorSetPool *m_textureDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_texture3DDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_computeTextureDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_computeTexture3DDescriptorSetPool = {};
 

@@ -76,4 +76,8 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main -D ALPHA_MASK_ENABLE
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main shadeVisibilityBuffer_cs.hlsl -Fo ./../shadeVisibilityBuffer_cs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main shadeVisibilityBuffer_ps.hlsl -Fo ./../shadeVisibilityBuffer_ps.spv
 
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main fourierOpacityVolume_vs.hlsl -Fo ./../fourierOpacityVolume_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityVolume_ps.hlsl -Fo ./../fourierOpacityVolume_ps.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityGlobal_ps.hlsl -Fo ./../fourierOpacityGlobal_ps.spv
+
 pause

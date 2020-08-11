@@ -1,13 +1,10 @@
 #define RESULT_IMAGE_BINDING 0
 #define LIGHT_INFO_BINDING 1
 #define GLOBAL_MEDIA_BINDING 2
-#define LOCAL_MEDIA_BINDING 3
-#define LINEAR_SAMPLER_BINDING 4
-#define VOLUME_TRANSFORMS_BINDING 5
+#define LINEAR_SAMPLER_BINDING 3
 
 struct LightInfo
 {
-	float4x4 viewProjection;
 	float4x4 invViewProjection;
 	float3 position;
 	float radius;
@@ -21,16 +18,8 @@ struct LightInfo
 	float pad3;
 };
 
-
 struct PushConsts
 {
 	uint lightIndex;
 	uint globalMediaCount;
-	uint localVolumeCount;
-};
-
-struct PushConsts2
-{
-	uint lightIndex;
-	uint volumeIndex;
 };

@@ -78,10 +78,12 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroySampler(m_shadowSampler);
 
 	m_graphicsDevice->destroyDescriptorSetPool(m_textureDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_texture3DDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTextureDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTexture3DDescriptorSetPool);
 	
 	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_texture3DDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTextureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTexture3DDescriptorSetLayout);
 }
@@ -381,6 +383,19 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSet);
 	}
 
+	// create texture3d descriptor set
+	{
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
+		};
+
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_texture3DDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_texture3DDescriptorSetLayout, "Texture DSet Layout");
+		m_graphicsDevice->createDescriptorSetPool(1, m_texture3DDescriptorSetLayout, &m_texture3DDescriptorSetPool);
+		m_texture3DDescriptorSetPool->allocateDescriptorSets(1, &m_texture3DDescriptorSet);
+	}
+
 	// create compute texture descriptor set
 	{
 		DescriptorSetLayoutBinding bindings[]
@@ -644,6 +659,7 @@ void VEngine::RenderResources::updateTexture3DArray(uint32_t count, gal::ImageVi
 	imageUpdate.m_imageViews = data;
 
 	m_computeTexture3DDescriptorSet->update(1, &imageUpdate);
+	m_texture3DDescriptorSet->update(1, &imageUpdate);
 }
 
 void VEngine::RenderResources::createImGuiFontsTexture()
