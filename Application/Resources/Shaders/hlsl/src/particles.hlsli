@@ -15,6 +15,7 @@
 #define FOM_IMAGE_BINDING 14
 #define SHADOW_MATRICES_BINDING 15
 #define SHADOW_IMAGE_BINDING 16
+#define BLUE_NOISE_IMAGE_BINDING 17
 
 struct Constants
 {
@@ -28,4 +29,6 @@ struct Constants
 	uint directionalLightShadowedCount;
 	uint punctualLightCount;
 	uint punctualLightShadowedCount;
+	uint frame;
+	uint height;
 };

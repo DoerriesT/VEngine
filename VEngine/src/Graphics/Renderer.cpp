@@ -1032,6 +1032,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	particlesPassData.m_listCount = renderData.m_particleDataDrawListCount;
 	particlesPassData.m_particleLists = renderData.m_particleDrawDataLists;
 	particlesPassData.m_listSizes = renderData.m_particleDrawDataListSizes;
+	particlesPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
 	particlesPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
 	particlesPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	particlesPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;

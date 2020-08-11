@@ -228,7 +228,7 @@ void App::initialize(VEngine::Engine *engine)
 
 	entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
 
-	//entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
+	entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
 	scene.m_entities.push_back({ "Particle Emitter", particleEmitter });
 
 	std::default_random_engine e;

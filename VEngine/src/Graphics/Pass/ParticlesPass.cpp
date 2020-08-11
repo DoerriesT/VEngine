@@ -46,11 +46,13 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		consts.cameraPosition = commonData->m_cameraPosition;
 		consts.cameraUp = glm::vec3(commonData->m_viewMatrix[0][1], commonData->m_viewMatrix[1][1], commonData->m_viewMatrix[2][1]);
 		consts.width = commonData->m_width;
+		consts.height = commonData->m_height;
 		consts.volumetricShadow = g_volumetricShadow;
 		consts.directionalLightCount = commonData->m_directionalLightCount;
 		consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 		consts.punctualLightCount = commonData->m_punctualLightCount;
 		consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
+		consts.frame = data.m_passRecordContext->m_commonRenderData->m_frame;
 
 		memcpy(uboDataPtr, &consts, sizeof(consts));
 	}
@@ -147,6 +149,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					Initializers::storageBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
 					Initializers::storageBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
 					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

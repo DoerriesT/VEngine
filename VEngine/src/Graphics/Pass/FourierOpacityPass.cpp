@@ -124,11 +124,11 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 			// rasterize particles
 			if (data.m_particleCount)
 			{
-				// barrier on fom atlas to wait for blur
+				// barrier on fom atlas to wait for volumetrics
 				{
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_fomImageViewHandle),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::WRITE_STORAGE_IMAGE, { 0, 1, 0, 2 });
+						gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::READ_WRITE_STORAGE_IMAGE, { 0, 1, 0, 2 });
 
 					cmdList->barrier(1, &barrier);
 				}

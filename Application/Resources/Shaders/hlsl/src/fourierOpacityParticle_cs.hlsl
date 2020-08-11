@@ -15,6 +15,7 @@ struct ParticleData
 
 struct LightInfo
 {
+	float4x4 viewProjection;
 	float4x4 invViewProjection;
 	float3 position;
 	float radius;
@@ -81,8 +82,8 @@ void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahe
 		if ((border.x && border.y) || (border.x && border.w) || (border.z && border.y) || (border.z && border.w))
 		{
 			const int2 cornerCoord = dstCoord + int2(border.xy ? int2(resolution, resolution) : int2(-resolution, -resolution));
-			g_ResultImage[uint3(cornerCoord, 0)] = +result0;
-			g_ResultImage[uint3(cornerCoord, 1)] = +result1;
+			g_ResultImage[uint3(cornerCoord, 0)] += result0;
+			g_ResultImage[uint3(cornerCoord, 1)] += result1;
 		}
 	}
 }

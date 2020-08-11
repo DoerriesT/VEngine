@@ -14,6 +14,7 @@ namespace VEngine
 			uint32_t m_listCount;
 			ParticleDrawData **m_particleLists;
 			uint32_t *m_listSizes;
+			gal::ImageView *m_blueNoiseImageView;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;

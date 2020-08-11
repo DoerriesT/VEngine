@@ -34,6 +34,7 @@ Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
@@ -250,7 +251,7 @@ PSOutput main(PSInput input)
 	
 	// volumetric fog
 	{
-		float z = -viewSpacePos.z;
+		float z = length(viewSpacePos);//-viewSpacePos.z;
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 		
 		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
@@ -259,11 +260,36 @@ PSOutput main(PSInput input)
 		g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 		float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
 		
-		float3 volumetricFogTexCoord = float3(input.position.xy * scaledFogImageTexelSize, d);
+		float3 volumetricFogTexCoord = float3(input.position.xy / float2(g_Constants.width, g_Constants.height) /* * scaledFogImageTexelSize*/, d);
 		
-		float4 fog = g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], volumetricFogTexCoord, 0.0);
+		float4 fog = 0.0;
+	
+	
+		float3 texelSize = 1.0 / imageDims;
+		
+		float3 tc;
+		
+		float4 noise = g_BlueNoiseImage.Load(int4((int2(input.position.xy) + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0));
+		noise = (noise * 2.0 - 1.0) * 1.5;
+		
+		tc = volumetricFogTexCoord + noise.xyz * texelSize;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
+		noise = noise.yzwx;
+		
+		tc = volumetricFogTexCoord + noise.xyz * texelSize;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
+		noise = noise.yzwx;
+		
+		tc = volumetricFogTexCoord + noise.xyz * texelSize;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
+		noise = noise.yzwx;
+		
+		tc = volumetricFogTexCoord + noise.xyz * texelSize;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
+		noise = noise.yzwx;
 		
 		fog.rgb = inverseSimpleTonemap(fog.rgb);
+
 		result = result * fog.aaa + fog.rgb;
 	}
 	
