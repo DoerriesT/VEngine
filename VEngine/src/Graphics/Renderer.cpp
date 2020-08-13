@@ -40,6 +40,7 @@
 #include "Pass/VisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPassPS.h"
+#include "Pass/FourierOpacityDirectionalLightPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -89,7 +90,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_textureManager = new TextureManager(m_graphicsDevice);
 	m_materialManager = new MaterialManager(m_graphicsDevice, m_renderResources->m_stagingBuffer, m_renderResources->m_materialBuffer);
 	m_meshManager = new MeshManager(m_graphicsDevice,
-		m_renderResources->m_stagingBuffer, 
+		m_renderResources->m_stagingBuffer,
 		m_renderResources->m_vertexBuffer,
 		m_renderResources->m_indexBuffer,
 		m_renderResources->m_subMeshDataInfoBuffer,
@@ -614,7 +615,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 		m_reflectionProbeModule->addGBufferRenderingToGraph(graph, probeGBufferPassData);
 	}
-	
+
 
 	// probe relighting
 	if (renderData.m_probeRelightCount)
@@ -769,21 +770,40 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		}
 	}
 
+	rg::ImageViewHandle fomDirShadowImageViewHandle = 0;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "FOM Cascades Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = 256;
+		desc.m_height = 256;
+		desc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u) * 2;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = Format::R16G16B16A16_SFLOAT;
 
-	// deferred shadows
-	DeferredShadowsPass::Data deferredShadowsPassData;
-	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
-	deferredShadowsPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
-	deferredShadowsPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
-	deferredShadowsPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
-	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
-	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
-	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
-	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
-	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
-	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
+		rg::ImageHandle imageHandle = graph.createImage(desc);
+		fomDirShadowImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
 
-	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
+		if (renderData.m_shadowCascadeViewRenderListCount > 0)
+		{
+			FourierOpacityDirectionalLightPass::Data fourierOpacityDirLightPassData;
+			fourierOpacityDirLightPassData.m_passRecordContext = &passRecordContext;
+			fourierOpacityDirLightPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
+			fourierOpacityDirLightPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+			fourierOpacityDirLightPassData.m_listCount = renderData.m_particleDataDrawListCount;
+			fourierOpacityDirLightPassData.m_particleLists = renderData.m_particleDrawDataLists;
+			fourierOpacityDirLightPassData.m_listSizes = renderData.m_particleDrawDataListSizes;
+			fourierOpacityDirLightPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
+			fourierOpacityDirLightPassData.m_particleBufferInfo = particleBufferInfo;
+			fourierOpacityDirLightPassData.m_shadowMatrixBufferInfo = shadowMatricesBufferInfo;
+			fourierOpacityDirLightPassData.m_directionalLightFomImageHandle = imageHandle;
+
+			FourierOpacityDirectionalLightPass::addToGraph(graph, fourierOpacityDirLightPassData);
+		}
+	}
+	
 
 
 	// fourier opacity
@@ -801,7 +821,27 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 		FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
 	}
-	
+
+
+	// deferred shadows
+	DeferredShadowsPass::Data deferredShadowsPassData;
+	deferredShadowsPassData.m_passRecordContext = &passRecordContext;
+	deferredShadowsPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
+	deferredShadowsPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+	deferredShadowsPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
+	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
+	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
+	deferredShadowsPassData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
+	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
+	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
+	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
+	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
+
+	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
+
+
+
+
 
 
 	// volumetric fog

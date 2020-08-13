@@ -1,15 +1,18 @@
 #include "bindingHelper.hlsli"
 #include "deferredShadows.hlsli"
+#include "commonFourierOpacity.hlsli"
 
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2DArray<float> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, SHADOW_IMAGE_SET);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
-StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
-StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, CASCADE_PARAMS_BUFFER_SET);  // X: depth bias Y: normal bias Z: texelsPerMeter
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2DArray<float> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, 0);
+SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
+SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
+StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
+StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, 0);  // X: depth bias Y: normal bias Z: texelsPerMeter
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -159,6 +162,14 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		const float2 coord = filterScale * maxFilterRadiusTexelSpace * vogelDiskSample(j, 16, noise) + tc.xy;
 		shadow += g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(coord, tc.w), tc.z).x * (1.0 / 16.0);
+	}
+	
+	//if (shadow > 0.0)
+	{
+		float4 fom0 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+		float4 fom1 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+		
+		shadow *= fourierOpacityGetTransmittance(tc.z, fom0, fom1);
 	}
 	
 	g_ResultImage[threadID.xy] = shadow;

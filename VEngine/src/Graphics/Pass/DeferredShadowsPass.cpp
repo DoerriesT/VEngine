@@ -29,7 +29,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 
 		const glm::mat4 rowMajorViewMatrix = glm::transpose(data.m_passRecordContext->m_commonRenderData->m_viewMatrix);
 
-		
+
 		const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 		const auto &lightData = data.m_lightData[i];
 
@@ -61,6 +61,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 			{rg::ResourceViewHandle(data.m_depthImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			//{rg::ResourceViewHandle(data.m_tangentSpaceImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+			{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		};
 
 		graph.addPass("Deferred Shadows", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -87,6 +88,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
 					//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageViewHandle);
 					ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
+					ImageView *fomImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
 
 					DescriptorSetUpdate updates[] =
 					{
@@ -97,16 +99,18 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 						Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
 						Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
+						Initializers::sampledImage(&fomImageView, FOM_IMAGE_BINDING),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}
-				
+
 				cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 			});
 	}
