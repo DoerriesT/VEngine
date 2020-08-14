@@ -75,7 +75,7 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 
 	auto &registry = m_engine->getEntityRegistry();
 	m_editorCameraEntity = registry.create();
-	registry.assign<TransformationComponent>(m_editorCameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
+	registry.assign<TransformationComponent>(m_editorCameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-12.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
 	registry.assign<CameraComponent>(m_editorCameraEntity, CameraComponent::ControllerType::FPS, (width > 0 && height > 0) ? width / (float)height : 1.0f, glm::radians(60.0f), 0.1f, 300.0f);
 
 

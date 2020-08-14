@@ -69,7 +69,7 @@ void App::initialize(VEngine::Engine *engine)
 
 	auto &entityRegistry = m_engine->getEntityRegistry();
 	m_cameraEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(m_cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(90.0f), 0.0f)));
+	entityRegistry.assign<VEngine::TransformationComponent>(m_cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
 	entityRegistry.assign<VEngine::CameraComponent>(m_cameraEntity, VEngine::CameraComponent::ControllerType::FPS, m_engine->getWidth() / (float)m_engine->getHeight(), glm::radians(60.0f), 0.1f, 300.0f);
 	m_engine->getRenderSystem().setCameraEntity(m_cameraEntity);
 	scene.m_entities.push_back({ "Camera", m_cameraEntity });
