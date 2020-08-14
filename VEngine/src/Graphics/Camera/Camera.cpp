@@ -38,9 +38,9 @@ void VEngine::Camera::setFovy(float fovy)
 
 void VEngine::Camera::rotate(const glm::vec3 &pitchYawRollOffset)
 {
-	glm::quat tmp = glm::quat(glm::vec3(pitchYawRollOffset.x, 0.0, 0.0));
-	glm::quat tmp1 = glm::quat(glm::angleAxis(pitchYawRollOffset.y, glm::vec3(0.0, 1.0, 0.0)));
-	m_transformationComponent.m_orientation = glm::normalize(tmp * m_transformationComponent.m_orientation * tmp1);
+	glm::quat tmp = glm::quat(glm::vec3(-pitchYawRollOffset.x, 0.0, 0.0));
+	glm::quat tmp1 = glm::quat(glm::angleAxis(-pitchYawRollOffset.y, glm::vec3(0.0, 1.0, 0.0)));
+	m_transformationComponent.m_orientation = glm::normalize(tmp1 * m_transformationComponent.m_orientation * tmp);
 
 	updateViewMatrix();
 }
@@ -105,7 +105,7 @@ float VEngine::Camera::getFovy() const
 void VEngine::Camera::updateViewMatrix()
 {
 	glm::mat4 translationMatrix;
-	m_cameraComponent.m_viewMatrix = glm::mat4_cast(m_transformationComponent.m_orientation) * glm::translate(translationMatrix, -m_transformationComponent.m_position);
+	m_cameraComponent.m_viewMatrix = glm::mat4_cast(glm::inverse(m_transformationComponent.m_orientation)) * glm::translate(translationMatrix, -m_transformationComponent.m_position);
 }
 
 void VEngine::Camera::updateProjectionMatrix()

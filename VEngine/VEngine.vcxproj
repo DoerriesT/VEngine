@@ -220,6 +220,7 @@
     <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\BloomUpsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\BuildIndexBufferPass.h" />
+    <ClInclude Include="src\Graphics\Pass\DebugDrawPass.h" />
     <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h" />
     <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h" />
@@ -361,6 +362,7 @@
     <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\DebugDrawPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp" />

@@ -49,6 +49,12 @@ namespace VEngine
 		void setEditorMode(bool editorMode);
 		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
 		Texture2DHandle getEditorSceneTextureHandle();
+		void drawDebugLine(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1);
+		void drawDebugLineVisible(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1);
+		void drawDebugLineHidden(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1);
+		void drawDebugTriangle(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2);
+		void drawDebugTriangleVisible(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2);
+		void drawDebugTriangleHidden(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2);
 
 	private:
 		entt::registry &m_entityRegistry;
@@ -64,6 +70,12 @@ namespace VEngine
 		std::vector<glm::vec4> m_transformData;
 		std::vector<glm::mat4> m_shadowMatrices;
 		std::vector<glm::vec4> m_shadowCascadeParams;
+		std::vector<DebugDrawVertex> m_debugLineVertices;
+		std::vector<DebugDrawVertex> m_debugLineVisibleVertices;
+		std::vector<DebugDrawVertex> m_debugLineHiddenVertices;
+		std::vector<DebugDrawVertex> m_debugTriangleVertices;
+		std::vector<DebugDrawVertex> m_debugTriangleVisibleVertices;
+		std::vector<DebugDrawVertex> m_debugTriangleHiddenVertices;
 		std::vector<SubMeshInstanceData> m_subMeshInstanceData;
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];

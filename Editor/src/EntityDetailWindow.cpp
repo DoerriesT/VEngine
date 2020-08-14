@@ -12,6 +12,7 @@
 #include <Components/ReflectionProbeComponent.h>
 #include <Engine.h>
 #include <Graphics/Camera/Camera.h>
+#include <Graphics/RenderSystem.h>
 #include <glm/ext.hpp>
 
 using namespace VEngine;
@@ -67,6 +68,101 @@ static void selectableAddComponent(entt::registry &registry, entt::entity entity
 	}
 }
 
+static void drawSphereGeometry(RenderSystem &renderSystem, const glm::vec3 &position, const glm::quat &rotation, const glm::vec3 &scale, const glm::vec4 &visibleColor, const glm::vec4 &occludedColor, bool drawOccluded)
+{
+	const size_t segmentCount = 32;
+
+	glm::mat4 transform = glm::translate(position) * glm::mat4_cast(rotation) * glm::scale(scale);
+
+	for (size_t i = 0; i < segmentCount; ++i)
+	{
+		float angle0 = i / (float)segmentCount * (2.0f * glm::pi<float>());
+		float angle1 = (i + 1) / (float)segmentCount * (2.0f * glm::pi<float>());
+		float x0 = cosf(angle0);
+		float x1 = cosf(angle1);
+		float y0 = sinf(angle0);
+		float y1 = sinf(angle1);
+
+		glm::vec3 p0, p1;
+
+		// horizontal
+		p0 = transform * glm::vec4(x0, 0.0f, y0, 1.0f);
+		p1 = transform * glm::vec4(x1, 0.0f, y1, 1.0f);
+		renderSystem.drawDebugLineVisible(p0, p1, visibleColor, visibleColor);
+		if (drawOccluded)
+		{
+			renderSystem.drawDebugLineHidden(p0, p1, occludedColor, occludedColor);
+		}
+
+		// vertical z
+		p0 = transform * glm::vec4(0.0f, x0, y0, 1.0f);
+		p1 = transform * glm::vec4(0.0f, x1, y1, 1.0f);
+		renderSystem.drawDebugLineVisible(p0, p1, visibleColor, visibleColor);
+		if (drawOccluded)
+		{
+			renderSystem.drawDebugLineHidden(p0, p1, occludedColor, occludedColor);
+		}
+
+		// vertical x
+		p0 = transform * glm::vec4(x0, y0, 0.0f, 1.0f);
+		p1 = transform * glm::vec4(x1, y1, 0.0f, 1.0f);
+		renderSystem.drawDebugLineVisible(p0, p1, visibleColor, visibleColor);
+		if (drawOccluded)
+		{
+			renderSystem.drawDebugLineHidden(p0, p1, occludedColor, occludedColor);
+		}
+	}
+}
+
+static void drawBoxGeometry(RenderSystem &renderSystem, const glm::mat4 &transform, const glm::vec4 &visibleColor, const glm::vec4 &occludedColor, bool drawOccluded)
+{
+	glm::vec3 corners[2][2][2];
+
+	for (int x = 0; x < 2; ++x)
+	{
+		for (int y = 0; y < 2; ++y)
+		{
+			for (int z = 0; z < 2; ++z)
+			{
+				corners[x][y][z] = transform * glm::vec4(glm::vec3(x, y, z) * 2.0f - 1.0f, 1.0f);
+			}
+		}
+	}
+
+	renderSystem.drawDebugLineVisible(corners[0][0][0], corners[1][0][0], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[0][0][1], corners[1][0][1], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[0][0][0], corners[0][0][1], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[1][0][0], corners[1][0][1], visibleColor, visibleColor);
+	
+	renderSystem.drawDebugLineVisible(corners[0][1][0], corners[1][1][0], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[0][1][1], corners[1][1][1], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[0][1][0], corners[0][1][1], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[1][1][0], corners[1][1][1], visibleColor, visibleColor);
+	
+	renderSystem.drawDebugLineVisible(corners[0][0][0], corners[0][1][0], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[0][0][1], corners[0][1][1], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[1][0][0], corners[1][1][0], visibleColor, visibleColor);
+	renderSystem.drawDebugLineVisible(corners[1][0][1], corners[1][1][1], visibleColor, visibleColor);
+
+	if (drawOccluded)
+	{
+		renderSystem.drawDebugLineHidden(corners[0][0][0], corners[1][0][0], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[0][0][1], corners[1][0][1], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[0][0][0], corners[0][0][1], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[1][0][0], corners[1][0][1], occludedColor, occludedColor);
+
+		renderSystem.drawDebugLineHidden(corners[0][1][0], corners[1][1][0], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[0][1][1], corners[1][1][1], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[0][1][0], corners[0][1][1], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[1][1][0], corners[1][1][1], occludedColor, occludedColor);
+
+		renderSystem.drawDebugLineHidden(corners[0][0][0], corners[0][1][0], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[0][0][1], corners[0][1][1], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[1][0][0], corners[1][1][0], occludedColor, occludedColor);
+		renderSystem.drawDebugLineHidden(corners[1][0][1], corners[1][1][1], occludedColor, occludedColor);
+	}
+}
+
 VEditor::EntityDetailWindow::EntityDetailWindow(VEngine::Engine *engine)
 	:m_engine(engine),
 	m_lastDisplayedEntity(entt::null),
@@ -110,7 +206,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			}
 			assert(found);
 		}
-		
+
 		if (ImGui::InputText("Entity Name", entityName, IM_ARRAYSIZE(entityName), ImGuiInputTextFlags_EnterReturnsTrue))
 		{
 			auto &scene = m_engine->getScene();
@@ -147,8 +243,13 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 
 		ImGui::BeginChild("Child1");
 		{
+			const glm::vec4 visibleLightDebugColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
+			const glm::vec4 occludedLightDebugColor = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+
+			TransformationComponent *tc = nullptr;
+
 			// transformation
-			if (TransformationComponent *tc = nullptr; beginComponent(entityRegistry, entity, "Transformation", tc))
+			if (beginComponent(entityRegistry, entity, "Transformation", tc))
 			{
 				showGuizmo = true;
 
@@ -206,6 +307,29 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 					}
 					ImGui::PopID();
 				}
+
+				// draw directional light debug geometry
+				if (tc && entityRegistry.has<RenderableComponent>(entity))
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+
+					const size_t segmentCount = 32;
+
+					glm::mat3 rotation = glm::mat3_cast(tc->m_orientation);
+
+					glm::vec3 arrowHead = rotation * glm::vec3(0.0f, 1.0f, 0.0f) + tc->m_position;
+					glm::vec3 arrowTail = rotation * glm::vec3(0.0f, 4.0f, 0.0f) + tc->m_position;
+					glm::vec3 arrowHeadX0 = rotation * glm::vec3(0.25f, 1.25f, 0.0f) + tc->m_position;
+					glm::vec3 arrowHeadX1 = rotation * glm::vec3(-0.25f, 1.25f, 0.0f) + tc->m_position;
+					glm::vec3 arrowHeadZ0 = rotation * glm::vec3(0.0f, 1.25f, 0.25f) + tc->m_position;
+					glm::vec3 arrowHeadZ1 = rotation * glm::vec3(0.0f, 1.25f, -0.25f) + tc->m_position;
+
+					renderSystem.drawDebugLine(arrowHead, arrowTail, visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(arrowHead, arrowHeadX0, visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(arrowHead, arrowHeadX1, visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(arrowHead, arrowHeadZ0, visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(arrowHead, arrowHeadZ1, visibleLightDebugColor, visibleLightDebugColor);
+				}
 			}
 
 			// point light
@@ -218,6 +342,13 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				if (plc->m_shadows)
 				{
 					ImGui::Checkbox("Volumetric Shadows", &plc->m_volumetricShadows);
+				}
+
+				// draw point light debug geometry
+				if (tc && entityRegistry.has<RenderableComponent>(entity))
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+					drawSphereGeometry(renderSystem, tc->m_position, tc->m_orientation, glm::vec3(plc->m_radius), visibleLightDebugColor, occludedLightDebugColor, false);
 				}
 			}
 
@@ -243,6 +374,62 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				{
 					ImGui::Checkbox("Volumetric Shadows", &slc->m_volumetricShadows);
 				}
+
+				// draw point light debug geometry
+				if (tc && entityRegistry.has<RenderableComponent>(entity))
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+
+					const size_t segmentCount = 32;
+					const size_t capSegmentCount = 16;
+
+					glm::mat3 rotation = glm::mat3_cast(tc->m_orientation);
+
+					// cone lines
+					for (size_t i = 0; i < segmentCount; ++i)
+					{
+						float angle = i / (float)segmentCount * (2.0f * glm::pi<float>());
+						float x = cosf(angle);
+						float y = sinf(angle);
+
+						float adjacent = cosf(slc->m_outerAngle * 0.5f) * slc->m_radius;
+						float opposite = tanf(slc->m_outerAngle * 0.5f) * adjacent;
+						x *= opposite;
+						y *= opposite;
+
+						glm::vec3 p0 = tc->m_position;
+						glm::vec3 p1 = rotation * -glm::vec3(x, y, adjacent) + tc->m_position;
+
+						renderSystem.drawDebugLineVisible(p0, p1, visibleLightDebugColor, visibleLightDebugColor);
+						//renderSystem.drawDebugLineHidden(p0, p1, occludedLightDebugColor, occludedLightDebugColor);
+					}
+
+					// cap
+					for (size_t i = 0; i < capSegmentCount; ++i)
+					{
+						const float offset = 0.5f * (glm::pi<float>() - slc->m_outerAngle);
+						float angle0 = i / (float)capSegmentCount * slc->m_outerAngle + offset;
+						float angle1 = (i + 1) / (float)capSegmentCount * slc->m_outerAngle + offset;
+						float x0 = cosf(angle0) * slc->m_radius;
+						float x1 = cosf(angle1) * slc->m_radius;
+						float y0 = sinf(angle0) * slc->m_radius;
+						float y1 = sinf(angle1) * slc->m_radius;
+
+						glm::vec3 p0, p1;
+
+						// horizontal
+						p0 = rotation * -glm::vec3(x0, 0.0f, y0) + tc->m_position;
+						p1 = rotation * -glm::vec3(x1, 0.0f, y1) + tc->m_position;
+						renderSystem.drawDebugLineVisible(p0, p1, visibleLightDebugColor, visibleLightDebugColor);
+						//renderSystem.drawDebugLineHidden(p0, p1, occludedLightDebugColor, occludedLightDebugColor);
+
+						// vertical
+						p0 = rotation * -glm::vec3(0.0f, x0, y0) + tc->m_position;
+						p1 = rotation * -glm::vec3(0.0f, x1, y1) + tc->m_position;
+						renderSystem.drawDebugLineVisible(p0, p1, visibleLightDebugColor, visibleLightDebugColor);
+						//renderSystem.drawDebugLineHidden(p0, p1, occludedLightDebugColor, occludedLightDebugColor);
+					}
+				}
 			}
 
 			// camera
@@ -265,6 +452,44 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				{
 					cc->m_far = glm::max(cc->m_far, cc->m_near);
 				}
+
+				// draw debug geometry
+				if (tc)
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+
+					glm::mat4 transform = glm::inverse(cc->m_projectionMatrix * cc->m_viewMatrix);
+
+					glm::vec3 corners[2][2][2];
+
+					for (int x = 0; x < 2; ++x)
+					{
+						for (int y = 0; y < 2; ++y)
+						{
+							for (int z = 0; z < 2; ++z)
+							{
+								glm::vec3 p3 = glm::vec3(glm::vec2(x, y) * 2.0f - 1.0f, z);
+								glm::vec4 p = transform * glm::vec4(p3, 1.0f);
+								corners[x][y][z] = p / p.w;
+							}
+						}
+					}
+
+					renderSystem.drawDebugLine(corners[0][0][0], corners[1][0][0], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[0][0][1], corners[1][0][1], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[0][0][0], corners[0][0][1], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[1][0][0], corners[1][0][1], visibleLightDebugColor, visibleLightDebugColor);
+
+					renderSystem.drawDebugLine(corners[0][1][0], corners[1][1][0], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[0][1][1], corners[1][1][1], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[0][1][0], corners[0][1][1], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[1][1][0], corners[1][1][1], visibleLightDebugColor, visibleLightDebugColor);
+
+					renderSystem.drawDebugLine(corners[0][0][0], corners[0][1][0], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[0][0][1], corners[0][1][1], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[1][0][0], corners[1][1][0], visibleLightDebugColor, visibleLightDebugColor);
+					renderSystem.drawDebugLine(corners[1][0][1], corners[1][1][1], visibleLightDebugColor, visibleLightDebugColor);
+				}
 			}
 
 			// local participating medium
@@ -279,6 +504,23 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				ImGui::DragFloat("Height Fog Start", &lpmc->m_heightFogStart, 0.1f);
 				ImGui::DragFloat("Height Fog Falloff", &lpmc->m_heightFogFalloff, 0.1f);
 				ImGui::Checkbox("Spherical", &lpmc->m_spherical);
+
+				// draw point light debug geometry
+				if (tc && entityRegistry.has<RenderableComponent>(entity))
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+
+					glm::mat4 transform = glm::translate(tc->m_position) * glm::mat4_cast(tc->m_orientation) * glm::scale(tc->m_scale);
+
+					if (lpmc->m_spherical)
+					{
+						drawSphereGeometry(renderSystem, tc->m_position, tc->m_orientation, tc->m_scale, visibleLightDebugColor, occludedLightDebugColor, false);
+					}
+					else
+					{
+						drawBoxGeometry(renderSystem, transform, visibleLightDebugColor, occludedLightDebugColor, false);
+					}
+				}
 			}
 
 			// global participating medium
@@ -365,6 +607,14 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			{
 				ImGui::DragFloat3("Capture Offset", &lrpc->m_captureOffset[0], 0.1f);
 				ImGui::DragFloat("Transition Distance", &lrpc->m_transitionDistance, 0.05f);
+
+				// draw probe debug geometry
+				if (tc && entityRegistry.has<RenderableComponent>(entity))
+				{
+					auto &renderSystem = m_engine->getRenderSystem();
+					glm::mat4 transform = glm::translate(tc->m_position) * glm::mat4_cast(tc->m_orientation) * glm::scale(tc->m_scale);
+					drawBoxGeometry(renderSystem, transform, visibleLightDebugColor, visibleLightDebugColor, true);
+				}
 			}
 
 			// renderable
@@ -382,7 +632,7 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 	{
 		ImGuizmo::OPERATION operation = static_cast<ImGuizmo::OPERATION>(m_translateRotateScaleMode);
 		auto &tc = entityRegistry.get<TransformationComponent>(entity);
-		
+
 
 		glm::mat4 transform = glm::translate(tc.m_position) * glm::mat4_cast(tc.m_orientation) * glm::scale(glm::vec3(tc.m_scale));
 

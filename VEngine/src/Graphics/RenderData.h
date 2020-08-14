@@ -80,6 +80,22 @@ namespace VEngine
 		uint32_t m_materialIndex;
 	};
 
+	struct DebugDrawVertex
+	{
+		glm::vec4 m_position; // w is unused
+		glm::vec4 m_color;
+	};
+
+	struct DebugDrawData
+	{
+		enum Type
+		{
+			LINE, VISIBLE_LINE, HIDDEN_LINE, TRIANGLE, VISIBLE_TRIANGLE, HIDDEN_TRIANGLE
+		};
+		uint32_t m_vertexCounts[6];
+		const DebugDrawVertex *m_vertices[6];
+	};
+
 	struct RenderData
 	{
 		uint32_t m_transformDataCount;
@@ -106,5 +122,6 @@ namespace VEngine
 		uint32_t *m_particleDrawDataListSizes;
 		ParticleDrawData **m_particleDrawDataLists;
 		const glm::vec4 *m_texCoordScaleBias;
+		const DebugDrawData *m_debugDrawData;
 	};
 }

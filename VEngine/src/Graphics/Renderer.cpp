@@ -41,6 +41,7 @@
 #include "Pass/ShadeVisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Pass/FourierOpacityDirectionalLightPass.h"
+#include "Pass/DebugDrawPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -1229,6 +1230,15 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	{
 		SharpenFfxCasPass::addToGraph(graph, sharpenFfxCasPassData);
 	}
+
+
+	DebugDrawPass::Data debugDrawPassData;
+	debugDrawPassData.m_passRecordContext = &passRecordContext;
+	debugDrawPassData.m_debugDrawData = renderData.m_debugDrawData;
+	debugDrawPassData.m_depthImageViewHandle = depthImageViewHandle;
+	debugDrawPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+
+	DebugDrawPass::addToGraph(graph, debugDrawPassData);
 
 
 	// ImGui

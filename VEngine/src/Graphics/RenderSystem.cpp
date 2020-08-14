@@ -120,8 +120,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		// extract view frustum plane equations from matrix
 		{
-			FrustumCullData cullData(m_commonRenderData.m_jitteredViewProjectionMatrix, 6, 0, FrustumCullData::ALL_CONTENT_TYPE_BIT, 
-				glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]), 
+			FrustumCullData cullData(m_commonRenderData.m_jitteredViewProjectionMatrix, 6, 0, FrustumCullData::ALL_CONTENT_TYPE_BIT,
+				glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]),
 				m_commonRenderData.m_farPlane - m_commonRenderData.m_nearPlane);
 			frustumCullData.push_back(cullData);
 			renderLists.push_back({});
@@ -143,7 +143,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 		glm::vec3 probeShadowCenter;
 		float probeShadowRadius;
 
-		m_reflectionProbeManager->update(m_commonRenderData, m_lightData, renderLists, frustumCullData, probeMatrices, probeRenderIndices, probeRenderCount, probeRelightIndices, 
+		m_reflectionProbeManager->update(m_commonRenderData, m_lightData, renderLists, frustumCullData, probeMatrices, probeRenderIndices, probeRenderCount, probeRelightIndices,
 			probeRelightCount, probeShadowCenter, probeShadowRadius);
 
 		// generate light data
@@ -377,7 +377,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 									m_lightData.m_fomAtlasDrawInfos.push_back(fomAtlasDrawInfo);
 								}
 							}
-							
+
 
 							glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, pointLightComponent.m_radius);
 							for (size_t i = 0; i < 6; ++i)
@@ -698,14 +698,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			// local participating media
 			{
-				auto view = m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, BoundingBoxComponent, RenderableComponent>();
+				auto view = m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, RenderableComponent>();
 
 				std::vector<float> mediumRadii;
 
-				view.each([&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, BoundingBoxComponent &bboxComponent, RenderableComponent &)
+				view.each([&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
 					{
 						glm::mat4 worldToLocalTransposed =
-							glm::transpose(glm::scale(1.0f / bboxComponent.m_extent)
+							glm::transpose(glm::scale(1.0f / transformationComponent.m_scale)
 								* glm::mat4_cast(glm::inverse(transformationComponent.m_orientation))
 								* glm::translate(-transformationComponent.m_position));
 
@@ -727,9 +727,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 						m_lightData.m_localParticipatingMedia.push_back(medium);
 
-						m_lightData.m_localMediaTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(bboxComponent.m_extent));
+						m_lightData.m_localMediaTransforms.push_back(glm::translate(transformationComponent.m_position) * glm::mat4_cast(transformationComponent.m_orientation) * glm::scale(transformationComponent.m_scale));
 						m_lightData.m_localMediaOrder.push_back(static_cast<uint32_t>(m_lightData.m_localMediaOrder.size()));
-						mediumRadii.push_back(glm::length(bboxComponent.m_extent));
+						mediumRadii.push_back(glm::length(transformationComponent.m_scale));
 					});
 
 				// sort by distance to camera
@@ -911,6 +911,20 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		m_particleEmitterManager->update(timeDelta, m_commonRenderData.m_viewMatrix);
 
+		DebugDrawData debugDrawData{};
+		debugDrawData.m_vertexCounts[DebugDrawData::LINE] = (uint32_t)m_debugLineVertices.size();
+		debugDrawData.m_vertexCounts[DebugDrawData::VISIBLE_LINE] = (uint32_t)m_debugLineVisibleVertices.size();
+		debugDrawData.m_vertexCounts[DebugDrawData::HIDDEN_LINE] = (uint32_t)m_debugLineHiddenVertices.size();
+		debugDrawData.m_vertexCounts[DebugDrawData::TRIANGLE] = (uint32_t)m_debugTriangleVertices.size();
+		debugDrawData.m_vertexCounts[DebugDrawData::VISIBLE_TRIANGLE] = (uint32_t)m_debugTriangleVisibleVertices.size();
+		debugDrawData.m_vertexCounts[DebugDrawData::HIDDEN_TRIANGLE] = (uint32_t)m_debugTriangleHiddenVertices.size();
+		debugDrawData.m_vertices[DebugDrawData::LINE] = m_debugLineVertices.data();
+		debugDrawData.m_vertices[DebugDrawData::VISIBLE_LINE] = m_debugLineVisibleVertices.data();
+		debugDrawData.m_vertices[DebugDrawData::HIDDEN_LINE] = m_debugLineHiddenVertices.data();
+		debugDrawData.m_vertices[DebugDrawData::TRIANGLE] = m_debugTriangleVertices.data();
+		debugDrawData.m_vertices[DebugDrawData::VISIBLE_TRIANGLE] = m_debugTriangleVisibleVertices.data();
+		debugDrawData.m_vertices[DebugDrawData::HIDDEN_TRIANGLE] = m_debugTriangleHiddenVertices.data();
+
 		RenderData renderData;
 		renderData.m_transformDataCount = static_cast<uint32_t>(m_transformData.size());
 		renderData.m_transformData = m_transformData.data();
@@ -933,10 +947,19 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_probeShadowViewRenderListCount = probeShadowRenderListCount;
 		renderData.m_renderLists = renderLists.data();
 		renderData.m_texCoordScaleBias = m_texCoordScaleBias.get();
+		renderData.m_debugDrawData = &debugDrawData;
 
 		m_particleEmitterManager->getParticleDrawData(renderData.m_particleDataDrawListCount, renderData.m_particleDrawDataLists, renderData.m_particleDrawDataListSizes);
 
 		m_renderer->render(m_commonRenderData, renderData, m_lightData);
+
+		m_debugLineVertices.clear();
+		m_debugLineVisibleVertices.clear();
+		m_debugLineHiddenVertices.clear();
+		m_debugTriangleVertices.clear();
+		m_debugTriangleVisibleVertices.clear();
+		m_debugTriangleHiddenVertices.clear();
+
 		++m_commonRenderData.m_frame;
 		//float t = 0.0f;
 		//if (m_bvh.trace(m_commonRenderData.m_cameraPosition + m_commonRenderData.m_cameraDirection * m_commonRenderData.m_nearPlane, m_commonRenderData.m_cameraDirection, t))
@@ -1087,6 +1110,45 @@ void VEngine::RenderSystem::initEditorImGuiCtx(ImGuiContext *editorImGuiCtx)
 VEngine::Texture2DHandle VEngine::RenderSystem::getEditorSceneTextureHandle()
 {
 	return m_renderer->getEditorSceneTextureHandle();
+}
+
+void VEngine::RenderSystem::drawDebugLine(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1)
+{
+	m_debugLineVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugLineVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+}
+
+void VEngine::RenderSystem::drawDebugLineVisible(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1)
+{
+	m_debugLineVisibleVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugLineVisibleVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+}
+
+void VEngine::RenderSystem::drawDebugLineHidden(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec4 &color0, const glm::vec4 &color1)
+{
+	m_debugLineHiddenVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugLineHiddenVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+}
+
+void VEngine::RenderSystem::drawDebugTriangle(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2)
+{
+	m_debugTriangleVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugTriangleVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+	m_debugTriangleVertices.push_back({ glm::vec4(position2, 1.0f), color2 });
+}
+
+void VEngine::RenderSystem::drawDebugTriangleVisible(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2)
+{
+	m_debugTriangleVisibleVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugTriangleVisibleVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+	m_debugTriangleVisibleVertices.push_back({ glm::vec4(position2, 1.0f), color2 });
+}
+
+void VEngine::RenderSystem::drawDebugTriangleHidden(const glm::vec3 &position0, const glm::vec3 &position1, const glm::vec3 &position2, const glm::vec4 &color0, const glm::vec4 &color1, const glm::vec4 &color2)
+{
+	m_debugTriangleHiddenVertices.push_back({ glm::vec4(position0, 1.0f), color0 });
+	m_debugTriangleHiddenVertices.push_back({ glm::vec4(position1, 1.0f), color1 });
+	m_debugTriangleHiddenVertices.push_back({ glm::vec4(position2, 1.0f), color2 });
 }
 
 void VEngine::RenderSystem::updateMaterialBatchAssigments(size_t count, const Material *materials, MaterialHandle *handles)
