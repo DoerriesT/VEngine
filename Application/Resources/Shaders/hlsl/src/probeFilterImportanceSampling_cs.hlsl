@@ -2,7 +2,7 @@
 #include "probeFilterImportanceSampling.hlsli"
 #include "monteCarlo.hlsli"
 
-RWTexture2DArray<float4> g_ResultImages[5] : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+RWTexture2DArray<float4> g_ResultImages[7] : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 TextureCube<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
 SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 

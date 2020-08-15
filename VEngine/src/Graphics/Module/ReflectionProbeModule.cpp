@@ -545,6 +545,7 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 
 
 		// filter reflection probe
+#if 1
 		ProbeFilterPass::Data probeFilterPassData;
 		probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
 		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
@@ -552,14 +553,14 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeMipViews[data.m_relightProbeIndices[i]][j];
 		
 		ProbeFilterPass::addToGraph(graph, probeFilterPassData);
-
-		//ProbeFilterImportanceSamplingPass::Data probeFilterPassData;
-		//probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
-		//probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
-		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeMipViews[data.m_relightProbeIndices[i]][j];
-		//
-		//ProbeFilterImportanceSamplingPass::addToGraph(graph, probeFilterPassData);
-
+#else
+		ProbeFilterImportanceSamplingPass::Data probeFilterPassData;
+		probeFilterPassData.m_passRecordContext = data.m_passRecordContext;
+		probeFilterPassData.m_inputImageViewHandle = probeTmpImageViewHandle;
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeFilterPassData.m_resultImageViews[j] = m_probeMipViews[data.m_relightProbeIndices[i]][j];
+		
+		ProbeFilterImportanceSamplingPass::addToGraph(graph, probeFilterPassData);
+#endif
 
 		// compress lit probe
 		//ProbeCompressBCH6Pass::Data compressPassData;

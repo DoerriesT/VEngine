@@ -99,7 +99,7 @@ float4 main(PSInput input) : SV_Target0
 		const uint address = getTileAddress(int2(input.position.xy), g_PushConsts.width, wordCount);
 	
 		const float mipCount = 7.0;
-		float mipLevel = roughness * mipCount;
+		float mipLevel = sqrt(roughness) * mipCount;
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
