@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Components\BillboardComponent.h" />
     <ClInclude Include="src\Components\BoundingBoxComponent.h" />
     <ClInclude Include="src\Components\BoundingSphereComponent.h" />
     <ClInclude Include="src\Components\CameraComponent.h" />
@@ -217,6 +218,7 @@
     <ClInclude Include="src\Graphics\PassRecordContext.h" />
     <ClInclude Include="src\Graphics\PassTimingInfo.h" />
     <ClInclude Include="src\Graphics\Pass\ApplyIndirectLightingPass.h" />
+    <ClInclude Include="src\Graphics\Pass\BillboardPass.h" />
     <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\BloomUpsamplePass.h" />
     <ClInclude Include="src\Graphics\Pass\BuildIndexBufferPass.h" />
@@ -359,6 +361,7 @@
     <ClCompile Include="src\Graphics\Module\VolumetricFogModule.cpp" />
     <ClCompile Include="src\Graphics\ParticleEmitterManager.cpp" />
     <ClCompile Include="src\Graphics\Pass\ApplyIndirectLightingPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\BillboardPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp" />

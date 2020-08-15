@@ -534,6 +534,12 @@
     <ClInclude Include="src\Graphics\Pass\DebugDrawPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\BillboardPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Components\BillboardComponent.h">
+      <Filter>src\Component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -915,6 +921,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\DebugDrawPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\BillboardPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include "ParticleDrawData.h"
+#include "Handles.h"
 
 namespace VEngine
 {
@@ -96,6 +97,14 @@ namespace VEngine
 		const DebugDrawVertex *m_vertices[6];
 	};
 
+	struct BillboardDrawData
+	{
+		glm::vec3 m_position;
+		float m_scale;
+		float m_opacity;
+		Texture2DHandle m_texture;
+	};
+
 	struct RenderData
 	{
 		uint32_t m_transformDataCount;
@@ -122,6 +131,8 @@ namespace VEngine
 		uint32_t *m_particleDrawDataListSizes;
 		ParticleDrawData **m_particleDrawDataLists;
 		const glm::vec4 *m_texCoordScaleBias;
+		uint32_t m_billboardCount;
+		const BillboardDrawData *m_billboardDrawData;
 		const DebugDrawData *m_debugDrawData;
 	};
 }

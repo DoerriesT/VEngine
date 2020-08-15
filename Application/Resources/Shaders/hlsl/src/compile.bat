@@ -85,5 +85,7 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityPartic
 
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main debugDraw_vs.hlsl -Fo ./../debugDraw_vs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main debugDraw_ps.hlsl -Fo ./../debugDraw_ps.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main billboard_vs.hlsl -Fo ./../billboard_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main billboard_ps.hlsl -Fo ./../billboard_ps.spv
 
 pause

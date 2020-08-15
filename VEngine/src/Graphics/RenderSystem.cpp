@@ -9,6 +9,7 @@
 #include "Components/ParticipatingMediumComponent.h"
 #include "Components/BoundingBoxComponent.h"
 #include "Components/ReflectionProbeComponent.h"
+#include "Components/BillboardComponent.h"
 #include "Graphics/Renderer.h"
 #include "GlobalVar.h"
 #include <glm/ext.hpp>
@@ -674,26 +675,26 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			// global participating media
 			{
-				auto view = m_entityRegistry.view<GlobalParticipatingMediumComponent, RenderableComponent>();
+			auto view = m_entityRegistry.view<GlobalParticipatingMediumComponent, RenderableComponent>();
 
-				view.each([&](GlobalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
-					{
-						GlobalParticipatingMedium medium{};
-						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
-						medium.m_extinction = mediumComponent.m_extinction;
-						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
-						medium.m_phase = mediumComponent.m_phaseAnisotropy;
-						medium.m_heightFogEnabled = mediumComponent.m_heightFogEnabled;
-						medium.m_heightFogStart = mediumComponent.m_heightFogStart;
-						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
-						medium.m_maxHeight = mediumComponent.m_maxHeight;
-						medium.m_textureScale = mediumComponent.m_textureScale;
-						medium.m_textureBias = mediumComponent.m_textureBias;
-						medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
+			view.each([&](GlobalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
+				{
+					GlobalParticipatingMedium medium{};
+					medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
+					medium.m_extinction = mediumComponent.m_extinction;
+					medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
+					medium.m_phase = mediumComponent.m_phaseAnisotropy;
+					medium.m_heightFogEnabled = mediumComponent.m_heightFogEnabled;
+					medium.m_heightFogStart = mediumComponent.m_heightFogStart;
+					medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
+					medium.m_maxHeight = mediumComponent.m_maxHeight;
+					medium.m_textureScale = mediumComponent.m_textureScale;
+					medium.m_textureBias = mediumComponent.m_textureBias;
+					medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
 
 
-						m_lightData.m_globalParticipatingMedia.push_back(medium);
-					});
+					m_lightData.m_globalParticipatingMedia.push_back(medium);
+				});
 			}
 
 			// local participating media
@@ -769,17 +770,24 @@ void VEngine::RenderSystem::update(float timeDelta)
 			}
 		}
 
-		// update all transformations and generate draw lists
+		// update all transforms
 		{
-			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
-
-			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent &)
+			auto view = m_entityRegistry.view<TransformationComponent>();
+			view.each([&](TransformationComponent &transformationComponent)
 				{
 					const glm::mat4 rotationMatrix = glm::mat4_cast(transformationComponent.m_orientation);
 					const glm::mat4 scaleMatrix = glm::scale(transformationComponent.m_scale);
 					transformationComponent.m_previousTransformation = transformationComponent.m_transformation;
 					transformationComponent.m_transformation = glm::translate(transformationComponent.m_position) * rotationMatrix * scaleMatrix;
+				});
+		}
 
+		// generate draw lists
+		{
+			auto view = m_entityRegistry.view<MeshComponent, TransformationComponent, RenderableComponent>();
+
+			view.each([&](MeshComponent &meshComponent, TransformationComponent &transformationComponent, RenderableComponent &)
+				{
 					glm::quat transposeInverseRotation = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(glm::mat3(transformationComponent.m_transformation)))));
 
 					for (const auto &p : meshComponent.m_subMeshMaterialPairs)
@@ -900,6 +908,41 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 		assert(drawCallKeys.size() == m_subMeshInstanceData.size());
 
+		std::vector<BillboardDrawData> billboardDrawData;
+
+		// billboards
+		{
+			m_entityRegistry.view<EditorBillboardComponent, TransformationComponent>().each(
+				[&](EditorBillboardComponent &billboardComponent, TransformationComponent &transformationComponent)
+				{
+					BillboardDrawData drawData{};
+					drawData.m_position = transformationComponent.m_position;
+					drawData.m_scale = billboardComponent.m_scale;
+					drawData.m_opacity = billboardComponent.m_opacity;
+					drawData.m_texture = billboardComponent.m_texture;
+
+					billboardDrawData.push_back(drawData);
+				});
+
+			m_entityRegistry.view<BillboardComponent, TransformationComponent, RenderableComponent>().each(
+				[&](BillboardComponent &billboardComponent, TransformationComponent &transformationComponent, RenderableComponent &)
+				{
+					BillboardDrawData drawData{};
+					drawData.m_position = transformationComponent.m_position;
+					drawData.m_scale = billboardComponent.m_scale;
+					drawData.m_opacity = billboardComponent.m_opacity;
+					drawData.m_texture = billboardComponent.m_texture;
+
+					billboardDrawData.push_back(drawData);
+				});
+
+			glm::vec4 viewMatDepthRow = glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]);
+			std::sort(billboardDrawData.begin(), billboardDrawData.end(), [&](const BillboardDrawData &lhs, const BillboardDrawData &rhs)
+				{
+					return -glm::dot(glm::vec4(lhs.m_position, 1.0f), viewMatDepthRow) < -glm::dot(glm::vec4(rhs.m_position, 1.0f), viewMatDepthRow);
+				});
+		}
+
 		m_commonRenderData.m_directionalLightCount = static_cast<uint32_t>(m_lightData.m_directionalLights.size());
 		m_commonRenderData.m_directionalLightShadowedCount = static_cast<uint32_t>(m_lightData.m_directionalLightsShadowed.size());
 		m_commonRenderData.m_directionalLightShadowedProbeCount = static_cast<uint32_t>(m_lightData.m_directionalLightsShadowedProbe.size());
@@ -948,6 +991,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 		renderData.m_renderLists = renderLists.data();
 		renderData.m_texCoordScaleBias = m_texCoordScaleBias.get();
 		renderData.m_debugDrawData = &debugDrawData;
+		renderData.m_billboardCount = (uint32_t)billboardDrawData.size();
+		renderData.m_billboardDrawData = billboardDrawData.data();
 
 		m_particleEmitterManager->getParticleDrawData(renderData.m_particleDataDrawListCount, renderData.m_particleDrawDataLists, renderData.m_particleDrawDataListSizes);
 

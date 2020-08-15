@@ -42,6 +42,7 @@
 #include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Pass/FourierOpacityDirectionalLightPass.h"
 #include "Pass/DebugDrawPass.h"
+#include "Pass/BillboardPass.h"
 #include "Module/GTAOModule.h"
 #include "Module/SSRModule.h"
 #include "Module/BloomModule.h"
@@ -1232,13 +1233,29 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	DebugDrawPass::Data debugDrawPassData;
-	debugDrawPassData.m_passRecordContext = &passRecordContext;
-	debugDrawPassData.m_debugDrawData = renderData.m_debugDrawData;
-	debugDrawPassData.m_depthImageViewHandle = depthImageViewHandle;
-	debugDrawPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+	if (renderData.m_billboardCount)
+	{
+		BillboardPass::Data billboardPassData;
+		billboardPassData.m_passRecordContext = &passRecordContext;
+		billboardPassData.m_billboardCount = renderData.m_billboardCount;
+		billboardPassData.m_billboards = renderData.m_billboardDrawData;
+		billboardPassData.m_depthImageViewHandle = depthImageViewHandle;
+		billboardPassData.m_resultImageViewHandle = swapchainImageViewHandle;
 
-	DebugDrawPass::addToGraph(graph, debugDrawPassData);
+		BillboardPass::addToGraph(graph, billboardPassData);
+	}
+
+
+	if (renderData.m_debugDrawData)
+	{
+		DebugDrawPass::Data debugDrawPassData;
+		debugDrawPassData.m_passRecordContext = &passRecordContext;
+		debugDrawPassData.m_debugDrawData = renderData.m_debugDrawData;
+		debugDrawPassData.m_depthImageViewHandle = depthImageViewHandle;
+		debugDrawPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+
+		DebugDrawPass::addToGraph(graph, debugDrawPassData);
+	}
 
 
 	// ImGui
