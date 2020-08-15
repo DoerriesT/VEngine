@@ -235,10 +235,10 @@ int main()
 		std::cin >> invertTexcoordY;
 
 		// load scene
-		//WavefrontOBJLoader objLoader;
-		//auto model = objLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
-		BinaryMeshLoader bmLoader;
-		auto model = bmLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
+		WavefrontOBJLoader objLoader;
+		auto model = objLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
+		//BinaryMeshLoader bmLoader;
+		//auto model = bmLoader.loadModel(srcFileName, mergeByMaterial, invertTexcoordY);
 
 
 		// create material library
