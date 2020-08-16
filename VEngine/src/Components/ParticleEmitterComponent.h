@@ -17,6 +17,11 @@ namespace VEngine
 		float m_velocityMagnitude = 1.0f;
 		SpawnType m_spawnType = SpawnType::DISK;
 		float m_spawnAreaSize = 0.1f;
+		float m_spawnRate = 2.0f;
+		float m_particleSize = 0.5f;
+		float m_particleFinalSize = 1.0f;
+		float m_rotation = 0.0f;
+		float m_FOMOpacityMult = 0.5f;
 		Texture2DHandle m_textureHandle = {};
 	};
 }

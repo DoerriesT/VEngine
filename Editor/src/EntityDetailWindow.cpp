@@ -553,6 +553,11 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 					pec->m_spawnType = static_cast<ParticleEmitterComponent::SpawnType>(currentSpawnType);
 				}
 				ImGui::DragFloat("Spawn Area Size", &pec->m_spawnAreaSize, 0.01f, 0.01f, 100.0f);
+				ImGui::DragFloat("Spawn Rate", &pec->m_spawnRate, 1.0f, 0.01f, 100.0f);
+				ImGui::DragFloat("Particle Initial Size", &pec->m_particleSize, 0.01f, 0.01f, 10.0f);
+				ImGui::DragFloat("Particle Final Size", &pec->m_particleFinalSize, 0.01f, 0.01f, 10.0f);
+				ImGui::DragFloat("Rotation", &pec->m_rotation, 0.01f, 0.0f, glm::pi<float>() * 2.0f);
+				ImGui::DragFloat("FOM Opacity Mult", &pec->m_FOMOpacityMult, 0.01f, 0.0f, 1.0f);
 
 				if (pec->m_textureHandle.m_handle ? ImGui::ImageButton((ImTextureID)(size_t)pec->m_textureHandle.m_handle, ImVec2(64.0f, 64.0f)) : ImGui::Button("Add Texture"))
 				{

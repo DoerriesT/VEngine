@@ -1,5 +1,6 @@
 #include "bindingHelper.hlsli"
 #include "particles.hlsli"
+#include "common.hlsli"
 
 struct VSOutput
 {
@@ -14,16 +15,6 @@ struct VSOutput
 struct PushConsts
 {
 	uint particleOffset;
-};
-
-struct ParticleData
-{
-	float3 position;
-	float opacity;
-	uint textureIndex;
-	float pad0;
-	float pad1;
-	float pad2;
 };
 
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
@@ -47,7 +38,13 @@ VSOutput main(uint vertexID : SV_VertexID)
 	};
 	
 	ParticleData particle = g_Particles[particleID + g_PushConsts.particleOffset];
-	float3 pos = float3(positions[positionIndex], 0.0) * 0.4;
+	
+	float cosRot;
+	float sinRot;
+	sincos(particle.rotation, sinRot, cosRot);
+	float2x2 particleRot = float2x2(cosRot, -sinRot, sinRot, cosRot);
+	
+	float3 pos = float3(mul(positions[positionIndex], particleRot), 0.0) * particle.size;
 	
 	float3 normal = normalize(g_Constants.cameraPosition - particle.position);
 	float3 tangent = cross(g_Constants.cameraUp, normal);

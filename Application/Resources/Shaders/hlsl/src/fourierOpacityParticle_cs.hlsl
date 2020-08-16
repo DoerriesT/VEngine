@@ -3,16 +3,6 @@
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
 
-struct ParticleData
-{
-	float3 position;
-	float opacity;
-	uint textureIndex;
-	float pad0;
-	float pad1;
-	float pad2;
-};
-
 struct LightInfo
 {
 	float4x4 viewProjection;
@@ -130,8 +120,6 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 			
 			float distToParticleCenter = distance(particle.position, intersectionPos);
 			
-			float particleSize = 0.4;
-			
 			float3 bitangent;
 			if (abs(particleNormal.x) <= abs(particleNormal.y) && abs(particleNormal.x) <= abs(particleNormal.z))
 			{
@@ -151,11 +139,17 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 			
 			float3x3 rotation = float3x3(tangent, bitangent, particleNormal);
 			
-			float2 localPos = mul(rotation, intersectionPos - particle.position).xy / particleSize;
+			float2 localPos = mul(rotation, intersectionPos - particle.position).xy / particle.size;
 			
 			if (t > 0.0 && all(abs(localPos) < 1.0))
 			{
-				float opacity = particle.opacity * 0.2;
+				float cosRot;
+				float sinRot;
+				sincos(particle.rotation, sinRot, cosRot);
+				float2x2 particleRot = float2x2(cosRot, -sinRot, sinRot, cosRot);
+				localPos = mul(localPos, particleRot);
+				
+				float opacity = particle.opacity * particle.fomOpacityMult;
 				
 				if (particle.textureIndex != 0)
 				{

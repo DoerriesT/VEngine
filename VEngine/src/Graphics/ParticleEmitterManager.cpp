@@ -12,6 +12,10 @@ namespace
 		float m_timeOfBirth;
 		glm::vec3 m_velocity;
 		float m_lifeTime;
+		float m_initialSize;
+		float m_finalSize;
+		float m_rotation;
+		float m_angularVelocity;
 	};
 
 	struct ParticleEmitterInternalDataComponent
@@ -21,6 +25,7 @@ namespace
 		ParticleState *m_curParticles; // offset into m_particleData
 		uint32_t m_activeParticleCount;
 		uint32_t m_totalParticleCount;
+		float m_lastEmissionTime;
 		VEngine::ParticleDrawData *m_drawData; // owns memory
 	};
 }
@@ -41,9 +46,9 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 	m_particleDrawDataLists.clear();
 	m_particleDrawDataListSizes.clear();
 
-	auto view = m_entityRegistry.view<TransformationComponent, ParticleEmitterComponent, ParticleEmitterInternalDataComponent, RenderableComponent>();
+	auto view = m_entityRegistry.view<TransformationComponent, ParticleEmitterComponent, ParticleEmitterInternalDataComponent>();
 
-	view.each([&](entt::entity entity, TransformationComponent &transformationComponent, ParticleEmitterComponent &emitterComponent, ParticleEmitterInternalDataComponent &internalComponent, RenderableComponent &)
+	view.each([&](entt::entity entity, TransformationComponent &transformationComponent, ParticleEmitterComponent &emitterComponent, ParticleEmitterInternalDataComponent &internalComponent)
 		{
 			// particle count was changed
 			if (emitterComponent.m_particleCount != internalComponent.m_totalParticleCount)
@@ -112,9 +117,9 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				{
 					particle.m_position += particle.m_velocity * timeDelta;
 					particle.m_velocity.y -= 0.1f * timeDelta / particleLifetime;
+					particle.m_rotation += particle.m_angularVelocity * timeDelta;
 
 					const float lifePercentage = (m_time - particle.m_timeOfBirth) / particle.m_lifeTime;
-					const float opacity = lifePercentage > 0.9f ? 10.0f * (1.0f - lifePercentage) : 1.0f;
 
 					assert(particleCount < emitterComponent.m_particleCount);
 					auto &curBufferParticle = internalComponent.m_curParticles[particleCount++];
@@ -123,15 +128,23 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 					auto &drawData = internalComponent.m_drawData[particleCount - 1];
 					drawData = {};
 					drawData.m_position = particle.m_position;
-					drawData.m_opacity = opacity;
+					drawData.m_opacity = lifePercentage > 0.9f ? 10.0f * (1.0f - lifePercentage) : 1.0f;
 					drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
+					drawData.m_size = glm::mix(particle.m_initialSize, particle.m_finalSize, lifePercentage);
+					drawData.m_rotation = particle.m_rotation;
+					drawData.m_FOMOpacityMult = emitterComponent.m_FOMOpacityMult;
 				}
 			}
 
 			// spawn new particles
 			const uint32_t deadParticleCount = emitterComponent.m_particleCount - particleCount;
 			const float emissionRate = emitterComponent.m_particleCount / particleLifetime;
-			const uint32_t particlesToEmit = deadParticleCount;// glm::min(deadParticleCount, static_cast<uint32_t>(emissionRate * timeDelta));
+			float timeSinceLastEmission = m_time - internalComponent.m_lastEmissionTime;
+			const uint32_t particlesToEmit = glm::min(deadParticleCount, static_cast<uint32_t>(timeSinceLastEmission * emitterComponent.m_spawnRate));
+			if (particlesToEmit > 0)
+			{
+				internalComponent.m_lastEmissionTime = m_time;
+			}
 
 			std::normal_distribution<float> sphereNormalD(0.5f, 1.0f);
 			std::uniform_real_distribution<float> cubeD(-emitterComponent.m_spawnAreaSize, emitterComponent.m_spawnAreaSize);
@@ -182,8 +195,17 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				particle.m_velocity = rotation * particle.m_velocity;
 
 				// determine particle lifetime
-				particle.m_lifeTime = uniformD(m_randomEngine) * particleLifetime;
+				particle.m_lifeTime = uniformD(m_randomEngine) * particleLifetime * 0.5f + particleLifetime * 0.5f;
 				particle.m_timeOfBirth = m_time;
+
+				// particle size
+				particle.m_initialSize = emitterComponent.m_particleSize;
+				particle.m_finalSize = emitterComponent.m_particleFinalSize;
+
+				// rotation
+				particle.m_rotation = uniformD(m_randomEngine) * glm::pi<float>() * 2.0f;
+				particle.m_angularVelocity = (uniformD(m_randomEngine) > 0.5f ? 1.0f : -1.0f) * uniformD(m_randomEngine) * emitterComponent.m_rotation;
+				
 
 				assert(particleCount < emitterComponent.m_particleCount);
 				internalComponent.m_curParticles[particleCount++] = particle;
@@ -193,6 +215,9 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 				drawData.m_position = particle.m_position;
 				drawData.m_opacity = 1.0f;
 				drawData.m_textureIndex = emitterComponent.m_textureHandle.m_handle;
+				drawData.m_size = particle.m_initialSize;
+				drawData.m_rotation = particle.m_rotation;
+				drawData.m_FOMOpacityMult = emitterComponent.m_FOMOpacityMult;
 			}
 
 			internalComponent.m_activeParticleCount = particleCount;
@@ -203,8 +228,11 @@ void VEngine::ParticleEmitterManager::update(float timeDelta, const glm::mat4 vi
 					return glm::dot(glm::vec4(lhs.m_position, 1.0f), viewMatrixRow2) < glm::dot(glm::vec4(rhs.m_position, 1.0f), viewMatrixRow2);
 				});
 
-			m_particleDrawDataLists.push_back(internalComponent.m_drawData);
-			m_particleDrawDataListSizes.push_back(internalComponent.m_activeParticleCount);
+			if (m_entityRegistry.has<RenderableComponent>(entity))
+			{
+				m_particleDrawDataLists.push_back(internalComponent.m_drawData);
+				m_particleDrawDataListSizes.push_back(internalComponent.m_activeParticleCount);
+			}
 		});
 }
 
@@ -229,6 +257,7 @@ void VEngine::ParticleEmitterManager::addInternalComponent(entt::registry &regis
 		internalC.m_curParticles = internalC.m_particleData + emitterC.m_particleCount;
 		internalC.m_activeParticleCount = 0;
 		internalC.m_totalParticleCount = emitterC.m_particleCount;
+		internalC.m_lastEmissionTime = 0.0f;
 		internalC.m_drawData = new ParticleDrawData[emitterC.m_particleCount];
 	}
 }

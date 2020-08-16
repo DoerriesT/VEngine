@@ -44,7 +44,7 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// direction info
-	DescriptorBufferInfo particleTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * particleCount };
+	DescriptorBufferInfo particleTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(particleCount, 1u) };
 	uint8_t *transformDataPtr = nullptr;
 	ssboBuffer->allocate(particleTransformBufferInfo.m_range, particleTransformBufferInfo.m_offset, particleTransformBufferInfo.m_buffer, transformDataPtr);
 
@@ -52,7 +52,8 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 	{
 		for (size_t j = 0; j < data.m_listSizes[i]; ++j)
 		{
-			glm::mat4 transform = glm::transpose(glm::translate(data.m_particleLists[i][j].m_position) * glm::scale(glm::vec3(0.6f)));
+			float particleSize = data.m_particleLists[i][j].m_size;
+			glm::mat4 transform = glm::transpose(glm::translate(data.m_particleLists[i][j].m_position) * glm::scale(glm::vec3(glm::length(glm::vec2(particleSize, particleSize)))));
 			((glm::vec4 *)transformDataPtr)[0] = transform[0];
 			((glm::vec4 *)transformDataPtr)[1] = transform[1];
 			((glm::vec4 *)transformDataPtr)[2] = transform[2];

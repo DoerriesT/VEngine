@@ -216,11 +216,16 @@ void App::initialize(VEngine::Engine *engine)
 	entityRegistry.assign<VEngine::TransformationComponent>(particleEmitter, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
 	VEngine::ParticleEmitterComponent emitterC{};
 	emitterC.m_direction = glm::vec3(0.0f, 5.0f, 0.0f);
-	emitterC.m_particleCount = 128;
+	emitterC.m_particleCount = 32;
 	emitterC.m_particleLifetime = 10.0f;
 	emitterC.m_velocityMagnitude = 1.0f;
 	emitterC.m_spawnType = VEngine::ParticleEmitterComponent::DISK;
 	emitterC.m_spawnAreaSize = 0.2f;
+	emitterC.m_spawnRate = 2.0f;
+	emitterC.m_particleSize = 0.4f;
+	emitterC.m_particleFinalSize = 2.0f;
+	emitterC.m_rotation = 0.5f;
+	emitterC.m_FOMOpacityMult = 0.5f;
 	emitterC.m_textureHandle = smokeTexture;
 
 	g_emitterEntity = particleEmitter;

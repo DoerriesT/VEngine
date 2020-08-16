@@ -26,7 +26,7 @@ struct PSOutput
 
 PSOutput main(PSInput input)
 {
-	float opacity = input.opacity * 0.7;
+	float opacity = input.opacity;
 	if (input.textureIndex != 0)
 	{
 		opacity *= g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord).a;

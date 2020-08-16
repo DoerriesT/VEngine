@@ -125,6 +125,16 @@ struct LocalReflectionProbe
 	float arraySlot;
 };
 
+struct ParticleData
+{
+	float3 position;
+	float opacity;
+	uint textureIndex;
+	float size;
+	float rotation;
+	float fomOpacityMult;
+};
+
 struct SubMeshInstanceData
 {
 	uint subMeshIndex;
