@@ -29,6 +29,8 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -92,6 +94,8 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				ImageView *shadowImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
 				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
+				ImageView *fomDirectionalImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
+				ImageView *fomDirectionalDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
@@ -104,6 +108,8 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::sampledImage(&shadowImageView, SHADOW_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
 					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),
+					Initializers::sampledImage(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
+					Initializers::sampledImage(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),

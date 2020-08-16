@@ -7,7 +7,7 @@ namespace VEngine
 	struct DirectionalLight;
 	struct ParticleDrawData;
 
-	namespace FourierOpacityDirectionalLightPass
+	namespace FourierOpacityDepthPass
 	{
 		struct Data
 		{
@@ -20,8 +20,7 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_localMediaBufferInfo;
 			gal::DescriptorBufferInfo m_particleBufferInfo;
 			gal::DescriptorBufferInfo m_shadowMatrixBufferInfo;
-			rg::ImageViewHandle m_fomDepthRangeImageViewHandle;
-			rg::ImageHandle m_directionalLightFomImageHandle;
+			rg::ImageHandle m_directionalLightFomDepthImageHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

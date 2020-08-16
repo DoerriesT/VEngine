@@ -23,7 +23,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 {
 	assert(data.m_lightDataCount <= 2);
 
-	rg::ResourceUsageDescription passUsages[2 * DirectionalLightComponent::MAX_CASCADES * 2];
+	rg::ResourceUsageDescription passUsages[2 * DirectionalLightComponent::MAX_CASCADES * 2 + 1];
 	rg::ImageViewHandle fomViewHandles[2 * DirectionalLightComponent::MAX_CASCADES * 2];
 	uint32_t viewHandleCount = 0;
 
@@ -39,6 +39,8 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 			}
 		}
 	}
+
+	passUsages[viewHandleCount++] = { rg::ResourceViewHandle(data.m_fomDepthRangeImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT} };
 
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
@@ -108,11 +110,14 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 
 			// update descriptor sets
 			{
+				ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
+
 				DescriptorSetUpdate updates[] =
 				{
 					Initializers::storageBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
 					Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, MATRIX_BUFFER_BINDING),
 					Initializers::storageBuffer(&dirBufferInfo, LIGHT_DIR_BUFFER_BINDING),
+					Initializers::sampledImage(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -122,9 +127,9 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 			uint32_t w = imageDesc.m_width;
 			uint32_t h = imageDesc.m_height;
 
-			size_t currentLayerOffset = 0;
 			for (size_t i = 0; i < data.m_lightDataCount; ++i)
 			{
+				size_t currentLayerOffset = 0;
 				for (size_t j = 0; j < data.m_lightData[i].m_shadowCount; ++j)
 				{
 					// begin renderpass

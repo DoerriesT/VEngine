@@ -540,6 +540,9 @@
     <ClInclude Include="src\Components\BillboardComponent.h">
       <Filter>src\Component</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityDepthPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Utility\Utility.cpp">
@@ -924,6 +927,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\BillboardPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityDepthPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

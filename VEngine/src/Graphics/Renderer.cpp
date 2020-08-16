@@ -41,6 +41,7 @@
 #include "Pass/ShadeVisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Pass/FourierOpacityDirectionalLightPass.h"
+#include "Pass/FourierOpacityDepthPass.h"
 #include "Pass/DebugDrawPass.h"
 #include "Pass/BillboardPass.h"
 #include "Module/GTAOModule.h"
@@ -773,23 +774,53 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	rg::ImageViewHandle fomDirShadowImageViewHandle = 0;
+	rg::ImageViewHandle fomDepthDirShadowImageViewHandle = 0;
 	{
-		rg::ImageDescription desc = {};
-		desc.m_name = "FOM Cascades Image";
-		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
-		desc.m_width = 256;
-		desc.m_height = 256;
-		desc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u) * 2;
-		desc.m_levels = 1;
-		desc.m_samples = SampleCount::_1;
-		desc.m_format = Format::R16G16B16A16_SFLOAT;
+		rg::ImageDescription fomDesc = {};
+		fomDesc.m_name = "FOM Cascades Image";
+		fomDesc.m_clear = false;
+		fomDesc.m_clearValue.m_imageClearValue = {};
+		fomDesc.m_width = 256;
+		fomDesc.m_height = 256;
+		fomDesc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u) * 2;
+		fomDesc.m_levels = 1;
+		fomDesc.m_samples = SampleCount::_1;
+		fomDesc.m_format = Format::R16G16B16A16_SFLOAT;
 
-		rg::ImageHandle imageHandle = graph.createImage(desc);
-		fomDirShadowImageViewHandle = graph.createImageView({ desc.m_name, imageHandle, { 0, 1, 0, desc.m_layers }, ImageViewType::_2D_ARRAY });
+		rg::ImageHandle fomImageHandle = graph.createImage(fomDesc);
+		fomDirShadowImageViewHandle = graph.createImageView({ fomDesc.m_name, fomImageHandle, { 0, 1, 0, fomDesc.m_layers }, ImageViewType::_2D_ARRAY });
+
+		rg::ImageDescription depthDesc = {};
+		depthDesc.m_name = "FOM Depth Cascades Image";
+		depthDesc.m_clear = false;
+		depthDesc.m_clearValue.m_imageClearValue = {};
+		depthDesc.m_width = 256;
+		depthDesc.m_height = 256;
+		depthDesc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u) * 2;
+		depthDesc.m_levels = 1;
+		depthDesc.m_samples = SampleCount::_1;
+		depthDesc.m_format = Format::D16_UNORM;
+
+		rg::ImageHandle depthImageHandle = graph.createImage(depthDesc);
+		fomDepthDirShadowImageViewHandle = graph.createImageView({ depthDesc.m_name, depthImageHandle, { 0, 1, 0, depthDesc.m_layers }, ImageViewType::_2D_ARRAY });
 
 		if (renderData.m_shadowCascadeViewRenderListCount > 0)
 		{
+			FourierOpacityDepthPass::Data fourierOpacityDepthPassData;
+			fourierOpacityDepthPassData.m_passRecordContext = &passRecordContext;
+			fourierOpacityDepthPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
+			fourierOpacityDepthPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+			fourierOpacityDepthPassData.m_listCount = renderData.m_particleDataDrawListCount;
+			fourierOpacityDepthPassData.m_particleLists = renderData.m_particleDrawDataLists;
+			fourierOpacityDepthPassData.m_listSizes = renderData.m_particleDrawDataListSizes;
+			fourierOpacityDepthPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
+			fourierOpacityDepthPassData.m_particleBufferInfo = particleBufferInfo;
+			fourierOpacityDepthPassData.m_shadowMatrixBufferInfo = shadowMatricesBufferInfo;
+			fourierOpacityDepthPassData.m_directionalLightFomDepthImageHandle = depthImageHandle;
+
+			FourierOpacityDepthPass::addToGraph(graph, fourierOpacityDepthPassData);
+
+
 			FourierOpacityDirectionalLightPass::Data fourierOpacityDirLightPassData;
 			fourierOpacityDirLightPassData.m_passRecordContext = &passRecordContext;
 			fourierOpacityDirLightPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
@@ -800,7 +831,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			fourierOpacityDirLightPassData.m_localMediaBufferInfo = localMediaDataBufferInfo;
 			fourierOpacityDirLightPassData.m_particleBufferInfo = particleBufferInfo;
 			fourierOpacityDirLightPassData.m_shadowMatrixBufferInfo = shadowMatricesBufferInfo;
-			fourierOpacityDirLightPassData.m_directionalLightFomImageHandle = imageHandle;
+			fourierOpacityDirLightPassData.m_directionalLightFomImageHandle = fomImageHandle;
+			fourierOpacityDirLightPassData.m_fomDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 
 			FourierOpacityDirectionalLightPass::addToGraph(graph, fourierOpacityDirLightPassData);
 		}
@@ -834,6 +866,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	deferredShadowsPassData.m_resultImageHandle = deferredShadowsImageHandle;
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
 	deferredShadowsPassData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
+	deferredShadowsPassData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
@@ -855,6 +888,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_shadowImageViewHandle = shadowImageViewHandle;
 	volumetricFogModuleData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	volumetricFogModuleData.m_fomImageViewHandle = fomImageViewHandle;
+	volumetricFogModuleData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
+	volumetricFogModuleData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 	volumetricFogModuleData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
@@ -1079,6 +1114,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	particlesPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	particlesPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	particlesPassData.m_fomImageViewHandle = fomImageViewHandle;
+	particlesPassData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
+	particlesPassData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 	particlesPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	particlesPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	particlesPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;

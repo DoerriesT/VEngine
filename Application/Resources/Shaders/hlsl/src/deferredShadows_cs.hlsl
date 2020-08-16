@@ -13,6 +13,7 @@ StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDI
 StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, 0);  // X: depth bias Y: normal bias Z: texelsPerMeter
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
+Texture2DArray<float> g_FomDepthRangeImage : REGISTER_SRV(FOM_DEPTH_RANGE_IMAGE_BINDING, 0);
 
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -164,12 +165,17 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		shadow += g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(coord, tc.w), tc.z).x * (1.0 / 16.0);
 	}
 	
-	//if (shadow > 0.0)
+	if (shadow > 0.0)
 	{
 		float4 fom0 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
 		float4 fom1 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
 		
-		shadow *= fourierOpacityGetTransmittance(tc.z, fom0, fom1);
+		float rangeBegin = g_FomDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2), 0.0).x;
+		float rangeEnd = g_FomDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+		float depth = clamp(tc.z, rangeBegin, rangeEnd);
+		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
+		
+		shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
 	}
 	
 	g_ResultImage[threadID.xy] = shadow;

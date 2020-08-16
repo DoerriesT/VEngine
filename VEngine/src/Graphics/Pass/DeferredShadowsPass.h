@@ -19,6 +19,7 @@ namespace VEngine
 			//rg::ImageViewHandle m_tangentSpaceImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_directionalLightFOMImageViewHandle;
+			rg::ImageViewHandle m_directionalLightFOMDepthRangeImageViewHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 			gal::DescriptorBufferInfo m_cascadeParamsBufferInfo;
 		};

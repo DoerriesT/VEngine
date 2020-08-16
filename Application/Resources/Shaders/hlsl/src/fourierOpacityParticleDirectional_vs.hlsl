@@ -7,6 +7,7 @@ struct VSOutput
 	float2 texCoord : TEXCOORD;
 	nointerpolation float opacity : OPACITY;
 	nointerpolation uint textureIndex : TEXTURE_INDEX;
+	nointerpolation uint depthRangeLayer : DEPTH_RANGE_LAYER;
 };
 
 struct ParticleData
@@ -55,6 +56,7 @@ VSOutput main(uint vertexID : SV_VertexID)
 	output.texCoord = positions[positionIndex] * float2(0.5, -0.5) + 0.5;
 	output.opacity = particle.opacity;
 	output.textureIndex = particle.textureIndex;
+	output.depthRangeLayer = g_PushConsts.shadowMatrixIndex;
 	
 	return output;
 }

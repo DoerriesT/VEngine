@@ -4,6 +4,8 @@
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
 
+Texture2DArray<float> g_DepthRangeImage : REGISTER_SRV(DEPTH_RANGE_IMAGE_BINDING, 0);
+
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(1, 1);
 
@@ -13,6 +15,7 @@ struct PSInput
 	float2 texCoord : TEXCOORD;
 	nointerpolation float opacity : OPACITY;
 	nointerpolation uint textureIndex : TEXTURE_INDEX;
+	nointerpolation uint depthRangeLayer : DEPTH_RANGE_LAYER;
 };
 
 struct PSOutput
@@ -23,7 +26,7 @@ struct PSOutput
 
 PSOutput main(PSInput input)
 {
-	float opacity = input.opacity * 0.99;
+	float opacity = input.opacity * 0.7;
 	if (input.textureIndex != 0)
 	{
 		opacity *= g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord).a;
@@ -31,9 +34,13 @@ PSOutput main(PSInput input)
 	
 	float4 result0 = 0.0;
 	float4 result1 = 0.0;
-
 	
-	fourierOpacityAccumulate(input.position.z, 1.0 - opacity, result0, result1);
+	float rangeBegin = g_DepthRangeImage.Load(uint4(input.position.xy, input.depthRangeLayer * 2, 0)).x;
+	float rangeEnd = g_DepthRangeImage.Load(uint4(input.position.xy, input.depthRangeLayer * 2 + 1, 0)).x;
+	float depth = clamp(input.position.z, rangeBegin, rangeEnd);
+	depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
+	
+	fourierOpacityAccumulate(depth, 1.0 - opacity, result0, result1);
 	
 	
 	PSOutput output;

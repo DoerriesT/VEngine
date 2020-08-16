@@ -22,6 +22,8 @@ namespace VEngine
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
+			rg::ImageViewHandle m_directionalLightFOMImageViewHandle;
+			rg::ImageViewHandle m_directionalLightFOMDepthRangeImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
 			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;

@@ -63,6 +63,8 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_volumetricFogImageViewHandle), {ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT} },
 		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
@@ -125,6 +127,8 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 				ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
 				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
+				ImageView *fomDirectionalImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
+				ImageView *fomDirectionalDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
 				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
@@ -138,6 +142,8 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
 					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
 					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),
+					Initializers::sampledImage(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
+					Initializers::sampledImage(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
 					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),

@@ -21,6 +21,8 @@ SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
 Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
+Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
 
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 
@@ -79,7 +81,20 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 	}
 	
 	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
-	const float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
+	float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
+	
+	if (shadow > 0.0)
+	{
+		float4 fom0 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+		float4 fom1 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+		
+		float rangeBegin = g_FomDirectionalDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2), 0.0).x;
+		float rangeEnd = g_FomDirectionalDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+		float depth = clamp(tc.z, rangeBegin, rangeEnd);
+		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
+		
+		shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
+	}
 	
 	return shadow;
 }

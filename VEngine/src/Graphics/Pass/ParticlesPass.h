@@ -28,6 +28,8 @@ namespace VEngine
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;
+			rg::ImageViewHandle m_directionalLightFOMImageViewHandle;
+			rg::ImageViewHandle m_directionalLightFOMDepthRangeImageViewHandle;
 			rg::ImageViewHandle m_volumetricFogImageViewHandle;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;
 			rg::ImageViewHandle m_depthImageViewHandle;

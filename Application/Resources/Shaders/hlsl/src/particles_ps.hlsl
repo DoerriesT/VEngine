@@ -35,6 +35,8 @@ StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDI
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
+Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
@@ -66,7 +68,20 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 	}
 	
 	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
-	const float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
+	float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
+	
+	if (shadow > 0.0)
+	{
+		float4 fom0 = g_FomDirectionalImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+		float4 fom1 = g_FomDirectionalImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+		
+		float rangeBegin = g_FomDirectionalDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2), 0.0).x;
+		float rangeEnd = g_FomDirectionalDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+		float depth = clamp(tc.z, rangeBegin, rangeEnd);
+		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
+		
+		shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
+	}
 	
 	return shadow;
 }
@@ -230,8 +245,8 @@ PSOutput main(PSInput input)
 					uv = uv * 0.5 + 0.5;
 					uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 					
-					float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_REPEAT], float3(uv, 0.0), 0.0);
-					float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_REPEAT], float3(uv, 1.0), 0.0);
+					float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
+					float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 					
 					float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 					//depth = saturate(depth);

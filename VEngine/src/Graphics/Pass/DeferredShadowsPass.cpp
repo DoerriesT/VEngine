@@ -62,6 +62,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 			//{rg::ResourceViewHandle(data.m_tangentSpaceImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+			{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		};
 
 		graph.addPass("Deferred Shadows", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -89,6 +90,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 					//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageViewHandle);
 					ImageView *shadowSpaceImageView = registry.getImageView(data.m_shadowImageViewHandle);
 					ImageView *fomImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
+					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
 
 					DescriptorSetUpdate updates[] =
 					{
@@ -104,6 +106,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
 						Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 						Initializers::sampledImage(&fomImageView, FOM_IMAGE_BINDING),
+						Initializers::sampledImage(&fomDepthRangeImageView, FOM_DEPTH_RANGE_IMAGE_BINDING),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
