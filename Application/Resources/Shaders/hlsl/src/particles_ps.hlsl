@@ -251,7 +251,7 @@ PSOutput main(PSInput input)
 	
 	// volumetric fog
 	{
-		float z = length(viewSpacePos);//-viewSpacePos.z;
+		float z = /*length(viewSpacePos);//*/-viewSpacePos.z;
 		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 		
 		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv

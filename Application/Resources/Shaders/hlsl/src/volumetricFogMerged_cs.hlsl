@@ -57,11 +57,9 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
 	
-	pos = normalize(pos);
-	
 	float d = texelCoord.z * (1.0 / VOLUME_DEPTH);
 	float z = VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
-	pos *= z;
+	pos *= z / VOLUME_FAR;
 	
 	pos += g_Constants.cameraPos;
 	

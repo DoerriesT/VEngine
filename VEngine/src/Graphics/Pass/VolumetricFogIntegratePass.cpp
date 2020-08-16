@@ -10,11 +10,29 @@ using namespace VEngine::gal;
 
 namespace
 {
+#include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
 #include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogIntegrate.hlsli"
 }
 
 void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
+	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint8_t *uboDataPtr = nullptr;
+	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+
+	Constants consts;
+	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
+	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
+	consts.frustumCornerBL = { data.m_frustumCorners[2][0], data.m_frustumCorners[2][1], data.m_frustumCorners[2][2] };
+	consts.frustumCornerBR = { data.m_frustumCorners[3][0], data.m_frustumCorners[3][1], data.m_frustumCorners[3][2] };
+	consts.cameraPos = commonData->m_cameraPosition;
+
+
+	memcpy(uboDataPtr, &consts, sizeof(consts));
+
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_inputImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
@@ -46,10 +64,11 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 				{
 					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
+					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					//Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(2, updates);
+				descriptorSet->update(std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

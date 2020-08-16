@@ -275,6 +275,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	// volumetric fog integrate
 	VolumetricFogIntegratePass::Data volumetricFogIntegratePassData;
 	volumetricFogIntegratePassData.m_passRecordContext = data.m_passRecordContext;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogIntegratePassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
 	volumetricFogIntegratePassData.m_inputImageViewHandle = scatteringImageViewHandle;
 	volumetricFogIntegratePassData.m_resultImageViewHandle = m_volumetricScatteringImageViewHandle;
 

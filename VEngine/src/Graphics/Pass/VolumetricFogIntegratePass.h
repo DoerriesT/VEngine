@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			float m_frustumCorners[4][3];
 			rg::ImageViewHandle m_inputImageViewHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 		};
