@@ -63,7 +63,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 		}
 
 		((glm::vec4 *)dirDataPtr)[i * 2] = glm::vec4(worldSpaceDir, 0.0f);
-		((glm::vec4 *)dirDataPtr)[i * 2 + 1] = glm::vec4(glm::cross(worldSpaceDir, glm::normalize(upDir)), 0.0f);
+		((glm::vec4 *)dirDataPtr)[i * 2 + 1] = glm::vec4(glm::normalize(glm::cross(worldSpaceDir, glm::normalize(upDir))), 0.0f);
 	}
 
 
