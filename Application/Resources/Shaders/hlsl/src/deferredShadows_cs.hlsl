@@ -165,7 +165,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		shadow += g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(coord, tc.w), tc.z).x * (1.0 / 16.0);
 	}
 	
-	if (shadow > 0.0)
+	if (shadow > 0.0 && g_Constants.volumetricShadow)
 	{
 		float4 fom0 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
 		float4 fom1 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);

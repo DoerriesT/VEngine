@@ -83,7 +83,7 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
 	float shadow = tc.w != -1.0 ? g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, tc.xyw, tc.z) : 0.0;
 	
-	if (shadow > 0.0)
+	if (shadow > 0.0 && g_Constants.volumetricShadow )
 	{
 		float4 fom0 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
 		float4 fom1 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);

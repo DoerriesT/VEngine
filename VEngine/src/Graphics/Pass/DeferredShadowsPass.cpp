@@ -10,6 +10,8 @@
 
 using namespace VEngine::gal;
 
+extern int g_volumetricShadow;
+
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
@@ -44,6 +46,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 		consts.texelWidth = 1.0f / consts.width;
 		consts.texelHeight = 1.0f / consts.height;
 		consts.frame = commonData->m_frame & 63u;
+		consts.volumetricShadow = g_volumetricShadow;
 
 		memcpy(uboDataPtr, &consts, sizeof(consts));
 

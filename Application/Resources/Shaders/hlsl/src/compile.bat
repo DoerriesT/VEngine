@@ -82,6 +82,8 @@ dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityGlobal
 
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main fourierOpacityParticleDirectional_vs.hlsl -Fo ./../fourierOpacityParticleDirectional_vs.spv
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityParticleDirectional_ps.hlsl -Fo ./../fourierOpacityParticleDirectional_ps.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main fourierOpacityVolumeDirectional_vs.hlsl -Fo ./../fourierOpacityVolumeDirectional_vs.spv
+dxc.exe -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main fourierOpacityVolumeDirectional_ps.hlsl -Fo ./../fourierOpacityVolumeDirectional_ps.spv
 
 dxc.exe -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main fourierOpacityDepth_vs.hlsl -Fo ./../fourierOpacityDepth_vs.spv
 

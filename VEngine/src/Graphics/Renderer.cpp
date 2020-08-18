@@ -808,8 +808,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		{
 			FourierOpacityDepthPass::Data fourierOpacityDepthPassData;
 			fourierOpacityDepthPassData.m_passRecordContext = &passRecordContext;
-			fourierOpacityDepthPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
-			fourierOpacityDepthPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+			fourierOpacityDepthPassData.m_lightData = &lightData;
 			fourierOpacityDepthPassData.m_listCount = renderData.m_particleDataDrawListCount;
 			fourierOpacityDepthPassData.m_particleLists = renderData.m_particleDrawDataLists;
 			fourierOpacityDepthPassData.m_listSizes = renderData.m_particleDrawDataListSizes;
@@ -823,8 +822,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 			FourierOpacityDirectionalLightPass::Data fourierOpacityDirLightPassData;
 			fourierOpacityDirLightPassData.m_passRecordContext = &passRecordContext;
-			fourierOpacityDirLightPassData.m_lightDataCount = static_cast<uint32_t>(lightData.m_directionalLightsShadowed.size());
-			fourierOpacityDirLightPassData.m_lightData = lightData.m_directionalLightsShadowed.data();
+			fourierOpacityDirLightPassData.m_lightData = &lightData;
+			fourierOpacityDirLightPassData.m_shadowMatrices = renderData.m_shadowMatrices;
 			fourierOpacityDirLightPassData.m_listCount = renderData.m_particleDataDrawListCount;
 			fourierOpacityDirLightPassData.m_particleLists = renderData.m_particleDrawDataLists;
 			fourierOpacityDirLightPassData.m_listSizes = renderData.m_particleDrawDataListSizes;

@@ -4,7 +4,7 @@
 namespace VEngine
 {
 	struct PassRecordContext;
-	struct DirectionalLight;
+	struct LightData;
 	struct ParticleDrawData;
 
 	namespace FourierOpacityDepthPass
@@ -12,8 +12,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			uint32_t m_lightDataCount;
-			const DirectionalLight *m_lightData;
+			const LightData *m_lightData;
 			uint32_t m_listCount;
 			ParticleDrawData **m_particleLists;
 			uint32_t *m_listSizes;

@@ -21,15 +21,15 @@ namespace
 
 void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	assert(data.m_lightDataCount <= 2);
+	assert(data.m_lightData->m_directionalLightsShadowed.size() <= 2);
 
 	rg::ResourceUsageDescription passUsages[2 * DirectionalLightComponent::MAX_CASCADES * 2 + 1];
 	rg::ImageViewHandle fomViewHandles[2 * DirectionalLightComponent::MAX_CASCADES * 2];
 	uint32_t viewHandleCount = 0;
 
-	for (size_t i = 0; i < data.m_lightDataCount; ++i)
+	for (size_t i = 0; i < data.m_lightData->m_directionalLightsShadowed.size(); ++i)
 	{
-		for (size_t j = 0; j < data.m_lightData[i].m_shadowCount; ++j)
+		for (size_t j = 0; j < data.m_lightData->m_directionalLightsShadowed[i].m_shadowCount; ++j)
 		{
 			for (size_t k = 0; k < 2; ++k)
 			{
@@ -46,13 +46,13 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// direction info
-	DescriptorBufferInfo dirBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 2 * data.m_lightDataCount };
+	DescriptorBufferInfo dirBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 2 * data.m_lightData->m_directionalLightsShadowed.size() };
 	uint8_t *dirDataPtr = nullptr;
 	ssboBuffer->allocate(dirBufferInfo.m_range, dirBufferInfo.m_offset, dirBufferInfo.m_buffer, dirDataPtr);
 
-	for (size_t i = 0; i < data.m_lightDataCount; ++i)
+	for (size_t i = 0; i < data.m_lightData->m_directionalLightsShadowed.size(); ++i)
 	{
-		const auto &light = data.m_lightData[i];
+		const auto &light = data.m_lightData->m_directionalLightsShadowed[i];
 
 		glm::vec3 worldSpaceDir = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(light.m_direction, 0.0f)));
 
@@ -68,9 +68,28 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 		((glm::vec4 *)dirDataPtr)[i * 2 + 1] = glm::vec4(glm::normalize(glm::cross(worldSpaceDir, glm::normalize(upDir))), 0.0f);
 	}
 
+	// transform buffer info
+	DescriptorBufferInfo volumeTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(commonData->m_localParticipatingMediaCount, 1u) };
+	uint8_t *transformDataPtr = nullptr;
+	ssboBuffer->allocate(volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, transformDataPtr);
+
+	for (size_t i = 0; i < data.m_lightData->m_localParticipatingMedia.size(); ++i)
+	{
+		glm::mat4 transform = glm::transpose(data.m_lightData->m_localMediaTransforms[data.m_lightData->m_localMediaOrder[i]]);
+		((glm::vec4 *)transformDataPtr)[0] = transform[0];
+		((glm::vec4 *)transformDataPtr)[1] = transform[1];
+		((glm::vec4 *)transformDataPtr)[2] = transform[2];
+		transformDataPtr += sizeof(glm::vec4) * 3;
+	}
+
 
 	graph.addPass("Fourier Opacity Directional Light", rg::QueueType::GRAPHICS, viewHandleCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
+			GraphicsPipeline *particlePipeline;
+			DescriptorSet *particleDescriptorSet;
+			GraphicsPipeline *volumePipeline;
+			DescriptorSet *volumeDescriptorSet;
+
 			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 
 			PipelineColorBlendAttachmentState additiveBlending{};
@@ -94,43 +113,91 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				registry.getImageView(fomViewHandles[1])->getImage()->getDescription().m_format,
 			};
 
-			// create pipeline description
-			GraphicsPipelineCreateInfo pipelineCreateInfo;
-			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_vs.spv");
-			builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_ps.spv");
-			builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
-			builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
-			builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
-			builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
-
-			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
-
-			DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
-
-			// update descriptor sets
+			// particle pipeline
 			{
-				ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
+				// create pipeline description
+				GraphicsPipelineCreateInfo pipelineCreateInfo;
+				GraphicsPipelineBuilder builder(pipelineCreateInfo);
+				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_vs.spv");
+				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_ps.spv");
+				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
+				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
+				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
 
-				DescriptorSetUpdate updates[] =
+				particlePipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
+
+				particleDescriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(particlePipeline->getDescriptorSetLayout(0));
+
+				// update descriptor sets
 				{
-					Initializers::storageBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
-					Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, MATRIX_BUFFER_BINDING),
-					Initializers::storageBuffer(&dirBufferInfo, LIGHT_DIR_BUFFER_BINDING),
-					Initializers::sampledImage(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
-				};
+					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					DescriptorSetUpdate updates[] =
+					{
+						Initializers::storageBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
+						Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, MATRIX_BUFFER_BINDING),
+						Initializers::storageBuffer(&dirBufferInfo, LIGHT_DIR_BUFFER_BINDING),
+						Initializers::sampledImage(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
+					};
+
+					particleDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				}
 			}
+
+			// volume pipeline
+			{
+				// create pipeline description
+				GraphicsPipelineCreateInfo pipelineCreateInfo;
+				GraphicsPipelineBuilder builder(pipelineCreateInfo);
+				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_vs.spv");
+				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_ps.spv");
+				builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
+				builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
+				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
+				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
+				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
+
+				volumePipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
+
+				volumeDescriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(volumePipeline->getDescriptorSetLayout(0));
+
+				// update descriptor sets
+				{
+					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
+
+					DescriptorSetUpdate updates[] =
+					{
+						Initializers::storageBuffer(&volumeTransformBufferInfo, 0),
+						Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, 1),
+						Initializers::storageBuffer(&data.m_localMediaBufferInfo, 2),
+						Initializers::sampledImage(&fomDepthRangeImageView, 3),
+						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 4),
+					};
+
+					volumeDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				}
+			}
+
 
 			const auto &imageDesc = registry.getImage(data.m_directionalLightFomImageHandle)->getDescription();
 			uint32_t w = imageDesc.m_width;
 			uint32_t h = imageDesc.m_height;
 
-			for (size_t i = 0; i < data.m_lightDataCount; ++i)
+			const uint32_t pointLightProxyMeshIndexCount = data.m_passRecordContext->m_renderResources->m_pointLightProxyMeshIndexCount;
+			const uint32_t pointLightProxyMeshFirstIndex = data.m_passRecordContext->m_renderResources->m_pointLightProxyMeshFirstIndex;
+			const uint32_t pointLightProxyMeshVertexOffset = data.m_passRecordContext->m_renderResources->m_pointLightProxyMeshVertexOffset;
+			const uint32_t boxProxyMeshIndexCount = data.m_passRecordContext->m_renderResources->m_boxProxyMeshIndexCount;
+			const uint32_t boxProxyMeshFirstIndex = data.m_passRecordContext->m_renderResources->m_boxProxyMeshFirstIndex;
+			const uint32_t boxProxyMeshVertexOffset = data.m_passRecordContext->m_renderResources->m_boxProxyMeshVertexOffset;
+
+
+			for (size_t lightIdx = 0; lightIdx < data.m_lightData->m_directionalLightsShadowed.size(); ++lightIdx)
 			{
+				const auto &light = data.m_lightData->m_directionalLightsShadowed[lightIdx];
 				size_t currentLayerOffset = 0;
-				for (size_t j = 0; j < data.m_lightData[i].m_shadowCount; ++j)
+				for (size_t cascadeIdx = 0; cascadeIdx < light.m_shadowCount; ++cascadeIdx)
 				{
 					// begin renderpass
 					ColorAttachmentDescription colorAttachDescs[]
@@ -140,30 +207,84 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 					};
 					cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, nullptr, { {}, {w, h} });
 					{
-						cmdList->bindPipeline(pipeline);
-
-						DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-						cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
-
 						Viewport viewport{ 0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h), 0.0f, 1.0f };
 						Rect scissor{ { 0, 0 }, { w, h } };
 
 						cmdList->setViewport(0, 1, &viewport);
 						cmdList->setScissor(0, 1, &scissor);
 
-						uint32_t particleOffset = 0;
-						for (size_t k = 0; k < data.m_listCount; ++k)
+						// particles
 						{
-							if (data.m_listSizes[k])
-							{
-								PushConsts pushConsts;
-								pushConsts.shadowMatrixIndex = data.m_lightData[i].m_shadowOffset + (uint32_t)j;
-								pushConsts.directionIndex = (uint32_t)i;
-								pushConsts.particleOffset = particleOffset;
+							cmdList->bindPipeline(particlePipeline);
 
-								cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
-								cmdList->draw(6 * data.m_listSizes[k], 1, 0, 0);
-								particleOffset += data.m_listSizes[k];
+							DescriptorSet *descriptorSets[] = { particleDescriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
+							cmdList->bindDescriptorSets(particlePipeline, 0, 2, descriptorSets);
+
+							uint32_t particleOffset = 0;
+							for (size_t particleListIdx = 0; particleListIdx < data.m_listCount; ++particleListIdx)
+							{
+								if (data.m_listSizes[particleListIdx])
+								{
+									PushConsts pushConsts;
+									pushConsts.shadowMatrixIndex = light.m_shadowOffset + (uint32_t)cascadeIdx;
+									pushConsts.directionIndex = (uint32_t)lightIdx;
+									pushConsts.particleOffset = particleOffset;
+
+									cmdList->pushConstants(particlePipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+									cmdList->draw(6 * data.m_listSizes[particleListIdx], 1, 0, 0);
+									particleOffset += data.m_listSizes[particleListIdx];
+								}
+							}
+						}
+
+						// volumes
+						{
+							cmdList->bindPipeline(volumePipeline);
+
+							DescriptorSet *descriptorSets[] = { volumeDescriptorSet, data.m_passRecordContext->m_renderResources->m_texture3DDescriptorSet };
+							cmdList->bindDescriptorSets(volumePipeline, 0, 2, descriptorSets);
+
+							cmdList->bindIndexBuffer(data.m_passRecordContext->m_renderResources->m_lightProxyIndexBuffer, 0, IndexType::UINT16);
+
+							uint64_t vertexOffset = 0;
+							cmdList->bindVertexBuffers(0, 1, &data.m_passRecordContext->m_renderResources->m_lightProxyVertexBuffer, &vertexOffset);
+
+							struct PushConsts2
+							{
+								float3 rayDir;
+								float invLightRange;
+								float3 topLeft;
+								uint volumeIndex;
+								float3 deltaX;
+								uint shadowMatrixIndex;
+								float3 deltaY;
+							};
+
+							
+
+							glm::mat4 invShadowMatrix = glm::inverse(data.m_shadowMatrices[light.m_shadowOffset + (uint32_t)cascadeIdx]);
+
+							PushConsts2 pushConsts;
+							pushConsts.rayDir = -glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(light.m_direction, 0.0f)));
+							pushConsts.invLightRange = 1.0f / 300.0f;
+							pushConsts.topLeft = invShadowMatrix * glm::vec4(-1.0f, 1.0f, 0.0f, 1.0f);
+							pushConsts.deltaX = (glm::vec3(invShadowMatrix * glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)) - pushConsts.topLeft) / w;
+							pushConsts.deltaY = (glm::vec3(invShadowMatrix * glm::vec4(-1.0f, -1.0f, 0.0f, 1.0f)) - pushConsts.topLeft) / h;
+
+							for (size_t mediaIdx = 0; mediaIdx < data.m_lightData->m_localParticipatingMedia.size(); ++mediaIdx)
+							{
+								pushConsts.shadowMatrixIndex = light.m_shadowOffset + (uint32_t)cascadeIdx;
+								pushConsts.volumeIndex = data.m_lightData->m_localMediaOrder[mediaIdx];
+
+								cmdList->pushConstants(volumePipeline, ShaderStageFlagBits::VERTEX_BIT | ShaderStageFlagBits::FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
+
+								bool spherical = data.m_lightData->m_localParticipatingMedia[data.m_lightData->m_localMediaOrder[mediaIdx]].m_spherical;
+
+								uint32_t indexCount = spherical ? pointLightProxyMeshIndexCount : boxProxyMeshIndexCount;
+								uint32_t firstIndex = spherical ? pointLightProxyMeshFirstIndex : boxProxyMeshFirstIndex;
+								uint32_t vertexOffset = spherical ? pointLightProxyMeshVertexOffset : boxProxyMeshVertexOffset;
+
+								cmdList->drawIndexed(indexCount, 1, firstIndex, vertexOffset, 0);
 							}
 						}
 					}

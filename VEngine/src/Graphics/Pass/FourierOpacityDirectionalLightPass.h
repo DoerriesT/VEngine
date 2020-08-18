@@ -1,10 +1,11 @@
 #pragma once
 #include "Graphics/RenderGraph.h"
+#include <glm/mat4x4.hpp>
 
 namespace VEngine
 {
 	struct PassRecordContext;
-	struct DirectionalLight;
+	struct LightData;
 	struct ParticleDrawData;
 
 	namespace FourierOpacityDirectionalLightPass
@@ -12,8 +13,8 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			uint32_t m_lightDataCount;
-			const DirectionalLight *m_lightData;
+			const LightData *m_lightData;
+			const glm::mat4 *m_shadowMatrices;
 			uint32_t m_listCount;
 			ParticleDrawData **m_particleLists;
 			uint32_t *m_listSizes;

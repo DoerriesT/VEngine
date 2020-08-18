@@ -32,4 +32,5 @@ struct Constants
 	float texelWidth;
 	float texelHeight;
 	uint frame;
+	uint volumetricShadow;
 };
