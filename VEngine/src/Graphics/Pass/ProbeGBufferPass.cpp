@@ -95,13 +95,12 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 					// create pipeline description
 					GraphicsPipelineCreateInfo pipelineCreateInfo;
 					GraphicsPipelineBuilder builder(pipelineCreateInfo);
-					gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 					builder.setVertexShader("Resources/Shaders/hlsl/probeGBuffer_vs.spv");
 					builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/probeGBuffer_ALPHA_MASK_ENABLED_ps.spv" : "Resources/Shaders/hlsl/probeGBuffer_ps.spv");
 					builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::CLOCKWISE);
 					builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
 					builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
-					builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+					builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 					builder.setDepthStencilAttachmentFormat(depthAttachmentFormat);
 					builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
 

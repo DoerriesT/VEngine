@@ -277,20 +277,12 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 		}
 	}
 	
-
+	VkDynamicState dynamicStatesArray[9];
 	VkPipelineDynamicStateCreateInfo dynamicState = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-	VkDynamicState dynamicStatesArray[DynamicStates::MAX_DYNAMIC_STATES];
-	{
-		dynamicState.dynamicStateCount = createInfo.m_dynamicState.m_dynamicStateCount;
-		dynamicState.pDynamicStates = dynamicStatesArray;
+	dynamicState.pDynamicStates = dynamicStatesArray;
+	UtilityVk::translateDynamicStateFlags(createInfo.m_dynamicStateFlags, dynamicState.dynamicStateCount, dynamicStatesArray);
 
-		for (size_t i = 0; i < createInfo.m_dynamicState.m_dynamicStateCount; ++i)
-		{
-			dynamicStatesArray[i] = UtilityVk::translate(createInfo.m_dynamicState.m_dynamicStates[i]);
-		}
-	}
 	
-
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipelineInfo.stageCount = stageCount;
 	pipelineInfo.pStages = shaderStages;

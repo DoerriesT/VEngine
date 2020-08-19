@@ -55,8 +55,7 @@ namespace VEngine
 			void setBlendConstants(float blendConst0, float blendConst1, float blendConst2, float blendConst3);
 			void setColorBlendAttachments(size_t count, const PipelineColorBlendAttachmentState *colorBlendAttachments);
 			void setColorBlendAttachment(const PipelineColorBlendAttachmentState &colorBlendAttachment);
-			void setDynamicState(size_t count, const DynamicState *dynamicState);
-			void setDynamicState(DynamicState dynamicState);
+			void setDynamicState(DynamicStateFlags dynamicStateFlags);
 			void setColorAttachmentFormats(uint32_t count, Format *formats);
 			void setColorAttachmentFormat(Format format);
 			void setDepthStencilAttachmentFormat(Format format);

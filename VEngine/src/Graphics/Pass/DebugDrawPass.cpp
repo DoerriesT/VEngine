@@ -53,8 +53,6 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			const uint32_t width = data.m_passRecordContext->m_commonRenderData->m_width;
 			const uint32_t height = data.m_passRecordContext->m_commonRenderData->m_height;
 
-			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-
 			PipelineColorBlendAttachmentState blendState{};
 			blendState.m_blendEnable = true;
 			blendState.m_srcColorBlendFactor = BlendFactor::SRC_ALPHA;
@@ -106,7 +104,7 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 					builder.setDepthTest(depthTestEnabled, false, depthTestVisible ? CompareOp::GREATER_OR_EQUAL : depthTestHidden ? CompareOp::LESS : CompareOp::ALWAYS);
 					builder.setColorBlendAttachment(blendState);
-					builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+					builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 					if (depthTestEnabled)
 					{
 						builder.setDepthStencilAttachmentFormat(depthAttachmentFormat);

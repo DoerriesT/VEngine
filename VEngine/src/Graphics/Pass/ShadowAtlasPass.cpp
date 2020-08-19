@@ -41,14 +41,11 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-
-				gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-
 				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/shadows_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/shadows_vs.spv");
 				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/hlsl/shadows_ps.spv");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
-				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 				builder.setDepthStencilAttachmentFormat(shadowAtlasImageView->getImage()->getDescription().m_format);
 
 				pipelines[i] = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);

@@ -29,7 +29,6 @@ namespace VEngine
 			VkCompareOp translate(CompareOp compareOp);
 			VkStencilOp translate(StencilOp stencilOp);
 			VkLogicOp translate(LogicOp logicOp);
-			VkDynamicState translate(DynamicState dynamicState);
 			VkBlendFactor translate(BlendFactor blendFactor);
 			VkBlendOp translate(BlendOp blendOp);
 			VkShaderStageFlags translateShaderStageFlags(ShaderStageFlags flags);
@@ -44,6 +43,7 @@ namespace VEngine
 			VkCullModeFlags translateCullModeFlags(CullModeFlags flags);
 			VkColorComponentFlags translateColorComponentFlags(ColorComponentFlags flags);
 			VkQueryResultFlags translateQueryResultFlags(QueryResultFlags flags);
+			void translateDynamicStateFlags(DynamicStateFlags flags, uint32_t &stateCount, VkDynamicState states[9]);
 		}
 	}
 }

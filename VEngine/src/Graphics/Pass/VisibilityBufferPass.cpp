@@ -57,12 +57,11 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/visibilityBuffer_vs.spv");
 				builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_ps.spv" : "Resources/Shaders/hlsl/visibilityBuffer_ps.spv");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);
-				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 				builder.setDepthStencilAttachmentFormat(registry.getImageView(data.m_depthImageHandle)->getImage()->getDescription().m_format);
 				builder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
 				builder.setColorAttachmentFormat(registry.getImageViewDescription(data.m_triangleImageHandle).m_format);

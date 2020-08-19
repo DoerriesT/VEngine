@@ -871,35 +871,6 @@ VkLogicOp VEngine::gal::UtilityVk::translate(gal::LogicOp logicOp)
 	return VkLogicOp();
 }
 
-VkDynamicState VEngine::gal::UtilityVk::translate(gal::DynamicState dynamicState)
-{
-	switch (dynamicState)
-	{
-	case DynamicState::VIEWPORT:
-		return VK_DYNAMIC_STATE_VIEWPORT;
-	case DynamicState::SCISSOR:
-		return VK_DYNAMIC_STATE_SCISSOR;
-	case DynamicState::LINE_WIDTH:
-		return VK_DYNAMIC_STATE_LINE_WIDTH;
-	case DynamicState::DEPTH_BIAS:
-		return VK_DYNAMIC_STATE_DEPTH_BIAS;
-	case DynamicState::BLEND_CONSTANTS:
-		return VK_DYNAMIC_STATE_BLEND_CONSTANTS;
-	case DynamicState::DEPTH_BOUNDS:
-		return VK_DYNAMIC_STATE_DEPTH_BOUNDS;
-	case DynamicState::STENCIL_COMPARE_MASK:
-		return VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
-	case DynamicState::STENCIL_WRITE_MASK:
-		return VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
-	case DynamicState::STENCIL_REFERENCE:
-		return VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-	default:
-		assert(false);
-		break;
-	}
-	return VkDynamicState();
-}
-
 VkBlendFactor VEngine::gal::UtilityVk::translate(gal::BlendFactor blendFactor)
 {
 	switch (blendFactor)
@@ -1360,4 +1331,44 @@ VkQueryResultFlags VEngine::gal::UtilityVk::translateQueryResultFlags(gal::Query
 	}
 
 	return result;
+}
+
+void VEngine::gal::UtilityVk::translateDynamicStateFlags(DynamicStateFlags flags, uint32_t &stateCount, VkDynamicState states[9])
+{
+	if (testFlagBit(flags, DynamicStateFlagBits::VIEWPORT_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::SCISSOR_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_SCISSOR;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::LINE_WIDTH_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_LINE_WIDTH;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::DEPTH_BIAS_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_DEPTH_BIAS;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::BLEND_CONSTANTS_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_BLEND_CONSTANTS;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::DEPTH_BOUNDS_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::STENCIL_COMPARE_MASK_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::STENCIL_WRITE_MASK_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+	}
+	if (testFlagBit(flags, DynamicStateFlagBits::STENCIL_REFERENCE_BIT))
+	{
+		states[stateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+	}
 }

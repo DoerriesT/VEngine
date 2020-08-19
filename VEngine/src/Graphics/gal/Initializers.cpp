@@ -389,20 +389,9 @@ void VEngine::gal::GraphicsPipelineBuilder::setColorBlendAttachment(const Pipeli
 	m_createInfo.m_blendState.m_attachments[0] = colorBlendAttachment;
 }
 
-void VEngine::gal::GraphicsPipelineBuilder::setDynamicState(size_t count, const DynamicState *dynamicState)
+void VEngine::gal::GraphicsPipelineBuilder::setDynamicState(DynamicStateFlags dynamicStateFlags)
 {
-	assert(count < DynamicStates::MAX_DYNAMIC_STATES);
-	m_createInfo.m_dynamicState.m_dynamicStateCount = count;
-	for (size_t i = 0; i < count; ++i)
-	{
-		m_createInfo.m_dynamicState.m_dynamicStates[i] = dynamicState[i];
-	}
-}
-
-void VEngine::gal::GraphicsPipelineBuilder::setDynamicState(DynamicState dynamicState)
-{
-	m_createInfo.m_dynamicState.m_dynamicStateCount = 1;
-	m_createInfo.m_dynamicState.m_dynamicStates[0] = dynamicState;
+	m_createInfo.m_dynamicStateFlags = dynamicStateFlags;
 }
 
 void VEngine::gal::GraphicsPipelineBuilder::setColorAttachmentFormats(uint32_t count, Format *formats)

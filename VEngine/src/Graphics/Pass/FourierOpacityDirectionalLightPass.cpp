@@ -90,8 +90,6 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 			GraphicsPipeline *volumePipeline;
 			DescriptorSet *volumeDescriptorSet;
 
-			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-
 			PipelineColorBlendAttachmentState additiveBlending{};
 			additiveBlending.m_blendEnable = true;
 			additiveBlending.m_srcColorBlendFactor = BlendFactor::ONE;
@@ -122,7 +120,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_ps.spv");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
-				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 				builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
 
 				particlePipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
@@ -156,7 +154,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
-				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 				builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
 
 				volumePipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);

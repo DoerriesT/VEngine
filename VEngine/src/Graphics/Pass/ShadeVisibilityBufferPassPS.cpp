@@ -111,12 +111,11 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
 			builder.setFragmentShader("Resources/Shaders/hlsl/shadeVisibilityBuffer_ps.spv");
 			builder.setColorBlendAttachments(3, colorBlendAttachments);
 			builder.setDepthTest(true, false, CompareOp::NOT_EQUAL);
-			builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 			builder.setDepthStencilAttachmentFormat(registry.getImageView(data.m_depthImageViewHandle)->getImage()->getDescription().m_format);
 			builder.setColorAttachmentFormats(3, colorAttachmentFormats);
 

@@ -50,12 +50,11 @@ void VEngine::ApplyIndirectLightingPass::addToGraph(rg::RenderGraph &graph, cons
 			// create pipeline description
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
 			builder.setFragmentShader("Resources/Shaders/hlsl/applyIndirectLighting_ps.spv");
 			builder.setColorBlendAttachment(blendState);
 			builder.setDepthTest(true, false, CompareOp::NOT_EQUAL);
-			builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 			builder.setDepthStencilAttachmentFormat(registry.getImageView(data.m_depthImageViewHandle)->getImage()->getDescription().m_format);
 			builder.setColorAttachmentFormat(registry.getImageView(data.m_resultImageHandle)->getImage()->getDescription().m_format);
 

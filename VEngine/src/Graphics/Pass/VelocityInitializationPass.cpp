@@ -30,11 +30,10 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 		// create pipeline description
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
-		gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 		builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
 		builder.setFragmentShader("Resources/Shaders/hlsl/velocityInitialization_ps.spv");
 		builder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
-		builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+		builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 		builder.setColorAttachmentFormat(registry.getImageView(data.m_velocityImageHandle)->getImage()->getDescription().m_format);
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);

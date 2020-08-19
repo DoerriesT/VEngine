@@ -64,8 +64,6 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
 
-		gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-
 		VertexInputAttributeDescription attributeDescs[]
 		{
 			{ 0, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, pos) },
@@ -88,7 +86,7 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		builder.setVertexBindingDescription({ 0, sizeof(ImDrawVert), VertexInputRate::VERTEX });
 		builder.setVertexAttributeDescriptions(sizeof(attributeDescs) / sizeof(attributeDescs[0]), attributeDescs);
 		builder.setColorBlendAttachment(colorBlendAttachment);
-		builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+		builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 		builder.setColorAttachmentFormat(registry.getImageView(data.m_resultImageViewHandle)->getImage()->getDescription().m_format);
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);

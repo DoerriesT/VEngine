@@ -426,19 +426,6 @@ namespace VEngine
 			SET = 15,
 		};
 
-		enum class DynamicState
-		{
-			VIEWPORT = 0,
-			SCISSOR = 1,
-			LINE_WIDTH = 2,
-			DEPTH_BIAS = 3,
-			BLEND_CONSTANTS = 4,
-			DEPTH_BOUNDS = 5,
-			STENCIL_COMPARE_MASK = 6,
-			STENCIL_WRITE_MASK = 7,
-			STENCIL_REFERENCE = 8,
-		};
-
 		enum class BlendFactor
 		{
 			ZERO = 0,
@@ -477,7 +464,7 @@ namespace VEngine
 
 		namespace ShaderStageFlagBits
 		{
-			enum 
+			enum
 			{
 				VERTEX_BIT = 0x00000001,
 				TESSELLATION_CONTROL_BIT = 0x00000002,
@@ -640,6 +627,24 @@ namespace VEngine
 			};
 		}
 		using QueryResultFlags = uint32_t;
+
+
+		namespace DynamicStateFlagBits
+		{
+			enum
+			{
+				VIEWPORT_BIT = 1u << 0u,
+				SCISSOR_BIT = 1u << 1u,
+				LINE_WIDTH_BIT = 1u << 2u,
+				DEPTH_BIAS_BIT = 1u << 3u,
+				BLEND_CONSTANTS_BIT = 1u << 4u,
+				DEPTH_BOUNDS_BIT = 1u << 5u,
+				STENCIL_COMPARE_MASK_BIT = 1u << 6u,
+				STENCIL_WRITE_MASK_BIT = 1u << 7u,
+				STENCIL_REFERENCE_BIT = 1u << 8u,
+			};
+		};
+		using DynamicStateFlags = uint32_t;
 
 
 
@@ -947,13 +952,6 @@ namespace VEngine
 			float m_blendConstants[4] = {};
 		};
 
-		struct DynamicStates
-		{
-			enum { MAX_DYNAMIC_STATES = 9 };
-			uint32_t m_dynamicStateCount = 0;
-			DynamicState m_dynamicStates[MAX_DYNAMIC_STATES] = {};
-		};
-
 		struct AttachmentFormats
 		{
 			uint32_t m_colorAttachmentCount = 0;
@@ -977,7 +975,7 @@ namespace VEngine
 			MultisampleState m_multiSampleState;
 			DepthStencilState m_depthStencilState;
 			BlendState m_blendState;
-			DynamicStates m_dynamicState;
+			DynamicStateFlags m_dynamicStateFlags = 0;
 			AttachmentFormats m_attachmentFormats;
 		};
 

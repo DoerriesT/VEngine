@@ -43,8 +43,6 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			};
 			cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, &depthAttachDesc, { {}, {width, height} });
 
-			gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
-
 			PipelineColorBlendAttachmentState blendState{};
 			blendState.m_blendEnable = true;
 			blendState.m_srcColorBlendFactor = BlendFactor::SRC_ALPHA;
@@ -68,7 +66,7 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 			builder.setDepthTest(true, false, CompareOp::GREATER_OR_EQUAL);
 			builder.setColorBlendAttachment(blendState);
-			builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 			builder.setDepthStencilAttachmentFormat(registry.getImageView(data.m_depthImageViewHandle)->getImage()->getDescription().m_format);
 			builder.setColorAttachmentFormats(sizeof(colorAttachmentFormats) / sizeof(colorAttachmentFormats[0]), colorAttachmentFormats);
 

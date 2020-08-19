@@ -35,14 +35,13 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		// create pipeline description
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
-		gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 		builder.setVertexShader("Resources/Shaders/hlsl/rasterTiling_vs.spv");
 		builder.setFragmentShader("Resources/Shaders/hlsl/rasterTiling_ps.spv");
 		builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 		builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
 		builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
 		builder.setMultisampleState(SampleCount::_4, false, 0.0f, 0xFFFFFFFF, false, false);
-		builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+		builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

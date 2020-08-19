@@ -78,13 +78,12 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				gal::DynamicState dynamicState[] = { DynamicState::VIEWPORT,  DynamicState::SCISSOR };
 				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityDepth_vs.spv");
 				builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 				builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
 				builder.setPolygonModeCullMode(PolygonMode::FILL, i == 0 ? CullModeFlagBits::BACK_BIT : CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, i == 0 ? CompareOp::LESS_OR_EQUAL : CompareOp::GREATER);
-				builder.setDynamicState(sizeof(dynamicState) / sizeof(dynamicState[0]), dynamicState);
+				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 				builder.setDepthStencilAttachmentFormat(registry.getImage(data.m_directionalLightFomDepthImageHandle)->getDescription().m_format);
 
 				pipelines[i] = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
