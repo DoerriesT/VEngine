@@ -25,7 +25,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 
 	for (size_t i = 0; i < data.m_lightDataCount; ++i)
 	{
-		DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+		DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 		uint8_t *uboDataPtr = nullptr;
 		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -95,21 +95,21 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *fomImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
 					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-						//Initializers::sampledImage(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
-						Initializers::sampledImage(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-						Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
-						Initializers::storageBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
-						Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
-						Initializers::sampledImage(&fomImageView, FOM_IMAGE_BINDING),
-						Initializers::sampledImage(&fomDepthRangeImageView, FOM_DEPTH_RANGE_IMAGE_BINDING),
+						Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+						Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+						//Initializers::texture(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
+						Initializers::texture(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+						Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
+						Initializers::structuredBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
+						Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
+						Initializers::texture(&fomImageView, FOM_IMAGE_BINDING),
+						Initializers::texture(&fomDepthRangeImageView, FOM_DEPTH_RANGE_IMAGE_BINDING),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

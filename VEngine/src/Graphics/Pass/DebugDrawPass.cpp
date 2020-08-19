@@ -24,7 +24,7 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	}
 
 	// debug vertex buffer
-	DescriptorBufferInfo vertexBufferInfo{ nullptr, 0, vertexCount * sizeof(DebugDrawVertex) };
+	DescriptorBufferInfo vertexBufferInfo{ nullptr, 0, vertexCount * sizeof(DebugDrawVertex), sizeof(DebugDrawVertex) };
 	{
 		auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
@@ -120,9 +120,9 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					{
 						descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageBuffer(&vertexBufferInfo, 0),
+							Initializers::structuredBuffer(&vertexBufferInfo, 0),
 						};
 
 						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

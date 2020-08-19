@@ -61,17 +61,17 @@ void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				// update descriptor sets
 				{
 					Buffer *vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer;
-					DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-					DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+					DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), 4u };
+					DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord), 4u };
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
-						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
+						Initializers::structuredBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
+						Initializers::structuredBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
 
 						// if (data.m_alphaMasked)
-						Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
-						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
+						Initializers::structuredBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
+						Initializers::structuredBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
 					};
 
 					descriptorSet->update(alphaMasked ? 4 : 2, updates);

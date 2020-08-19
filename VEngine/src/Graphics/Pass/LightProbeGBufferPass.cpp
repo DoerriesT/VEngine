@@ -22,7 +22,7 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -71,18 +71,18 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 				ImageView *shadowImageView = registry.getImageView(data.m_directionalShadowImageViewHandle);
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 				
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&data.m_depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&data.m_albedoRoughnessImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&data.m_normalImageView, NORMAL_IMAGE_BINDING),
-					Initializers::sampledImage(&shadowImageView, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
-					Initializers::storageBuffer(&data.m_directionalLightsShadowedProbeBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
-					Initializers::storageBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&data.m_depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::texture(&data.m_albedoRoughnessImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
+					Initializers::texture(&data.m_normalImageView, NORMAL_IMAGE_BINDING),
+					Initializers::texture(&shadowImageView, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsShadowedProbeBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

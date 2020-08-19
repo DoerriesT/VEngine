@@ -24,7 +24,7 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -76,16 +76,16 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 				ImageView *emissivePhaseImageView = registry.getImageView(data.m_emissivePhaseImageViewHandle);
 				DescriptorBufferInfo localMediaMaskBufferInfo = registry.getBufferInfo(data.m_localMediaBitMaskBufferHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&scatteringExtinctionImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
-					Initializers::storageImage(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
-					Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-					Initializers::storageBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
-					Initializers::storageBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
-					Initializers::storageBuffer(&localMediaMaskBufferInfo, LOCAL_MEDIA_BIT_MASK_BINDING),
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::rwTexture(&scatteringExtinctionImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
+					Initializers::rwTexture(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+					Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+					Initializers::byteBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
+					Initializers::byteBuffer(&localMediaMaskBufferInfo, LOCAL_MEDIA_BIT_MASK_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

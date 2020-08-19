@@ -36,7 +36,7 @@ namespace VEngine
 				UINT incSize,
 				bool samplerHeap);
 			void *getNativeHandle() const override;
-			void update(uint32_t count, const DescriptorSetUpdate *updates) override;
+			void update(uint32_t count, const DescriptorSetUpdate2 *updates) override;
 		private:
 			ID3D12Device *m_device;
 			D3D12_CPU_DESCRIPTOR_HANDLE m_cpuBaseHandle;

@@ -43,10 +43,10 @@ void VEngine::VolumetricFogExtinctionVolumeDebugPass::addToGraph(rg::RenderGraph
 				ImageView *extinctionImageView = registry.getImageView(data.m_extinctionVolumeImageViewHandle);
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::sampledImage(&extinctionImageView, EXTINCTION_IMAGE_BINDING),
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&extinctionImageView, EXTINCTION_IMAGE_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

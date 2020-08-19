@@ -60,12 +60,12 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					//Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					//Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				};
 
 				descriptorSet->update(std::size(updates), updates);

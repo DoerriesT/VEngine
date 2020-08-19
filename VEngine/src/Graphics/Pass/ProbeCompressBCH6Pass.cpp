@@ -44,14 +44,14 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 			{
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(data.m_tmpResultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
-					Initializers::sampledImage(data.m_inputImageViews, INPUT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
-					Initializers::samplerDescriptor(&pointSampler, POINT_SAMPLER_BINDING),
+					Initializers::rwTexture(data.m_tmpResultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
+					Initializers::texture(data.m_inputImageViews, INPUT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
+					Initializers::sampler(&pointSampler, POINT_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update(std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

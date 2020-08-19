@@ -52,11 +52,11 @@ void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *inputImageView = data.m_cubeImageViews[i - 1];
 					ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandles[i]);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&resultImageView, 1),
-						Initializers::sampledImage(&inputImageView, 0),
-						Initializers::samplerDescriptor(&linearSampler, 2),
+						Initializers::rwTexture(&resultImageView, 1),
+						Initializers::texture(&inputImageView, 0),
+						Initializers::sampler(&linearSampler, 2),
 					};
 
 					descriptorSet->update(3, updates);

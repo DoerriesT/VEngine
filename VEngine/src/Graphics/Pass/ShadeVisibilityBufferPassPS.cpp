@@ -128,9 +128,9 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 			// update descriptor sets
 			{
 				Buffer *vertexBuffer = data.m_passRecordContext->m_renderResources->m_vertexBuffer;
-				DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-				DescriptorBufferInfo tangentsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent) };
-				DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+				DescriptorBufferInfo positionsBufferInfo{ vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), 4u };
+				DescriptorBufferInfo tangentsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), RendererConsts::MAX_VERTICES * sizeof(VertexQTangent), 4u };
+				DescriptorBufferInfo texCoordsBufferInfo{ vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord), 4u };
 				ImageView *shadowImageView = registry.getImageView(data.m_deferredShadowImageViewHandle);
 				//ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 				//ImageView *ssaoImageViewHandle = registry.getImageView(data.m_ssaoImageViewHandle);
@@ -142,32 +142,32 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 				DescriptorBufferInfo texCoordScaleBiasBufferInfo{ data.m_passRecordContext->m_renderResources->m_subMeshTexCoordScaleBiasBuffer, 0, RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4 };
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-					Initializers::storageBuffer(&tangentsBufferInfo, VERTEX_QTANGENTS_BINDING),
-					Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
-					Initializers::storageBuffer(&data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING),
-					Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
-					Initializers::storageBuffer(&data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING),
-					Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
-					Initializers::sampledImage(&shadowImageView, DEFERRED_SHADOW_IMAGE_BINDING),
-					Initializers::sampledImage(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
-					Initializers::storageBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
-					Initializers::storageBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
-					Initializers::storageBuffer(&data.m_punctualLightsBufferInfo, PUNCTUAL_LIGHTS_BINDING),
-					Initializers::storageBuffer(&data.m_punctualLightsZBinsBufferInfo, PUNCTUAL_LIGHTS_Z_BINS_BINDING),
-					Initializers::storageBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
-					Initializers::storageBuffer(&data.m_punctualLightsShadowedBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BINDING),
-					Initializers::storageBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
-					Initializers::storageBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
-					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-					Initializers::sampledImage(&fomImageViewHandle, FOM_IMAGE_BINDING),
-					Initializers::sampledImage(&triangleImageViewHandle, TRIANGLE_IMAGE_BINDING),
-					Initializers::storageBuffer(&data.m_indexBufferInfo, INDEX_BUFFER_BINDING),
-					Initializers::storageBuffer(&texCoordScaleBiasBufferInfo, TEXCOORD_SCALE_BIAS_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::structuredBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
+					Initializers::structuredBuffer(&tangentsBufferInfo, VERTEX_QTANGENTS_BINDING),
+					Initializers::structuredBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
+					Initializers::structuredBuffer(&data.m_instanceDataBufferInfo, INSTANCE_DATA_BINDING),
+					Initializers::structuredBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
+					Initializers::structuredBuffer(&data.m_subMeshInfoBufferInfo, SUB_MESH_DATA_BINDING),
+					Initializers::structuredBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
+					Initializers::texture(&shadowImageView, DEFERRED_SHADOW_IMAGE_BINDING),
+					Initializers::texture(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::structuredBuffer(&data.m_punctualLightsBufferInfo, PUNCTUAL_LIGHTS_BINDING),
+					Initializers::byteBuffer(&data.m_punctualLightsZBinsBufferInfo, PUNCTUAL_LIGHTS_Z_BINS_BINDING),
+					Initializers::byteBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
+					Initializers::structuredBuffer(&data.m_punctualLightsShadowedBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::byteBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
+					Initializers::byteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
+					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
+					Initializers::texture(&triangleImageViewHandle, TRIANGLE_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_indexBufferInfo, INDEX_BUFFER_BINDING),
+					Initializers::structuredBuffer(&texCoordScaleBiasBufferInfo, TEXCOORD_SCALE_BIAS_BINDING),
 				};
 
 				descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);

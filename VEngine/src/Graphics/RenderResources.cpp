@@ -373,8 +373,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	{
 		DescriptorSetLayoutBinding bindings[]
 		{
-			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
-			{1, DescriptorType::SAMPLER, 4, ShaderStageFlagBits::FRAGMENT_BIT},
+			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
+			{1, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::FRAGMENT_BIT},
 		};
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_textureDescriptorSetLayout);
@@ -387,7 +387,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	{
 		DescriptorSetLayoutBinding bindings[]
 		{
-			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
+			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
 		};
 
 		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_texture3DDescriptorSetLayout);
@@ -400,8 +400,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	{
 		DescriptorSetLayoutBinding bindings[]
 		{
-			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
-			{1, DescriptorType::SAMPLER, 4, ShaderStageFlagBits::COMPUTE_BIT},
+			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
+			{1, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::COMPUTE_BIT},
 		};
 		
 		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_computeTextureDescriptorSetLayout);
@@ -414,7 +414,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 	{
 		DescriptorSetLayoutBinding bindings[]
 		{
-			{0, DescriptorType::SAMPLED_IMAGE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
+			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
 		};
 
 		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_computeTexture3DDescriptorSetLayout);
@@ -629,21 +629,21 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 
 void VEngine::RenderResources::updateTextureArray(uint32_t count, gal::ImageView **data)
 {
-	DescriptorSetUpdate imageUpdate{};
+	DescriptorSetUpdate2 imageUpdate{};
 	imageUpdate.m_dstBinding = 0;
 	imageUpdate.m_dstArrayElement = 0;
 	imageUpdate.m_descriptorCount = count < RendererConsts::TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : RendererConsts::TEXTURE_ARRAY_SIZE;
-	imageUpdate.m_descriptorType = DescriptorType::SAMPLED_IMAGE;
+	imageUpdate.m_descriptorType = DescriptorType2::TEXTURE;
 	imageUpdate.m_imageViews = data;
 
-	DescriptorSetUpdate samplerUpdate{};
+	DescriptorSetUpdate2 samplerUpdate{};
 	samplerUpdate.m_dstBinding = 1;
 	samplerUpdate.m_dstArrayElement = 0;
 	samplerUpdate.m_descriptorCount = 4;
-	samplerUpdate.m_descriptorType = DescriptorType::SAMPLER;
+	samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
 	samplerUpdate.m_samplers = m_samplers;
 
-	DescriptorSetUpdate updates[] = { imageUpdate , samplerUpdate };
+	DescriptorSetUpdate2 updates[] = { imageUpdate , samplerUpdate };
 
 	m_textureDescriptorSet->update(2, updates);
 	m_computeTextureDescriptorSet->update(2, updates);
@@ -651,11 +651,11 @@ void VEngine::RenderResources::updateTextureArray(uint32_t count, gal::ImageView
 
 void VEngine::RenderResources::updateTexture3DArray(uint32_t count, gal::ImageView **data)
 {
-	DescriptorSetUpdate imageUpdate{};
+	DescriptorSetUpdate2 imageUpdate{};
 	imageUpdate.m_dstBinding = 0;
 	imageUpdate.m_dstArrayElement = 0;
 	imageUpdate.m_descriptorCount = count < RendererConsts::TEXTURE_ARRAY_SIZE ? static_cast<uint32_t>(count) : RendererConsts::TEXTURE_ARRAY_SIZE;
-	imageUpdate.m_descriptorType = DescriptorType::SAMPLED_IMAGE;
+	imageUpdate.m_descriptorType = DescriptorType2::TEXTURE;
 	imageUpdate.m_imageViews = data;
 
 	m_computeTexture3DDescriptorSet->update(1, &imageUpdate);

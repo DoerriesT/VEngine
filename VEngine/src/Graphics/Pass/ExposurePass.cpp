@@ -47,11 +47,11 @@ void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			DescriptorBufferInfo avgLumBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
 			DescriptorBufferInfo exposureBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::storageBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
-				Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
-				Initializers::storageBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
+				Initializers::byteBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
+				Initializers::rwByteBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
+				Initializers::rwByteBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

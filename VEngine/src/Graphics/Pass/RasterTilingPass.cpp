@@ -59,12 +59,12 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			DescriptorBufferInfo participatingMediaMaskBufferInfo = registry.getBufferInfo(data.m_participatingMediaBitMaskBufferHandle);
 			DescriptorBufferInfo reflectionProbeMaskBufferInfo = registry.getBufferInfo(data.m_reflectionProbeBitMaskBufferHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::storageBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
-				Initializers::storageBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
-				Initializers::storageBuffer(&participatingMediaMaskBufferInfo, PARTICIPATING_MEDIA_BIT_MASK_BINDING),
-				Initializers::storageBuffer(&reflectionProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
+				Initializers::rwByteBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
+				Initializers::rwByteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+				Initializers::rwByteBuffer(&participatingMediaMaskBufferInfo, PARTICIPATING_MEDIA_BIT_MASK_BINDING),
+				Initializers::rwByteBuffer(&reflectionProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

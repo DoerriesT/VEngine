@@ -47,11 +47,11 @@ void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageHandle);
 			ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+				Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

@@ -41,11 +41,11 @@ void VEngine::VolumetricFogExtinctionVolumePass::addToGraph(rg::RenderGraph &gra
 
 				ImageView *extinctionImageView = registry.getImageView(data.m_extinctionVolumeImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&extinctionImageView, EXTINCTION_IMAGE_BINDING),
-					Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-					Initializers::storageBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+					Initializers::rwTexture(&extinctionImageView, EXTINCTION_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+					Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

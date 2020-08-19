@@ -48,10 +48,10 @@ void VEngine::SharpenFfxCasPass::addToGraph(rg::RenderGraph &graph, const Data &
 				ImageView *resultImageView = registry.getImageView(data.m_dstImageHandle);
 				ImageView *inputImageView = registry.getImageView(data.m_srcImageHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(2, updates);

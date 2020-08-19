@@ -436,10 +436,10 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 
 					ImageView *transmittanceImageView = registry.getImageView(transmittanceImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&transmittanceImageView, 0),
-						Initializers::uniformBuffer(&constantBufferInfo, 1),
+						Initializers::rwTexture(&transmittanceImageView, 0),
+						Initializers::constantBuffer(&constantBufferInfo, 1),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -479,13 +479,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 					ImageView *irrImageView = registry.getImageView(irradianceImageViewHandle);
 					ImageView *transmittanceImageView = registry.getImageView(transmittanceImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&deltaIrrImageView, 0),
-						Initializers::storageImage(&irrImageView, 1),
-						Initializers::sampledImage(&transmittanceImageView, 2),
-						Initializers::samplerDescriptor(&linearSampler, 3),
-						Initializers::uniformBuffer(&constantBufferInfo, 4),
+						Initializers::rwTexture(&deltaIrrImageView, 0),
+						Initializers::rwTexture(&irrImageView, 1),
+						Initializers::texture(&transmittanceImageView, 2),
+						Initializers::sampler(&linearSampler, 3),
+						Initializers::constantBuffer(&constantBufferInfo, 4),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -527,14 +527,14 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 					ImageView *scatteringImageView = registry.getImageView(scatteringImageViewHandle);
 					ImageView *transmittanceImageView = registry.getImageView(transmittanceImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&deltaRayleighImageView, 0),
-						Initializers::storageImage(&deltaMieImageView, 1),
-						Initializers::storageImage(&scatteringImageView, 2),
-						Initializers::sampledImage(&transmittanceImageView, 4),
-						Initializers::samplerDescriptor(&linearSampler, 5),
-						Initializers::uniformBuffer(&constantBufferInfo, 6),
+						Initializers::rwTexture(&deltaRayleighImageView, 0),
+						Initializers::rwTexture(&deltaMieImageView, 1),
+						Initializers::rwTexture(&scatteringImageView, 2),
+						Initializers::texture(&transmittanceImageView, 4),
+						Initializers::sampler(&linearSampler, 5),
+						Initializers::constantBuffer(&constantBufferInfo, 6),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -584,16 +584,16 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						ImageView *deltaIrradianceImageView = registry.getImageView(deltaIrradianceImageViewHandle);
 						
 
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageImage(&deltaScattDensityImageView, 0),
-							Initializers::sampledImage(&transmittanceImageView, 1),
-							Initializers::sampledImage(&deltaRayleighImageView, 2),
-							Initializers::sampledImage(&deltaMieImageView, 3),
-							Initializers::sampledImage(&deltaMultipleImageView, 4),
-							Initializers::sampledImage(&deltaIrradianceImageView, 5),
-							Initializers::samplerDescriptor(&linearSampler, 6),
-							Initializers::uniformBuffer(&constantBufferInfo, 7),
+							Initializers::rwTexture(&deltaScattDensityImageView, 0),
+							Initializers::texture(&transmittanceImageView, 1),
+							Initializers::texture(&deltaRayleighImageView, 2),
+							Initializers::texture(&deltaMieImageView, 3),
+							Initializers::texture(&deltaMultipleImageView, 4),
+							Initializers::texture(&deltaIrradianceImageView, 5),
+							Initializers::sampler(&linearSampler, 6),
+							Initializers::constantBuffer(&constantBufferInfo, 7),
 						};
 
 						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -638,15 +638,15 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						ImageView *deltaMieImageView = registry.getImageView(deltaMieScatteringImageViewHandle);
 						ImageView *deltaMultipleImageView = registry.getImageView(deltaMultipleScatteringImageViewHandle);
 
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageImage(&deltaIrrImageView, 0),
-							Initializers::storageImage(&irrImageView, 1),
-							Initializers::sampledImage(&deltaRayleighImageView, 2),
-							Initializers::sampledImage(&deltaMieImageView, 3),
-							Initializers::sampledImage(&deltaMultipleImageView, 4),
-							Initializers::samplerDescriptor(&linearSampler, 5),
-							Initializers::uniformBuffer(&constantBufferInfo, 6),
+							Initializers::rwTexture(&deltaIrrImageView, 0),
+							Initializers::rwTexture(&irrImageView, 1),
+							Initializers::texture(&deltaRayleighImageView, 2),
+							Initializers::texture(&deltaMieImageView, 3),
+							Initializers::texture(&deltaMultipleImageView, 4),
+							Initializers::sampler(&linearSampler, 5),
+							Initializers::constantBuffer(&constantBufferInfo, 6),
 						};
 
 						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -690,14 +690,14 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						ImageView *transmittanceImageView = registry.getImageView(transmittanceImageViewHandle);
 						ImageView *deltaScattDensityImageView = registry.getImageView(deltaScatteringDensityImageViewHandle);
 						
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageImage(&deltaMultipleImageView, 0),
-							Initializers::storageImage(&scatteringImageView, 1),
-							Initializers::sampledImage(&transmittanceImageView, 2),
-							Initializers::sampledImage(&deltaScattDensityImageView, 3),
-							Initializers::samplerDescriptor(&linearSampler, 4),
-							Initializers::uniformBuffer(&constantBufferInfo, 5),
+							Initializers::rwTexture(&deltaMultipleImageView, 0),
+							Initializers::rwTexture(&scatteringImageView, 1),
+							Initializers::texture(&transmittanceImageView, 2),
+							Initializers::texture(&deltaScattDensityImageView, 3),
+							Initializers::sampler(&linearSampler, 4),
+							Initializers::constantBuffer(&constantBufferInfo, 5),
 						};
 
 						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

@@ -14,34 +14,8 @@ VEngine::gal::DescriptorSetLayoutVk::DescriptorSetLayoutVk(VkDevice device, uint
 {
 	for (uint32_t i = 0; i < bindingCount; ++i)
 	{
-		switch (bindings[i].descriptorType)
-		{
-		case VK_DESCRIPTOR_TYPE_SAMPLER:
-			m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLER)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			m_typeCounts[static_cast<size_t>(DescriptorType::SAMPLED_IMAGE)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_IMAGE)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_TEXEL_BUFFER)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_TEXEL_BUFFER)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			m_typeCounts[static_cast<size_t>(DescriptorType::UNIFORM_BUFFER)] += bindings[i].descriptorCount;
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			m_typeCounts[static_cast<size_t>(DescriptorType::STORAGE_BUFFER)] += bindings[i].descriptorCount;
-			break;
-		default:
-			// unsupported descriptor type
-			assert(false);
-			break;
-		}
+		assert(static_cast<size_t>(bindings[i].descriptorType) < std::size(m_typeCounts));
+		m_typeCounts[static_cast<size_t>(bindings[i].descriptorType)] += bindings[i].descriptorCount;
 	}
 
 	VkDescriptorSetLayoutCreateInfo createInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
@@ -77,7 +51,7 @@ void *VEngine::gal::DescriptorSetVk::getNativeHandle() const
 	return m_descriptorSet;
 }
 
-void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUpdate *updates)
+void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUpdate2 *updates)
 {
 	constexpr uint32_t batchSize = 16;
 	const uint32_t iterations = (count + (batchSize - 1)) / batchSize;
@@ -97,17 +71,21 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 			const auto &update = updates[i * batchSize + j];
 			switch (update.m_descriptorType)
 			{
-			case DescriptorType::SAMPLER:
-			case DescriptorType::SAMPLED_IMAGE:
-			case DescriptorType::STORAGE_IMAGE:
+			case DescriptorType2::SAMPLER:
+			case DescriptorType2::TEXTURE:
+			case DescriptorType2::DEPTH_STENCIL_TEXTURE:
+			case DescriptorType2::RW_TEXTURE:
 				imageInfoReserveCount += update.m_descriptorCount;
 				break;
-			case DescriptorType::UNIFORM_TEXEL_BUFFER:
-			case DescriptorType::STORAGE_TEXEL_BUFFER:
+			case DescriptorType2::TYPED_BUFFER:
+			case DescriptorType2::RW_TYPED_BUFFER:
 				texelBufferViewsReserveCount += update.m_descriptorCount;
 				break;
-			case DescriptorType::UNIFORM_BUFFER:
-			case DescriptorType::STORAGE_BUFFER:
+			case DescriptorType2::CONSTANT_BUFFER:
+			case DescriptorType2::BYTE_BUFFER:
+			case DescriptorType2::RW_BYTE_BUFFER:
+			case DescriptorType2::STRUCTURED_BUFFER:
+			case DescriptorType2::RW_STRUCTURED_BUFFER:
 				bufferInfoReserveCount += update.m_descriptorCount;
 				break;
 			default:
@@ -145,7 +123,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 
 			switch (update.m_descriptorType)
 			{
-			case DescriptorType::SAMPLER:
+			case DescriptorType2::SAMPLER:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -155,7 +133,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::SAMPLED_IMAGE:
+			case DescriptorType2::TEXTURE:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -165,7 +143,17 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::STORAGE_IMAGE:
+			case DescriptorType2::DEPTH_STENCIL_TEXTURE:
+			{
+				for (size_t k = 0; k < update.m_descriptorCount; ++k)
+				{
+					imageInfos.push_back({ VK_NULL_HANDLE, (VkImageView)update.m_imageViews[k]->getNativeHandle(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL });
+				}
+				write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
+				break;
+			}
+			case DescriptorType2::RW_TEXTURE:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -175,7 +163,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pImageInfo = imageInfos.data() + imageInfos.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::UNIFORM_TEXEL_BUFFER:
+			case DescriptorType2::TYPED_BUFFER:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -185,7 +173,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pTexelBufferView = texelBufferViews.data() + texelBufferViews.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::STORAGE_TEXEL_BUFFER:
+			case DescriptorType2::RW_TYPED_BUFFER:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -195,7 +183,7 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pTexelBufferView = texelBufferViews.data() + texelBufferViews.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::UNIFORM_BUFFER:
+			case DescriptorType2::CONSTANT_BUFFER:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{
@@ -208,7 +196,10 @@ void VEngine::gal::DescriptorSetVk::update(uint32_t count, const DescriptorSetUp
 				write.pBufferInfo = bufferInfos.data() + bufferInfos.size() - update.m_descriptorCount;
 				break;
 			}
-			case DescriptorType::STORAGE_BUFFER:
+			case DescriptorType2::BYTE_BUFFER:
+			case DescriptorType2::RW_BYTE_BUFFER:
+			case DescriptorType2::STRUCTURED_BUFFER:
+			case DescriptorType2::RW_STRUCTURED_BUFFER:
 			{
 				for (size_t k = 0; k < update.m_descriptorCount; ++k)
 				{

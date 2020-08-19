@@ -591,8 +591,8 @@ void VEngine::gal::GraphicsDeviceDx12::createDescriptorSetLayout(uint32_t bindin
 	{
 		descriptorCount += bindings[i].m_descriptorCount;
 		auto type = bindings[i].m_descriptorType;
-		hasSamplers = hasSamplers || type == DescriptorType::SAMPLER;
-		hasNonSamplers = hasNonSamplers || type != DescriptorType::SAMPLER;
+		hasSamplers = hasSamplers || type == DescriptorType2::SAMPLER;
+		hasNonSamplers = hasNonSamplers || type != DescriptorType2::SAMPLER;
 	}
 
 	if (hasSamplers && hasNonSamplers)

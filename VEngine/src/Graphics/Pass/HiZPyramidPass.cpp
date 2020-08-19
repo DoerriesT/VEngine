@@ -111,11 +111,11 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					ImageView *inputImageView = registry.getImageView(i == 0 ? data.m_inputImageViewHandle : viewHandles[i - 1]);
 					ImageView *resultImageView = registry.getImageView(viewHandles[i]);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+						Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					};
 
 					descriptorSet->update(3, updates);

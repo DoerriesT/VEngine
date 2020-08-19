@@ -313,11 +313,11 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *resultImageView = registry.getImageView(downsampledDepthImageViewHandle);
 					ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&resultImageView, 0),
-						Initializers::sampledImage(&depthImageView, 1),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], 2),
+						Initializers::rwTexture(&resultImageView, 0),
+						Initializers::texture(&depthImageView, 1),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], 2),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

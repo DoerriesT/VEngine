@@ -39,7 +39,7 @@ void VEngine::IntegrateBrdfPass::addToGraph(rg::RenderGraph &graph, const Data &
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
 
-				DescriptorSetUpdate update = Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING);
+				DescriptorSetUpdate2 update = Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING);
 
 				descriptorSet->update(1, &update);
 

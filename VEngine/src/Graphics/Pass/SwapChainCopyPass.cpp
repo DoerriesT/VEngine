@@ -35,10 +35,10 @@ void VEngine::SwapChainCopyPass::addToGraph(rg::RenderGraph &graph, const Data &
 
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&data.m_resultImageView, 0),
-					Initializers::sampledImage(&inputImageView, 1),
+					Initializers::rwTexture(&data.m_resultImageView, 0),
+					Initializers::texture(&inputImageView, 1),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

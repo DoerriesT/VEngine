@@ -83,17 +83,17 @@ namespace VEngine
 			INT_OPAQUE_WHITE = 5,
 		};
 
-		enum class DescriptorType
-		{
-			SAMPLER = 0,
-			SAMPLED_IMAGE = 1,
-			STORAGE_IMAGE = 2,
-			UNIFORM_TEXEL_BUFFER = 3,
-			STORAGE_TEXEL_BUFFER = 4,
-			UNIFORM_BUFFER = 5,
-			STORAGE_BUFFER = 6,
-			RANGE_SIZE = STORAGE_BUFFER + 1
-		};
+		//enum class DescriptorType
+		//{
+		//	SAMPLER = 0,
+		//	SAMPLED_IMAGE = 1,
+		//	STORAGE_IMAGE = 2,
+		//	UNIFORM_TEXEL_BUFFER = 3,
+		//	STORAGE_TEXEL_BUFFER = 4,
+		//	UNIFORM_BUFFER = 5,
+		//	STORAGE_BUFFER = 6,
+		//	RANGE_SIZE = STORAGE_BUFFER + 1
+		//};
 
 		enum class DescriptorType2
 		{
@@ -677,7 +677,7 @@ namespace VEngine
 		struct DescriptorSetLayoutBinding
 		{
 			uint32_t m_binding;
-			DescriptorType m_descriptorType;
+			DescriptorType2 m_descriptorType;
 			uint32_t m_descriptorCount;
 			ShaderStageFlags m_stageFlags;
 		};
@@ -1029,19 +1029,20 @@ namespace VEngine
 			Buffer *m_buffer;
 			uint64_t m_offset;
 			uint64_t m_range;
+			uint64_t m_elementSize;
 		};
 
-		struct DescriptorSetUpdate
-		{
-			uint32_t m_dstBinding;
-			uint32_t m_dstArrayElement;
-			uint32_t m_descriptorCount;
-			DescriptorType m_descriptorType;
-			const Sampler *const *m_samplers;
-			const ImageView *const *m_imageViews;
-			const BufferView *const *m_bufferViews;
-			const DescriptorBufferInfo *m_bufferInfo;
-		};
+		//struct DescriptorSetUpdate
+		//{
+		//	uint32_t m_dstBinding;
+		//	uint32_t m_dstArrayElement;
+		//	uint32_t m_descriptorCount;
+		//	DescriptorType m_descriptorType;
+		//	const Sampler *const *m_samplers;
+		//	const ImageView *const *m_imageViews;
+		//	const BufferView *const *m_bufferViews;
+		//	const DescriptorBufferInfo *m_bufferInfo;
+		//};
 
 		struct DescriptorSetUpdate2
 		{
@@ -1118,7 +1119,7 @@ namespace VEngine
 		public:
 			virtual ~DescriptorSet() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual void update(uint32_t count, const DescriptorSetUpdate *updates) = 0;
+			virtual void update(uint32_t count, const DescriptorSetUpdate2 *updates) = 0;
 		};
 
 		class DescriptorSetPool

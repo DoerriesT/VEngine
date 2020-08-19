@@ -45,7 +45,7 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// transform buffer info
-	DescriptorBufferInfo particleTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(mediaCount, 1u) };
+	DescriptorBufferInfo particleTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(mediaCount, 1u), sizeof(glm::vec4) };
 	uint8_t *transformDataPtr = nullptr;
 	ssboBuffer->allocate(particleTransformBufferInfo.m_range, particleTransformBufferInfo.m_offset, particleTransformBufferInfo.m_buffer, transformDataPtr);
 
@@ -94,10 +94,10 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 
 			// update descriptor sets
 			{
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, 0),
-					Initializers::storageBuffer(&particleTransformBufferInfo, 1),
+					Initializers::structuredBuffer(&data.m_shadowMatrixBufferInfo, 0),
+					Initializers::structuredBuffer(&particleTransformBufferInfo, 1),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

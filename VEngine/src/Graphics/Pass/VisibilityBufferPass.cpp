@@ -20,7 +20,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -75,18 +75,18 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 				// update descriptor sets
 				{
-					DescriptorBufferInfo positionsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition) };
-					DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord) };
+					DescriptorBufferInfo positionsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(VertexPosition), 4u };
+					DescriptorBufferInfo texCoordsBufferInfo{ data.m_passRecordContext->m_renderResources->m_vertexBuffer, RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent)), RendererConsts::MAX_VERTICES * sizeof(VertexTexCoord), 4u };
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-						Initializers::storageBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
-						Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
+						Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+						Initializers::structuredBuffer(&positionsBufferInfo, VERTEX_POSITIONS_BINDING),
+						Initializers::structuredBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
 
 						// if (data.m_alphaMasked)
-						Initializers::storageBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
-						Initializers::storageBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
+						Initializers::structuredBuffer(&texCoordsBufferInfo, VERTEX_TEXCOORDS_BINDING),
+						Initializers::structuredBuffer(&data.m_materialDataBufferInfo, MATERIAL_DATA_BINDING),
 					};
 
 					descriptorSet->update(alphaMasked ? 5 : 3, updates);

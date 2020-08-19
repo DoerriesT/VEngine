@@ -107,11 +107,11 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 						ImageView *inputImageView = registry.getImageView(viewHandles[i - 1]);
 						ImageView *tempImageView = registry.getImageView(tmpImgViewHandles[i - 1]);
 
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-							Initializers::storageImage(&tempImageView, RESULT_IMAGE_BINDING),
-							Initializers::samplerDescriptor(&linearSampler, LINEAR_SAMPLER_BINDING),
+							Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+							Initializers::rwTexture(&tempImageView, RESULT_IMAGE_BINDING),
+							Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 						};
 
 						descriptorSet->update(3, updates);
@@ -154,11 +154,11 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 						ImageView *tempImageView = registry.getImageView(tmpImgViewHandles[i - 1]);
 						ImageView *resultImageView = registry.getImageView(viewHandles[i]);
 
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::sampledImage(&tempImageView, INPUT_IMAGE_BINDING),
-							Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-							Initializers::samplerDescriptor(&linearSampler, LINEAR_SAMPLER_BINDING),
+							Initializers::texture(&tempImageView, INPUT_IMAGE_BINDING),
+							Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+							Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 						};
 
 						descriptorSet->update(3, updates);

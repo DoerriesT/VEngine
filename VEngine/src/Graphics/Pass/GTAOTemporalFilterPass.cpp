@@ -20,7 +20,7 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -67,14 +67,14 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 			ImageView *prevImageView = registry.getImageView(data.m_previousImageHandle);
 			ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-				Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
-				Initializers::sampledImage(&prevImageView, HISTORY_IMAGE_BINDING),
-				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-				Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+				Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+				Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
+				Initializers::texture(&prevImageView, HISTORY_IMAGE_BINDING),
+				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+				Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

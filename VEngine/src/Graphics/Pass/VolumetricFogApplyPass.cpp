@@ -66,24 +66,24 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 				DescriptorBufferInfo reflProbeMaskBufferInfo = registry.getBufferInfo(data.m_reflectionProbeBitMaskBufferHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
-					Initializers::sampledImage(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
-					Initializers::sampledImage(&ssaoImageView, SSAO_IMAGE_BINDING),
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::texture(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
+					Initializers::texture(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
+					Initializers::texture(&ssaoImageView, SSAO_IMAGE_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					//Initializers::sampledImage(&indirectSpecularImageView, INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING),
-					Initializers::sampledImage(&brdfLutImageView, BRDF_LUT_IMAGE_BINDING),
-					Initializers::sampledImage(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&data.m_reflectionProbeImageView, REFLECTION_PROBE_IMAGE_BINDING),
-					Initializers::storageBuffer(&data.m_reflectionProbeDataBufferInfo, REFLECTION_PROBE_DATA_BINDING),
-					Initializers::storageBuffer(&reflProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
-					Initializers::storageBuffer(&data.m_reflectionProbeZBinsBufferInfo, REFLECTION_PROBE_Z_BINS_BINDING),
-					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
-					Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
+					Initializers::texture(&brdfLutImageView, BRDF_LUT_IMAGE_BINDING),
+					Initializers::texture(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
+					Initializers::texture(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
+					Initializers::texture(&data.m_reflectionProbeImageView, REFLECTION_PROBE_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_reflectionProbeDataBufferInfo, REFLECTION_PROBE_DATA_BINDING),
+					Initializers::byteBuffer(&reflProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
+					Initializers::byteBuffer(&data.m_reflectionProbeZBinsBufferInfo, REFLECTION_PROBE_Z_BINS_BINDING),
+					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

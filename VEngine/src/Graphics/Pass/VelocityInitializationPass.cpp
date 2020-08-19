@@ -52,9 +52,9 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 
 			ImageView *depthImageView = registry.getImageView(data.m_depthImageHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
+				Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 			};
 
 			descriptorSet->update(1, updates);

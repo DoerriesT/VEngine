@@ -53,15 +53,15 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 				ImageView *lightImageView = registry.getImageView(data.m_lightImageHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
-					Initializers::sampledImage(&historyImageView, HISTORY_IMAGE_BINDING),
-					Initializers::sampledImage(&lightImageView, INPUT_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
+					Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
+					Initializers::texture(&lightImageView, INPUT_IMAGE_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

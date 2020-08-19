@@ -28,7 +28,7 @@ namespace VEngine
 		public:
 			explicit DescriptorSetVk(VkDevice device, VkDescriptorSet descriptorSet);
 			void *getNativeHandle() const override;
-			void update(uint32_t count, const DescriptorSetUpdate *updates) override;
+			void update(uint32_t count, const DescriptorSetUpdate2 *updates) override;
 		private:
 			VkDevice m_device;
 			VkDescriptorSet m_descriptorSet;

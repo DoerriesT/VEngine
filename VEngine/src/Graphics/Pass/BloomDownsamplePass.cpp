@@ -56,11 +56,11 @@ void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 					ImageView *inputImageView = registry.getImageView(i == 0 ? data.m_inputImageViewHandle : data.m_resultImageViewHandles[i - 1]);
 					ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandles[i]);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-						Initializers::samplerDescriptor(&linearSampler, SAMPLER_BINDING),
+						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+						Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+						Initializers::sampler(&linearSampler, SAMPLER_BINDING),
 					};
 
 					descriptorSet->update(3, updates);

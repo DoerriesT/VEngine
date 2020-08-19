@@ -21,7 +21,7 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -84,20 +84,20 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 				ImageView *velocityImageView = registry.getImageView(data.m_velocityImageHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::storageImage(&resultMaskImageView, RESULT_MASK_IMAGE_BINDING),
-					Initializers::sampledImage(&rayHitPdfImageView, RAY_HIT_PDF_IMAGE_BINDING),
-					Initializers::sampledImage(&maskImageView, MASK_IMAGE_BINDING),
-					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
-					//Initializers::sampledImage(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
-					Initializers::sampledImage(&prevColorImageView, PREV_COLOR_IMAGE_BINDING),
-					Initializers::sampledImage(&velocityImageView, VELOCITY_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::rwTexture(&resultMaskImageView, RESULT_MASK_IMAGE_BINDING),
+					Initializers::texture(&rayHitPdfImageView, RAY_HIT_PDF_IMAGE_BINDING),
+					Initializers::texture(&maskImageView, MASK_IMAGE_BINDING),
+					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::texture(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
+					//Initializers::texture(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
+					Initializers::texture(&prevColorImageView, PREV_COLOR_IMAGE_BINDING),
+					Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

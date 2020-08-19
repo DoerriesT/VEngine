@@ -24,7 +24,7 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// light info
-	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount };
+	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount, sizeof(LightInfo) };
 	uint8_t *lightDataPtr = nullptr;
 	ssboBuffer->allocate(lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
 
@@ -120,11 +120,11 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 					// update descriptor sets
 					{
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
-							Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-							Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
+							Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
+							Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+							Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 						};
 
 						fomGlobalDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -153,12 +153,12 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 					// update descriptor sets
 					{
-						DescriptorSetUpdate updates[] =
+						DescriptorSetUpdate2 updates[] =
 						{
-							Initializers::storageBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
-							Initializers::storageBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
-							Initializers::storageBuffer(&volumeTransformBufferInfo, VOLUME_TRANSFORMS_BINDING),
-							Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
+							Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
+							Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+							Initializers::structuredBuffer(&volumeTransformBufferInfo, VOLUME_TRANSFORMS_BINDING),
+							Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 						};
 
 						fomVolumeDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

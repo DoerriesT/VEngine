@@ -7,13 +7,17 @@ namespace VEngine
 	{
 		namespace Initializers
 		{
-			DescriptorSetUpdate samplerDescriptor(const Sampler *const *samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate sampledImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageImage(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate uniformTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageTexelBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate uniformBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
-			DescriptorSetUpdate storageBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 sampler(const Sampler *const *samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 texture(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 depthStencilTexture(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 rwTexture(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 typedBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 rwTypedBuffer(const BufferView *const *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 constantBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 byteBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 rwByteBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 structuredBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
+			DescriptorSetUpdate2 rwStructuredBuffer(const DescriptorBufferInfo *buffers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
 			Barrier imageBarrier(const Image *image, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter, const ImageSubresourceRange &subresourceRange = { 0, 1, 0, 1 });
 			Barrier bufferBarrier(const Buffer *buffer, PipelineStageFlags stagesBefore, PipelineStageFlags stagesAfter, ResourceState stateBefore, ResourceState stateAfter);
 			void submitSingleTimeCommands(Queue *queue, CommandList *cmdList);

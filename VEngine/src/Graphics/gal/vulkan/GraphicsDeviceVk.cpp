@@ -895,25 +895,29 @@ void VEngine::gal::GraphicsDeviceVk::createDescriptorSetLayout(uint32_t bindingC
 		VkDescriptorType typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
 		switch (b.m_descriptorType)
 		{
-		case DescriptorType::SAMPLER:
+		case DescriptorType2::SAMPLER:
 			typeVk = VK_DESCRIPTOR_TYPE_SAMPLER;
 			break;
-		case DescriptorType::SAMPLED_IMAGE:
+		case DescriptorType2::TEXTURE:
+		case DescriptorType2::DEPTH_STENCIL_TEXTURE:
 			typeVk = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 			break;
-		case  DescriptorType::STORAGE_IMAGE:
+		case  DescriptorType2::RW_TEXTURE:
 			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			break;
-		case  DescriptorType::UNIFORM_TEXEL_BUFFER:
+		case  DescriptorType2::TYPED_BUFFER:
 			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
 			break;
-		case  DescriptorType::STORAGE_TEXEL_BUFFER:
+		case  DescriptorType2::RW_TYPED_BUFFER:
 			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 			break;
-		case  DescriptorType::UNIFORM_BUFFER:
+		case  DescriptorType2::CONSTANT_BUFFER:
 			typeVk = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			break;
-		case  DescriptorType::STORAGE_BUFFER:
+		case  DescriptorType2::BYTE_BUFFER:
+		case  DescriptorType2::RW_BYTE_BUFFER:
+		case  DescriptorType2::STRUCTURED_BUFFER:
+		case  DescriptorType2::RW_STRUCTURED_BUFFER:
 			typeVk = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			break;
 		default:

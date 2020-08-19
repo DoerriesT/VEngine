@@ -46,11 +46,11 @@ void VEngine::FXAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			ImageView *inputImageView = registry.getImageView(data.m_inputImageHandle);
 			ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+				Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 			};
 
 			descriptorSet->update(3, updates);

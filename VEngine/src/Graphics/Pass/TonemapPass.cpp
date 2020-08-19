@@ -52,14 +52,14 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			DescriptorBufferInfo avgLumBufferInfo = registry.getBufferInfo(data.m_avgLuminanceBufferHandle);
 			DescriptorBufferInfo exposureBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-				Initializers::sampledImage(&bloomImageImageView, BLOOM_IMAGE_BINDING),
+				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+				Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+				Initializers::texture(&bloomImageImageView, BLOOM_IMAGE_BINDING),
 				//Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
-				Initializers::storageBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+				Initializers::byteBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
+				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

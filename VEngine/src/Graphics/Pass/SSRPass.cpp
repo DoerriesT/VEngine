@@ -36,7 +36,7 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
 	uint8_t *uboDataPtr = nullptr;
 	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
@@ -110,14 +110,14 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				ImageView *hiZImageView = registry.getImageView(data.m_hiZPyramidImageHandle);
 				ImageView *normalRoughnessImageView = registry.getImageView(data.m_normalRoughnessImageHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
 					
-					Initializers::storageImage(&rayHitPDFImageView, RAY_HIT_PDF_IMAGE_BINDING),
-					Initializers::storageImage(&maskImageView, MASK_IMAGE_BINDING),
-					Initializers::sampledImage(&hiZImageView, HIZ_PYRAMID_IMAGE_BINDING),
-					Initializers::sampledImage(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
-					Initializers::uniformBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::rwTexture(&rayHitPDFImageView, RAY_HIT_PDF_IMAGE_BINDING),
+					Initializers::rwTexture(&maskImageView, MASK_IMAGE_BINDING),
+					Initializers::texture(&hiZImageView, HIZ_PYRAMID_IMAGE_BINDING),
+					Initializers::texture(&normalRoughnessImageView, NORMAL_ROUGHNESS_IMAGE_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

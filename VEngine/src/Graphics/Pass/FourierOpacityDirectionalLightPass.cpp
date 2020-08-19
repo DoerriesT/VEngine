@@ -46,7 +46,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// direction info
-	DescriptorBufferInfo dirBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 2 * data.m_lightData->m_directionalLightsShadowed.size() };
+	DescriptorBufferInfo dirBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 2 * data.m_lightData->m_directionalLightsShadowed.size(), sizeof(glm::vec4) };
 	uint8_t *dirDataPtr = nullptr;
 	ssboBuffer->allocate(dirBufferInfo.m_range, dirBufferInfo.m_offset, dirBufferInfo.m_buffer, dirDataPtr);
 
@@ -69,7 +69,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	}
 
 	// transform buffer info
-	DescriptorBufferInfo volumeTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(commonData->m_localParticipatingMediaCount, 1u) };
+	DescriptorBufferInfo volumeTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(commonData->m_localParticipatingMediaCount, 1u), sizeof(glm::vec4) };
 	uint8_t *transformDataPtr = nullptr;
 	ssboBuffer->allocate(volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, transformDataPtr);
 
@@ -131,12 +131,12 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				{
 					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
-						Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, MATRIX_BUFFER_BINDING),
-						Initializers::storageBuffer(&dirBufferInfo, LIGHT_DIR_BUFFER_BINDING),
-						Initializers::sampledImage(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
+						Initializers::structuredBuffer(&data.m_particleBufferInfo, PARTICLES_BINDING),
+						Initializers::structuredBuffer(&data.m_shadowMatrixBufferInfo, MATRIX_BUFFER_BINDING),
+						Initializers::structuredBuffer(&dirBufferInfo, LIGHT_DIR_BUFFER_BINDING),
+						Initializers::texture(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
 					};
 
 					particleDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -165,13 +165,13 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				{
 					ImageView *fomDepthRangeImageView = registry.getImageView(data.m_fomDepthRangeImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageBuffer(&volumeTransformBufferInfo, 0),
-						Initializers::storageBuffer(&data.m_shadowMatrixBufferInfo, 1),
-						Initializers::storageBuffer(&data.m_localMediaBufferInfo, 2),
-						Initializers::sampledImage(&fomDepthRangeImageView, 3),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 4),
+						Initializers::structuredBuffer(&volumeTransformBufferInfo, 0),
+						Initializers::structuredBuffer(&data.m_shadowMatrixBufferInfo, 1),
+						Initializers::structuredBuffer(&data.m_localMediaBufferInfo, 2),
+						Initializers::texture(&fomDepthRangeImageView, 3),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 4),
 					};
 
 					volumeDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

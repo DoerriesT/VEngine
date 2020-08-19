@@ -127,14 +127,14 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 				DescriptorBufferInfo filteredIndicesBufferInfo = registry.getBufferInfo(filteredIndicesBufferViewHandle);
 				DescriptorBufferInfo positionsBufferInfo = { renderResources.m_vertexBuffer, 0, RendererConsts::MAX_VERTICES * sizeof(glm::vec3) };
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageBuffer(&clusterInfoBufferInfo, CLUSTER_INFO_BINDING),
-					Initializers::storageBuffer(&inputIndicesBufferInfo, INPUT_INDICES_BINDING),
-					Initializers::storageBuffer(&drawCmdBufferInfo, DRAW_COMMAND_BINDING),
-					Initializers::storageBuffer(&filteredIndicesBufferInfo, FILTERED_INDICES_BINDING),
-					Initializers::storageBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
-					Initializers::storageBuffer(&positionsBufferInfo, POSITIONS_BINDING),
+					Initializers::rwStructuredBuffer(&clusterInfoBufferInfo, CLUSTER_INFO_BINDING),
+					Initializers::rwStructuredBuffer(&inputIndicesBufferInfo, INPUT_INDICES_BINDING),
+					Initializers::rwStructuredBuffer(&drawCmdBufferInfo, DRAW_COMMAND_BINDING),
+					Initializers::rwStructuredBuffer(&filteredIndicesBufferInfo, FILTERED_INDICES_BINDING),
+					Initializers::rwStructuredBuffer(&data.m_transformDataBufferInfo, TRANSFORM_DATA_BINDING),
+					Initializers::rwStructuredBuffer(&positionsBufferInfo, POSITIONS_BINDING),
 				};
 
 				descriptorSet->update(6, updates);

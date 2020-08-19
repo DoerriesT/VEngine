@@ -51,11 +51,11 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(data.m_resultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
-					Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&linearSampler, LINEAR_SAMPLER_BINDING),
+					Initializers::rwTexture(data.m_resultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
+					Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+					Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

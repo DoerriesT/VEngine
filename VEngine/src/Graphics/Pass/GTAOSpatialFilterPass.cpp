@@ -44,11 +44,11 @@ void VEngine::GTAOSpatialFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 			ImageView *inputImageView = registry.getImageView(data.m_inputImageHandle);
 			ImageView *resultImageView = registry.getImageView(data.m_resultImageHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&inputImageView, INPUT_IMAGE_BINDING),
-				Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+				Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
+				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
 			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

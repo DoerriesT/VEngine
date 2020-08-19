@@ -47,18 +47,18 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 				ImageView *inputImageView = registry.getImageView(data.m_inputImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::storageImage(&data.m_resultImageViews[0], 0),
-					Initializers::storageImage(&data.m_resultImageViews[1], 1),
-					Initializers::storageImage(&data.m_resultImageViews[2], 2),
-					Initializers::storageImage(&data.m_resultImageViews[3], 3),
-					Initializers::storageImage(&data.m_resultImageViews[4], 4),
-					Initializers::storageImage(&data.m_resultImageViews[5], 5),
-					Initializers::storageImage(&data.m_resultImageViews[6], 6),
-					Initializers::sampledImage(&inputImageView, 7),
-					Initializers::samplerDescriptor(&linearSampler, 8),
-					Initializers::sampledImage(&data.m_probeFilterCoeffsImageView, 9),
+					Initializers::rwTexture(&data.m_resultImageViews[0], 0),
+					Initializers::rwTexture(&data.m_resultImageViews[1], 1),
+					Initializers::rwTexture(&data.m_resultImageViews[2], 2),
+					Initializers::rwTexture(&data.m_resultImageViews[3], 3),
+					Initializers::rwTexture(&data.m_resultImageViews[4], 4),
+					Initializers::rwTexture(&data.m_resultImageViews[5], 5),
+					Initializers::rwTexture(&data.m_resultImageViews[6], 6),
+					Initializers::texture(&inputImageView, 7),
+					Initializers::sampler(&linearSampler, 8),
+					Initializers::texture(&data.m_probeFilterCoeffsImageView, 9),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

@@ -73,15 +73,15 @@ void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const 
 				ImageView *raymarchedVolumetricsImageView = registry.getImageView(data.m_raymarchedVolumetricsImageViewHandle);
 				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
 
-				DescriptorSetUpdate updates[] =
+				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::sampledImage(&depthImageView, DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&downsampledDepthImageView, RAYMARCHED_VOLUMETRICS_DEPTH_IMAGE_BINDING),
-					Initializers::sampledImage(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
-					Initializers::sampledImage(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-					Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
-					Initializers::sampledImage(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
+					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
+					Initializers::texture(&downsampledDepthImageView, RAYMARCHED_VOLUMETRICS_DEPTH_IMAGE_BINDING),
+					Initializers::texture(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
+					Initializers::texture(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
+					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
+					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
 				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);

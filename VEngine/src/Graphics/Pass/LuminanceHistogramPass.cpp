@@ -48,14 +48,14 @@ void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const D
 			DescriptorBufferInfo histoBufferInfo = registry.getBufferInfo(data.m_luminanceHistogramBufferHandle);
 			DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
 
-			DescriptorSetUpdate updates[] =
+			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::sampledImage(&lightImageView, INPUT_IMAGE_BINDING),
-				Initializers::storageBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
-				Initializers::storageBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+				Initializers::texture(&lightImageView, INPUT_IMAGE_BINDING),
+				Initializers::rwByteBuffer(&histoBufferInfo, LUMINANCE_HISTOGRAM_BINDING),
+				Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update(std::size(updates), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

@@ -24,7 +24,7 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 	auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
 	// light info
-	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount };
+	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount, sizeof(LightInfo) };
 	uint8_t *lightDataPtr = nullptr;
 	ssboBuffer->allocate(lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
 
@@ -90,13 +90,13 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 					ImageView *resultImageView = registry.getImageView(data.m_fomImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::storageBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
-						Initializers::storageBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
-						Initializers::storageBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-						Initializers::samplerDescriptor(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
+						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+						Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
+						Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+						Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
@@ -149,11 +149,11 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 					ImageView *resultImageView = registry.getImageView(data.m_fomImageViewHandle);
 
-					DescriptorSetUpdate updates[] =
+					DescriptorSetUpdate2 updates[] =
 					{
-						Initializers::storageImage(&resultImageView, 0),
-						Initializers::storageBuffer(&lightBufferInfo, 1),
-						Initializers::storageBuffer(&data.m_particleBufferInfo, 2),
+						Initializers::rwTexture(&resultImageView, 0),
+						Initializers::structuredBuffer(&lightBufferInfo, 1),
+						Initializers::structuredBuffer(&data.m_particleBufferInfo, 2),
 					};
 
 					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
