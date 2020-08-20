@@ -11,14 +11,6 @@ namespace VEngine
 		struct GraphicsPipelineCreateInfo;
 		struct ComputePipelineCreateInfo;
 
-		struct DescriptorTableLayout
-		{
-			D3D12_DESCRIPTOR_RANGE_TYPE m_rangeTypes[32];
-			uint32_t m_descriptorCount[32];
-			uint32_t m_offsetFromTableStart[32];
-			uint32_t m_totalDescriptorCount;
-			uint32_t m_rangeCount;
-		};
 
 		struct DescriptorSetLayoutsDx12
 		{
@@ -49,7 +41,6 @@ namespace VEngine
 			ID3D12PipelineState *m_pipeline;
 			ID3D12RootSignature *m_rootSignature;
 			DescriptorSetLayoutsDx12 m_descriptorSetLayouts;
-			DescriptorTableLayout m_descriptorTableLayouts[4];
 			uint32_t m_descriptorTableOffset;
 			uint32_t m_descriptorTableCount;
 			UINT m_vertexBufferStrides[32];
@@ -77,7 +68,6 @@ namespace VEngine
 			ID3D12PipelineState *m_pipeline;
 			ID3D12RootSignature *m_rootSignature;
 			DescriptorSetLayoutsDx12 m_descriptorSetLayouts;
-			DescriptorTableLayout m_descriptorTableLayouts[4];
 			uint32_t m_descriptorTableOffset;
 			uint32_t m_descriptorTableCount;
 		};
