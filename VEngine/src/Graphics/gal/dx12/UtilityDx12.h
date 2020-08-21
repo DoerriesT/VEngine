@@ -20,6 +20,8 @@ namespace VEngine
 			D3D12_PRIMITIVE_TOPOLOGY_TYPE translate(PrimitiveTopology topology);
 			D3D12_QUERY_HEAP_TYPE translate(QueryType queryType);
 			DXGI_FORMAT translate(Format format);
+			D3D12_RESOURCE_FLAGS translateImageUsageFlags(ImageUsageFlags flags);
+			D3D12_RESOURCE_FLAGS translateBufferUsageFlags(BufferUsageFlags flags);
 		}
 	}
 }

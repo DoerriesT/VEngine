@@ -165,6 +165,7 @@
     <ClInclude Include="src\Graphics\FrustumCullData.h" />
     <ClInclude Include="src\Graphics\gal\dx12\CommandListDx12.h" />
     <ClInclude Include="src\Graphics\gal\dx12\CommandListPoolDx12.h" />
+    <ClInclude Include="src\Graphics\gal\dx12\D3D12MemAlloc.h" />
     <ClInclude Include="src\Graphics\gal\dx12\DescriptorSetDx12.h" />
     <ClInclude Include="src\Graphics\gal\dx12\GraphicsDeviceDx12.h" />
     <ClInclude Include="src\Graphics\gal\dx12\PipelineDx12.h" />
@@ -319,6 +320,7 @@
     <ClCompile Include="src\Graphics\FrustumCullData.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\CommandListDx12.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\CommandListPoolDx12.cpp" />
+    <ClCompile Include="src\Graphics\gal\dx12\D3D12MemAlloc.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\DescriptorSetDx12.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\GraphicsDeviceDx12.cpp" />
     <ClCompile Include="src\Graphics\gal\dx12\PipelineDx12.cpp" />

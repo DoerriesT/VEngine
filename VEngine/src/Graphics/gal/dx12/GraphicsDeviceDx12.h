@@ -11,6 +11,11 @@
 #include "QueryPoolDx12.h"
 #include "DescriptorSetDx12.h"
 
+namespace D3D12MA
+{
+	class Allocator;
+}
+
 namespace VEngine
 {
 	namespace gal
@@ -68,7 +73,7 @@ namespace VEngine
 			QueueDx12 m_computeQueue;
 			QueueDx12 m_transferQueue;
 			void *m_windowHandle;
-			//MemoryAllocatorDx12 *m_gpuMemoryAllocator;
+			D3D12MA::Allocator *m_gpuMemoryAllocator;
 			SwapChainDx12 *m_swapChain;
 			CommandListRecordContextDx12 m_cmdListRecordContext;
 			ID3D12DescriptorHeap *m_cpuDescriptorHeap;

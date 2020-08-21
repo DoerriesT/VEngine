@@ -813,3 +813,101 @@ DXGI_FORMAT VEngine::gal::UtilityDx12::translate(Format format)
 	assert(false);
 	return DXGI_FORMAT();
 }
+
+static bool testFlagBit(uint32_t flags, uint32_t bit)
+{
+	return (flags & bit) == bit;
+}
+
+D3D12_RESOURCE_FLAGS VEngine::gal::UtilityDx12::translateImageUsageFlags(ImageUsageFlags flags)
+{
+	D3D12_RESOURCE_FLAGS result = D3D12_RESOURCE_FLAG_NONE;
+
+	if (testFlagBit(flags, ImageUsageFlagBits::TRANSFER_SRC_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::TRANSFER_DST_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::SAMPLED_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::STORAGE_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::COLOR_ATTACHMENT_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+		if (!testFlagBit(flags, ImageUsageFlagBits::SAMPLED_BIT))
+		{
+			result |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		}
+	}
+	if (testFlagBit(flags, ImageUsageFlagBits::CLEAR_BIT))
+	{
+		// no D3D12 equivalent (D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ?)
+	}
+
+	return result;
+}
+
+D3D12_RESOURCE_FLAGS VEngine::gal::UtilityDx12::translateBufferUsageFlags(BufferUsageFlags flags)
+{
+	D3D12_RESOURCE_FLAGS result = D3D12_RESOURCE_FLAG_NONE;
+
+	if (testFlagBit(flags, BufferUsageFlagBits::TRANSFER_SRC_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::TRANSFER_DST_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::UNIFORM_TEXEL_BUFFER_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::STORAGE_TEXEL_BUFFER_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::UNIFORM_BUFFER_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::STORAGE_BUFFER_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::INDEX_BUFFER_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::VERTEX_BUFFER_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::INDIRECT_BUFFER_BIT))
+	{
+		// no D3D12 equivalent
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::CLEAR_BIT))
+	{
+		result |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::SHADER_DEVICE_ADDRESS_BIT))
+	{
+		// no D3D12 equivalent (D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ?)
+	}
+
+	return result;
+}
