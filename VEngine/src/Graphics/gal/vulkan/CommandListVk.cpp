@@ -328,28 +328,6 @@ void VEngine::gal::CommandListVk::clearDepthStencilImage(const Image *image, con
 	}
 }
 
-void VEngine::gal::CommandListVk::clearAttachments(uint32_t attachmentCount, const ClearAttachment *attachments, uint32_t rectCount, const ClearRect *rects)
-{
-	constexpr uint32_t batchSize = 8;
-	const uint32_t iterations = (attachmentCount + (batchSize - 1)) / batchSize;
-	for (uint32_t i = 0; i < iterations; ++i)
-	{
-		const uint32_t attachmentCountVk = std::min(batchSize, attachmentCount - i * batchSize);
-		VkClearAttachment attachmentsVk[batchSize];
-		for (uint32_t j = 0; j < attachmentCountVk; ++j)
-		{
-			const auto &attachment = attachments[i * batchSize + j];
-			attachmentsVk[j] =
-			{
-				static_cast<VkImageAspectFlags>(attachment.m_colorAttachment == 0xFFFFFFFF ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_DEPTH_BIT),
-				attachment.m_colorAttachment,
-				*reinterpret_cast<const VkClearValue *>(&attachment.m_clearValue)
-			};
-		}
-		vkCmdClearAttachments(m_commandBuffer, attachmentCount, attachmentsVk, rectCount, reinterpret_cast<const VkClearRect *>(rects));
-	}
-}
-
 void VEngine::gal::CommandListVk::barrier(uint32_t count, const Barrier *barriers)
 {
 	constexpr uint32_t imageBarrierBatchSize = 16;

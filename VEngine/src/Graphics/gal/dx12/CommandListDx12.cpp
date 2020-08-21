@@ -321,11 +321,6 @@ void VEngine::gal::CommandListDx12::clearDepthStencilImage(const Image *image, c
 	m_commandList->ClearDepthStencilView({}, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depthStencil->m_depth, depthStencil->m_stencil, 0, nullptr);
 }
 
-void VEngine::gal::CommandListDx12::clearAttachments(uint32_t attachmentCount, const ClearAttachment *attachments, uint32_t rectCount, const ClearRect *rects)
-{
-	// no implementation
-}
-
 void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barriers)
 {
 	struct ResourceStateInfo
@@ -385,6 +380,10 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		case ResourceState::WRITE_BUFFER_TRANSFER:
 		case ResourceState::WRITE_IMAGE_TRANSFER:
 			return { D3D12_RESOURCE_STATE_COPY_DEST, false, false, true };
+		case ResourceState::CLEAR_BUFFER:
+			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+		case ResourceState::CLEAR_IMAGE:
+			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
 		case ResourceState::PRESENT_IMAGE:
 			return { D3D12_RESOURCE_STATE_PRESENT, false, true, false };
 		default:

@@ -1192,7 +1192,6 @@ namespace VEngine
 			virtual void fillBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t size, uint32_t data) = 0;
 			virtual void clearColorImage(const Image *image, const ClearColorValue *color, uint32_t rangeCount, const ImageSubresourceRange *ranges) = 0;
 			virtual void clearDepthStencilImage(const Image *image, const ClearDepthStencilValue *depthStencil, uint32_t rangeCount, const ImageSubresourceRange *ranges) = 0;
-			virtual void clearAttachments(uint32_t attachmentCount, const ClearAttachment *attachments, uint32_t rectCount, const ClearRect *rects) = 0;
 			virtual void barrier(uint32_t count, const Barrier *barriers) = 0;
 			virtual void beginQuery(const QueryPool *queryPool, uint32_t query) = 0;
 			virtual void endQuery(const QueryPool *queryPool, uint32_t query) = 0;

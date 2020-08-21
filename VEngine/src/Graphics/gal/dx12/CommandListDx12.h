@@ -56,7 +56,6 @@ namespace VEngine
 			void fillBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t size, uint32_t data) override;
 			void clearColorImage(const Image *image, const ClearColorValue *color, uint32_t rangeCount, const ImageSubresourceRange *ranges) override;
 			void clearDepthStencilImage(const Image *image, const ClearDepthStencilValue *depthStencil, uint32_t rangeCount, const ImageSubresourceRange *ranges) override;
-			void clearAttachments(uint32_t attachmentCount, const ClearAttachment *attachments, uint32_t rectCount, const ClearRect *rects) override;
 			void barrier(uint32_t count, const Barrier *barriers) override;
 			void beginQuery(const QueryPool *queryPool, uint32_t query) override;
 			void endQuery(const QueryPool *queryPool, uint32_t query) override;
