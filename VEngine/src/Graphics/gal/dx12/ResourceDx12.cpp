@@ -1,10 +1,24 @@
 #include "ResourceDx12.h"
 #include "UtilityDx12.h"
 #include <cassert>
+#include "Utility/TLSFAllocator.h"
+#include "Utility/Utility.h"
 
-VEngine::gal::SamplerDx12::SamplerDx12(ID3D12Device *device, const SamplerCreateInfo &createInfo)
+VEngine::gal::SamplerDx12::SamplerDx12(ID3D12Device *device, const SamplerCreateInfo &createInfo, TLSFAllocator &cpuSamplerDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &heapCpuBaseHandle, UINT descriptorIncSize)
+	:m_sampler(),
+	m_descriptorAllocationHandle(),
+	m_cpuSamplerDescriptorAllocator(cpuSamplerDescriptorAllocator)
 {
-	// TODO: allocate m_sampler
+	// allocate m_sampler
+	uint32_t offset = 0;
+	bool allocSucceeded = m_cpuSamplerDescriptorAllocator.alloc(1, 1, offset, m_descriptorAllocationHandle);
+
+	if (!allocSucceeded)
+	{
+		Utility::fatalExit("Failed to allocate CPU descriptor for sampler!", EXIT_FAILURE);
+	}
+
+	m_sampler.ptr = heapCpuBaseHandle.ptr + descriptorIncSize * offset;
 
 	float borderColors[][4]
 	{
@@ -37,7 +51,8 @@ VEngine::gal::SamplerDx12::SamplerDx12(ID3D12Device *device, const SamplerCreate
 
 VEngine::gal::SamplerDx12::~SamplerDx12()
 {
-	// TODO: free descriptor handle allocation
+	// free descriptor handle allocation
+	m_cpuSamplerDescriptorAllocator.free(m_descriptorAllocationHandle);
 }
 
 void *VEngine::gal::SamplerDx12::getNativeHandle() const
@@ -111,17 +126,25 @@ void *VEngine::gal::BufferDx12::getAllocationHandle()
 	return m_allocHandle;
 }
 
-VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageViewCreateInfo &createInfo)
+VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageViewCreateInfo &createInfo,
+	TLSFAllocator &cpuDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHeapCpuBaseHandle, UINT descriptorIncSize,
+	TLSFAllocator &cpuRTVDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorRTVHeapCpuBaseHandle, UINT rtvDescriptorIncSize,
+	TLSFAllocator &cpuDSVDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorDSVHeapCpuBaseHandle, UINT dsvDescriptorIncSize)
 	:m_srv(),
 	m_uav(),
 	m_rtv(),
 	m_dsv(),
+	m_srvAllocationHandle(),
+	m_uavAllocationHandle(),
+	m_rtvAllocationHandle(),
+	m_dsvAllocationHandle(),
+	m_cpuDescriptorAllocator(cpuDescriptorAllocator),
+	m_cpuRTVDescriptorAllocator(cpuRTVDescriptorAllocator),
+	m_cpuDSVDescriptorAllocator(cpuDSVDescriptorAllocator),
 	m_description(createInfo)
 {
-	// TODO: alloc descriptor handle(s)
-
 	const auto &imageDesc = createInfo.m_image->getDescription();
-	
+
 	ID3D12Resource *resource = (ID3D12Resource *)createInfo.m_image->getNativeHandle();
 
 	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
@@ -207,6 +230,19 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 			break;
 		}
 
+		// allocate SRV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuDescriptorAllocator.alloc(1, 1, offset, m_srvAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for SRV!", EXIT_FAILURE);
+			}
+
+			m_srv.ptr = descriptorHeapCpuBaseHandle.ptr + descriptorIncSize * offset;
+		}
+
 		device->CreateShaderResourceView(resource, &viewDesc, m_srv);
 	}
 
@@ -249,6 +285,19 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 		default:
 			assert(false);
 			break;
+		}
+
+		// allocate UAV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuDescriptorAllocator.alloc(1, 1, offset, m_uavAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for UAV!", EXIT_FAILURE);
+			}
+
+			m_uav.ptr = descriptorHeapCpuBaseHandle.ptr + descriptorIncSize * offset;
 		}
 
 		device->CreateUnorderedAccessView(resource, nullptr, &viewDesc, m_uav);
@@ -311,6 +360,19 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 			break;
 		}
 
+		// allocate RTV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuRTVDescriptorAllocator.alloc(1, 1, offset, m_rtvAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for RTV!", EXIT_FAILURE);
+			}
+
+			m_rtv.ptr = descriptorRTVHeapCpuBaseHandle.ptr + rtvDescriptorIncSize * offset;
+		}
+
 		device->CreateRenderTargetView(resource, &viewDesc, m_rtv);
 	}
 
@@ -364,13 +426,42 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 			break;
 		}
 
+		// allocate DSV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuDSVDescriptorAllocator.alloc(1, 1, offset, m_dsvAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for DSV!", EXIT_FAILURE);
+			}
+
+			m_dsv.ptr = descriptorDSVHeapCpuBaseHandle.ptr + dsvDescriptorIncSize * offset;
+		}
+
 		device->CreateDepthStencilView(resource, &viewDesc, m_dsv);
 	}
 }
 
 VEngine::gal::ImageViewDx12::~ImageViewDx12()
 {
-	// TODO: free descriptor handle(s)
+	// free descriptor handle(s)
+	if (m_srvAllocationHandle)
+	{
+		m_cpuDescriptorAllocator.free(m_srvAllocationHandle);
+	}
+	if (m_uavAllocationHandle)
+	{
+		m_cpuDescriptorAllocator.free(m_uavAllocationHandle);
+	}
+	if (m_rtvAllocationHandle)
+	{
+		m_cpuRTVDescriptorAllocator.free(m_rtvAllocationHandle);
+	}
+	if (m_dsvAllocationHandle)
+	{
+		m_cpuDSVDescriptorAllocator.free(m_dsvAllocationHandle);
+	}
 }
 
 void *VEngine::gal::ImageViewDx12::getNativeHandle() const
@@ -408,56 +499,76 @@ D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::ImageViewDx12::getDSV() const
 	return m_dsv;
 }
 
-VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferViewCreateInfo &createInfo)
-	:m_cbv(),
-	m_srv(),
+VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferViewCreateInfo &createInfo, TLSFAllocator &cpuDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHeapCpuBaseHandle, UINT descriptorIncSize)
+	:m_srv(),
 	m_uav(),
+	m_srvAllocationHandle(),
+	m_uavAllocationHandle(),
+	m_cpuDescriptorAllocator(cpuDescriptorAllocator),
 	m_description(createInfo)
 {
-	// TODO: alloc descriptor handle(s)
-
 	const auto &bufferDesc = createInfo.m_buffer->getDescription();
 
 	ID3D12Resource *resource = (ID3D12Resource *)createInfo.m_buffer->getNativeHandle();
 
 	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
+	UINT formatSize = UtilityDx12::formatByteSize(createInfo.m_format);
 
-	// CBV
-	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::UNIFORM_BUFFER_BIT)
-	{
-		D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc{};
-		viewDesc.BufferLocation = resource->GetGPUVirtualAddress() + createInfo.m_offset;
-		viewDesc.SizeInBytes = static_cast<UINT>(createInfo.m_range);
-
-		device->CreateConstantBufferView(&viewDesc, m_cbv);
-	}
+	assert((createInfo.m_offset % formatSize) == 0);
+	assert((createInfo.m_range % formatSize) == 0);
 
 	// SRV
-	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::UNIFORM_TEXEL_BUFFER_BIT) // TODO
+	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::UNIFORM_TEXEL_BUFFER_BIT)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
 		viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		viewDesc.Buffer.FirstElement; // TODO
-		viewDesc.Buffer.NumElements;
-		viewDesc.Buffer.StructureByteStride;
-		viewDesc.Buffer.Flags;
-		
+		viewDesc.Buffer.FirstElement = createInfo.m_offset / formatSize;
+		viewDesc.Buffer.NumElements = static_cast<UINT>((createInfo.m_offset - createInfo.m_offset) / formatSize);
+		viewDesc.Buffer.StructureByteStride = formatSize;
+		viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
+		// allocate SRV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuDescriptorAllocator.alloc(1, 1, offset, m_srvAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for SRV!", EXIT_FAILURE);
+			}
+
+			m_srv.ptr = descriptorHeapCpuBaseHandle.ptr + descriptorIncSize * offset;
+		}
+
 		device->CreateShaderResourceView(resource, &viewDesc, m_srv);
 	}
 
 	// UAV
-	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::STORAGE_BUFFER_BIT)
+	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::STORAGE_TEXEL_BUFFER_BIT)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
 		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-		viewDesc.Buffer.FirstElement; // TODO
-		viewDesc.Buffer.NumElements;
-		viewDesc.Buffer.StructureByteStride;
+		viewDesc.Buffer.FirstElement = createInfo.m_offset / formatSize;
+		viewDesc.Buffer.NumElements = static_cast<UINT>((createInfo.m_offset - createInfo.m_offset) / formatSize);
+		viewDesc.Buffer.StructureByteStride = formatSize;
 		viewDesc.Buffer.CounterOffsetInBytes = 0;
-		viewDesc.Buffer.Flags;
+		viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+
+		// allocate UAV descriptor
+		{
+			uint32_t offset = 0;
+			bool allocSucceeded = m_cpuDescriptorAllocator.alloc(1, 1, offset, m_uavAllocationHandle);
+
+			if (!allocSucceeded)
+			{
+				Utility::fatalExit("Failed to allocate CPU descriptor for UAV!", EXIT_FAILURE);
+			}
+
+			m_uav.ptr = descriptorHeapCpuBaseHandle.ptr + descriptorIncSize * offset;
+		}
 
 		device->CreateUnorderedAccessView(resource, nullptr, &viewDesc, m_uav);
 	}
@@ -465,7 +576,19 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 
 VEngine::gal::BufferViewDx12::~BufferViewDx12()
 {
-	// TODO: free descriptor handle(s)
+	// free descriptor handle(s)
+	if (m_uavAllocationHandle)
+	{
+		m_cpuDescriptorAllocator.free(m_uavAllocationHandle);
+	}
+	if (m_srvAllocationHandle)
+	{
+		m_cpuDescriptorAllocator.free(m_srvAllocationHandle);
+	}
+	if (m_uavAllocationHandle)
+	{
+		m_cpuDescriptorAllocator.free(m_uavAllocationHandle);
+	}
 }
 
 void *VEngine::gal::BufferViewDx12::getNativeHandle() const
@@ -481,11 +604,6 @@ const VEngine::gal::Buffer *VEngine::gal::BufferViewDx12::getBuffer() const
 const VEngine::gal::BufferViewCreateInfo &VEngine::gal::BufferViewDx12::getDescription() const
 {
 	return m_description;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::BufferViewDx12::getCBV() const
-{
-	return m_cbv;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::BufferViewDx12::getSRV() const

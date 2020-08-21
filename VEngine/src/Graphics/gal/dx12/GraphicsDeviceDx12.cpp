@@ -570,7 +570,10 @@ void VEngine::gal::GraphicsDeviceDx12::createImageView(const ImageViewCreateInfo
 	auto *memory = m_imageViewMemoryPool.alloc();
 	assert(memory);
 
-	*imageView = new(memory) ImageViewDx12(m_device, imageViewCreateInfo);
+	*imageView = new(memory) ImageViewDx12(m_device, imageViewCreateInfo, 
+		m_cpuDescriptorAllocator, m_cpuDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[0],
+		m_cpuRTVDescriptorAllocator, m_cpuRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[2],
+		m_cpuDSVDescriptorAllocator, m_cpuDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[3]);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::createImageView(Image *image, ImageView **imageView)
@@ -595,7 +598,7 @@ void VEngine::gal::GraphicsDeviceDx12::createBufferView(const BufferViewCreateIn
 	auto *memory = m_bufferViewMemoryPool.alloc();
 	assert(memory);
 
-	*bufferView = new(memory) BufferViewDx12(m_device, bufferViewCreateInfo);
+	*bufferView = new(memory) BufferViewDx12(m_device, bufferViewCreateInfo, m_cpuDescriptorAllocator, m_cpuDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[0]);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroyImageView(ImageView *imageView)
@@ -629,7 +632,7 @@ void VEngine::gal::GraphicsDeviceDx12::createSampler(const SamplerCreateInfo &sa
 	auto *memory = m_samplerMemoryPool.alloc();
 	assert(memory);
 
-	*sampler = new(memory) SamplerDx12(m_device, samplerCreateInfo);
+	*sampler = new(memory) SamplerDx12(m_device, samplerCreateInfo, m_cpuSamplerDescriptorAllocator, m_cpuSamplerDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[1]);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroySampler(Sampler *sampler)

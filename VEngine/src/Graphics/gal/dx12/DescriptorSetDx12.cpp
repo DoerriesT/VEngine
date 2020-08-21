@@ -88,7 +88,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 			{
 				D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc{};
 				viewDesc.BufferLocation = ((ID3D12Resource *)update.m_bufferInfo[j].m_buffer->getNativeHandle())->GetGPUVirtualAddress() + update.m_bufferInfo[j].m_offset;
-				viewDesc.SizeInBytes = update.m_bufferInfo[j].m_range;
+				viewDesc.SizeInBytes = static_cast<UINT>(update.m_bufferInfo[j].m_range);
 				m_device->CreateConstantBufferView(&viewDesc, dstRangeStart);
 				break;
 			}
@@ -99,7 +99,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 				viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / 4;
-				viewDesc.Buffer.NumElements = update.m_bufferInfo[j].m_range / 4;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / 4);
 				viewDesc.Buffer.StructureByteStride = 4;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 
@@ -112,7 +112,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / 4;
-				viewDesc.Buffer.NumElements = update.m_bufferInfo[j].m_range / 4;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / 4);
 				viewDesc.Buffer.StructureByteStride = 4;
 				viewDesc.Buffer.CounterOffsetInBytes = 0;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
@@ -130,8 +130,8 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 				viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.NumElements = update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.StructureByteStride = update.m_bufferInfo[j].m_elementSize;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize);
+				viewDesc.Buffer.StructureByteStride = static_cast<UINT>(update.m_bufferInfo[j].m_elementSize);
 				viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
 				m_device->CreateShaderResourceView((ID3D12Resource *)update.m_bufferInfo[j].m_buffer->getNativeHandle(), &viewDesc, dstRangeStart);
@@ -146,8 +146,8 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.Format = DXGI_FORMAT_UNKNOWN;
 				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.NumElements = update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.StructureByteStride = update.m_bufferInfo[j].m_elementSize;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize);
+				viewDesc.Buffer.StructureByteStride = static_cast<UINT>(update.m_bufferInfo[j].m_elementSize);
 				viewDesc.Buffer.CounterOffsetInBytes = 0;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 
