@@ -65,6 +65,8 @@ namespace VEngine
 			Queue *getTransferQueue() override;
 			uint64_t getMinUniformBufferOffsetAlignment() const override;
 			uint64_t getMinStorageBufferOffsetAlignment() const override;
+			uint64_t getBufferCopyOffsetAlignment() const  override;
+			uint64_t getBufferCopyRowPitchAlignment() const  override;
 			float getMaxSamplerAnisotropy() const override;
 
 		private:

@@ -842,6 +842,16 @@ uint64_t VEngine::gal::GraphicsDeviceDx12::getMinStorageBufferOffsetAlignment() 
 	return D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
 }
 
+uint64_t VEngine::gal::GraphicsDeviceDx12::getBufferCopyOffsetAlignment() const
+{
+	return D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+}
+
+uint64_t VEngine::gal::GraphicsDeviceDx12::getBufferCopyRowPitchAlignment() const
+{
+	return D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+}
+
 float VEngine::gal::GraphicsDeviceDx12::getMaxSamplerAnisotropy() const
 {
 	// based on https://docs.microsoft.com/en-us/windows/win32/direct3d12/hardware-feature-levels

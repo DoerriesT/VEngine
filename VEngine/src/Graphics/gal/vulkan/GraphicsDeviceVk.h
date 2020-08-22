@@ -61,8 +61,10 @@ namespace VEngine
 			Queue *getGraphicsQueue() override;
 			Queue *getComputeQueue() override;
 			Queue *getTransferQueue() override;
-			uint64_t getMinUniformBufferOffsetAlignment() const;
-			uint64_t getMinStorageBufferOffsetAlignment() const;
+			uint64_t getMinUniformBufferOffsetAlignment() const override;
+			uint64_t getMinStorageBufferOffsetAlignment() const override;
+			uint64_t getBufferCopyOffsetAlignment() const  override;
+			uint64_t getBufferCopyRowPitchAlignment() const  override;
 			float getMaxSamplerAnisotropy() const;
 			VkDevice getDevice() const;
 			VkRenderPass getRenderPass(const RenderPassDescriptionVk &renderPassDescription);

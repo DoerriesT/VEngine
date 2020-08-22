@@ -241,17 +241,45 @@ void VEngine::gal::CommandListDx12::copyImage(const Image *srcImage, const Image
 
 void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, const Image *dstImage, uint32_t regionCount, const BufferImageCopy *regions)
 {
+	Format format = dstImage->getDescription().m_format;
+	DXGI_FORMAT formatDx = UtilityDx12::translate(format);
+	UINT texelSize = UtilityDx12::formatByteSize(format);
+	UINT texelsPerBlock = 1;
+	switch (format)
+	{
+	case Format::BC1_RGB_UNORM_BLOCK:
+	case Format::BC1_RGB_SRGB_BLOCK:
+	case Format::BC1_RGBA_UNORM_BLOCK:
+	case Format::BC1_RGBA_SRGB_BLOCK:
+	case Format::BC2_UNORM_BLOCK:
+	case Format::BC2_SRGB_BLOCK:
+	case Format::BC3_UNORM_BLOCK:
+	case Format::BC3_SRGB_BLOCK:
+	case Format::BC4_UNORM_BLOCK:
+	case Format::BC4_SNORM_BLOCK:
+	case Format::BC5_UNORM_BLOCK:
+	case Format::BC5_SNORM_BLOCK:
+	case Format::BC6H_UFLOAT_BLOCK:
+	case Format::BC6H_SFLOAT_BLOCK:
+	case Format::BC7_UNORM_BLOCK:
+	case Format::BC7_SRGB_BLOCK:
+		texelsPerBlock = 4;
+		break;
+	default:
+		texelsPerBlock = 1;
+	}
+
 	for (size_t i = 0; i < regionCount; ++i)
 	{
 		D3D12_TEXTURE_COPY_LOCATION dstCpyLoc{ (ID3D12Resource *)dstImage->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX };
 		dstCpyLoc.SubresourceIndex = regions[i].m_imageMipLevel + (regions[i].m_imageBaseLayer * dstImage->getDescription().m_levels);
 
 		D3D12_SUBRESOURCE_FOOTPRINT srcFootprint{};
-		srcFootprint.Format = UtilityDx12::translate(dstImage->getDescription().m_format);
+		srcFootprint.Format = formatDx;
 		srcFootprint.Width = regions[i].m_extent.m_width;
 		srcFootprint.Height = regions[i].m_extent.m_height;
 		srcFootprint.Depth = regions[i].m_extent.m_depth;
-		srcFootprint.RowPitch = 0; // TODO
+		srcFootprint.RowPitch = regions[i].m_bufferRowLength / texelsPerBlock * texelSize;
 
 		D3D12_TEXTURE_COPY_LOCATION srcCpyLoc{ (ID3D12Resource *)srcBuffer->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT };
 		srcCpyLoc.PlacedFootprint = { regions[i].m_bufferOffset, srcFootprint };
@@ -262,14 +290,42 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 
 void VEngine::gal::CommandListDx12::copyImageToBuffer(const Image *srcImage, const Buffer *dstBuffer, uint32_t regionCount, const BufferImageCopy *regions)
 {
+	Format format = srcImage->getDescription().m_format;
+	DXGI_FORMAT formatDx = UtilityDx12::translate(format);
+	UINT texelSize = UtilityDx12::formatByteSize(format);
+	UINT texelsPerBlock = 1;
+	switch (format)
+	{
+	case Format::BC1_RGB_UNORM_BLOCK:
+	case Format::BC1_RGB_SRGB_BLOCK:
+	case Format::BC1_RGBA_UNORM_BLOCK:
+	case Format::BC1_RGBA_SRGB_BLOCK:
+	case Format::BC2_UNORM_BLOCK:
+	case Format::BC2_SRGB_BLOCK:
+	case Format::BC3_UNORM_BLOCK:
+	case Format::BC3_SRGB_BLOCK:
+	case Format::BC4_UNORM_BLOCK:
+	case Format::BC4_SNORM_BLOCK:
+	case Format::BC5_UNORM_BLOCK:
+	case Format::BC5_SNORM_BLOCK:
+	case Format::BC6H_UFLOAT_BLOCK:
+	case Format::BC6H_SFLOAT_BLOCK:
+	case Format::BC7_UNORM_BLOCK:
+	case Format::BC7_SRGB_BLOCK:
+		texelsPerBlock = 4;
+		break;
+	default:
+		texelsPerBlock = 1;
+	}
+
 	for (size_t i = 0; i < regionCount; ++i)
 	{
 		D3D12_SUBRESOURCE_FOOTPRINT dstFootprint{};
-		dstFootprint.Format = UtilityDx12::translate(srcImage->getDescription().m_format);
+		dstFootprint.Format = formatDx;
 		dstFootprint.Width = regions[i].m_extent.m_width;
 		dstFootprint.Height = regions[i].m_extent.m_height;
 		dstFootprint.Depth = regions[i].m_extent.m_depth;
-		dstFootprint.RowPitch = 0; // TODO
+		dstFootprint.RowPitch = regions[i].m_bufferRowLength / texelsPerBlock * texelSize;
 
 		D3D12_TEXTURE_COPY_LOCATION dstCpyLoc{ (ID3D12Resource *)dstBuffer->getNativeHandle(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT };
 		dstCpyLoc.PlacedFootprint = { regions[i].m_bufferOffset, dstFootprint };

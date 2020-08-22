@@ -1340,6 +1340,8 @@ namespace VEngine
 			virtual Queue *getTransferQueue() = 0;
 			virtual uint64_t getMinUniformBufferOffsetAlignment() const = 0;
 			virtual uint64_t getMinStorageBufferOffsetAlignment() const = 0;
+			virtual uint64_t getBufferCopyOffsetAlignment() const = 0;
+			virtual uint64_t getBufferCopyRowPitchAlignment() const = 0;
 			virtual float getMaxSamplerAnisotropy() const = 0;
 		};
 	}

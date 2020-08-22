@@ -1072,6 +1072,16 @@ uint64_t VEngine::gal::GraphicsDeviceVk::getMinStorageBufferOffsetAlignment() co
 	return m_properties.limits.minStorageBufferOffsetAlignment;
 }
 
+uint64_t VEngine::gal::GraphicsDeviceVk::getBufferCopyOffsetAlignment() const
+{
+	return m_properties.limits.optimalBufferCopyOffsetAlignment;
+}
+
+uint64_t VEngine::gal::GraphicsDeviceVk::getBufferCopyRowPitchAlignment() const
+{
+	return m_properties.limits.optimalBufferCopyRowPitchAlignment;
+}
+
 float VEngine::gal::GraphicsDeviceVk::getMaxSamplerAnisotropy() const
 {
 	return m_properties.limits.maxSamplerAnisotropy;
