@@ -140,7 +140,7 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 					builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityVolume_vs.spv");
 					builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityVolume_ps.spv");
 					builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
-					builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
+					builder.setVertexAttributeDescription({ "POSITION", 0, 0, Format::R32G32B32_SFLOAT, 0 });
 					builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
 					builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
 					builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);

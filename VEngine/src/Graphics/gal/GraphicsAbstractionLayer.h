@@ -691,6 +691,8 @@ namespace VEngine
 
 		struct VertexInputAttributeDescription
 		{
+			enum { MAX_SEMANTIC_NAME_LENGTH = 63 };
+			char m_semanticName[MAX_SEMANTIC_NAME_LENGTH + 1] = {};
 			uint32_t m_location;
 			uint32_t m_binding;
 			Format m_format;

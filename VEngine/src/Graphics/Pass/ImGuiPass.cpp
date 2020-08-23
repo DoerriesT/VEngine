@@ -66,9 +66,9 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 
 		VertexInputAttributeDescription attributeDescs[]
 		{
-			{ 0, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, pos) },
-			{ 1, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, uv) },
-			{ 2, 0, Format::R8G8B8A8_UNORM, IM_OFFSETOF(ImDrawVert, col) },
+			{ "POSITION", 0, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, pos) },
+			{ "TEXCOORD0", 1, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, uv) },
+			{ "COLOR0", 2, 0, Format::R8G8B8A8_UNORM, IM_OFFSETOF(ImDrawVert, col) },
 		};
 
 		PipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -84,7 +84,7 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		builder.setVertexShader("Resources/Shaders/hlsl/imgui_vs.spv");
 		builder.setFragmentShader("Resources/Shaders/hlsl/imgui_ps.spv");
 		builder.setVertexBindingDescription({ 0, sizeof(ImDrawVert), VertexInputRate::VERTEX });
-		builder.setVertexAttributeDescriptions(sizeof(attributeDescs) / sizeof(attributeDescs[0]), attributeDescs);
+		builder.setVertexAttributeDescriptions((uint32_t)std::size(attributeDescs), attributeDescs);
 		builder.setColorBlendAttachment(colorBlendAttachment);
 		builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 		builder.setColorAttachmentFormat(registry.getImageView(data.m_resultImageViewHandle)->getImage()->getDescription().m_format);

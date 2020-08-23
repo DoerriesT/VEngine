@@ -198,7 +198,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 		const auto &desc = createInfo.m_vertexInputState.m_vertexAttributeDescriptions[i];
 		auto &descDx = inputElements[i];
 		descDx = {};
-		descDx.SemanticName; // TODO
+		descDx.SemanticName = desc.m_semanticName;
 		descDx.SemanticIndex = 0;
 		descDx.Format = UtilityDx12::translate(desc.m_format);
 		descDx.InputSlot = desc.m_binding;

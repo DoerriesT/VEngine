@@ -151,7 +151,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_vs.spv");
 				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_ps.spv");
 				builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
-				builder.setVertexAttributeDescription({ 0, 0, Format::R32G32B32_SFLOAT, 0 });
+				builder.setVertexAttributeDescription({ "POSITION", 0, 0, Format::R32G32B32_SFLOAT, 0 });
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
 				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
