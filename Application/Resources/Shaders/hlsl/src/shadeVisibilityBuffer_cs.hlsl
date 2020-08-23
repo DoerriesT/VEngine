@@ -2,7 +2,7 @@
 #include "shadeVisibilityBuffer.hlsli"
 #include "packing.hlsli"
 #include "common.hlsli"
-#define SPECULAR_AA 1
+#define SPECULAR_AA 0
 #define SKIP_DERIVATIVES_FUNCTIONS 1
 #include "lighting.hlsli"
 #include "srgb.hlsli"

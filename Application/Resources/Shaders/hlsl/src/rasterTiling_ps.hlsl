@@ -5,7 +5,9 @@
 struct PSInput
 {
 	float4 position : SV_Position;
+#if VULKAN
 	[[vk::builtin("HelperInvocation")]] bool helperInvocation : HELPER_INVOCATION;
+#endif // VULKAN
 };
 
 RWByteAddressBuffer g_PunctualLightsBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
@@ -47,7 +49,11 @@ void main(PSInput input)
 	const uint word = g_PushConsts.index / 32;
 	uint wordIndex = tileIndex * g_PushConsts.wordCount + word;
 	
+#if VULKAN
 	const uint idx = WaveCompactValue(wordIndex, input.helperInvocation);
+#else
+	const uint idx = WaveCompactValue(wordIndex, false);
+#endif // VULKAN
 	
 	// branch only for first occurrence of unique key within subgroup
 	if (idx == 0)
