@@ -30,8 +30,8 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 		// create pipeline description
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
-		builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
-		builder.setFragmentShader("Resources/Shaders/hlsl/velocityInitialization_ps.spv");
+		builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs");
+		builder.setFragmentShader("Resources/Shaders/hlsl/velocityInitialization_ps");
 		builder.setColorBlendAttachment(GraphicsPipelineBuilder::s_defaultBlendAttachment);
 		builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 		builder.setColorAttachmentFormat(registry.getImageView(data.m_velocityImageHandle)->getImage()->getDescription().m_format);

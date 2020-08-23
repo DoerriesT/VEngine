@@ -52,7 +52,7 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/hlsl/gtaoTemporalFilter_cs.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/gtaoTemporalFilter_cs");
 		
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

@@ -35,8 +35,8 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		// create pipeline description
 		GraphicsPipelineCreateInfo pipelineCreateInfo;
 		GraphicsPipelineBuilder builder(pipelineCreateInfo);
-		builder.setVertexShader("Resources/Shaders/hlsl/rasterTiling_vs.spv");
-		builder.setFragmentShader("Resources/Shaders/hlsl/rasterTiling_ps.spv");
+		builder.setVertexShader("Resources/Shaders/hlsl/rasterTiling_vs");
+		builder.setFragmentShader("Resources/Shaders/hlsl/rasterTiling_ps");
 		builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 		builder.setVertexAttributeDescription({"POSITION", 0, 0, Format::R32G32B32_SFLOAT, 0 });
 		builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);

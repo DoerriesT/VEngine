@@ -78,7 +78,7 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityDepth_vs.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityDepth_vs");
 				builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 				builder.setVertexAttributeDescription({ "POSITION", 0, 0, Format::R32G32B32_SFLOAT, 0 });
 				builder.setPolygonModeCullMode(PolygonMode::FILL, i == 0 ? CullModeFlagBits::BACK_BIT : CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);

@@ -47,7 +47,7 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogIntegrate_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogIntegrate_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

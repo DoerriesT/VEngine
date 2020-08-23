@@ -98,8 +98,8 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					// create pipeline description
 					GraphicsPipelineCreateInfo pipelineCreateInfo;
 					GraphicsPipelineBuilder builder(pipelineCreateInfo);
-					builder.setVertexShader("Resources/Shaders/hlsl/debugDraw_vs.spv");
-					builder.setFragmentShader("Resources/Shaders/hlsl/debugDraw_ps.spv");
+					builder.setVertexShader("Resources/Shaders/hlsl/debugDraw_vs");
+					builder.setFragmentShader("Resources/Shaders/hlsl/debugDraw_ps");
 					builder.setInputAssemblyState(i < 3 ? PrimitiveTopology::LINE_LIST : PrimitiveTopology::TRIANGLE_LIST, false);
 					builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 					builder.setDepthTest(depthTestEnabled, false, depthTestVisible ? CompareOp::GREATER_OR_EQUAL : depthTestHidden ? CompareOp::LESS : CompareOp::ALWAYS);

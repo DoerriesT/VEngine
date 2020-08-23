@@ -50,8 +50,8 @@ void VEngine::ApplyIndirectLightingPass::addToGraph(rg::RenderGraph &graph, cons
 			// create pipeline description
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
-			builder.setFragmentShader("Resources/Shaders/hlsl/applyIndirectLighting_ps.spv");
+			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs");
+			builder.setFragmentShader("Resources/Shaders/hlsl/applyIndirectLighting_ps");
 			builder.setColorBlendAttachment(blendState);
 			builder.setDepthTest(true, false, CompareOp::NOT_EQUAL);
 			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);

@@ -84,7 +84,7 @@ void VEngine::ShadeVisibilityBufferPass::addToGraph(rg::RenderGraph &graph, cons
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/shadeVisibilityBuffer_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/shadeVisibilityBuffer_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

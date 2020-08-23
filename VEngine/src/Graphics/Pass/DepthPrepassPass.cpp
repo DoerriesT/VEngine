@@ -47,10 +47,10 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/depthPrepass_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/depthPrepass_vs.spv");
+				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/depthPrepass_ALPHA_MASK_ENABLED_vs" : "Resources/Shaders/hlsl/depthPrepass_vs");
 				if (alphaMasked)
 				{
-					builder.setFragmentShader("Resources/Shaders/hlsl/depthPrepass_ps.spv");
+					builder.setFragmentShader("Resources/Shaders/hlsl/depthPrepass_ps");
 				}
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);

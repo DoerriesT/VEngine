@@ -50,8 +50,8 @@ void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const 
 			// create pipeline description
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
-			builder.setFragmentShader("Resources/Shaders/hlsl/volumetricFogApply_ps.spv");
+			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs");
+			builder.setFragmentShader("Resources/Shaders/hlsl/volumetricFogApply_ps");
 			builder.setColorBlendAttachment(blendState);
 			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
 			builder.setColorAttachmentFormat(registry.getImageView(data.m_resultImageHandle)->getImage()->getDescription().m_format);

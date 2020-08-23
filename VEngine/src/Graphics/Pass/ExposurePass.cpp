@@ -33,7 +33,7 @@ void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/hlsl/exposure_cs.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/exposure_cs");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

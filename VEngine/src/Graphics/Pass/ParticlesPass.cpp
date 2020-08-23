@@ -104,8 +104,8 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			// create pipeline description
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			builder.setVertexShader("Resources/Shaders/hlsl/particles_vs.spv");
-			builder.setFragmentShader("Resources/Shaders/hlsl/particles_ps.spv");
+			builder.setVertexShader("Resources/Shaders/hlsl/particles_vs");
+			builder.setFragmentShader("Resources/Shaders/hlsl/particles_ps");
 			builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 			builder.setDepthTest(true, false, CompareOp::GREATER_OR_EQUAL);
 			builder.setColorBlendAttachment(blendState);

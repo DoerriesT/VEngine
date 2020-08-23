@@ -57,8 +57,8 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/visibilityBuffer_vs.spv");
-				builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_ps.spv" : "Resources/Shaders/hlsl/visibilityBuffer_ps.spv");
+				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_vs" : "Resources/Shaders/hlsl/visibilityBuffer_vs");
+				builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/visibilityBuffer_ALPHA_MASK_ENABLED_ps" : "Resources/Shaders/hlsl/visibilityBuffer_ps");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::GREATER_OR_EQUAL);
 				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);

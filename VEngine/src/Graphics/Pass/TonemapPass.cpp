@@ -36,7 +36,7 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/hlsl/tonemap_cs.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/tonemap_cs");
 
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

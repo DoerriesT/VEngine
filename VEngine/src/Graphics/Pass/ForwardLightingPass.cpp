@@ -97,8 +97,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/hlsl/sky_vs.spv");
-				builder.setFragmentShader("Resources/Shaders/hlsl/sky_ps.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/sky_vs");
+				builder.setFragmentShader("Resources/Shaders/hlsl/sky_ps");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, false, CompareOp::EQUAL);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
@@ -161,8 +161,8 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/hlsl/forward_vs.spv");
-				builder.setFragmentShader("Resources/Shaders/hlsl/forward_ps.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/forward_vs");
+				builder.setFragmentShader("Resources/Shaders/hlsl/forward_ps");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, false, CompareOp::EQUAL);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);

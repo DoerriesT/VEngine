@@ -33,7 +33,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/probeFilter_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/probeFilter_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

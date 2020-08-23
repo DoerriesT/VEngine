@@ -70,29 +70,37 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 
 	ReflectionInfo reflectionInfo{};
 
+	auto loadShaderFile = [](const char *filename) -> std::vector<char>
+	{
+		char path[ShaderStageCreateInfo::MAX_PATH_LENGTH + 6];
+		strcpy_s(path, filename);
+		strcat_s(path, ".dxil");
+		return VEngine::Utility::readBinaryFile(path);
+	};
+
 	if (createInfo.m_vertexShader.m_path[0])
 	{
-		vsCode = VEngine::Utility::readBinaryFile(createInfo.m_vertexShader.m_path);
+		vsCode = loadShaderFile(createInfo.m_vertexShader.m_path);
 		reflectShader(device, vsCode.size(), vsCode.data(), ReflectionInfo::VERTEX_BIT, reflectionInfo);
 	}
 	if (createInfo.m_tessControlShader.m_path[0])
 	{
-		dsCode = VEngine::Utility::readBinaryFile(createInfo.m_tessControlShader.m_path);
+		dsCode = loadShaderFile(createInfo.m_tessControlShader.m_path);
 		reflectShader(device, dsCode.size(), dsCode.data(), ReflectionInfo::DOMAIN_BIT, reflectionInfo);
 	}
 	if (createInfo.m_tessEvalShader.m_path[0])
 	{
-		hsCode = VEngine::Utility::readBinaryFile(createInfo.m_tessEvalShader.m_path);
+		hsCode = loadShaderFile(createInfo.m_tessEvalShader.m_path);
 		reflectShader(device, hsCode.size(), hsCode.data(), ReflectionInfo::HULL_BIT, reflectionInfo);
 	}
 	if (createInfo.m_geometryShader.m_path[0])
 	{
-		gsCode = VEngine::Utility::readBinaryFile(createInfo.m_geometryShader.m_path);
+		gsCode = loadShaderFile(createInfo.m_geometryShader.m_path);
 		reflectShader(device, gsCode.size(), gsCode.data(), ReflectionInfo::GEOMETRY_BIT, reflectionInfo);
 	}
 	if (createInfo.m_fragmentShader.m_path[0])
 	{
-		psCode = VEngine::Utility::readBinaryFile(createInfo.m_fragmentShader.m_path);
+		psCode = loadShaderFile(createInfo.m_fragmentShader.m_path);
 		reflectShader(device, psCode.size(), psCode.data(), ReflectionInfo::PIXEL_BIT, reflectionInfo);
 	}
 

@@ -37,7 +37,7 @@ void VEngine::ProbeDownsamplePass2::addToGraph(rg::RenderGraph &graph, const Dat
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/probeDownsample_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/probeDownsample_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

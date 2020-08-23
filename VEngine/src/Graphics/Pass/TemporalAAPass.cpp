@@ -36,7 +36,7 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/temporalAA_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/temporalAA_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

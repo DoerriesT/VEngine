@@ -92,7 +92,7 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader(data.m_maxReduction ? "Resources/Shaders/hlsl/hiZPyramid_MAX_cs.spv" : "Resources/Shaders/hlsl/hiZPyramid_MIN_cs.spv");
+			builder.setComputeShader(data.m_maxReduction ? "Resources/Shaders/hlsl/hiZPyramid_MAX_cs" : "Resources/Shaders/hlsl/hiZPyramid_MIN_cs");
 			
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

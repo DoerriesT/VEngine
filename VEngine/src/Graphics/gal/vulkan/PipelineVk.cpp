@@ -412,7 +412,10 @@ static void createShaderStage(VkDevice device,
 	ReflectionInfo &reflectionInfo,
 	VkSpecializationInfo &specInfo)
 {
-	std::vector<char> code = VEngine::Utility::readBinaryFile(stageDesc.m_path);
+	char path[VEngine::gal::ShaderStageCreateInfo::MAX_PATH_LENGTH + 5];
+	strcpy_s(path, stageDesc.m_path);
+	strcat_s(path, ".spv");
+	std::vector<char> code = VEngine::Utility::readBinaryFile(path);
 	VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());

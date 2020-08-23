@@ -62,7 +62,7 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogVBuffer_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogVBuffer_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

@@ -111,8 +111,8 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 
 			GraphicsPipelineCreateInfo pipelineCreateInfo;
 			GraphicsPipelineBuilder builder(pipelineCreateInfo);
-			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs.spv");
-			builder.setFragmentShader("Resources/Shaders/hlsl/shadeVisibilityBuffer_ps.spv");
+			builder.setVertexShader("Resources/Shaders/hlsl/fullscreenTriangle_vs");
+			builder.setFragmentShader("Resources/Shaders/hlsl/shadeVisibilityBuffer_ps");
 			builder.setColorBlendAttachments(3, colorBlendAttachments);
 			builder.setDepthTest(true, false, CompareOp::NOT_EQUAL);
 			builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);

@@ -116,8 +116,8 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_vs.spv");
-				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_ps.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_vs");
+				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityParticleDirectional_ps");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);
 				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);
@@ -148,8 +148,8 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_vs.spv");
-				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_ps.spv");
+				builder.setVertexShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_vs");
+				builder.setFragmentShader("Resources/Shaders/hlsl/fourierOpacityVolumeDirectional_ps");
 				builder.setVertexBindingDescription({ 0, sizeof(float) * 3, VertexInputRate::VERTEX });
 				builder.setVertexAttributeDescription({ "POSITION", 0, 0, Format::R32G32B32_SFLOAT, 0 });
 				builder.setPolygonModeCullMode(PolygonMode::FILL, CullModeFlagBits::FRONT_BIT, FrontFace::COUNTER_CLOCKWISE);

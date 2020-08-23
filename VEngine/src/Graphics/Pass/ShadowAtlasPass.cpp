@@ -41,8 +41,8 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
 				GraphicsPipelineBuilder builder(pipelineCreateInfo);
-				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/shadows_ALPHA_MASK_ENABLED_vs.spv" : "Resources/Shaders/hlsl/shadows_vs.spv");
-				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/hlsl/shadows_ps.spv");
+				builder.setVertexShader(alphaMasked ? "Resources/Shaders/hlsl/shadows_ALPHA_MASK_ENABLED_vs" : "Resources/Shaders/hlsl/shadows_vs");
+				if (alphaMasked) builder.setFragmentShader("Resources/Shaders/hlsl/shadows_ps");
 				builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::NONE, FrontFace::COUNTER_CLOCKWISE);
 				builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
 				builder.setDynamicState(DynamicStateFlagBits::VIEWPORT_BIT | DynamicStateFlagBits::SCISSOR_BIT);

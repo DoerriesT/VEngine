@@ -31,7 +31,7 @@ void VEngine::GTAOSpatialFilterPass::addToGraph(rg::RenderGraph &graph, const Da
 		// create pipeline description
 		ComputePipelineCreateInfo pipelineCreateInfo;
 		ComputePipelineBuilder builder(pipelineCreateInfo);
-		builder.setComputeShader("Resources/Shaders/hlsl/gtaoSpatialFilter_cs.spv");
+		builder.setComputeShader("Resources/Shaders/hlsl/gtaoSpatialFilter_cs");
 		
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

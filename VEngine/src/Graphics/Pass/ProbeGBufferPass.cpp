@@ -95,8 +95,8 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 					// create pipeline description
 					GraphicsPipelineCreateInfo pipelineCreateInfo;
 					GraphicsPipelineBuilder builder(pipelineCreateInfo);
-					builder.setVertexShader("Resources/Shaders/hlsl/probeGBuffer_vs.spv");
-					builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/probeGBuffer_ALPHA_MASK_ENABLED_ps.spv" : "Resources/Shaders/hlsl/probeGBuffer_ps.spv");
+					builder.setVertexShader("Resources/Shaders/hlsl/probeGBuffer_vs");
+					builder.setFragmentShader(alphaMasked ? "Resources/Shaders/hlsl/probeGBuffer_ALPHA_MASK_ENABLED_ps" : "Resources/Shaders/hlsl/probeGBuffer_ps");
 					builder.setPolygonModeCullMode(PolygonMode::FILL, alphaMasked ? CullModeFlagBits::NONE : CullModeFlagBits::BACK_BIT, FrontFace::CLOCKWISE);
 					builder.setDepthTest(true, true, CompareOp::LESS_OR_EQUAL);
 					builder.setColorBlendAttachments(sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]), colorBlendAttachments);

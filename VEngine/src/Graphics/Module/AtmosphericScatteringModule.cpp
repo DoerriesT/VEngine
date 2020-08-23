@@ -423,7 +423,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 				// create pipeline description
 				ComputePipelineCreateInfo pipelineCreateInfo;
 				ComputePipelineBuilder builder(pipelineCreateInfo);
-				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeTransmittance_cs.spv");
+				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeTransmittance_cs");
 
 				auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -464,7 +464,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 				// create pipeline description
 				ComputePipelineCreateInfo pipelineCreateInfo;
 				ComputePipelineBuilder builder(pipelineCreateInfo);
-				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeDirectIrradiance_cs.spv");
+				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeDirectIrradiance_cs");
 
 				auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -511,7 +511,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 				// create pipeline description
 				ComputePipelineCreateInfo pipelineCreateInfo;
 				ComputePipelineBuilder builder(pipelineCreateInfo);
-				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeSingleScattering_cs.spv");
+				builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeSingleScattering_cs");
 
 				auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -565,7 +565,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 					// create pipeline description
 					ComputePipelineCreateInfo pipelineCreateInfo;
 					ComputePipelineBuilder builder(pipelineCreateInfo);
-					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeScatteringDensity_cs.spv");
+					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeScatteringDensity_cs");
 
 					auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -621,7 +621,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 					// create pipeline description
 					ComputePipelineCreateInfo pipelineCreateInfo;
 					ComputePipelineBuilder builder(pipelineCreateInfo);
-					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeIndirectIrradiance_cs.spv");
+					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeIndirectIrradiance_cs");
 
 					auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -674,7 +674,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 					// create pipeline description
 					ComputePipelineCreateInfo pipelineCreateInfo;
 					ComputePipelineBuilder builder(pipelineCreateInfo);
-					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeMultipleScattering_cs.spv");
+					builder.setComputeShader("Resources/Shaders/hlsl/atmosphereComputeMultipleScattering_cs");
 
 					auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

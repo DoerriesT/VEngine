@@ -110,7 +110,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/buildIndexBuffer_comp.spv");
+			builder.setComputeShader("Resources/Shaders/buildIndexBuffer_comp");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

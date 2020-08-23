@@ -32,7 +32,7 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/probeCompressBCH6_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/probeCompressBCH6_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

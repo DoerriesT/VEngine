@@ -57,7 +57,7 @@ void VEngine::GTAO2Pass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/gtao2_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/gtao2_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

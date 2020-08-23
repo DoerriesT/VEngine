@@ -86,7 +86,7 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/gaussianPyramid_cs.spv");
+			builder.setComputeShader("Resources/Shaders/hlsl/gaussianPyramid_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
