@@ -219,6 +219,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 			cpuDsvHeapDesc.NodeMask = 0;
 
 			UtilityDx12::checkResult(m_device->CreateDescriptorHeap(&cpuDsvHeapDesc, __uuidof(ID3D12DescriptorHeap), (void **)&m_cpuDSVDescriptorHeap), "Failed to create descriptor heap");
+			m_cmdListRecordContext.m_dsvDescriptorHeap = m_cpuDSVDescriptorHeap;
 		}
 
 		// gpu heaps
@@ -242,10 +243,14 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 			UtilityDx12::checkResult(m_device->CreateDescriptorHeap(&gpuSamplerHeapDesc, __uuidof(ID3D12DescriptorHeap), (void **)&m_cmdListRecordContext.m_gpuSamplerDescriptorHeap), "Failed to create descriptor heap");
 		}
 
-		m_descriptorIncrementSizes[0] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		m_descriptorIncrementSizes[1] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-		m_descriptorIncrementSizes[2] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		m_descriptorIncrementSizes[3] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		m_cmdListRecordContext.m_descriptorIncrementSizes[0] = m_descriptorIncrementSizes[0] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		m_cmdListRecordContext.m_descriptorIncrementSizes[1] = m_descriptorIncrementSizes[1] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+		m_cmdListRecordContext.m_descriptorIncrementSizes[2] = m_descriptorIncrementSizes[2] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		m_cmdListRecordContext.m_descriptorIncrementSizes[3] = m_descriptorIncrementSizes[3] = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+		m_cmdListRecordContext.m_cpuDescriptorAllocator = &m_cpuDescriptorAllocator;
+		m_cmdListRecordContext.m_dsvDescriptorAllocator = &m_cpuDSVDescriptorAllocator;
+		m_cmdListRecordContext.m_gpuDescriptorAllocator = &m_gpuDescriptorAllocator;
 	}
 
 	// create command signatures

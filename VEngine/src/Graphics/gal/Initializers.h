@@ -7,6 +7,13 @@ namespace VEngine
 	{
 		namespace Initializers
 		{
+			struct FormatInfo
+			{
+				uint32_t m_bytes;
+				bool m_float;
+				bool m_compressed;
+			};
+
 			DescriptorSetUpdate2 sampler(const Sampler *const *samplers, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
 			DescriptorSetUpdate2 texture(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
 			DescriptorSetUpdate2 depthStencilTexture(const ImageView *const *images, uint32_t binding, uint32_t arrayElement = 0, uint32_t count = 1);
@@ -25,6 +32,8 @@ namespace VEngine
 			bool isWriteAccess(ResourceState state);
 			uint32_t getUsageFlags(ResourceState state);
 			bool isDepthFormat(Format format);
+			bool isStencilFormat(Format format);
+			FormatInfo getFormatInfo(Format format);
 		}
 
 		class GraphicsPipelineBuilder

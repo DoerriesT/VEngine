@@ -5,6 +5,9 @@
 #include "PipelineDx12.h"
 #include "ResourceDx12.h"
 #include "QueryPoolDx12.h"
+#include "./../Initializers.h"
+#include "Utility/TLSFAllocator.h"
+#include "Utility/Utility.h"
 
 
 VEngine::gal::CommandListDx12::CommandListDx12(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE cmdListType, const CommandListRecordContextDx12 *recordContext)
@@ -359,22 +362,180 @@ void VEngine::gal::CommandListDx12::updateBuffer(const Buffer *dstBuffer, uint64
 
 void VEngine::gal::CommandListDx12::fillBuffer(const Buffer *dstBuffer, uint64_t dstOffset, uint64_t size, uint32_t data)
 {
-	// TODO
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
+	ID3D12Resource *resource = (ID3D12Resource *)dstBuffer->getNativeHandle();
+
+	// create descriptors for clearing
+	{
+		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
+		viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		viewDesc.Buffer.FirstElement = dstOffset / 4;
+		viewDesc.Buffer.NumElements = static_cast<UINT>(size / 4);
+		viewDesc.Buffer.StructureByteStride = 4;
+		viewDesc.Buffer.CounterOffsetInBytes = 0;
+		viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+
+		createClearDescriptors(viewDesc, resource, gpuDescriptorHandle, cpuDescriptorHandle);
+	}
+
 	UINT values[4] = { data, data, data, data };
-	D3D12_RECT rect{ 0, 0, static_cast<LONG>(size), 1 };
-	m_commandList->ClearUnorderedAccessViewUint({}, {}, (ID3D12Resource *)dstBuffer->getNativeHandle(), values, 1, &rect);
+	D3D12_RECT rect{ static_cast<LONG>(dstOffset / 4), 0, static_cast<LONG>((size + dstOffset) / 4), 1 };
+
+	m_commandList->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, resource, values, 1, &rect);
 }
 
 void VEngine::gal::CommandListDx12::clearColorImage(const Image *image, const ClearColorValue *color, uint32_t rangeCount, const ImageSubresourceRange *ranges)
 {
-	// TODO
-	m_commandList->ClearRenderTargetView({}, color->m_float32, 0, nullptr);
+	for (size_t i = 0; i < rangeCount; ++i)
+	{
+		D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle;
+		D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
+		ID3D12Resource *resource = (ID3D12Resource *)image->getNativeHandle();
+
+		// create descriptors for clearing
+		{
+			const auto &imageDesc = image->getDescription();
+
+			D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
+			viewDesc.Format = UtilityDx12::translate(imageDesc.m_format);
+
+			switch (imageDesc.m_imageType)
+			{
+			case ImageType::_1D:
+				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+				viewDesc.Texture1D.MipSlice = ranges[i].m_baseMipLevel;
+				if (ranges[i].m_layerCount > 1)
+				{
+					viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+					viewDesc.Texture1DArray.MipSlice = ranges[i].m_baseMipLevel;
+					viewDesc.Texture1DArray.FirstArraySlice = ranges[i].m_baseArrayLayer;
+					viewDesc.Texture1DArray.ArraySize = ranges[i].m_layerCount;
+				}
+
+				break;
+			case ImageType::_2D:
+				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+				viewDesc.Texture2D.MipSlice = ranges[i].m_baseMipLevel;
+				viewDesc.Texture2D.PlaneSlice = 0;
+				if (ranges[i].m_layerCount > 1)
+				{
+					viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+					viewDesc.Texture2DArray.MipSlice = ranges[i].m_baseMipLevel;
+					viewDesc.Texture2DArray.FirstArraySlice = ranges[i].m_baseArrayLayer;
+					viewDesc.Texture2DArray.ArraySize = ranges[i].m_layerCount;
+					viewDesc.Texture2DArray.PlaneSlice = 0;
+				}
+				break;
+			case ImageType::_3D:
+				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+				viewDesc.Texture3D.MipSlice = ranges[i].m_baseMipLevel;
+				viewDesc.Texture3D.FirstWSlice = 0;
+				viewDesc.Texture3D.WSize = imageDesc.m_depth;
+				break;
+			default:
+				assert(false);
+				break;
+			}
+
+			createClearDescriptors(viewDesc, resource, gpuDescriptorHandle, cpuDescriptorHandle);
+		}
+
+		if (Initializers::getFormatInfo(image->getDescription().m_format).m_float)
+		{
+			m_commandList->ClearUnorderedAccessViewFloat(gpuDescriptorHandle, cpuDescriptorHandle, resource, color->m_float32, 0, nullptr);
+		}
+		else
+		{
+			m_commandList->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, resource, color->m_uint32, 0, nullptr);
+		}
+	}
 }
 
 void VEngine::gal::CommandListDx12::clearDepthStencilImage(const Image *image, const ClearDepthStencilValue *depthStencil, uint32_t rangeCount, const ImageSubresourceRange *ranges)
 {
-	// TODO
-	m_commandList->ClearDepthStencilView({}, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depthStencil->m_depth, depthStencil->m_stencil, 0, nullptr);
+	for (size_t i = 0; i < rangeCount; ++i)
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandle;
+		ID3D12Resource *resource = (ID3D12Resource *)image->getNativeHandle();
+
+		// create descriptor for clearing
+		{
+			const auto &imageDesc = image->getDescription();
+
+			D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc{};
+			viewDesc.Format = UtilityDx12::translate(imageDesc.m_format);
+			viewDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+			switch (imageDesc.m_imageType)
+			{
+			case ImageType::_1D:
+				viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+				viewDesc.Texture1D.MipSlice = ranges[i].m_baseMipLevel;
+				if (ranges[i].m_layerCount > 1)
+				{
+					viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
+					viewDesc.Texture1DArray.MipSlice = ranges[i].m_baseMipLevel;
+					viewDesc.Texture1DArray.FirstArraySlice = ranges[i].m_baseArrayLayer;
+					viewDesc.Texture1DArray.ArraySize = ranges[i].m_layerCount;
+				}
+				break;
+			case ImageType::_2D:
+				if (imageDesc.m_samples == SampleCount::_1)
+				{
+					viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+					viewDesc.Texture2D.MipSlice = ranges[i].m_baseMipLevel;
+
+					if (ranges[i].m_layerCount > 1)
+					{
+						viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+						viewDesc.Texture2DArray.MipSlice = ranges[i].m_baseMipLevel;
+						viewDesc.Texture2DArray.FirstArraySlice = ranges[i].m_baseArrayLayer;
+						viewDesc.Texture2DArray.ArraySize = ranges[i].m_layerCount;
+					}
+				}
+				else
+				{
+					viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+					if (ranges[i].m_layerCount > 1)
+					{
+						viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+						viewDesc.Texture2DMSArray.FirstArraySlice = ranges[i].m_baseArrayLayer;
+						viewDesc.Texture2DMSArray.ArraySize = ranges[i].m_layerCount;
+					}
+				}
+				break;
+			default:
+				assert(false);
+				break;
+			}
+
+			// allocate cpu descriptor
+			{
+				void *allocHandle;
+				uint32_t offset = 0;
+				bool allocSucceeded = m_recordContext->m_dsvDescriptorAllocator->alloc(1, 1, offset, allocHandle);
+
+				if (!allocSucceeded)
+				{
+					Utility::fatalExit("Failed to allocate CPU descriptor for DSV!", EXIT_FAILURE);
+				}
+
+				cpuDescriptorHandle = { m_recordContext->m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + m_recordContext->m_descriptorIncrementSizes[3] * offset };
+				m_recordContext->m_device->CreateDepthStencilView(resource, &viewDesc, cpuDescriptorHandle);
+
+				m_cpuDescriptorHandleAllocs.push_back(allocHandle);
+			}
+		}
+
+		D3D12_CLEAR_FLAGS clearFlags = {};
+		Format format = image->getDescription().m_format;
+		clearFlags |= Initializers::isDepthFormat(format) ? D3D12_CLEAR_FLAG_DEPTH : clearFlags;
+		clearFlags |= Initializers::isStencilFormat(format) ? D3D12_CLEAR_FLAG_STENCIL : clearFlags;
+
+		m_commandList->ClearDepthStencilView(cpuDescriptorHandle, clearFlags, depthStencil->m_depth, depthStencil->m_stencil, 0, nullptr);
+	}
 }
 
 void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barriers)
@@ -387,7 +548,7 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		bool m_writeAccess;
 	};
 
-	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags) -> ResourceStateInfo
+	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags, Format format) -> ResourceStateInfo
 	{
 		switch (state)
 		{
@@ -439,7 +600,7 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		case ResourceState::CLEAR_BUFFER:
 			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
 		case ResourceState::CLEAR_IMAGE:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+			return { Initializers::isDepthFormat(format) ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
 		case ResourceState::PRESENT_IMAGE:
 			return { D3D12_RESOURCE_STATE_PRESENT, false, true, false };
 		default:
@@ -463,13 +624,48 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			continue;
 		}
 
-		auto beforeState = getResourceStateInfo(barrier.m_stateBefore, barrier.m_stagesBefore);
-		auto afterState = getResourceStateInfo(barrier.m_stateAfter, barrier.m_stagesAfter);
+		Format format = barrier.m_image ? barrier.m_image->getDescription().m_format : Format::UNDEFINED;
+		auto beforeState = getResourceStateInfo(barrier.m_stateBefore, barrier.m_stagesBefore, format);
+		auto afterState = getResourceStateInfo(barrier.m_stateAfter, barrier.m_stagesAfter, format);
 
 		// only if one of the states is uav and there is a writing access
 		bool uavBarrier = (beforeState.m_uavBarrier || afterState.m_uavBarrier) && (beforeState.m_writeAccess || afterState.m_writeAccess);
 
 		ID3D12Resource *resouceDx = barrier.m_image ? (ID3D12Resource *)barrier.m_image->getNativeHandle() : (ID3D12Resource *)barrier.m_buffer->getNativeHandle();
+
+		// transitions from UNDEFINED require us to discard the resource
+		if (barrier.m_stateBefore == ResourceState::UNDEFINED)
+		{
+			if (barrier.m_image)
+			{
+				const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
+				const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
+				const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
+				const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
+				const auto &resDesc = barrier.m_image->getDescription();
+
+				// collapse individual discards for each subresource into a single discard for the whole resource if all subresources are discarded
+				if (baseLayer == 0 && baseLevel == 0 && layerCount == resDesc.m_layers && levelCount == resDesc.m_levels)
+				{
+					m_commandList->DiscardResource(resouceDx, nullptr);
+				}
+				else
+				{
+					for (uint32_t layer = 0; layer < layerCount; ++layer)
+					{
+						D3D12_DISCARD_REGION region{};
+						region.FirstSubresource = baseLevel + ((layer + baseLayer) * resDesc.m_levels);
+						region.NumSubresources = levelCount;
+
+						m_commandList->DiscardResource(resouceDx, &region);
+					}
+				}
+			}
+			else
+			{
+				m_commandList->DiscardResource(resouceDx, nullptr);
+			}
+		}
 
 		D3D12_RESOURCE_BARRIER barrierDx;
 		if (uavBarrier)
@@ -698,4 +894,63 @@ void VEngine::gal::CommandListDx12::endDebugLabel()
 void VEngine::gal::CommandListDx12::reset()
 {
 	m_commandAllocator->Reset();
+
+	// reset() must only be called after the gpu is done with this command list.
+	// this is why we can now free the allocated clear descriptors
+
+	for (auto handle : m_cpuDescriptorHandleAllocs)
+	{
+		m_recordContext->m_cpuDescriptorAllocator->free(handle);
+	}
+	m_cpuDescriptorHandleAllocs.clear();
+
+	for (auto handle : m_dsvDescriptorHandleAllocs)
+	{
+		m_recordContext->m_dsvDescriptorAllocator->free(handle);
+	}
+	m_dsvDescriptorHandleAllocs.clear();
+
+	for (auto handle : m_gpuDescriptorHandleAllocs)
+	{
+		m_recordContext->m_gpuDescriptorAllocator->free(handle);
+	}
+	m_gpuDescriptorHandleAllocs.clear();
+}
+
+void VEngine::gal::CommandListDx12::createClearDescriptors(const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc, ID3D12Resource *resource, D3D12_GPU_DESCRIPTOR_HANDLE &gpuDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE &cpuDescriptor)
+{
+	// allocate cpu descriptor
+	{
+		void *allocHandle;
+		uint32_t offset = 0;
+		bool allocSucceeded = m_recordContext->m_cpuDescriptorAllocator->alloc(1, 1, offset, allocHandle);
+
+		if (!allocSucceeded)
+		{
+			Utility::fatalExit("Failed to allocate CPU descriptor for UAV!", EXIT_FAILURE);
+		}
+
+		cpuDescriptor = { m_recordContext->m_cpuDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + m_recordContext->m_descriptorIncrementSizes[0] * offset };
+		m_recordContext->m_device->CreateUnorderedAccessView(resource, nullptr, &viewDesc, cpuDescriptor);
+
+		m_cpuDescriptorHandleAllocs.push_back(allocHandle);
+	}
+
+	// allocate gpu descriptor
+	{
+		void *allocHandle;
+		uint32_t offset = 0;
+		bool allocSucceeded = m_recordContext->m_gpuDescriptorAllocator->alloc(1, 1, offset, allocHandle);
+
+		if (!allocSucceeded)
+		{
+			Utility::fatalExit("Failed to allocate GPU descriptor for UAV!", EXIT_FAILURE);
+		}
+
+		D3D12_CPU_DESCRIPTOR_HANDLE dstCpuHandle{ m_recordContext->m_gpuDescriptorHeap->GetCPUDescriptorHandleForHeapStart().ptr + m_recordContext->m_descriptorIncrementSizes[0] * offset };
+		m_recordContext->m_device->CopyDescriptorsSimple(1, dstCpuHandle, cpuDescriptor, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		gpuDescriptor = { m_recordContext->m_gpuDescriptorHeap->GetGPUDescriptorHandleForHeapStart().ptr + m_recordContext->m_descriptorIncrementSizes[0] * offset };
+
+		m_gpuDescriptorHandleAllocs.push_back(allocHandle);
+	}
 }

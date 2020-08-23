@@ -1,18 +1,27 @@
 #pragma once
 #include "Graphics/gal/GraphicsAbstractionLayer.h"
 #include <d3d12.h>
+#include <vector>
 
 namespace VEngine
 {
+	class TLSFAllocator;
 	namespace gal
 	{
 		struct CommandListRecordContextDx12
 		{
+			ID3D12Device *m_device;
+			ID3D12DescriptorHeap *m_cpuDescriptorHeap;
+			ID3D12DescriptorHeap *m_dsvDescriptorHeap;
 			ID3D12DescriptorHeap *m_gpuDescriptorHeap;
 			ID3D12DescriptorHeap *m_gpuSamplerDescriptorHeap;
+			TLSFAllocator *m_cpuDescriptorAllocator;
+			TLSFAllocator *m_dsvDescriptorAllocator;
+			TLSFAllocator *m_gpuDescriptorAllocator;
 			ID3D12CommandSignature *m_drawIndirectSignature;
 			ID3D12CommandSignature *m_drawIndexedIndirectSignature;
 			ID3D12CommandSignature *m_dispatchIndirectSignature;
+			UINT m_descriptorIncrementSizes[4];
 		};
 
 		class CommandListDx12 : public CommandList
@@ -77,6 +86,11 @@ namespace VEngine
 			ID3D12CommandAllocator *m_commandAllocator;
 			const CommandListRecordContextDx12 *m_recordContext;
 			const GraphicsPipeline *m_currentGraphicsPipeline;
+			std::vector<void *> m_cpuDescriptorHandleAllocs;
+			std::vector<void *> m_dsvDescriptorHandleAllocs;
+			std::vector<void *> m_gpuDescriptorHandleAllocs;
+
+			void createClearDescriptors(const D3D12_UNORDERED_ACCESS_VIEW_DESC &viewDesc, ID3D12Resource *resource, D3D12_GPU_DESCRIPTOR_HANDLE &gpuDescriptor, D3D12_CPU_DESCRIPTOR_HANDLE &cpuDescriptor);
 		};
 	}
 }

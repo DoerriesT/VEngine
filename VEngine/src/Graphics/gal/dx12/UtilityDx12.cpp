@@ -854,7 +854,7 @@ D3D12_RESOURCE_FLAGS VEngine::gal::UtilityDx12::translateImageUsageFlags(ImageUs
 	}
 	if (testFlagBit(flags, ImageUsageFlagBits::CLEAR_BIT))
 	{
-		// no D3D12 equivalent (D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ?)
+		result |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	}
 
 	return result;
@@ -906,7 +906,7 @@ D3D12_RESOURCE_FLAGS VEngine::gal::UtilityDx12::translateBufferUsageFlags(Buffer
 	}
 	if (testFlagBit(flags, BufferUsageFlagBits::SHADER_DEVICE_ADDRESS_BIT))
 	{
-		// no D3D12 equivalent (D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ?)
+		// no D3D12 equivalent
 	}
 
 	return result;
