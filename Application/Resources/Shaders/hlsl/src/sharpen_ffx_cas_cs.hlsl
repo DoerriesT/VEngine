@@ -2,8 +2,8 @@
 #include "sharpen_ffx_cas.hlsli"
 #include "srgb.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 

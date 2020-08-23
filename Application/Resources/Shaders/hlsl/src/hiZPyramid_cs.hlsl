@@ -1,13 +1,15 @@
 #include "bindingHelper.hlsli"
 #include "hiZPyramid.hlsli"
+#include "common.hlsli"
 
 #ifndef REDUCE
 #define REDUCE min
 #endif // REDUCE
 
-RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
+RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -36,10 +38,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	// fetch a 2x2 neighborhood and compute the furthest depth
 	float4 depths;
-	depths[0] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(0.0, 0.0) * texelSize, 0.0).x;
-	depths[1] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(1.0, 0.0) * texelSize, 0.0).x;
-	depths[2] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(0.0, 1.0) * texelSize, 0.0).x;
-	depths[3] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(1.0, 1.0) * texelSize, 0.0).x;
+	depths[0] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(0.0, 0.0) * texelSize, 0.0).x;
+	depths[1] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(1.0, 0.0) * texelSize, 0.0).x;
+	depths[2] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(0.0, 1.0) * texelSize, 0.0).x;
+	depths[3] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(1.0, 1.0) * texelSize, 0.0).x;
 	
 	float reducedDepth = REDUCE(REDUCE(depths[0], depths[1]), REDUCE(depths[2], depths[3]));
 	
@@ -51,8 +53,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	if (shouldIncludeExtraColumnFromPrevLevel)
 	{
 		float2 extra;
-		extra[0] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(2.0, 0.0) * texelSize, 0.0).x;
-		extra[1] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(2.0, 1.0) * texelSize, 0.0).x;
+		extra[0] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(2.0, 0.0) * texelSize, 0.0).x;
+		extra[1] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(2.0, 1.0) * texelSize, 0.0).x;
 	
 		reducedDepth = REDUCE(reducedDepth, REDUCE(extra[0], extra[1]));
 	}
@@ -60,15 +62,15 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	if (shouldIncludeExtraRowFromPrevLevel)
 	{
 		float2 extra;
-		extra[0] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(0.0, 2.0) * texelSize, 0.0).x;
-		extra[1] = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(1.0, 2.0) * texelSize, 0.0).x;
+		extra[0] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(0.0, 2.0) * texelSize, 0.0).x;
+		extra[1] = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(1.0, 2.0) * texelSize, 0.0).x;
 	
 		reducedDepth = REDUCE(reducedDepth, REDUCE(extra[0], extra[1]));
 	}
 	
 	if (shouldIncludeExtraColumnFromPrevLevel && shouldIncludeExtraRowFromPrevLevel)
 	{
-		float extra = g_InputImage.SampleLevel(g_PointSampler, texCoord + float2(2.0, 2.0) * texelSize, 0.0).x;
+		float extra = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], texCoord + float2(2.0, 2.0) * texelSize, 0.0).x;
 		reducedDepth = REDUCE(reducedDepth, extra);
 	}
 	

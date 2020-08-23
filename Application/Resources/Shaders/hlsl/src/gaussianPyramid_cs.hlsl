@@ -1,9 +1,11 @@
 #include "bindingHelper.hlsli"
 #include "gaussianPyramid.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -26,7 +28,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 		for (int i = 0; i < 5; ++i)
 		{
-			result += g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(offsets[i], 0.0) * g_PushConsts.srcTexelSize, 0.0).rgb * weights[i];
+			result += g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(offsets[i], 0.0) * g_PushConsts.srcTexelSize, 0.0).rgb * weights[i];
 		}
 	}
 	else
@@ -35,7 +37,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 		for (int i = 0; i < 5; ++i)
 		{
-			result += g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(0.0, offsets[i]) * g_PushConsts.srcTexelSize, 0.0).rgb * weights[i];
+			result += g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(0.0, offsets[i]) * g_PushConsts.srcTexelSize, 0.0).rgb * weights[i];
 		}
 	}
 	

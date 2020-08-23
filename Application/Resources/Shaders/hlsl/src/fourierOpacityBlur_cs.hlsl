@@ -1,4 +1,5 @@
 #include "bindingHelper.hlsli"
+#include "common.hlsli"
 
 struct PushConsts
 {
@@ -10,7 +11,8 @@ struct PushConsts
 
 RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(0, 0);
 Texture2DArray<float4> g_InputImage : REGISTER_SRV(1, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(2, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -38,8 +40,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float2 coord = texCoord + offset;
 		coord = clamp(coord, g_PushConsts.texelSize, (g_PushConsts.resolution - 1) * g_PushConsts.texelSize);
 		coord += g_PushConsts.offset;
-		result0 += g_InputImage.SampleLevel(g_LinearSampler, float3(coord, 0.0), 0.0) * weights[i];
-		result1 += g_InputImage.SampleLevel(g_LinearSampler, float3(coord, 1.0), 0.0) * weights[i];
+		result0 += g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(coord, 0.0), 0.0) * weights[i];
+		result1 += g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(coord, 1.0), 0.0) * weights[i];
 	}
 	
 	g_ResultImage[uint3(threadID.xy, 0)] = result0;

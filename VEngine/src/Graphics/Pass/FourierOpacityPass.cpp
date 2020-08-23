@@ -96,13 +96,12 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 						Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
 						Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
 						Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet };
-					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
+					DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 3, sets);
 				}
 
 				PushConsts pushConsts;
@@ -156,10 +155,10 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 						Initializers::structuredBuffer(&data.m_particleBufferInfo, 2),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-					cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+					DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 3, descriptorSets);
 				}
 
 				struct FOMParticlePushConsts

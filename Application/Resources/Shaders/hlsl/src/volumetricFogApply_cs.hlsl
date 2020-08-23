@@ -10,24 +10,25 @@
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2D<float4> g_SSAOImage : REGISTER_SRV(SSAO_IMAGE_BINDING, SSAO_IMAGE_SET);
-Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, VOLUMETRIC_FOG_IMAGE_SET);
-Texture2D<float4> g_IndirectSpecularLightImage : REGISTER_SRV(INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING, INDIRECT_SPECULAR_LIGHT_IMAGE_SET);
-Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, BRDF_LUT_IMAGE_SET);
-Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, ALBEDO_METALNESS_IMAGE_SET);
-Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, NORMAL_ROUGHNESS_IMAGE_SET);
-TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, REFLECTION_PROBE_IMAGE_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2D<float4> g_SSAOImage : REGISTER_SRV(SSAO_IMAGE_BINDING, 0);
+Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDING, 0);
+Texture2D<float4> g_IndirectSpecularLightImage : REGISTER_SRV(INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING, 0);
+Texture2D<float2> g_BrdfLutImage : REGISTER_SRV(BRDF_LUT_IMAGE_BINDING, 0);
+Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, 0);
+Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, 0);
+TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 Texture2D<float4> g_RaymarchedVolumetricsImage : REGISTER_SRV(RAYMARCHED_VOLUMETRICS_IMAGE_BINDING, 0);
 
-StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, REFLECTION_PROBE_DATA_SET);
-ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, REFLECTION_PROBE_BIT_MASK_SET);
-ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, REFLECTION_PROBE_Z_BINS_SET);
+StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, 0);
+ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, 0);
 
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -133,7 +134,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, dominantR);
 						lookupDir = lerp(lookupDir, dominantR, roughness);
 		
-						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
+						reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
 						weightSum += 1.0;
 					}
 				}
@@ -144,7 +145,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
 		indirectSpecular.rgb = lerp(reflectionProbeSpecular, indirectSpecular.rgb, indirectSpecular.a);
 		
-		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(saturate(dot(N, V)), roughness), 0.0).xy;
+		float2 brdfLut = g_BrdfLutImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(saturate(dot(N, V)), roughness), 0.0).xy;
 		indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
 		
 		result += indirectSpecular.rgb;
@@ -186,19 +187,19 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			float2 tc;
 			
 			tc = raymarchedTexCoord + noise.xy * texelSize;
-			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 			noise = noise.yzwx;
 			
 			tc = raymarchedTexCoord + noise.xy * texelSize;
-			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 			noise = noise.yzwx;
 			
 			tc = raymarchedTexCoord + noise.xy * texelSize;
-			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 			noise = noise.yzwx;
 			
 			tc = raymarchedTexCoord + noise.xy * texelSize;
-			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 			noise = noise.yzwx;
 			
 			result = result * raymarchedVolumetrics.aaa + raymarchedVolumetrics.rgb;
@@ -210,19 +211,19 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float3 tc;
 		
 		tc = volumetricFogTexCoord + noise.xyz * texelSize;
-		fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 		noise = noise.yzwx;
 		
 		tc = volumetricFogTexCoord + noise.xyz * texelSize;
-		fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 		noise = noise.yzwx;
 		
 		tc = volumetricFogTexCoord + noise.xyz * texelSize;
-		fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 		noise = noise.yzwx;
 		
 		tc = volumetricFogTexCoord + noise.xyz * texelSize;
-		fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+		fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 		noise = noise.yzwx;
 		
 		fog.rgb = inverseSimpleTonemap(fog.rgb);

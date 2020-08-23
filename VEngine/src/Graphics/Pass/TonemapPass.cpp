@@ -59,12 +59,12 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				Initializers::texture(&bloomImageImageView, BLOOM_IMAGE_BINDING),
 				//Initializers::storageBuffer(&avgLumBufferInfo, LUMINANCE_VALUES_BINDING),
 				Initializers::byteBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
-				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
-			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+			DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 		}
 
 		PushConsts pushConsts;

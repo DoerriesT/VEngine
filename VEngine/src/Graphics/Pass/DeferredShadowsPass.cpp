@@ -86,8 +86,6 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 				{
 					DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
-					Sampler *pointSamplerClamp = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
-					Sampler *shadowSampler = data.m_passRecordContext->m_renderResources->m_shadowSampler;
 					ImageView *resultImageView = registry.getImageView(resultImageViewHandle);
 					ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
 					//ImageView *tangentSpaceImageView = registry.getImageView(data.m_tangentSpaceImageViewHandle);
@@ -102,9 +100,6 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 						//Initializers::texture(&tangentSpaceImageView, TANGENT_SPACE_IMAGE_BINDING),
 						Initializers::texture(&shadowSpaceImageView, SHADOW_IMAGE_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 						Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 						Initializers::structuredBuffer(&data.m_cascadeParamsBufferInfo, CASCADE_PARAMS_BUFFER_BINDING),
 						Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
@@ -112,9 +107,15 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::texture(&fomDepthRangeImageView, FOM_DEPTH_RANGE_IMAGE_BINDING),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[] = 
+					{ 
+						descriptorSet, 
+						data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet 
+					};
+					cmdList->bindDescriptorSets(pipeline, 0, 3, sets);
 				}
 
 				cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);

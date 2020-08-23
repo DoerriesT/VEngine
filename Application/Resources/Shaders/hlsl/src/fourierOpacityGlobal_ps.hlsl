@@ -7,9 +7,10 @@
 
 StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(LIGHT_INFO_BINDING, 0);
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -79,7 +80,7 @@ PSOutput main(PSInput input)
 			for (int j = 0; j < g_PushConsts.globalMediaCount; ++j)
 			{
 				GlobalParticipatingMedium medium = g_GlobalMedia[j];
-				const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_LinearSampler);
+				const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 				extinction += medium.extinction * density;
 			}
 		}

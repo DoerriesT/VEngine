@@ -79,15 +79,13 @@ void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::texture(&downsampledDepthImageView, RAYMARCHED_VOLUMETRICS_DEPTH_IMAGE_BINDING),
 					Initializers::texture(&volumetricFogImageView, VOLUMETRIC_FOG_IMAGE_BINDING),
 					Initializers::texture(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 			}
 
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;

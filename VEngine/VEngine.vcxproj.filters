@@ -276,84 +276,6 @@
     <ClInclude Include="src\Graphics\Module\SSRModule.h">
       <Filter>src\Graphics\Module</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\BloomUpsamplePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\BuildIndexBufferPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FXAAPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GTAOPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GTAOSpatialFilterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GTAOTemporalFilterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\HiZPyramidPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ImGuiPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ShadowPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\SharpenFfxCasPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\SSRPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\SSRResolvePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\SSRTemporalFilterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\TonemapPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Module\VolumetricFogModule.h">
       <Filter>src\Graphics\Module</Filter>
     </ClInclude>
@@ -362,24 +284,6 @@
     </ClInclude>
     <ClInclude Include="src\Utility\QuadTreeAllocator.h">
       <Filter>src\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ExposurePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\TemporalAAPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GaussianDownsamplePass.h">
-      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\gal\vulkan\SwapChainVk.h">
       <Filter>src\Graphics\gal\vulkan</Filter>
@@ -398,12 +302,6 @@
     </ClInclude>
     <ClInclude Include="src\Components\BoundingSphereComponent.h">
       <Filter>src\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h">
-      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\gal\dx12\CommandListDx12.h">
       <Filter>src\Graphics\gal\dx12</Filter>
@@ -438,12 +336,6 @@
     <ClInclude Include="src\Graphics\gal\dx12\GraphicsDeviceDx12.h">
       <Filter>src\Graphics\gal\dx12</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeFilterPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Components\ReflectionProbeComponent.h">
       <Filter>src\Component</Filter>
     </ClInclude>
@@ -456,32 +348,8 @@
     <ClInclude Include="src\Graphics\Module\ReflectionProbeModule.h">
       <Filter>src\Graphics\Module</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass2.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Module\AtmosphericScatteringModule.h">
       <Filter>src\Graphics\Module</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\GTAO2Pass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\ParticlesPass.h">
-      <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Components\ParticleEmitterComponent.h">
       <Filter>src\Component</Filter>
@@ -495,25 +363,115 @@
     <ClInclude Include="src\Graphics\TextureManager.h">
       <Filter>src\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\SwapChainCopyPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Input\ImGuiInputAdapter.h">
       <Filter>src\Input</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h">
-      <Filter>src\Graphics\Pass</Filter>
+    <ClInclude Include="src\Components\BillboardComponent.h">
+      <Filter>src\Component</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricRaymarchPass.h">
-      <Filter>src\Graphics\Pass</Filter>
+    <ClInclude Include="src\Graphics\gal\dx12\D3D12MemAlloc.h">
+      <Filter>src\Graphics\gal\dx12</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\ApplyIndirectLightingPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass2.h">
+    <ClInclude Include="src\Graphics\Pass\BillboardPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\VisibilityBufferPass.h">
+    <ClInclude Include="src\Graphics\Pass\BloomDownsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\BloomUpsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\BuildIndexBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\DebugDrawPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ExposurePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityDepthPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityPSPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FXAAPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GaussianDownsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GTAO2Pass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GTAOPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GTAOSpatialFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\GTAOTemporalFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\HiZPyramidPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ImGuiPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ParticlesPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass2.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ProbeGBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\RasterTilingPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ReadBackCopyPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPass.h">
@@ -522,29 +480,71 @@
     <ClInclude Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ShadowAtlasPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\ShadowPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SharpenFfxCasPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SSRPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SSRResolvePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SSRTemporalFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\SwapChainCopyPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\TemporalAAPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\TonemapPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VisibilityBufferPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass2.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
     <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass2.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityPSPass.h">
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.h">
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\DebugDrawPass.h">
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\BillboardPass.h">
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogVBufferPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Components\BillboardComponent.h">
-      <Filter>src\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityDepthPass.h">
+    <ClInclude Include="src\Graphics\Pass\VolumetricRaymarchPass.h">
       <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\gal\dx12\D3D12MemAlloc.h">
-      <Filter>src\Graphics\gal\dx12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -689,89 +689,11 @@
     <ClCompile Include="src\Graphics\Module\BloomModule.cpp">
       <Filter>src\Graphics\Module</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GTAOPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GTAOSpatialFilterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GTAOTemporalFilterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\HiZPyramidPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ImGuiPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ShadowPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\SharpenFfxCasPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\SSRPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\SSRResolvePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\SSRTemporalFilterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Module\GTAOModule.cpp">
       <Filter>src\Graphics\Module</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Module\SSRModule.cpp">
       <Filter>src\Graphics\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Module\VolumetricFogModule.cpp">
       <Filter>src\Graphics\Module</Filter>
@@ -779,35 +701,11 @@
     <ClCompile Include="src\Utility\QuadTreeAllocator.cpp">
       <Filter>src\Utility</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\TemporalAAPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GaussianDownsamplePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\SwapChainVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\FramebufferCacheVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\dx12\CommandListDx12.cpp">
       <Filter>src\Graphics\gal\dx12</Filter>
@@ -842,12 +740,6 @@
     <ClCompile Include="src\Graphics\gal\dx12\GraphicsDeviceDx12.cpp">
       <Filter>src\Graphics\gal\dx12</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\FrustumCullData.cpp">
       <Filter>src\Graphics</Filter>
     </ClCompile>
@@ -857,32 +749,8 @@
     <ClCompile Include="src\Graphics\Module\ReflectionProbeModule.cpp">
       <Filter>src\Graphics\Module</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Module\AtmosphericScatteringModule.cpp">
       <Filter>src\Graphics\Module</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\GTAO2Pass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\ParticlesPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\ParticleEmitterManager.cpp">
       <Filter>src\Graphics</Filter>
@@ -890,25 +758,112 @@
     <ClCompile Include="src\Graphics\TextureManager.cpp">
       <Filter>src\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\SwapChainCopyPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Input\ImGuiInputAdapter.cpp">
       <Filter>src\Input</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricRaymarchPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
+    <ClCompile Include="src\Graphics\gal\dx12\D3D12MemAlloc.cpp">
+      <Filter>src\Graphics\gal\dx12</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ApplyIndirectLightingPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass2.cpp">
+    <ClCompile Include="src\Graphics\Pass\BillboardPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\VisibilityBufferPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\BloomDownsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\BloomUpsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\BuildIndexBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\DebugDrawPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityDepthPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityPSPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GaussianDownsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GTAO2Pass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GTAOPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GTAOSpatialFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\GTAOTemporalFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\HiZPyramidPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ImGuiPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ParticlesPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ProbeGbufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPass.cpp">
@@ -917,26 +872,71 @@
     <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPassPS.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ShadowAtlasPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\ShadowPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SharpenFfxCasPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SSRPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SSRResolvePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SSRTemporalFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\SwapChainCopyPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\TemporalAAPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VisibilityBufferPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass2.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumeDebugPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogExtinctionVolumePass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass2.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityPSPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\DebugDrawPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\BillboardPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogVBufferPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityDepthPass.cpp">
+    <ClCompile Include="src\Graphics\Pass\VolumetricRaymarchPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\gal\dx12\D3D12MemAlloc.cpp">
-      <Filter>src\Graphics\gal\dx12</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

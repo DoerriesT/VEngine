@@ -9,8 +9,8 @@ struct PSInput
 	nointerpolation uint textureIndex : TEXTURE_INDEX;
 };
 
-Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
+Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 void main(PSInput input)
 {

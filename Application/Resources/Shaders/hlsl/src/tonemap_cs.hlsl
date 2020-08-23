@@ -1,12 +1,14 @@
 #include "bindingHelper.hlsli"
 #include "tonemap.hlsli"
 #include "srgb.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-Texture2D<float4> g_BloomImage : REGISTER_SRV(BLOOM_IMAGE_BINDING, BLOOM_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BINDING, EXPOSURE_DATA_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+Texture2D<float4> g_BloomImage : REGISTER_SRV(BLOOM_IMAGE_BINDING, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -201,7 +203,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 texCoord = float2(float2(threadID.xy) + 0.5) * g_PushConsts.texelSize;
 	if (g_PushConsts.bloomEnabled != 0)
 	{
-		color = lerp(color, g_BloomImage.SampleLevel(g_LinearSampler, texCoord, 0.0).rgb, g_PushConsts.bloomStrength);
+		color = lerp(color, g_BloomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord, 0.0).rgb, g_PushConsts.bloomStrength);
 	}
 	
 	// input data is pre-exposed -> convert from previous frame exposure to current frame exposure

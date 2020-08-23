@@ -1,11 +1,13 @@
 #include "bindingHelper.hlsli"
+#include "common.hlsli"
 
 RWTexture3D<float4> g_DeltaRayleighImage : REGISTER_UAV(0, 0);
 RWTexture3D<float4> g_DeltaMieImage : REGISTER_UAV(1, 0);
 RWTexture3D<float4> g_ScatteringImage : REGISTER_UAV(2, 0);
 //RWTexture3D<float4> g_SingleMieScatteringImage : REGISTER_UAV(3, 0);
 Texture2D<float4> g_TransmittanceImage : REGISTER_SRV(4, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(5, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 #include "commonAtmosphericScattering.hlsli"
 

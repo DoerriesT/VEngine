@@ -92,8 +92,8 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 					cmdList->bindPipeline(pipelines[j]);
 
-					DescriptorSet *descriptorSets[] = { sets[j], data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-					cmdList->bindDescriptorSets(pipelines[j], 0, alphaMasked ? 2 : 1, descriptorSets);
+					DescriptorSet *descriptorSets[] = { sets[j], data.m_passRecordContext->m_renderResources->m_textureDescriptorSet, data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipelines[j], 0, alphaMasked ? 3 : 1, descriptorSets);
 
 					Viewport viewport{ static_cast<float>(drawInfo.m_offsetX), static_cast<float>(drawInfo.m_offsetY), static_cast<float>(drawInfo.m_size), static_cast<float>(drawInfo.m_size), 0.0f, 1.0f };
 

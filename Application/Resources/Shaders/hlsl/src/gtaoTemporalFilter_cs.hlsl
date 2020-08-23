@@ -1,12 +1,14 @@
 #include "bindingHelper.hlsli"
 #include "gtaoTemporalFilter.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float2> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-Texture2D<float2> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_IMAGE_SET);
-Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, VELOCITY_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float2> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+Texture2D<float2> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
+Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -48,7 +50,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 velocity = g_VelocityImage.Load(int3(threadID.xy, 0)).xy;
 	float2 texCoord = float2(threadID.xy + 0.5) * g_Constants.texelSize;
 	float2 reprojectedCoord = texCoord - velocity;
-	float2 previousAo = g_HistoryImage.SampleLevel(g_LinearSampler, reprojectedCoord, 0.0).xy;
+	float2 previousAo = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], reprojectedCoord, 0.0).xy;
     
 	// is the reprojected coordinate inside the frame?
 	float insideFrame = all(abs(reprojectedCoord - 0.5) < 0.5) ? 1.0 : 0.0;

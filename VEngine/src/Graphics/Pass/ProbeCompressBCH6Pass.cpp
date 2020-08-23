@@ -38,8 +38,6 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *pointSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
-
 			// update descriptor set
 			{
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
@@ -48,12 +46,12 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 				{
 					Initializers::rwTexture(data.m_tmpResultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
 					Initializers::texture(data.m_inputImageViews, INPUT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
-					Initializers::sampler(&pointSampler, POINT_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(std::size(updates), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 			}
 
 			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;

@@ -1,7 +1,6 @@
 #define RESULT_IMAGE_BINDING 0
 #define LIGHT_INFO_BINDING 1
 #define GLOBAL_MEDIA_BINDING 2
-#define LINEAR_SAMPLER_BINDING 3
 
 struct LightInfo
 {

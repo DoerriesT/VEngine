@@ -16,7 +16,8 @@ struct PSOutput
 };
 
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(1, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 float4 main(PSInput input) : SV_Target0
 {

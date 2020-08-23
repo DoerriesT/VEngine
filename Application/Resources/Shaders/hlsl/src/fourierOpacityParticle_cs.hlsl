@@ -30,7 +30,8 @@ StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(1, 0);
 StructuredBuffer<ParticleData> g_Particles : REGISTER_SRV(2, 0);
 
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(1, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 
 PUSH_CONSTS(PushConsts, g_PushConsts);

@@ -63,18 +63,31 @@ namespace VEngine
 		rg::ResourceStateData m_exposureDataBufferState = {};
 		rg::ResourceStateData m_brdfLutImageState = {};
 
+		// descriptor sets
 		gal::DescriptorSetLayout *m_textureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_texture3DDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_samplerDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_shadowSamplerDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTextureDescriptorSetLayout = {};
 		gal::DescriptorSetLayout *m_computeTexture3DDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_computeSamplerDescriptorSetLayout = {};
+		gal::DescriptorSetLayout *m_computeShadowSamplerDescriptorSetLayout = {};
 		gal::DescriptorSet *m_textureDescriptorSet = {};
 		gal::DescriptorSet *m_texture3DDescriptorSet = {};
+		gal::DescriptorSet *m_samplerDescriptorSet = {};
+		gal::DescriptorSet *m_shadowSamplerDescriptorSet = {};
 		gal::DescriptorSet *m_computeTextureDescriptorSet = {};
 		gal::DescriptorSet *m_computeTexture3DDescriptorSet = {};
+		gal::DescriptorSet *m_computeSamplerDescriptorSet = {};
+		gal::DescriptorSet *m_computeShadowSamplerDescriptorSet = {};
 		gal::DescriptorSetPool *m_textureDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_texture3DDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_samplerDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_shadowSamplerDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_computeTextureDescriptorSetPool = {};
 		gal::DescriptorSetPool *m_computeTexture3DDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_computeSamplerDescriptorSetPool = {};
+		gal::DescriptorSetPool *m_computeShadowSamplerDescriptorSetPool = {};
 
 		// proxy mesh info
 		uint32_t m_pointLightProxyMeshIndexCount;

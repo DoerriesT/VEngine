@@ -51,12 +51,12 @@ void VEngine::GTAOPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			{
 				Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
-			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+			DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 		}
 
 		const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;

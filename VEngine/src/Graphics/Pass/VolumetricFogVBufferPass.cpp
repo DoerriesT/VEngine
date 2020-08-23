@@ -85,13 +85,12 @@ void VEngine::VolumetricFogVBufferPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::byteBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
 					Initializers::byteBuffer(&localMediaMaskBufferInfo, LOCAL_MEDIA_BIT_MASK_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 3, sets);
 			}
 
 			const auto &imageDesc = registry.getImage(data.m_scatteringExtinctionImageViewHandle)->getDescription();

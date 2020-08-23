@@ -7,7 +7,7 @@ struct PSInput
 	float2 texCoord : TEXCOORD;
 };
 
-Texture2D<float2> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
+Texture2D<float2> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 

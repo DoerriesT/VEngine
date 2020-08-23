@@ -67,7 +67,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				Initializers::rwByteBuffer(&reflectionProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

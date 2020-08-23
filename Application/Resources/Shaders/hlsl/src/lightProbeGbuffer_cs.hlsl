@@ -5,19 +5,19 @@
 #include "common.hlsli"
 #include "brdf.hlsli"
 
-RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2DArray<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2DArray<float4> g_AlbedoRoughnessImage : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAGE_BINDING, ALBEDO_ROUGHNESS_IMAGE_SET);
-Texture2DArray<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, NORMAL_IMAGE_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-Texture2DArray<float> g_ShadowImage : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_SET);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, SHADOW_SAMPLER_SET);
-StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, SHADOW_MATRICES_SET);
+RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2DArray<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_AlbedoRoughnessImage : REGISTER_SRV(ALBEDO_ROUGHNESS_IMAGE_BINDING, 0);
+Texture2DArray<float2> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+Texture2DArray<float> g_ShadowImage : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING, 0);
+StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 
 // directional lights
-StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, DIRECTIONAL_LIGHTS_SET);
-StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, DIRECTIONAL_LIGHTS_SHADOWED_SET);
+StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
+StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, 0);
 
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 1);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 

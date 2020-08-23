@@ -15,11 +15,12 @@ struct PSOutput
 };
 
 TextureCubeArray<float4> g_SkyImage : REGISTER_SRV(0, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(1, 0);
-ConstantBuffer<AtmosphereParameters> g_AtmosphereParams : REGISTER_CBV(2, 0);
-Texture2D<float4> g_TransmittanceImage : REGISTER_SRV(3, 0);
-Texture3D<float4> g_ScatteringImage : REGISTER_SRV(4, 0);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(5, 0);
+ConstantBuffer<AtmosphereParameters> g_AtmosphereParams : REGISTER_CBV(1, 0);
+Texture2D<float4> g_TransmittanceImage : REGISTER_SRV(2, 0);
+Texture3D<float4> g_ScatteringImage : REGISTER_SRV(3, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(4, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 struct PushConsts
 {
@@ -63,7 +64,7 @@ PSOutput main(PSInput input)
 		skyLuminance = skyLuminance + transmittance * GetSolarLuminance();
 	}
 	
-	output.color = float4(g_SkyImage.SampleLevel(g_LinearSampler, float4(input.ray.xyz, 0.0), 0.0).rgb, 1.0);//float4(float3(0.529, 0.808, 0.922), 1.0);
+	output.color = float4(g_SkyImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float4(input.ray.xyz, 0.0), 0.0).rgb, 1.0);//float4(float3(0.529, 0.808, 0.922), 1.0);
 	output.color.rgb = transmittance.x == -5.0 ? output.color.rgb : skyLuminance;
 	output.normal = 0.0;
 	output.specularRoughness = 0.0;

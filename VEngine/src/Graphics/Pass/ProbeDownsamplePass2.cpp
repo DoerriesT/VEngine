@@ -43,8 +43,6 @@ void VEngine::ProbeDownsamplePass2::addToGraph(rg::RenderGraph &graph, const Dat
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
-
 			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;
 
 			for (uint32_t i = 1; i < RendererConsts::REFLECTION_PROBE_MIPS; ++i)
@@ -62,12 +60,12 @@ void VEngine::ProbeDownsamplePass2::addToGraph(rg::RenderGraph &graph, const Dat
 					{
 						Initializers::rwTexture(&resultImageView, 0),
 						Initializers::texture(&inputImageView, 1),
-						Initializers::sampler(&linearSampler, 2),
 					};
 
-					descriptorSet->update(3, updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				PushConsts pushConsts;

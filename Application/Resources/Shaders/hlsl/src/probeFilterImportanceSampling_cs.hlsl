@@ -1,10 +1,12 @@
 #include "bindingHelper.hlsli"
 #include "probeFilterImportanceSampling.hlsli"
 #include "monteCarlo.hlsli"
+#include "common.hlsli"
 
 RWTexture2DArray<float4> g_ResultImages[7] : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 TextureCube<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -52,7 +54,7 @@ float3 integrateCubeLDOnly(float3 N, float roughness)
 			// solid angle of cubemap pixel
 			float omegaP = 4.0 * PI / (6.0 * g_PushConsts.width * g_PushConsts.width);
 			float mipLevel = clamp(0.5 * log2(omegaS / omegaP), 0.0, g_PushConsts.mipCount);
-			float3 Li = g_InputImage.SampleLevel(g_LinearSampler, L, mipLevel).rgb;
+			float3 Li = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], L, mipLevel).rgb;
 			
 			accBrdf += Li * NdotL;
 			accBrdfWeight += NdotL;
@@ -98,7 +100,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 result;
 	if (g_PushConsts.mip == 0)
 	{
-		result = g_InputImage.SampleLevel(g_LinearSampler, N, 0.0).rgb;
+		result = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], N, 0.0).rgb;
 	}
 	else
 	{

@@ -4,11 +4,6 @@
 #define VERTEX_POSITIONS_BINDING 3
 #define VERTEX_TEXCOORDS_BINDING 4
 
-#define TEXTURES_SET 1
-#define TEXTURES_BINDING 0
-#define SAMPLERS_SET 1
-#define SAMPLERS_BINDING 1
-
 struct Constants
 {
 	float4x4 jitteredViewProjectionMatrix;

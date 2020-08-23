@@ -110,8 +110,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
@@ -129,10 +127,16 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::byteBuffer(&localMediaMaskBufferInfo, LOCAL_MEDIA_BIT_MASK_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
+				DescriptorSet *sets[]
+				{ 
+					descriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet, 
+					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet, 
+					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet 
+				};
+				cmdList->bindDescriptorSets(pipeline, 0, 4, sets);
 			}
 
 

@@ -55,7 +55,7 @@ void VEngine::LuminanceHistogramPass::addToGraph(rg::RenderGraph &graph, const D
 				Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 			};
 
-			descriptorSet->update(std::size(updates), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

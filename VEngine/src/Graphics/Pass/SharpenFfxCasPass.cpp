@@ -54,7 +54,7 @@ void VEngine::SharpenFfxCasPass::addToGraph(rg::RenderGraph &graph, const Data &
 					Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(2, updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

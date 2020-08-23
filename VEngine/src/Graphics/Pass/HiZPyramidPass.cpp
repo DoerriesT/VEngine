@@ -98,7 +98,6 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *pointSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX];
 			uint32_t mipWidth = data.m_passRecordContext->m_commonRenderData->m_width;
 			uint32_t mipHeight = data.m_passRecordContext->m_commonRenderData->m_height;
 
@@ -115,12 +114,12 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					{
 						Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
 						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(3, updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				PushConsts pushConsts;

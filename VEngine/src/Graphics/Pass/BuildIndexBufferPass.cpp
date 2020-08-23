@@ -137,7 +137,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 					Initializers::rwStructuredBuffer(&positionsBufferInfo, POSITIONS_BINDING),
 				};
 
-				descriptorSet->update(6, updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

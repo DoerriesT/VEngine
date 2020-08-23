@@ -68,7 +68,7 @@ void VEngine::VolumetricFogIntegratePass::addToGraph(rg::RenderGraph &graph, con
 					//Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], POINT_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(std::size(updates), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

@@ -100,7 +100,8 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// Bind pipeline and descriptor sets:
 			{
 				cmdList->bindPipeline(pipeline);
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &data.m_passRecordContext->m_renderResources->m_textureDescriptorSet);
+				DescriptorSet *descriptorSets[] = {data.m_passRecordContext->m_renderResources->m_textureDescriptorSet, data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
 			}
 
 			// Bind Vertex And Index Buffer:

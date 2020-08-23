@@ -172,7 +172,7 @@ float3 ComputeTransmittanceToTopAtmosphereBoundaryTexture(AtmosphereParameters a
 float3 GetTransmittanceToTopAtmosphereBoundary(AtmosphereParameters atmosphere, Texture2D transmittance_texture, float r, float mu) 
 {
 	float2 uv = GetTransmittanceTextureUvFromRMu(atmosphere, r, mu);
-	return transmittance_texture.SampleLevel(g_LinearSampler, uv, 0.0).xyz;
+	return transmittance_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0).xyz;
 }
 
 float3 GetTransmittance(AtmosphereParameters atmosphere, Texture2D transmittance_texture, float r, float mu, float d, bool ray_r_mu_intersects_ground) 
@@ -408,7 +408,7 @@ float3 GetScattering(
 	float lerpAlpha = tex_coord_x - tex_x;
 	float3 uvw0 = float3((tex_x + uvwz.y) / float(SCATTERING_TEXTURE_NU_SIZE), uvwz.z, uvwz.w);
 	float3 uvw1 = float3((tex_x + 1.0 + uvwz.y) / float(SCATTERING_TEXTURE_NU_SIZE), uvwz.z, uvwz.w);
-	return lerp(scattering_texture.SampleLevel(g_LinearSampler, uvw0, 0.0).xyz, scattering_texture.SampleLevel(g_LinearSampler, uvw1, 0.0).xyz, lerpAlpha);
+	return lerp(scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw0, 0.0).xyz, scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw1, 0.0).xyz, lerpAlpha);
 }
 
 float3 GetScattering(
@@ -678,7 +678,7 @@ float3 ComputeIndirectIrradianceTexture(
 float3 GetIrradiance(AtmosphereParameters atmosphere, Texture2D irradiance_texture, float r, float mu_s) 
 {
 	float2 uv = GetIrradianceTextureUvFromRMuS(atmosphere, r, mu_s);
-	return irradiance_texture.SampleLevel(g_LinearSampler, uv, 0.0).xyz;
+	return irradiance_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uv, 0.0).xyz;
 }
 
 #ifdef COMBINED_SCATTERING_TEXTURES
@@ -709,12 +709,12 @@ float3 GetCombinedScattering(
 	float3 uvw0 = float3((tex_x + uvwz.y) / float(SCATTERING_TEXTURE_NU_SIZE), uvwz.z, uvwz.w);
 	float3 uvw1 = float3((tex_x + 1.0 + uvwz.y) / float(SCATTERING_TEXTURE_NU_SIZE), uvwz.z, uvwz.w);
 #ifdef COMBINED_SCATTERING_TEXTURES
-	float4 combined_scattering = lerp(scattering_texture.SampleLevel(g_LinearSampler, uvw0, 0.0), scattering_texture.SampleLevel(g_LinearSampler, uvw1, 0.0), lerpAlpha);
+	float4 combined_scattering = lerp(scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw0, 0.0), scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw1, 0.0), lerpAlpha);
 	float3 scattering = combined_scattering.xyz;
 	single_mie_scattering = GetExtrapolatedSingleMieScattering(atmosphere, combined_scattering);
 #else
-	float3 scattering = lerp(scattering_texture.SampleLevel(g_LinearSampler, uvw0, 0.0).xyz, scattering_texture.SampleLevel(g_LinearSampler, uvw1, 0.0).xyz, lerpAlpha);
-	single_mie_scattering = lerp(single_mie_scattering_texture.SampleLevel(g_LinearSampler, uvw0, 0.0).xyz, single_mie_scattering_texture.SampleLevel(g_LinearSampler, uvw1, 0.0).xyz, lerpAlpha);
+	float3 scattering = lerp(scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw0, 0.0).xyz, scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw1, 0.0).xyz, lerpAlpha);
+	single_mie_scattering = lerp(single_mie_scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw0, 0.0).xyz, single_mie_scattering_texture.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], uvw1, 0.0).xyz, lerpAlpha);
 #endif
 	return scattering;
 }

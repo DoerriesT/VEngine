@@ -142,7 +142,6 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
@@ -156,11 +155,17 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(std::size(updates), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 			}
 
-			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+			DescriptorSet *sets[]
+			{
+				descriptorSet,
+				data.m_passRecordContext->m_renderResources->m_textureDescriptorSet,
+				data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet,
+				data.m_passRecordContext->m_renderResources->m_shadowSamplerDescriptorSet
+			};
+			cmdList->bindDescriptorSets(pipeline, 0, 4, sets);
 
 			Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 			Rect scissor{ { 0, 0 }, { width, height } };

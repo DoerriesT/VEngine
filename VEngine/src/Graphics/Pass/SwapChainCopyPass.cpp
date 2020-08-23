@@ -41,7 +41,7 @@ void VEngine::SwapChainCopyPass::addToGraph(rg::RenderGraph &graph, const Data &
 					Initializers::texture(&inputImageView, 1),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

@@ -24,7 +24,9 @@ ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_M
 ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, 0);
 
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
+
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -122,7 +124,7 @@ float4 main(PSInput input) : SV_Target0
 					float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, dominantR);
 					lookupDir = lerp(lookupDir, dominantR, roughness);
 	
-					reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_LinearSampler, float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
+					reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
 					weightSum += 1.0;
 				}
 			}
@@ -133,7 +135,7 @@ float4 main(PSInput input) : SV_Target0
 
 	indirectSpecular.rgb = lerp(reflectionProbeSpecular, indirectSpecular.rgb, indirectSpecular.a);
 	
-	float2 brdfLut = g_BrdfLutImage.SampleLevel(g_LinearSampler, float2(saturate(dot(N, V)), roughness), 0.0).xy;
+	float2 brdfLut = g_BrdfLutImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(saturate(dot(N, V)), roughness), 0.0).xy;
 	indirectSpecular.rgb *= F0 * brdfLut.x + brdfLut.y;
 	
 	float3 result = indirectSpecular.rgb;

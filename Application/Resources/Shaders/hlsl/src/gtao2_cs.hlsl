@@ -7,13 +7,14 @@ RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 Texture2D<float4> g_NormalImage : REGISTER_SRV(NORMAL_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
 float3 getViewSpacePos(float2 uv)
 {
-	float depth = g_DepthImage.SampleLevel(g_PointSampler, uv, 0.0).x;
+	float depth = g_DepthImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], uv, 0.0).x;
 	float2 clipSpacePosition = float2(uv * float2(2.0, -2.0) - float2(1.0, -1.0));
 	float4 viewSpacePosition = float4(g_Constants.unprojectParams.xy * clipSpacePosition, -1.0, g_Constants.unprojectParams.z * depth + g_Constants.unprojectParams.w);
 	return viewSpacePosition.xyz / viewSpacePosition.w;

@@ -21,8 +21,7 @@ Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING,
 Texture2D<float4> g_RaymarchedVolumetricsImage : REGISTER_SRV(RAYMARCHED_VOLUMETRICS_IMAGE_BINDING, 0);
 Texture2D<float> g_RaymarchedVolumetricDepthImage : REGISTER_SRV(RAYMARCHED_VOLUMETRICS_DEPTH_IMAGE_BINDING, 0);
 
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -57,13 +56,13 @@ float4 main(PSInput input) : SV_Target0
 			float2 tc = raymarchedTexCoord + noise.xy * texelSize;
 			
 			// get linear depth of sample
-			float sampleDepth = g_RaymarchedVolumetricDepthImage.SampleLevel(g_PointSampler, tc, 0.0).x;
+			float sampleDepth = g_RaymarchedVolumetricDepthImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], tc, 0.0).x;
 			sampleDepth = 1.0 / (g_PushConsts.unprojectParams.z * sampleDepth + g_PushConsts.unprojectParams.w);
 			
 			// samples within 10% of the center depth are acceptable.
 			weight = max(1e-5, saturate(1.0 - abs(centerDepth - sampleDepth) / (centerDepth * 0.1)));
 			
-			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_LinearSampler, tc, 0.0) * weight;
+			raymarchedVolumetrics += g_RaymarchedVolumetricsImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) * weight;
 			totalWeight += weight;
 			
 			noise = noise.yzwx;
@@ -95,19 +94,19 @@ float4 main(PSInput input) : SV_Target0
 	float3 tc;
 	
 	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 	noise = noise.yzwx;
 	
 	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 	noise = noise.yzwx;
 	
 	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 	noise = noise.yzwx;
 	
 	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_LinearSampler, tc, 0.0) / 4.0;
+	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 	noise = noise.yzwx;
 	
 	fog.rgb = inverseSimpleTonemap(fog.rgb);

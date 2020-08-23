@@ -124,10 +124,9 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 						{
 							Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
 							Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
-							Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 						};
 
-						fomGlobalDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+						fomGlobalDescriptorSet->update((uint32_t)std::size(updates), updates);
 					}
 				}
 
@@ -158,10 +157,9 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 							Initializers::structuredBuffer(&lightBufferInfo, LIGHT_INFO_BINDING),
 							Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
 							Initializers::structuredBuffer(&volumeTransformBufferInfo, VOLUME_TRANSFORMS_BINDING),
-							Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], LINEAR_SAMPLER_BINDING),
 						};
 
-						fomVolumeDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+						fomVolumeDescriptorSet->update((uint32_t)std::size(updates), updates);
 					}
 				}
 			}
@@ -200,8 +198,8 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 						cmdList->setViewport(0, 1, &viewport);
 						cmdList->setScissor(0, 1, &renderArea);
 
-						DescriptorSet *sets[]{ fomGlobalDescriptorSet, renderResources.m_texture3DDescriptorSet };
-						cmdList->bindDescriptorSets(fomGlobalPipeline, 0, 2, sets);
+						DescriptorSet *sets[]{ fomGlobalDescriptorSet, renderResources.m_texture3DDescriptorSet, renderResources.m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(fomGlobalPipeline, 0, 3, sets);
 
 						PushConsts pushConsts;
 						pushConsts.lightIndex = (uint32_t)i;
@@ -224,8 +222,8 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 						uint64_t vertexOffset = 0;
 						cmdList->bindVertexBuffers(0, 1, &renderResources.m_lightProxyVertexBuffer, &vertexOffset);
 
-						DescriptorSet *sets[]{ fomVolumeDescriptorSet, renderResources.m_texture3DDescriptorSet };
-						cmdList->bindDescriptorSets(fomVolumePipeline, 0, 2, sets);
+						DescriptorSet *sets[]{ fomVolumeDescriptorSet, renderResources.m_texture3DDescriptorSet, renderResources.m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(fomVolumePipeline, 0, 3, sets);
 
 						// iterate over all volumes
 						for (uint32_t j = 0; j < commonData->m_localParticipatingMediaCount; ++j)

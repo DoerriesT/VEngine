@@ -5,14 +5,14 @@
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
 
-RWTexture2D<float4> g_RayHitPdfImage : REGISTER_UAV(RAY_HIT_PDF_IMAGE_BINDING, RAY_HIT_PDF_IMAGE_SET);
-RWTexture2D<float> g_MaskImage : REGISTER_UAV(MASK_IMAGE_BINDING, MASK_IMAGE_SET);
-Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, NORMAL_ROUGHNESS_IMAGE_SET);
-Texture2D<float> g_HiZPyramidImage : REGISTER_SRV(HIZ_PYRAMID_IMAGE_BINDING, HIZ_PYRAMID_IMAGE_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
+RWTexture2D<float4> g_RayHitPdfImage : REGISTER_UAV(RAY_HIT_PDF_IMAGE_BINDING, 0);
+RWTexture2D<float> g_MaskImage : REGISTER_UAV(MASK_IMAGE_BINDING, 0);
+Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, 0);
+Texture2D<float> g_HiZPyramidImage : REGISTER_SRV(HIZ_PYRAMID_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 
-Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(TEXTURES_BINDING, TEXTURES_SET);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(SAMPLERS_BINDING, SAMPLERS_SET);
+Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 float2 getCell(float2 ray, float2 cellCount)
 {

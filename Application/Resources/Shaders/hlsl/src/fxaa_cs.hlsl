@@ -1,13 +1,15 @@
 #include "bindingHelper.hlsli"
 #include "fxaa.hlsli"
+#include "common.hlsli"
 
 #define FXAA_PC 1
 #define FXAA_HLSL_5 1
 #include "FXAA3_11.h"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -15,7 +17,7 @@ PUSH_CONSTS(PushConsts, g_PushConsts);
 void main(uint3 threadID : SV_DispatchThreadID)
 {
 	FxaaTex inputTex;
-	inputTex.smpl = g_LinearSampler;
+	inputTex.smpl = g_Samplers[SAMPLER_LINEAR_CLAMP];
 	inputTex.tex = g_InputImage;
 	
 	float4 result = FxaaPixelShader(

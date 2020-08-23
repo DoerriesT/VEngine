@@ -9,20 +9,20 @@
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
 
-RWTexture3D<float4> g_ScatteringExtinctionImage : REGISTER_UAV(SCATTERING_EXTINCTION_IMAGE_BINDING, SCATTERING_EXTINCTION_IMAGE_SET);
-RWTexture3D<float4> g_EmissivePhaseImage : REGISTER_UAV(EMISSIVE_PHASE_IMAGE_BINDING, EMISSIVE_PHASE_IMAGE_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
-StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, GLOBAL_MEDIA_SET);
+RWTexture3D<float4> g_ScatteringExtinctionImage : REGISTER_UAV(SCATTERING_EXTINCTION_IMAGE_BINDING, 0);
+RWTexture3D<float4> g_EmissivePhaseImage : REGISTER_UAV(EMISSIVE_PHASE_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 
 // local media
-StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, LOCAL_MEDIA_SET);
-ByteAddressBuffer g_LocalMediaBitMask : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, LOCAL_MEDIA_BIT_MASK_SET);
-ByteAddressBuffer g_LocalMediaDepthBins : REGISTER_SRV(LOCAL_MEDIA_Z_BINS_BINDING, LOCAL_MEDIA_Z_BINS_SET);
+StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
+ByteAddressBuffer g_LocalMediaBitMask : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
+ByteAddressBuffer g_LocalMediaDepthBins : REGISTER_SRV(LOCAL_MEDIA_Z_BINS_BINDING, 0);
 
 
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -82,7 +82,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		for (int i = 0; i < g_Constants.globalMediaCount; ++i)
 		{
 			GlobalParticipatingMedium medium = g_GlobalMedia[i];
-			const float density = volumetricFogGetDensity(medium, worldSpacePos[0], g_Textures3D, g_LinearSampler);
+			const float density = volumetricFogGetDensity(medium, worldSpacePos[0], g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 			scattering += medium.scattering * density;
 			extinction += medium.extinction * density;
 			emissive += medium.emissive * density;
@@ -121,7 +121,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					if (all(abs(localPos) <= 1.0))
 					{
 						float multiplier = (count == 2) ? 0.5 : 1.0;
-						float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
+						float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 						scattering += medium.scattering * multiplier * density;
 						extinction += medium.extinction * multiplier * density;
 						emissive += medium.emissive * multiplier * density;

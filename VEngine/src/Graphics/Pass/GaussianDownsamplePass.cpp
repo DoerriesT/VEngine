@@ -92,7 +92,6 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 			uint32_t mipWidth = data.m_passRecordContext->m_commonRenderData->m_width;
 			uint32_t mipHeight = data.m_passRecordContext->m_commonRenderData->m_height;
 
@@ -111,12 +110,12 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 						{
 							Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
 							Initializers::rwTexture(&tempImageView, RESULT_IMAGE_BINDING),
-							Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 						};
 
-						descriptorSet->update(3, updates);
+						descriptorSet->update((uint32_t)std::size(updates), updates);
 
-						cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+						DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 					}
 
 					PushConsts pushConsts;
@@ -158,12 +157,12 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 						{
 							Initializers::texture(&tempImageView, INPUT_IMAGE_BINDING),
 							Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-							Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 						};
 
-						descriptorSet->update(3, updates);
+						descriptorSet->update((uint32_t)std::size(updates), updates);
 
-						cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+						DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 					}
 
 					PushConsts pushConsts;

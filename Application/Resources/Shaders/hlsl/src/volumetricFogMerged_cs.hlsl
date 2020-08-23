@@ -14,10 +14,8 @@
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, 0);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, 0);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
 Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
@@ -47,6 +45,9 @@ ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGH
 
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 3);
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -85,11 +86,11 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 	
 	if (shadow > 0.0 && g_Constants.volumetricShadow )
 	{
-		float4 fom0 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
-		float4 fom1 = g_FomDirectionalImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+		float4 fom0 = g_FomDirectionalImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+		float4 fom1 = g_FomDirectionalImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
 		
-		float rangeBegin = g_FomDirectionalDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2), 0.0).x;
-		float rangeEnd = g_FomDirectionalDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+		float rangeBegin = g_FomDirectionalDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2), 0.0).x;
+		float rangeEnd = g_FomDirectionalDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2 + 1), 0.0).x;
 		float depth = clamp(tc.z, rangeBegin, rangeEnd);
 		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
 		
@@ -141,7 +142,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		for (int i = 0; i < g_Constants.globalMediaCount; ++i)
 		{
 			GlobalParticipatingMedium medium = g_GlobalMedia[i];
-			const float density = volumetricFogGetDensity(medium, worldSpacePos, g_Textures3D, g_LinearSampler);
+			const float density = volumetricFogGetDensity(medium, worldSpacePos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 			scattering += medium.scattering * density;
 			extinction += medium.extinction * density;
 			emissive += medium.emissive * density;
@@ -176,7 +177,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 								
 				if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
 				{
-					float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
+					float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 					scattering += medium.scattering * density;
 					extinction += medium.extinction * density;
 					emissive += medium.emissive * density;
@@ -341,8 +342,8 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						uv = uv * 0.5 + 0.5;
 						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 						
-						float4 fom0 = g_fomImage.SampleLevel(g_LinearSampler, float3(uv, 0.0), 0.0);
-						float4 fom1 = g_fomImage.SampleLevel(g_LinearSampler, float3(uv, 1.0), 0.0);
+						float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
+						float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
 						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
@@ -379,7 +380,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	//	float4 prevResult = 0.0;
 	//	if (validCoord)
 	//	{
-	//		prevResult = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+	//		prevResult = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], prevTexCoord, 0.0);
 	//		
 	//		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 	//		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure

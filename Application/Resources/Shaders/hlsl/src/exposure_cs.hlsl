@@ -4,9 +4,9 @@
 
 #define LOCAL_SIZE_X 64
 
-ByteAddressBuffer g_LuminanceHistogram : REGISTER_SRV(LUMINANCE_HISTOGRAM_BINDING, LUMINANCE_HISTOGRAM_SET);
-RWByteAddressBuffer g_LuminanceValues : REGISTER_UAV(LUMINANCE_VALUES_BINDING, LUMINANCE_VALUES_SET);
-RWByteAddressBuffer g_ExposureData : REGISTER_UAV(EXPOSURE_DATA_BINDING, EXPOSURE_DATA_SET);
+ByteAddressBuffer g_LuminanceHistogram : REGISTER_SRV(LUMINANCE_HISTOGRAM_BINDING, 0);
+RWByteAddressBuffer g_LuminanceValues : REGISTER_UAV(LUMINANCE_VALUES_BINDING, 0);
+RWByteAddressBuffer g_ExposureData : REGISTER_UAV(EXPOSURE_DATA_BINDING, 0);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 

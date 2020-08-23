@@ -2,7 +2,6 @@
 #define RESULT_IMAGE_BINDING 1
 #define NORMAL_IMAGE_BINDING 2
 #define CONSTANT_BUFFER_BINDING 3
-#define POINT_SAMPLER_BINDING 4
 
 struct Constants
 {

@@ -43,7 +43,6 @@ void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 			uint32_t mipWidth = glm::max(data.m_passRecordContext->m_commonRenderData->m_width / 2u, 1u);
 			uint32_t mipHeight = glm::max(data.m_passRecordContext->m_commonRenderData->m_height / 2u, 1u);
 
@@ -60,12 +59,12 @@ void VEngine::BloomDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 					{
 						Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
 						Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
-						Initializers::sampler(&linearSampler, SAMPLER_BINDING),
 					};
 
-					descriptorSet->update(3, updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 					
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				PushConsts pushConsts;

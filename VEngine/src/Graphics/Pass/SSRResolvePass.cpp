@@ -95,16 +95,15 @@ void VEngine::SSRResolvePass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					//Initializers::texture(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
 					Initializers::texture(&prevColorImageView, PREV_COLOR_IMAGE_BINDING),
 					Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 			}
 
-			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-			cmdList->bindDescriptorSets(pipeline, 0, 1, descriptorSets);
+			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
 
 			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);
 		});

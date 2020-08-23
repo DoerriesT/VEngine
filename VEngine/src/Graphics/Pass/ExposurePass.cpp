@@ -54,7 +54,7 @@ void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				Initializers::rwByteBuffer(&exposureBufferInfo, EXPOSURE_DATA_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

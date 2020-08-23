@@ -78,17 +78,17 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 					Initializers::texture(&data.m_albedoRoughnessImageView, ALBEDO_ROUGHNESS_IMAGE_BINDING),
 					Initializers::texture(&data.m_normalImageView, NORMAL_IMAGE_BINDING),
 					Initializers::texture(&shadowImageView, DIRECTIONAL_LIGHTS_SHADOW_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsShadowedProbeBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
 					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
-			}
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
+			}
 
 			cmdList->dispatch((RendererConsts::REFLECTION_PROBE_RES + 7) / 8, (RendererConsts::REFLECTION_PROBE_RES + 7) / 8, 6);
 		}, true);

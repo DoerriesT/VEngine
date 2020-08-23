@@ -6,14 +6,15 @@ ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0)
 RWTexture2D<float> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 Texture2DArray<float> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, 0);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 StructuredBuffer<float4> g_CascadeParams : REGISTER_SRV(CASCADE_PARAMS_BUFFER_BINDING, 0);  // X: depth bias Y: normal bias Z: texelsPerMeter
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 Texture2DArray<float> g_FomDepthRangeImage : REGISTER_SRV(FOM_DEPTH_RANGE_IMAGE_BINDING, 0);
+
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 2);
 
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -53,7 +54,7 @@ float penumbra(float noise, float3 shadowCoord, int samplesCount, float layer)
 		float2 sampleCoord = vogelDiskSample(i, samplesCount, noise);
 		sampleCoord = shadowCoord.xy + penumbraFilterMaxSize * sampleCoord;
 		
-		float sampleDepth = g_ShadowImage.SampleLevel(g_PointSampler, float3(sampleCoord, layer), 0.0).x;
+		float sampleDepth = g_ShadowImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], float3(sampleCoord, layer), 0.0).x;
 	
 		if (sampleDepth < shadowCoord.z)
 		{
@@ -167,11 +168,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	if (shadow > 0.0 && g_Constants.volumetricShadow)
 	{
-		float4 fom0 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
-		float4 fom1 = g_FomImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+		float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+		float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
 		
-		float rangeBegin = g_FomDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2), 0.0).x;
-		float rangeEnd = g_FomDepthRangeImage.SampleLevel(g_LinearSampler, float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+		float rangeBegin = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2), 0.0).x;
+		float rangeEnd = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2 + 1), 0.0).x;
 		float depth = clamp(tc.z, rangeBegin, rangeEnd);
 		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
 		

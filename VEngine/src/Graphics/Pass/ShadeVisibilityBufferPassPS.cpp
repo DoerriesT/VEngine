@@ -163,18 +163,23 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 					Initializers::byteBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
 					Initializers::byteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
 					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					Initializers::texture(&triangleImageViewHandle, TRIANGLE_IMAGE_BINDING),
 					Initializers::structuredBuffer(&data.m_indexBufferInfo, INDEX_BUFFER_BINDING),
 					Initializers::structuredBuffer(&texCoordScaleBiasBufferInfo, TEXCOORD_SCALE_BIAS_BINDING),
 				};
 
-				descriptorSet->update(static_cast<uint32_t>(sizeof(updates) / sizeof(updates[0])), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 			}
 
-			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+			DescriptorSet *sets[]
+			{
+				descriptorSet,
+				data.m_passRecordContext->m_renderResources->m_textureDescriptorSet,
+				data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet,
+				data.m_passRecordContext->m_renderResources->m_shadowSamplerDescriptorSet
+			};
+			cmdList->bindDescriptorSets(pipeline, 0, 4, sets);
 
 			Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 			Rect scissor{ { 0, 0 }, { width, height } };

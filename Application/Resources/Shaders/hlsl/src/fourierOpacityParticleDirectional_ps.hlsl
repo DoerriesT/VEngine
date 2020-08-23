@@ -7,7 +7,8 @@
 Texture2DArray<float> g_DepthRangeImage : REGISTER_SRV(DEPTH_RANGE_IMAGE_BINDING, 0);
 
 Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(1, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 struct PSInput
 {

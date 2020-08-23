@@ -19,10 +19,11 @@ StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
 StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DIRECTIONAL_LIGHTS_SHADOWED_BINDING, 0);
 
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
-SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(SHADOW_SAMPLER_BINDING, 0);
-
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
+
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 3);
 
 float4 scatterStep(float3 accumulatedLight, float accumulatedTransmittance, float3 sliceLight, float sliceExtinction, float stepLength)
 {
@@ -114,7 +115,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (int i = 0; i < g_Constants.globalMediaCount; ++i)
 			{
 				GlobalParticipatingMedium medium = g_GlobalMedia[i];
-				const float density = volumetricFogGetDensity(medium, worldSpacePos, g_Textures3D, g_LinearSampler);
+				const float density = volumetricFogGetDensity(medium, worldSpacePos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 				scattering += medium.scattering * density;
 				extinction += medium.extinction * density;
 				emissive += medium.emissive * density;

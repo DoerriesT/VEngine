@@ -120,11 +120,11 @@ void VEngine::SSRPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 			}
 
-			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-			cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+			DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 3, descriptorSets);
 
 			cmdList->dispatch((width / 2 + 7) / 8, (height / 2 + 7) / 8, 1);
 		});

@@ -19,6 +19,8 @@
 // SOFTWARE.
 
 //#include "probeFilterCoeffsQuad32.hlsli"
+#include "bindingHelper.hlsli"
+#include "common.hlsli"
 
 TextureCube tex_in : register( t7 );
 RWTexture2DArray<float4> tex_out0 : register( u0 );
@@ -28,8 +30,9 @@ RWTexture2DArray<float4> tex_out3 : register( u3 );
 RWTexture2DArray<float4> tex_out4 : register( u4 );
 RWTexture2DArray<float4> tex_out5 : register( u5 );
 RWTexture2DArray<float4> tex_out6 : register( u6 );
-SamplerState trilinear : register( s8 );
-Texture1D<float4> tex_coeffs : register(t9);
+Texture1D<float4> tex_coeffs : register(t8);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 #define NUM_TAPS 32
 #define BASE_RESOLUTION 128
@@ -257,7 +260,7 @@ void main( uint3 id : SV_DispatchThreadID )
 					sample_level += 0.75f * log2( dot( sample_dir, sample_dir ) );
 
 					// sample cubemap
-					color.xyz += tex_in.SampleLevel( trilinear, sample_dir, sample_level ).xyz * sample_weight;
+					color.xyz += tex_in.SampleLevel( g_Samplers[SAMPLER_LINEAR_CLAMP], sample_dir, sample_level ).xyz * sample_weight;
 					color.w += sample_weight;
 				}
 			}

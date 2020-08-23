@@ -1,9 +1,11 @@
 #include "bindingHelper.hlsli"
 #include "bloomDownsample.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(SAMPLER_BINDING, SAMPLER_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -28,23 +30,23 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	const bool doWeightedAverage = (g_PushConsts.doWeightedAverage != 0);
 	
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(-texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( 0.0,         -texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(-texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( 0.0,         -texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( texelSize.x, -texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
 	
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(-texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(-texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( texelSize.x, -texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
 	
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(-texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord,                                            0.0).rgb, 0.5,   doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(-texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord,                                            0.0).rgb, 0.5,   doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( texelSize.x,          0.0),       0.0).rgb, 0.25,  doWeightedAverage);
 	
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(-texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(-texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( texelSize.x,  texelSize.y) * 0.5, 0.0).rgb, 0.5,   doWeightedAverage);
 	
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2(-texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( 0.0,          texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
-	sum += addTap(g_InputImage.SampleLevel(g_LinearSampler, texCoord + float2( texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2(-texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( 0.0,          texelSize.y),       0.0).rgb, 0.25,  doWeightedAverage);
+	sum += addTap(g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texCoord + float2( texelSize.x,  texelSize.y),       0.0).rgb, 0.125, doWeightedAverage);
 	
 	sum.rgb /= sum.a;
 	

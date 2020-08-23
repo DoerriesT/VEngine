@@ -81,8 +81,8 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 					descriptorSet->update(alphaMasked ? 4 : 2, updates);
 				}
 
-				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, alphaMasked ? 2 : 1, descriptorSets);
+				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet, data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, alphaMasked ? 3 : 1, descriptorSets);
 
 				Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 				Rect scissor{ { 0, 0 }, { width, height } };

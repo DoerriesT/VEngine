@@ -409,7 +409,6 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 		}
 	}
 
-	Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
 	DescriptorBufferInfo constantBufferInfo = { m_constantBuffer, 0, sizeof(AtmosphereParameters) };
 
 	// compute transmittance
@@ -442,7 +441,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						Initializers::constantBuffer(&constantBufferInfo, 1),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
 					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 				}
@@ -484,13 +483,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						Initializers::rwTexture(&deltaIrrImageView, 0),
 						Initializers::rwTexture(&irrImageView, 1),
 						Initializers::texture(&transmittanceImageView, 2),
-						Initializers::sampler(&linearSampler, 3),
 						Initializers::constantBuffer(&constantBufferInfo, 4),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				cmdList->dispatch((IRRADIANCE_TEXTURE_WIDTH + 7) / 8, (IRRADIANCE_TEXTURE_HEIGHT + 7) / 8, 1);
@@ -533,13 +532,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 						Initializers::rwTexture(&deltaMieImageView, 1),
 						Initializers::rwTexture(&scatteringImageView, 2),
 						Initializers::texture(&transmittanceImageView, 4),
-						Initializers::sampler(&linearSampler, 5),
 						Initializers::constantBuffer(&constantBufferInfo, 6),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				cmdList->dispatch((SCATTERING_TEXTURE_WIDTH + 7) / 8, (SCATTERING_TEXTURE_HEIGHT + 7) / 8, SCATTERING_TEXTURE_DEPTH);
@@ -592,13 +591,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 							Initializers::texture(&deltaMieImageView, 3),
 							Initializers::texture(&deltaMultipleImageView, 4),
 							Initializers::texture(&deltaIrradianceImageView, 5),
-							Initializers::sampler(&linearSampler, 6),
 							Initializers::constantBuffer(&constantBufferInfo, 7),
 						};
 
-						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+						descriptorSet->update((uint32_t)std::size(updates), updates);
 
-						cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+						DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 					}
 
 					cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, 4, &scatteringOrder);
@@ -645,13 +644,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 							Initializers::texture(&deltaRayleighImageView, 2),
 							Initializers::texture(&deltaMieImageView, 3),
 							Initializers::texture(&deltaMultipleImageView, 4),
-							Initializers::sampler(&linearSampler, 5),
 							Initializers::constantBuffer(&constantBufferInfo, 6),
 						};
 
-						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+						descriptorSet->update((uint32_t)std::size(updates), updates);
 
-						cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+						DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 					}
 
 					const uint32_t pushConstScattOrder = scatteringOrder - 1;
@@ -696,13 +695,13 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 							Initializers::rwTexture(&scatteringImageView, 1),
 							Initializers::texture(&transmittanceImageView, 2),
 							Initializers::texture(&deltaScattDensityImageView, 3),
-							Initializers::sampler(&linearSampler, 4),
 							Initializers::constantBuffer(&constantBufferInfo, 5),
 						};
 
-						descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+						descriptorSet->update((uint32_t)std::size(updates), updates);
 
-						cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+						DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+						cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 					}
 
 					cmdList->dispatch((SCATTERING_TEXTURE_WIDTH + 7) / 8, (SCATTERING_TEXTURE_HEIGHT + 7) / 8, SCATTERING_TEXTURE_DEPTH);

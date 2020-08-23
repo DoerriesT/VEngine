@@ -139,7 +139,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 						Initializers::texture(&fomDepthRangeImageView, DEPTH_RANGE_IMAGE_BINDING),
 					};
 
-					particleDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					particleDescriptorSet->update((uint32_t)std::size(updates), updates);
 				}
 			}
 
@@ -171,10 +171,9 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 						Initializers::structuredBuffer(&data.m_shadowMatrixBufferInfo, 1),
 						Initializers::structuredBuffer(&data.m_localMediaBufferInfo, 2),
 						Initializers::texture(&fomDepthRangeImageView, 3),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], 4),
 					};
 
-					volumeDescriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					volumeDescriptorSet->update((uint32_t)std::size(updates), updates);
 				}
 			}
 
@@ -215,8 +214,13 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 						{
 							cmdList->bindPipeline(particlePipeline);
 
-							DescriptorSet *descriptorSets[] = { particleDescriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-							cmdList->bindDescriptorSets(particlePipeline, 0, 2, descriptorSets);
+							DescriptorSet *descriptorSets[] = 
+							{ 
+								particleDescriptorSet, 
+								data.m_passRecordContext->m_renderResources->m_textureDescriptorSet, 
+								data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet 
+							};
+							cmdList->bindDescriptorSets(particlePipeline, 0, 3, descriptorSets);
 
 							uint32_t particleOffset = 0;
 							for (size_t particleListIdx = 0; particleListIdx < data.m_listCount; ++particleListIdx)
@@ -239,8 +243,13 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 						{
 							cmdList->bindPipeline(volumePipeline);
 
-							DescriptorSet *descriptorSets[] = { volumeDescriptorSet, data.m_passRecordContext->m_renderResources->m_texture3DDescriptorSet };
-							cmdList->bindDescriptorSets(volumePipeline, 0, 2, descriptorSets);
+							DescriptorSet *descriptorSets[] = 
+							{ 
+								volumeDescriptorSet, 
+								data.m_passRecordContext->m_renderResources->m_texture3DDescriptorSet,
+								data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet
+							};
+							cmdList->bindDescriptorSets(volumePipeline, 0, 3, descriptorSets);
 
 							cmdList->bindIndexBuffer(data.m_passRecordContext->m_renderResources->m_lightProxyIndexBuffer, 0, IndexType::UINT16);
 

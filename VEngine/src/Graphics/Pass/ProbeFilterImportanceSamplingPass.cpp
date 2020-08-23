@@ -43,8 +43,6 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 
 			cmdList->bindPipeline(pipeline);
 
-			Sampler *linearSampler = data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX];
-
 			// update descriptor set
 			{
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
@@ -55,12 +53,12 @@ void VEngine::ProbeFilterImportanceSamplingPass::addToGraph(rg::RenderGraph &gra
 				{
 					Initializers::rwTexture(data.m_resultImageViews, RESULT_IMAGE_BINDING, 0, RendererConsts::REFLECTION_PROBE_MIPS),
 					Initializers::texture(&inputImageView, INPUT_IMAGE_BINDING),
-					Initializers::sampler(&linearSampler, LINEAR_SAMPLER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 			}
 
 			uint32_t mipSize = RendererConsts::REFLECTION_PROBE_RES;

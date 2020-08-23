@@ -99,8 +99,6 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 					Initializers::texture(&shadowImageView, SHADOW_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
@@ -110,10 +108,16 @@ void VEngine::VolumetricRaymarchPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
+				DescriptorSet *sets[]
+				{
+					descriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet
+				};
+				cmdList->bindDescriptorSets(pipeline, 0, 4, sets);
 			}
 
 			cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);;

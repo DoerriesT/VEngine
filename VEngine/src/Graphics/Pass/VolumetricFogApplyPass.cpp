@@ -73,7 +73,6 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::texture(&raymarchedVolumetricsImageView, RAYMARCHED_VOLUMETRICS_IMAGE_BINDING),
 					Initializers::texture(&ssaoImageView, SSAO_IMAGE_BINDING),
 					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					//Initializers::sampledImage(&indirectSpecularImageView, INDIRECT_SPECULAR_LIGHT_IMAGE_BINDING),
 					Initializers::texture(&brdfLutImageView, BRDF_LUT_IMAGE_BINDING),
 					Initializers::texture(&albedoMetalnessImageView, ALBEDO_METALNESS_IMAGE_BINDING),
@@ -86,10 +85,10 @@ void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const D
 					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeTextureDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 			}
 
 			const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;

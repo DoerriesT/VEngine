@@ -57,7 +57,7 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 				Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 			};
 
-			descriptorSet->update(1, updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
 			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 		}

@@ -79,13 +79,21 @@ VEngine::RenderResources::~RenderResources()
 
 	m_graphicsDevice->destroyDescriptorSetPool(m_textureDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_texture3DDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_samplerDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_shadowSamplerDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTextureDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTexture3DDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_computeSamplerDescriptorSetPool);
+	m_graphicsDevice->destroyDescriptorSetPool(m_computeShadowSamplerDescriptorSetPool);
 	
 	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_texture3DDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_samplerDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_shadowSamplerDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTextureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_computeTexture3DDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_computeSamplerDescriptorSetLayout);
+	m_graphicsDevice->destroyDescriptorSetLayout(m_computeShadowSamplerDescriptorSetLayout);
 }
 
 void VEngine::RenderResources::init(uint32_t width, uint32_t height)
@@ -374,10 +382,9 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		DescriptorSetLayoutBinding bindings[]
 		{
 			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
-			{1, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::FRAGMENT_BIT},
 		};
 		
-		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_textureDescriptorSetLayout);
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_textureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout");
 		m_graphicsDevice->createDescriptorSetPool(1, m_textureDescriptorSetLayout, &m_textureDescriptorSetPool);
 		m_textureDescriptorSetPool->allocateDescriptorSets(1, &m_textureDescriptorSet);
@@ -396,15 +403,58 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_texture3DDescriptorSetPool->allocateDescriptorSets(1, &m_texture3DDescriptorSet);
 	}
 
+	// create sampler descriptor set
+	{
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::FRAGMENT_BIT},
+		};
+
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_samplerDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_samplerDescriptorSetLayout, "Sampler DSet Layout");
+		m_graphicsDevice->createDescriptorSetPool(1, m_samplerDescriptorSetLayout, &m_samplerDescriptorSetPool);
+		m_samplerDescriptorSetPool->allocateDescriptorSets(1, &m_samplerDescriptorSet);
+
+		DescriptorSetUpdate2 samplerUpdate{};
+		samplerUpdate.m_dstBinding = 0;
+		samplerUpdate.m_dstArrayElement = 0;
+		samplerUpdate.m_descriptorCount = 4;
+		samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
+		samplerUpdate.m_samplers = m_samplers;
+
+		m_samplerDescriptorSet->update(1, &samplerUpdate);
+	}
+
+	// create shadow sampler descriptor set
+	{
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType2::SAMPLER, 1, ShaderStageFlagBits::FRAGMENT_BIT},
+		};
+
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_shadowSamplerDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_shadowSamplerDescriptorSetLayout, "Shadow Sampler DSet Layout");
+		m_graphicsDevice->createDescriptorSetPool(1, m_shadowSamplerDescriptorSetLayout, &m_shadowSamplerDescriptorSetPool);
+		m_shadowSamplerDescriptorSetPool->allocateDescriptorSets(1, &m_shadowSamplerDescriptorSet);
+
+		DescriptorSetUpdate2 samplerUpdate{};
+		samplerUpdate.m_dstBinding = 0;
+		samplerUpdate.m_dstArrayElement = 0;
+		samplerUpdate.m_descriptorCount = 1;
+		samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
+		samplerUpdate.m_samplers = &m_shadowSampler;
+
+		m_shadowSamplerDescriptorSet->update(1, &samplerUpdate);
+	}
+
 	// create compute texture descriptor set
 	{
 		DescriptorSetLayoutBinding bindings[]
 		{
 			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
-			{1, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::COMPUTE_BIT},
 		};
 		
-		m_graphicsDevice->createDescriptorSetLayout(2, bindings, &m_computeTextureDescriptorSetLayout);
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_computeTextureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_computeTextureDescriptorSetLayout, "Texture DSet Layout (Compute)");
 		m_graphicsDevice->createDescriptorSetPool(1, m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSetPool);
 		m_computeTextureDescriptorSetPool->allocateDescriptorSets(1, &m_computeTextureDescriptorSet);
@@ -421,6 +471,50 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_computeTexture3DDescriptorSetLayout, "Texture DSet Layout (Compute)");
 		m_graphicsDevice->createDescriptorSetPool(1, m_computeTexture3DDescriptorSetLayout, &m_computeTexture3DDescriptorSetPool);
 		m_computeTexture3DDescriptorSetPool->allocateDescriptorSets(1, &m_computeTexture3DDescriptorSet);
+	}
+
+	// create compute sampler descriptor set
+	{
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType2::SAMPLER, 4, ShaderStageFlagBits::COMPUTE_BIT},
+		};
+
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_computeSamplerDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_computeSamplerDescriptorSetLayout, "Sampler DSet Layout (Compute)");
+		m_graphicsDevice->createDescriptorSetPool(1, m_computeSamplerDescriptorSetLayout, &m_computeSamplerDescriptorSetPool);
+		m_computeSamplerDescriptorSetPool->allocateDescriptorSets(1, &m_computeSamplerDescriptorSet);
+
+		DescriptorSetUpdate2 samplerUpdate{};
+		samplerUpdate.m_dstBinding = 0;
+		samplerUpdate.m_dstArrayElement = 0;
+		samplerUpdate.m_descriptorCount = 4;
+		samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
+		samplerUpdate.m_samplers = m_samplers;
+
+		m_computeSamplerDescriptorSet->update(1, &samplerUpdate);
+	}
+
+	// create compute shadow sampler descriptor set
+	{
+		DescriptorSetLayoutBinding bindings[]
+		{
+			{0, DescriptorType2::SAMPLER, 1, ShaderStageFlagBits::COMPUTE_BIT},
+		};
+
+		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_computeShadowSamplerDescriptorSetLayout);
+		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_computeShadowSamplerDescriptorSetLayout, "Shadow Sampler DSet Layout (Compute)");
+		m_graphicsDevice->createDescriptorSetPool(1, m_computeShadowSamplerDescriptorSetLayout, &m_computeShadowSamplerDescriptorSetPool);
+		m_computeShadowSamplerDescriptorSetPool->allocateDescriptorSets(1, &m_computeShadowSamplerDescriptorSet);
+
+		DescriptorSetUpdate2 samplerUpdate{};
+		samplerUpdate.m_dstBinding = 0;
+		samplerUpdate.m_dstArrayElement = 0;
+		samplerUpdate.m_descriptorCount = 1;
+		samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
+		samplerUpdate.m_samplers = &m_shadowSampler;
+
+		m_computeShadowSamplerDescriptorSet->update(1, &samplerUpdate);
 	}
 
 	createImGuiFontsTexture();
@@ -636,17 +730,8 @@ void VEngine::RenderResources::updateTextureArray(uint32_t count, gal::ImageView
 	imageUpdate.m_descriptorType = DescriptorType2::TEXTURE;
 	imageUpdate.m_imageViews = data;
 
-	DescriptorSetUpdate2 samplerUpdate{};
-	samplerUpdate.m_dstBinding = 1;
-	samplerUpdate.m_dstArrayElement = 0;
-	samplerUpdate.m_descriptorCount = 4;
-	samplerUpdate.m_descriptorType = DescriptorType2::SAMPLER;
-	samplerUpdate.m_samplers = m_samplers;
-
-	DescriptorSetUpdate2 updates[] = { imageUpdate , samplerUpdate };
-
-	m_textureDescriptorSet->update(2, updates);
-	m_computeTextureDescriptorSet->update(2, updates);
+	m_textureDescriptorSet->update(1, &imageUpdate);
+	m_computeTextureDescriptorSet->update(1, &imageUpdate);
 }
 
 void VEngine::RenderResources::updateTexture3DArray(uint32_t count, gal::ImageView **data)

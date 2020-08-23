@@ -49,7 +49,7 @@ void VEngine::VolumetricFogExtinctionVolumeDebugPass::addToGraph(rg::RenderGraph
 					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}

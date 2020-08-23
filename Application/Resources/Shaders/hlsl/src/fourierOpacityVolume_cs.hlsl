@@ -9,9 +9,10 @@ RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(LIGHT_INFO_BINDING, 0);
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -131,7 +132,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 			for (int j = 0; j < g_PushConsts.globalMediaCount; ++j)
 			{
 				GlobalParticipatingMedium medium = g_GlobalMedia[j];
-				const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_LinearSampler);
+				const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 				extinction += medium.extinction * density;
 			}
 		}
@@ -147,7 +148,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 									
 			if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
 			{
-				float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
+				float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 				extinction += medium.extinction * density;
 			}
 		}

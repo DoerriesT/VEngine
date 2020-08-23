@@ -1,9 +1,11 @@
 #include "bindingHelper.hlsli"
 #include "probeCompressBCH6.hlsli"
+#include "common.hlsli"
 
 RWTexture2DArray<uint4> g_ResultImages[5] : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_InputImages[5] : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -195,21 +197,21 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float2 block2TexCoord = texCoord + float2(0.0, 2.0 * g_PushConsts.texelSize);
 	float2 block3TexCoord = texCoord + 2.0 * g_PushConsts.texelSize;
 	
-	float4 block0Red = g_InputImages[g_PushConsts.mip].GatherRed(g_PointSampler, float3(block0TexCoord, threadID.z));
-	float4 block0Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_PointSampler, float3(block0TexCoord, threadID.z));
-	float4 block0Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_PointSampler, float3(block0TexCoord, threadID.z));
+	float4 block0Red = g_InputImages[g_PushConsts.mip].GatherRed(g_Samplers[SAMPLER_POINT_CLAMP], float3(block0TexCoord, threadID.z));
+	float4 block0Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_Samplers[SAMPLER_POINT_CLAMP], float3(block0TexCoord, threadID.z));
+	float4 block0Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_Samplers[SAMPLER_POINT_CLAMP], float3(block0TexCoord, threadID.z));
 
-	float4 block1Red = g_InputImages[g_PushConsts.mip].GatherRed(g_PointSampler, float3(block1TexCoord, threadID.z));
-	float4 block1Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_PointSampler, float3(block1TexCoord, threadID.z));
-	float4 block1Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_PointSampler, float3(block1TexCoord, threadID.z));
+	float4 block1Red = g_InputImages[g_PushConsts.mip].GatherRed(g_Samplers[SAMPLER_POINT_CLAMP], float3(block1TexCoord, threadID.z));
+	float4 block1Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_Samplers[SAMPLER_POINT_CLAMP], float3(block1TexCoord, threadID.z));
+	float4 block1Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_Samplers[SAMPLER_POINT_CLAMP], float3(block1TexCoord, threadID.z));
 	
-	float4 block2Red = g_InputImages[g_PushConsts.mip].GatherRed(g_PointSampler, float3(block2TexCoord, threadID.z));
-	float4 block2Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_PointSampler, float3(block2TexCoord, threadID.z));
-	float4 block2Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_PointSampler, float3(block2TexCoord, threadID.z));
+	float4 block2Red = g_InputImages[g_PushConsts.mip].GatherRed(g_Samplers[SAMPLER_POINT_CLAMP], float3(block2TexCoord, threadID.z));
+	float4 block2Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_Samplers[SAMPLER_POINT_CLAMP], float3(block2TexCoord, threadID.z));
+	float4 block2Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_Samplers[SAMPLER_POINT_CLAMP], float3(block2TexCoord, threadID.z));
 	
-	float4 block3Red = g_InputImages[g_PushConsts.mip].GatherRed(g_PointSampler, float3(block3TexCoord, threadID.z));
-	float4 block3Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_PointSampler, float3(block3TexCoord, threadID.z));
-	float4 block3Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_PointSampler, float3(block3TexCoord, threadID.z));
+	float4 block3Red = g_InputImages[g_PushConsts.mip].GatherRed(g_Samplers[SAMPLER_POINT_CLAMP], float3(block3TexCoord, threadID.z));
+	float4 block3Green = g_InputImages[g_PushConsts.mip].GatherGreen(g_Samplers[SAMPLER_POINT_CLAMP], float3(block3TexCoord, threadID.z));
+	float4 block3Blue = g_InputImages[g_PushConsts.mip].GatherBlue(g_Samplers[SAMPLER_POINT_CLAMP], float3(block3TexCoord, threadID.z));
 
 	float3 texels[16];
 	texels[0] = float3(block0Red.w, block0Green.w, block0Blue.w);

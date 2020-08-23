@@ -1,18 +1,19 @@
 #include "bindingHelper.hlsli"
 #include "volumetricFogFilter.hlsli"
 #include "commonFilter.hlsli"
-
+#include "common.hlsli"
 
 #define VOLUME_DEPTH (64)
 #define VOLUME_NEAR (0.5)
 #define VOLUME_FAR (64.0)
 
-RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
+RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -62,11 +63,11 @@ float4 sampleHistory(float2 texCoord, float4 rtMetrics, float d)
 	float2 tc12 = (tc1 + w2 / w12) * rtMetrics.zw;
 	
 	// Bicubic filter using bilinear lookups, skipping the 4 corner texels
-	float4 filtered = g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc0.y , d), 0.0) * (w12.x *  w0.y) +
-	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc0.x,  tc12.y, d), 0.0) * ( w0.x * w12.y) +
-	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc12.y, d), 0.0) * (w12.x * w12.y) +  // Center pixel
-	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc3.x,  tc12.y, d), 0.0) * ( w3.x * w12.y) +
-	                  g_HistoryImage.SampleLevel(g_LinearSampler, float3(tc12.x, tc3.y , d), 0.0) * (w12.x *  w3.y);
+	float4 filtered = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc12.x, tc0.y , d), 0.0) * (w12.x *  w0.y) +
+	                  g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc0.x,  tc12.y, d), 0.0) * ( w0.x * w12.y) +
+	                  g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc12.x, tc12.y, d), 0.0) * (w12.x * w12.y) +  // Center pixel
+	                  g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc3.x,  tc12.y, d), 0.0) * ( w3.x * w12.y) +
+	                  g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc12.x, tc3.y , d), 0.0) * (w12.x *  w3.y);
 	
 	float weightSum = (w12.x *  w0.y) +
 	                  ( w0.x * w12.y) +
@@ -88,49 +89,49 @@ void resolverAABB(int3 coord, inout float4 minColor, inout float4 maxColor)
 	float4 maxValue = 0.0;
 	
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75, -0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75, -0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75, -0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75, -0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75, -0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75, -0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75, -0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75, -0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75,  0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3(-0.75, -0.75,  0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75,  0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3( 0.75, -0.75,  0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75,  0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3(-0.75,  0.75,  0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
 	}
 	{
-		float4 tap = g_InputImage.SampleLevel(g_LinearSampler, texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75,  0.75)), 0.0);
+		float4 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], texelSize * (float3(coord + 0.5) + float3( 0.75,  0.75,  0.75)), 0.0);
 		m1 += tap;
 		m2 += tap * tap;
 		maxValue = max(maxValue, tap);
@@ -176,7 +177,7 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupTh
 		{
 			prevResult = g_PushConsts.advancedFilter ? 
 							sampleHistory(prevTexCoord.xy, float4(texSize.xy, texelSize.xy), prevTexCoord.z) :
-							g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+							g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], prevTexCoord, 0.0);
 		}
 		
 		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure

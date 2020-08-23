@@ -317,12 +317,13 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 					{
 						Initializers::rwTexture(&resultImageView, 0),
 						Initializers::texture(&depthImageView, 1),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_POINT_CLAMP_IDX], 2),
 					};
 
-					descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 
-					cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+					DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+
+					cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 				}
 
 				struct PushConsts

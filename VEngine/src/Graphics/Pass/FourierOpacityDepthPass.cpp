@@ -100,7 +100,7 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::structuredBuffer(&particleTransformBufferInfo, 1),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 			}
 
 			const auto &imageDesc = registry.getImage(data.m_directionalLightFomDepthImageHandle)->getDescription();

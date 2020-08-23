@@ -1,9 +1,11 @@
 #include "bindingHelper.hlsli"
 #include "gtaoSpatialFilter.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float2> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-SamplerState g_PointSampler : REGISTER_SAMPLER(POINT_SAMPLER_BINDING, POINT_SAMPLER_SET);
+RWTexture2D<float2> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float2> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -28,7 +30,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		for (int x = -1 - offset; x < 3 - offset; ++x)
 		{
-			float2 tap = g_InputImage.SampleLevel(g_PointSampler, g_PushConsts.texelSize * float2(x, y) + texCoord, 0.0).xy;
+			float2 tap = g_InputImage.SampleLevel(g_Samplers[SAMPLER_POINT_CLAMP], g_PushConsts.texelSize * float2(x, y) + texCoord, 0.0).xy;
 			float weight = saturate(1.0 - (abs(tap.y - center.y) * rampMaxInv));
 			totalAo += tap.x * weight;
 			totalWeight += weight;

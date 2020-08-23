@@ -6,9 +6,10 @@
 
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
 Texture2DArray<float> g_DepthRangeImage : REGISTER_SRV(DEPTH_RANGE_IMAGE_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -136,7 +137,7 @@ PSOutput main(PSInput input)
 								
 		if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
 		{
-			float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_LinearSampler);
+			float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
 			extinction = medium.extinction * density;
 		}
 		

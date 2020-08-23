@@ -20,7 +20,7 @@ StructuredBuffer<float4> g_TransformData : REGISTER_SRV(TRANSFORM_DATA_BINDING, 
 StructuredBuffer<uint> g_Positions : REGISTER_SRV(VERTEX_POSITIONS_BINDING, 0);
 #if ALPHA_MASK_ENABLED
 StructuredBuffer<uint> g_TexCoords : REGISTER_SRV(VERTEX_TEXCOORDS_BINDING, 0);
-StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, MATERIAL_DATA_SET);
+StructuredBuffer<MaterialData> g_MaterialData : REGISTER_SRV(MATERIAL_DATA_BINDING, 0);
 #endif // ALPHA_MASK_ENABLED
 
 PUSH_CONSTS(PushConsts, g_PushConsts);

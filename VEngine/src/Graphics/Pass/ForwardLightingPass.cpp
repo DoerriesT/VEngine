@@ -121,17 +121,17 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 					DescriptorSetUpdate2 updates[] =
 					{
 						Initializers::texture(&data.m_probeImageView, 0),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_REPEAT_IDX], 1),
-						Initializers::constantBuffer(&data.m_atmosphereConstantBufferInfo, 2),
-						Initializers::texture(&atmosphereScatteringImageView, 4),
-						Initializers::texture(&atmosphereTransmittanceImageView, 3),
-						Initializers::byteBuffer(&exposureDataBufferInfo, 5),
+						Initializers::constantBuffer(&data.m_atmosphereConstantBufferInfo, 1),
+						Initializers::texture(&atmosphereTransmittanceImageView, 2),
+						Initializers::texture(&atmosphereScatteringImageView, 3),
+						Initializers::byteBuffer(&exposureDataBufferInfo, 4),
 					};
 				
-					descriptorSet->update(std::size(updates), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 				}
 				
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 
 				Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 				Rect scissor{ { 0, 0 }, { width, height } };
@@ -218,15 +218,20 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 						Initializers::byteBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
 						Initializers::byteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
 						Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
-						Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_shadowSampler, SHADOW_SAMPLER_BINDING),
 						Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					};
 
-					descriptorSet->update(std::size(updates), updates);
+					descriptorSet->update((uint32_t)std::size(updates), updates);
 				}
 
-				DescriptorSet *descriptorSets[] = { descriptorSet, data.m_passRecordContext->m_renderResources->m_textureDescriptorSet };
-				cmdList->bindDescriptorSets(pipeline, 0, 2, descriptorSets);
+				DescriptorSet *descriptorSets[] = 
+				{ 
+					descriptorSet, 
+					data.m_passRecordContext->m_renderResources->m_textureDescriptorSet, 
+					data.m_passRecordContext->m_renderResources->m_samplerDescriptorSet,
+					data.m_passRecordContext->m_renderResources->m_shadowSamplerDescriptorSet
+				};
+				cmdList->bindDescriptorSets(pipeline, 0, 4, descriptorSets);
 
 				Viewport viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f };
 				Rect scissor{ { 0, 0 }, { width, height } };

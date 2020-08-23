@@ -5,18 +5,19 @@
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-RWTexture2D<float> g_ResultMaskImage : REGISTER_UAV(RESULT_MASK_IMAGE_BINDING, RESULT_MASK_IMAGE_SET);
-Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, ALBEDO_METALNESS_IMAGE_SET);
-Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, NORMAL_ROUGHNESS_IMAGE_SET);
-Texture2D<float4> g_RayHitPdfImage : REGISTER_SRV(RAY_HIT_PDF_IMAGE_BINDING, RAY_HIT_PDF_IMAGE_SET);
-Texture2D<float> g_MaskImage : REGISTER_SRV(MASK_IMAGE_BINDING, MASK_IMAGE_SET);
-Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, VELOCITY_IMAGE_SET);
-Texture2D<float4> g_PrevColorImage : REGISTER_SRV(PREV_COLOR_IMAGE_BINDING, PREV_COLOR_IMAGE_SET);
-ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, CONSTANT_BUFFER_SET);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+RWTexture2D<float> g_ResultMaskImage : REGISTER_UAV(RESULT_MASK_IMAGE_BINDING, 0);
+Texture2D<float4> g_AlbedoMetalnessImage : REGISTER_SRV(ALBEDO_METALNESS_IMAGE_BINDING, 0);
+Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_BINDING, 0);
+Texture2D<float4> g_RayHitPdfImage : REGISTER_SRV(RAY_HIT_PDF_IMAGE_BINDING, 0);
+Texture2D<float> g_MaskImage : REGISTER_SRV(MASK_IMAGE_BINDING, 0);
+Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, 0);
+Texture2D<float4> g_PrevColorImage : REGISTER_SRV(PREV_COLOR_IMAGE_BINDING, 0);
+ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 float localBrdf(float3 N, float3 V, float3 L, float3 F0, float roughness)
 {
@@ -118,14 +119,14 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		if (g_Constants.ignoreHistory == 0 && sampleColor.a > 0.0)
 		{
 			// reproject into last frame
-			float2 velocity = g_VelocityImage.SampleLevel(g_LinearSampler, rayHitPdf.xy, 0.0).xy;
+			float2 velocity = g_VelocityImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], rayHitPdf.xy, 0.0).xy;
 			rayHitPdf.xy -= velocity;
 			
 			// is the uv coord still valid?
 			sampleColor.a *= (rayHitPdf.x > 0.0 && rayHitPdf.y > 0.0 && rayHitPdf.x < 1.0 && rayHitPdf.y < 1.0) ? 1.0 : 0.0;
 			
 			float mipLevel = calculateMipLevel(P.z, hitDist, roughness, filterShrinkCompensation);
-			sampleColor.rgb = sampleColor.a > 0.0 ? g_PrevColorImage.SampleLevel(g_LinearSampler, rayHitPdf.xy, mipLevel).rgb : 0.0;
+			sampleColor.rgb = sampleColor.a > 0.0 ? g_PrevColorImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], rayHitPdf.xy, mipLevel).rgb : 0.0;
 			
 			// sampleColor.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 			sampleColor.rgb *= exposureConversionFactor;

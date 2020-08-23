@@ -1,14 +1,16 @@
 #include "bindingHelper.hlsli"
 #include "temporalAA.hlsli"
 #include "commonFilter.hlsli"
+#include "common.hlsli"
 
-RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, RESULT_IMAGE_SET);
-Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, INPUT_IMAGE_SET);
-Texture2D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, HISTORY_IMAGE_SET);
-Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, DEPTH_IMAGE_SET);
-Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, VELOCITY_IMAGE_SET);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, LINEAR_SAMPLER_SET);
-ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, EXPOSURE_DATA_BUFFER_SET);
+RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
+Texture2D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
+Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
+Texture2D<float2> g_VelocityImage : REGISTER_SRV(VELOCITY_IMAGE_BINDING, 0);
+ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
@@ -62,11 +64,11 @@ float3 sampleHistory(float2 texCoord, float4 rtMetrics)
 	float2 tc12 = (tc1 + w2 / w12) * rtMetrics.zw;
 	
 	// Bicubic filter using bilinear lookups, skipping the 4 corner texels
-	float4 filtered = float4(g_HistoryImage.SampleLevel(g_LinearSampler, float2(tc12.x, tc0.y ), 0.0).rgb, 1.0) * (w12.x *  w0.y) +
-	                  float4(g_HistoryImage.SampleLevel(g_LinearSampler, float2(tc0.x,  tc12.y), 0.0).rgb, 1.0) * ( w0.x * w12.y) +
-	                  float4(g_HistoryImage.SampleLevel(g_LinearSampler, float2(tc12.x, tc12.y), 0.0).rgb, 1.0) * (w12.x * w12.y) +  // Center pixel
-	                  float4(g_HistoryImage.SampleLevel(g_LinearSampler, float2(tc3.x,  tc12.y), 0.0).rgb, 1.0) * ( w3.x * w12.y) +
-	                  float4(g_HistoryImage.SampleLevel(g_LinearSampler, float2(tc12.x, tc3.y ), 0.0).rgb, 1.0) * (w12.x *  w3.y);
+	float4 filtered = float4(g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(tc12.x, tc0.y ), 0.0).rgb, 1.0) * (w12.x *  w0.y) +
+	                  float4(g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(tc0.x,  tc12.y), 0.0).rgb, 1.0) * ( w0.x * w12.y) +
+	                  float4(g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(tc12.x, tc12.y), 0.0).rgb, 1.0) * (w12.x * w12.y) +  // Center pixel
+	                  float4(g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(tc3.x,  tc12.y), 0.0).rgb, 1.0) * ( w3.x * w12.y) +
+	                  float4(g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float2(tc12.x, tc3.y ), 0.0).rgb, 1.0) * (w12.x *  w3.y);
 	
 	return filtered.rgb * (1.0 / filtered.a);
 }

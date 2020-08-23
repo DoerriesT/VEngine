@@ -60,13 +60,13 @@ void VEngine::TemporalAAPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
 					Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::texture(&lightImageView, INPUT_IMAGE_BINDING),
-					Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 				};
 
-				descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+				descriptorSet->update((uint32_t)std::size(updates), updates);
 
-				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+				DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+				cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 			}
 
 			const float jitterOffsetLength = glm::length(glm::vec2(data.m_jitterOffsetX * width, data.m_jitterOffsetY * height));

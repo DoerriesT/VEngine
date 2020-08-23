@@ -1,5 +1,6 @@
 #include "bindingHelper.hlsli"
 #include "volumetricFogFilter2.hlsli"
+#include "common.hlsli"
 
 
 #define VOLUME_DEPTH (64)
@@ -9,10 +10,10 @@
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
 Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(LINEAR_SAMPLER_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
 
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 float3 calcWorldSpacePos(float3 texelCoord)
 {
@@ -61,7 +62,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float4 prevResult = 0.0;
 		if (validCoord)
 		{
-			prevResult = g_HistoryImage.SampleLevel(g_LinearSampler, prevTexCoord, 0.0);
+			prevResult = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], prevTexCoord, 0.0);
 			
 			// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 			prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure

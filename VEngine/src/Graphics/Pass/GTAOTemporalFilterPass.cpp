@@ -73,13 +73,13 @@ void VEngine::GTAOTemporalFilterPass::addToGraph(rg::RenderGraph &graph, const D
 				Initializers::texture(&velocityImageView, VELOCITY_IMAGE_BINDING),
 				Initializers::texture(&prevImageView, HISTORY_IMAGE_BINDING),
 				Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-				Initializers::sampler(&data.m_passRecordContext->m_renderResources->m_samplers[RendererConsts::SAMPLER_LINEAR_CLAMP_IDX], LINEAR_SAMPLER_BINDING),
 				Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 			};
 
-			descriptorSet->update(sizeof(updates) / sizeof(updates[0]), updates);
+			descriptorSet->update((uint32_t)std::size(updates), updates);
 
-			cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
+			DescriptorSet *sets[]{ descriptorSet, data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet };
+			cmdList->bindDescriptorSets(pipeline, 0, 2, sets);
 		}
 
 		cmdList->dispatch((width + 7) / 8, (height + 7) / 8, 1);

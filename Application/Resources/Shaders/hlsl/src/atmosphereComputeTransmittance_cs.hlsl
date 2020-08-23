@@ -1,7 +1,9 @@
 #include "bindingHelper.hlsli"
+#include "common.hlsli"
 
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(0, 0);
-SamplerState g_LinearSampler : REGISTER_SAMPLER(2, 0); // UNUSED
+
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1); // UNUSED
 
 #include "commonAtmosphericScattering.hlsli"
 

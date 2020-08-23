@@ -226,6 +226,7 @@
     <ClInclude Include="src\Graphics\Pass\DebugDrawPass.h" />
     <ClInclude Include="src\Graphics\Pass\DeferredShadowsPass.h" />
     <ClInclude Include="src\Graphics\Pass\DepthPrepassPass.h" />
+    <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
     <ClInclude Include="src\Graphics\Pass\ForwardLightingPass.h" />
     <ClInclude Include="src\Graphics\Pass\FourierOpacityDepthPass.h" />
     <ClInclude Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.h" />
@@ -242,7 +243,6 @@
     <ClInclude Include="src\Graphics\Pass\IntegrateBrdfPass.h" />
     <ClInclude Include="src\Graphics\Pass\LightProbeGBufferPass.h" />
     <ClInclude Include="src\Graphics\Pass\LuminanceHistogramPass.h" />
-    <ClInclude Include="src\Graphics\Pass\ExposurePass.h" />
     <ClInclude Include="src\Graphics\Pass\ParticlesPass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeCompressBCH6Pass.h" />
     <ClInclude Include="src\Graphics\Pass\ProbeDownsamplePass.h" />
@@ -371,6 +371,7 @@
     <ClCompile Include="src\Graphics\Pass\DebugDrawPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\DeferredShadowsPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\DepthPrepassPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ForwardLightingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\FourierOpacityDepthPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.cpp" />
@@ -387,14 +388,13 @@
     <ClCompile Include="src\Graphics\Pass\IntegrateBrdfPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\LightProbeGBufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\LuminanceHistogramPass.cpp" />
-    <ClCompile Include="src\Graphics\Pass\ExposurePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ParticlesPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeCompressBCH6Pass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeDownsamplePass2.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeFilterImportanceSamplingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ProbeFilterPass.cpp" />
-    <ClCompile Include="src\Graphics\Pass\ProbeGBufferPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\ProbeGbufferPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\RasterTilingPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ReadBackCopyPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\ShadeVisibilityBufferPass.cpp" />
