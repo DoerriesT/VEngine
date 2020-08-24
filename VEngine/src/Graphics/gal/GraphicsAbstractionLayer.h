@@ -1035,7 +1035,7 @@ namespace VEngine
 			Buffer *m_buffer;
 			uint64_t m_offset;
 			uint64_t m_range;
-			uint64_t m_elementSize;
+			uint32_t m_structureByteStride;
 		};
 
 		//struct DescriptorSetUpdate

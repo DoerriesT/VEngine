@@ -330,7 +330,7 @@ void VEngine::gal::CommandListDx12::fillBuffer(const Buffer *dstBuffer, uint64_t
 		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 		viewDesc.Buffer.FirstElement = dstOffset / 4;
 		viewDesc.Buffer.NumElements = static_cast<UINT>(size / 4);
-		viewDesc.Buffer.StructureByteStride = 4;
+		viewDesc.Buffer.StructureByteStride = 0;
 		viewDesc.Buffer.CounterOffsetInBytes = 0;
 		viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
 

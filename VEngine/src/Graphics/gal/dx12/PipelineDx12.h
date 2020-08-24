@@ -43,6 +43,7 @@ namespace VEngine
 			DescriptorSetLayoutsDx12 m_descriptorSetLayouts;
 			uint32_t m_descriptorTableOffset;
 			uint32_t m_descriptorTableCount;
+			D3D12_PRIMITIVE_TOPOLOGY m_primitiveTopology;
 			UINT m_vertexBufferStrides[32];
 			float m_blendFactors[4];
 			UINT m_stencilRef;

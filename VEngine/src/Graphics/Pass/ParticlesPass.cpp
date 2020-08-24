@@ -33,7 +33,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 
 	// constant buffer
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
 	{
 		auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 

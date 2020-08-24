@@ -14,7 +14,7 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 
 	// constant buffer
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(glm::mat4), sizeof(glm::mat4) };
+	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(glm::mat4) };
 	{
 		auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 

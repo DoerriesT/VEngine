@@ -83,7 +83,7 @@ VEngine::gal::DescriptorBufferInfo VEngine::rg::Registry::getBufferInfo(BufferVi
 	const auto &viewDesc = m_graph.m_viewDescriptions[viewIdx];
 	const size_t resIdx = (size_t)viewDesc.m_resourceHandle - 1;
 	const auto &resDesc = m_graph.m_resourceDescriptions[resIdx];
-	return { m_graph.m_imageBuffers[resIdx].buffer, resDesc.m_offset + viewDesc.m_offset, viewDesc.m_range };
+	return { m_graph.m_imageBuffers[resIdx].buffer, resDesc.m_offset + viewDesc.m_offset, viewDesc.m_range, viewDesc.m_structureByteStride };
 }
 
 VEngine::rg::BufferViewDescription VEngine::rg::Registry::getBufferViewDescription(BufferViewHandle handle) const
@@ -277,6 +277,7 @@ VEngine::rg::BufferViewHandle VEngine::rg::RenderGraph::createBufferView(const B
 	desc.m_format = viewDesc.m_format;
 	desc.m_offset = viewDesc.m_offset;
 	desc.m_range = viewDesc.m_range;
+	desc.m_structureByteStride = viewDesc.m_structureByteStride;
 
 	m_viewDescriptions.push_back(desc);
 

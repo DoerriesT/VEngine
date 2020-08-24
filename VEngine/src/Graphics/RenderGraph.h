@@ -84,6 +84,7 @@ namespace VEngine
 			BufferHandle m_bufferHandle;
 			uint64_t m_offset;
 			uint64_t m_range;
+			uint32_t m_structureByteStride;
 			gal::Format m_format = gal::Format::UNDEFINED;
 		};
 
@@ -191,6 +192,7 @@ namespace VEngine
 				gal::ImageSubresourceRange m_subresourceRange;
 				uint64_t m_offset; // for buffers
 				uint64_t m_range; // for buffers
+				uint32_t m_structureByteStride; // for structured buffers
 				bool m_image;
 			};
 

@@ -17,13 +17,14 @@ namespace VEngine
 			D3D12_BLEND_OP translate(BlendOp blendOp);
 			D3D12_LOGIC_OP translate(LogicOp logicOp);
 			D3D12_STENCIL_OP translate(StencilOp stencilOp);
-			D3D12_PRIMITIVE_TOPOLOGY_TYPE translate(PrimitiveTopology topology);
+			D3D12_PRIMITIVE_TOPOLOGY translate(PrimitiveTopology topology);
 			D3D12_QUERY_HEAP_TYPE translate(QueryType queryType);
 			DXGI_FORMAT translate(Format format);
 			D3D12_RESOURCE_FLAGS translateImageUsageFlags(ImageUsageFlags flags);
 			D3D12_RESOURCE_FLAGS translateBufferUsageFlags(BufferUsageFlags flags);
 			UINT formatByteSize(Format format);
 			DXGI_FORMAT getTypeless(DXGI_FORMAT format);
+			D3D12_PRIMITIVE_TOPOLOGY_TYPE getTopologyType(PrimitiveTopology topology);
 		}
 	}
 }

@@ -100,7 +100,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / 4;
 				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / 4);
-				viewDesc.Buffer.StructureByteStride = 4;
+				viewDesc.Buffer.StructureByteStride = 0;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
 
 				m_device->CreateShaderResourceView((ID3D12Resource *)update.m_bufferInfo[j].m_buffer->getNativeHandle(), &viewDesc, dstRangeStart);
@@ -113,7 +113,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / 4;
 				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / 4);
-				viewDesc.Buffer.StructureByteStride = 4;
+				viewDesc.Buffer.StructureByteStride = 0;
 				viewDesc.Buffer.CounterOffsetInBytes = 0;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
 
@@ -122,16 +122,16 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 			}
 			case DescriptorType2::STRUCTURED_BUFFER:
 			{
-				assert(update.m_bufferInfo[j].m_offset % update.m_bufferInfo[j].m_elementSize == 0);
-				assert(update.m_bufferInfo[j].m_range % update.m_bufferInfo[j].m_elementSize == 0);
+				assert(update.m_bufferInfo[j].m_offset % update.m_bufferInfo[j].m_structureByteStride == 0);
+				assert(update.m_bufferInfo[j].m_range % update.m_bufferInfo[j].m_structureByteStride == 0);
 
 				D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc{};
 				viewDesc.Format = DXGI_FORMAT_UNKNOWN;
 				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 				viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize);
-				viewDesc.Buffer.StructureByteStride = static_cast<UINT>(update.m_bufferInfo[j].m_elementSize);
+				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_structureByteStride;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_structureByteStride);
+				viewDesc.Buffer.StructureByteStride = update.m_bufferInfo[j].m_structureByteStride;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
 				m_device->CreateShaderResourceView((ID3D12Resource *)update.m_bufferInfo[j].m_buffer->getNativeHandle(), &viewDesc, dstRangeStart);
@@ -139,15 +139,15 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 			}
 			case DescriptorType2::RW_STRUCTURED_BUFFER:
 			{
-				assert(update.m_bufferInfo[j].m_offset % update.m_bufferInfo[j].m_elementSize == 0);
-				assert(update.m_bufferInfo[j].m_range % update.m_bufferInfo[j].m_elementSize == 0);
+				assert(update.m_bufferInfo[j].m_offset % update.m_bufferInfo[j].m_structureByteStride == 0);
+				assert(update.m_bufferInfo[j].m_range % update.m_bufferInfo[j].m_structureByteStride == 0);
 
 				D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
 				viewDesc.Format = DXGI_FORMAT_UNKNOWN;
 				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_elementSize;
-				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_elementSize);
-				viewDesc.Buffer.StructureByteStride = static_cast<UINT>(update.m_bufferInfo[j].m_elementSize);
+				viewDesc.Buffer.FirstElement = update.m_bufferInfo[j].m_offset / update.m_bufferInfo[j].m_structureByteStride;
+				viewDesc.Buffer.NumElements = static_cast<UINT>(update.m_bufferInfo[j].m_range / update.m_bufferInfo[j].m_structureByteStride);
+				viewDesc.Buffer.StructureByteStride = update.m_bufferInfo[j].m_structureByteStride;
 				viewDesc.Buffer.CounterOffsetInBytes = 0;
 				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 

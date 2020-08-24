@@ -140,7 +140,7 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
-				DescriptorBufferInfo texCoordScaleBiasBufferInfo{ data.m_passRecordContext->m_renderResources->m_subMeshTexCoordScaleBiasBuffer, 0, RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4 };
+				DescriptorBufferInfo texCoordScaleBiasBufferInfo{ data.m_passRecordContext->m_renderResources->m_subMeshTexCoordScaleBiasBuffer, 0, RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4, sizeof(float) * 4 };
 
 				DescriptorSetUpdate2 updates[] =
 				{

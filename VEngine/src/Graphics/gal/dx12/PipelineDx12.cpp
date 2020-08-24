@@ -72,6 +72,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	m_descriptorSetLayouts(),
 	m_descriptorTableOffset(),
 	m_descriptorTableCount(),
+	m_primitiveTopology(),
 	m_vertexBufferStrides(),
 	m_blendFactors(),
 	m_stencilRef()
@@ -226,7 +227,9 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	stateDesc.InputLayout.pInputElementDescs = stateDesc.InputLayout.NumElements > 0 ? inputElements : nullptr;
 
 	stateDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // TODO
-	stateDesc.PrimitiveTopologyType = UtilityDx12::translate(createInfo.m_inputAssemblyState.m_primitiveTopology);
+	stateDesc.PrimitiveTopologyType = UtilityDx12::getTopologyType(createInfo.m_inputAssemblyState.m_primitiveTopology);
+	m_primitiveTopology = UtilityDx12::translate(createInfo.m_inputAssemblyState.m_primitiveTopology);
+
 
 	stateDesc.NumRenderTargets = createInfo.m_attachmentFormats.m_colorAttachmentCount;
 	for (size_t i = 0; i < 8; ++i)
@@ -288,6 +291,7 @@ uint32_t VEngine::gal::GraphicsPipelineDx12::getVertexBufferStride(uint32_t buff
 
 void VEngine::gal::GraphicsPipelineDx12::initializeState(ID3D12GraphicsCommandList *cmdList) const
 {
+	cmdList->IASetPrimitiveTopology(m_primitiveTopology);
 	cmdList->OMSetBlendFactor(m_blendFactors);
 	cmdList->OMSetStencilRef(m_stencilRef);
 }

@@ -404,7 +404,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// transform data write
-	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), size_t(1)) };
+	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(transformDataBufferInfo.m_range, transformDataBufferInfo.m_offset, transformDataBufferInfo.m_buffer, bufferPtr);
@@ -415,7 +415,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// directional light data write
-	DescriptorBufferInfo directionalLightsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLights.size() * sizeof(DirectionalLight), size_t(1)) };
+	DescriptorBufferInfo directionalLightsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLights.size() * sizeof(DirectionalLight), sizeof(DirectionalLight)), sizeof(DirectionalLight) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsBufferInfo.m_range, directionalLightsBufferInfo.m_offset, directionalLightsBufferInfo.m_buffer, bufferPtr);
@@ -426,7 +426,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadowed directional light data write
-	DescriptorBufferInfo directionalLightsShadowedBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(DirectionalLight), size_t(1)) };
+	DescriptorBufferInfo directionalLightsShadowedBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(DirectionalLight), sizeof(DirectionalLight)), sizeof(DirectionalLight) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsShadowedBufferInfo.m_range, directionalLightsShadowedBufferInfo.m_offset, directionalLightsShadowedBufferInfo.m_buffer, bufferPtr);
@@ -437,7 +437,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// punctual light data write
-	DescriptorBufferInfo punctualLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLights.size() * sizeof(PunctualLight), size_t(1)) };
+	DescriptorBufferInfo punctualLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLights.size() * sizeof(PunctualLight), sizeof(PunctualLight)), sizeof(PunctualLight) };
 	DescriptorBufferInfo punctualLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -456,7 +456,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadowed punctual light data write
-	DescriptorBufferInfo punctualLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightsShadowed.size() * sizeof(PunctualLightShadowed), size_t(1)) };
+	DescriptorBufferInfo punctualLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightsShadowed.size() * sizeof(PunctualLightShadowed), sizeof(PunctualLightShadowed)), sizeof(PunctualLightShadowed) };
 	DescriptorBufferInfo punctualLightShadowedZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightShadowedDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -475,7 +475,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// local participating media data write
-	DescriptorBufferInfo localMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_localParticipatingMedia.size() * sizeof(LocalParticipatingMedium), size_t(1)) };
+	DescriptorBufferInfo localMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_localParticipatingMedia.size() * sizeof(LocalParticipatingMedium), sizeof(LocalParticipatingMedium)), sizeof(LocalParticipatingMedium) };
 	DescriptorBufferInfo localMediaZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localMediaDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -494,7 +494,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// global participating media data write
-	DescriptorBufferInfo globalMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium), size_t(1)) };
+	DescriptorBufferInfo globalMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium), sizeof(GlobalParticipatingMedium)), sizeof(GlobalParticipatingMedium) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(globalMediaDataBufferInfo.m_range, globalMediaDataBufferInfo.m_offset, globalMediaDataBufferInfo.m_buffer, bufferPtr);
@@ -505,7 +505,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// local reflection probe data write
-	DescriptorBufferInfo localReflProbesDataBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe), size_t(1)) };
+	DescriptorBufferInfo localReflProbesDataBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe), sizeof(LocalReflectionProbe)), sizeof(LocalReflectionProbe) };
 	DescriptorBufferInfo localReflProbesZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbeDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
 		uint8_t *dataBufferPtr;
@@ -523,7 +523,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadow matrices write
-	DescriptorBufferInfo shadowMatricesBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), size_t(1)) };
+	DescriptorBufferInfo shadowMatricesBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), sizeof(glm::mat4)), sizeof(glm::mat4) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowMatricesBufferInfo.m_range, shadowMatricesBufferInfo.m_offset, shadowMatricesBufferInfo.m_buffer, bufferPtr);
@@ -534,7 +534,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 	// shadow cascade params write
-	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4), size_t(1)) };
+	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowCascadeParamsBufferInfo.m_range, shadowCascadeParamsBufferInfo.m_offset, shadowCascadeParamsBufferInfo.m_buffer, bufferPtr);
@@ -546,7 +546,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// instance data write
 	std::vector<SubMeshInstanceData> sortedInstanceData(renderData.m_subMeshInstanceDataCount);
-	DescriptorBufferInfo instanceDataBufferInfo{ nullptr, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), size_t(1)) };
+	DescriptorBufferInfo instanceDataBufferInfo{ nullptr, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), sizeof(SubMeshInstanceData)), sizeof(SubMeshInstanceData) };
 	{
 		uint8_t *bufferPtr;
 		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(instanceDataBufferInfo.m_range, instanceDataBufferInfo.m_offset, instanceDataBufferInfo.m_buffer, bufferPtr);
@@ -561,14 +561,14 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	// particle buffer
 	uint32_t totalParticleCount = 0;
-	DescriptorBufferInfo particleBufferInfo{ nullptr, 0, 0 };
+	DescriptorBufferInfo particleBufferInfo{ nullptr, 0, 0, sizeof(ParticleDrawData) };
 	{
 		for (size_t i = 0; i < renderData.m_particleDataDrawListCount; ++i)
 		{
 			totalParticleCount += renderData.m_particleDrawDataListSizes[i];
 		}
 
-		particleBufferInfo.m_range = std::max(sizeof(ParticleDrawData) * totalParticleCount, size_t(1));
+		particleBufferInfo.m_range = std::max(sizeof(ParticleDrawData) * totalParticleCount, sizeof(ParticleDrawData));
 
 		auto *storageBuffer = m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx].get();
 
@@ -695,7 +695,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	depthPrePassData.m_instanceData = sortedInstanceData.data();
 	depthPrePassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 	depthPrePassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
-	depthPrePassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	depthPrePassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	depthPrePassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	depthPrePassData.m_depthImageHandle = depthImageViewHandle;
 
@@ -738,7 +738,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	shadowAtlasPassData.m_instanceData = sortedInstanceData.data();
 	shadowAtlasPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 	shadowAtlasPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
-	shadowAtlasPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	shadowAtlasPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	shadowAtlasPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	shadowAtlasPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 
@@ -782,7 +782,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			shadowPassData.m_instanceData = sortedInstanceData.data();
 			shadowPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
 			shadowPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
-			shadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+			shadowPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 			shadowPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 			shadowPassData.m_shadowImageHandle = shadowLayer;
 
@@ -940,7 +940,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
 	forwardPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
 	forwardPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
-	forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
 	forwardPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	forwardPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
@@ -972,11 +972,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//shadeVisBufferPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
 	//shadeVisBufferPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
 	//shadeVisBufferPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
-	//shadeVisBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	//shadeVisBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	//shadeVisBufferPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	//shadeVisBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//shadeVisBufferPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size };
-	//shadeVisBufferPassData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size };
+	//shadeVisBufferPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshInfo) };
+	//shadeVisBufferPassData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size, 4 };
 	//shadeVisBufferPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	//shadeVisBufferPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 	//shadeVisBufferPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
@@ -1000,11 +1000,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//shadeVisBufferPassPSData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
 	//shadeVisBufferPassPSData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
 	//shadeVisBufferPassPSData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
-	//shadeVisBufferPassPSData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
+	//shadeVisBufferPassPSData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	//shadeVisBufferPassPSData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	//shadeVisBufferPassPSData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size };
-	//shadeVisBufferPassPSData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size };
+	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshData) };
+	//shadeVisBufferPassPSData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size, 4 };
 	//shadeVisBufferPassPSData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	//shadeVisBufferPassPSData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
 	//shadeVisBufferPassPSData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;

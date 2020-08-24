@@ -555,7 +555,7 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		viewDesc.Buffer.FirstElement = createInfo.m_offset / formatSize;
 		viewDesc.Buffer.NumElements = static_cast<UINT>((createInfo.m_offset - createInfo.m_offset) / formatSize);
-		viewDesc.Buffer.StructureByteStride = formatSize;
+		viewDesc.Buffer.StructureByteStride = 0;
 		viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
 		// allocate SRV descriptor
@@ -582,7 +582,7 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 		viewDesc.Buffer.FirstElement = createInfo.m_offset / formatSize;
 		viewDesc.Buffer.NumElements = static_cast<UINT>((createInfo.m_offset - createInfo.m_offset) / formatSize);
-		viewDesc.Buffer.StructureByteStride = formatSize;
+		viewDesc.Buffer.StructureByteStride = 0;
 		viewDesc.Buffer.CounterOffsetInBytes = 0;
 		viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 

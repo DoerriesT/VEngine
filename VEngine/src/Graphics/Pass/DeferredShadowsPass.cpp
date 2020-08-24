@@ -25,7 +25,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 
 	for (size_t i = 0; i < data.m_lightDataCount; ++i)
 	{
-		DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
+		DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
 		uint8_t *uboDataPtr = nullptr;
 		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 

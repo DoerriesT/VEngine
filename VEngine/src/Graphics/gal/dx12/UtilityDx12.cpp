@@ -458,38 +458,37 @@ D3D12_STENCIL_OP VEngine::gal::UtilityDx12::translate(StencilOp stencilOp)
 	return D3D12_STENCIL_OP();
 }
 
-D3D12_PRIMITIVE_TOPOLOGY_TYPE VEngine::gal::UtilityDx12::translate(PrimitiveTopology topology)
+D3D12_PRIMITIVE_TOPOLOGY VEngine::gal::UtilityDx12::translate(PrimitiveTopology topology)
 {
-	// TODO: map this better to d3d12
 	switch (topology)
 	{
 	case PrimitiveTopology::POINT_LIST:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+		return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
 	case PrimitiveTopology::LINE_LIST:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 	case PrimitiveTopology::LINE_STRIP:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
 	case PrimitiveTopology::TRIANGLE_LIST:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	case PrimitiveTopology::TRIANGLE_STRIP:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 	case PrimitiveTopology::TRIANGLE_FAN:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		break;
 	case PrimitiveTopology::LINE_LIST_WITH_ADJACENCY:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		return D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
 	case PrimitiveTopology::LINE_STRIP_WITH_ADJACENCY:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ;
 	case PrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ;
 	case PrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ;
 	case PrimitiveTopology::PATCH_LIST:
-		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+		return D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
 	default:
 		assert(false);
 		break;
 	}
-	return D3D12_PRIMITIVE_TOPOLOGY_TYPE();
+	return D3D12_PRIMITIVE_TOPOLOGY();
 }
 
 D3D12_QUERY_HEAP_TYPE VEngine::gal::UtilityDx12::translate(QueryType queryType)
@@ -1415,4 +1414,37 @@ DXGI_FORMAT VEngine::gal::UtilityDx12::getTypeless(DXGI_FORMAT format)
 	}
 
 	return DXGI_FORMAT();
+}
+
+D3D12_PRIMITIVE_TOPOLOGY_TYPE VEngine::gal::UtilityDx12::getTopologyType(PrimitiveTopology topology)
+{
+	switch (topology)
+	{
+	case PrimitiveTopology::POINT_LIST:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	case PrimitiveTopology::LINE_LIST:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	case PrimitiveTopology::LINE_STRIP:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	case PrimitiveTopology::TRIANGLE_LIST:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	case PrimitiveTopology::TRIANGLE_STRIP:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	case PrimitiveTopology::TRIANGLE_FAN:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	case PrimitiveTopology::LINE_LIST_WITH_ADJACENCY:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	case PrimitiveTopology::LINE_STRIP_WITH_ADJACENCY:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	case PrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	case PrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	case PrimitiveTopology::PATCH_LIST:
+		return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+	default:
+		assert(false);
+		break;
+	}
+	return D3D12_PRIMITIVE_TOPOLOGY_TYPE();
 }

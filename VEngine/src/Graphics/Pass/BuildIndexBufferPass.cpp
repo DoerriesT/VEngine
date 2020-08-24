@@ -71,7 +71,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 		bufferDesc.m_name = "Indirect Draw Buffer";
 		bufferDesc.m_size = glm::max(32ull, sizeof(DrawIndexedIndirectCommand));
 
-		*data.m_indirectDrawCmdBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size });
+		*data.m_indirectDrawCmdBufferViewHandle = graph.createBufferView({ bufferDesc.m_name, graph.createBuffer(bufferDesc), 0, bufferDesc.m_size, sizeof(DrawIndexedIndirectCommand) });
 	}
 
 	// filtered indices buffer
