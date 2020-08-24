@@ -703,6 +703,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 			m_graphicsDevice->destroyImageView(m_editorSceneTextureView);
 		}
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_editorSceneTexture);
+		m_graphicsDevice->setDebugObjectName(ObjectType::IMAGE, m_editorSceneTexture, "Editor Scene Texture");
 
 		// create view
 		m_graphicsDevice->createImageView(m_editorSceneTexture, &m_editorSceneTextureView);
@@ -819,7 +820,7 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 			bufferCopyRegion.m_extent.m_height = height;
 			bufferCopyRegion.m_extent.m_depth = 1;
 			bufferCopyRegion.m_bufferOffset = 0;
-			bufferCopyRegion.m_bufferRowLength = rowPitch / 4u; // this is in pixels
+			bufferCopyRegion.m_bufferRowLength = (uint32_t)rowPitch / 4u; // this is in pixels
 			bufferCopyRegion.m_bufferImageHeight = height;
 
 			m_commandList->copyBufferToImage(m_stagingBuffer, m_imGuiFontsTexture, 1, &bufferCopyRegion);

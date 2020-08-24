@@ -196,7 +196,7 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 						cmdList->setScissor(0, 1, &scissor);
 
 						// Draw
-						uint32_t textureIndex = (uint32_t)pcmd->TextureId;
+						uint32_t textureIndex = (uint32_t)(size_t)pcmd->TextureId;
 						assert(textureIndex != 0);
 						textureIndex -= 1;
 

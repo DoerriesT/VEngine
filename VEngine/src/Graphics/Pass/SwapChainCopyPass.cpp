@@ -46,11 +46,11 @@ void VEngine::SwapChainCopyPass::addToGraph(rg::RenderGraph &graph, const Data &
 				cmdList->bindDescriptorSets(pipeline, 0, 1, &descriptorSet);
 			}
 
-			// barrier to transition result image from UNDEFINED to STORAGE
+			// barrier to transition result image from TEXTURE to STORAGE
 			{
 				Barrier barrier = Initializers::imageBarrier(data.m_resultImageView->getImage(),
 					PipelineStageFlagBits::FRAGMENT_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					gal::ResourceState::UNDEFINED, gal::ResourceState::WRITE_RW_IMAGE);
+					gal::ResourceState::READ_TEXTURE, gal::ResourceState::WRITE_RW_IMAGE);
 
 				cmdList->barrier(1, &barrier);
 			}

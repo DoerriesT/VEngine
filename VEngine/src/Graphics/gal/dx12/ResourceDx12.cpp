@@ -174,6 +174,24 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 
 	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
 
+	ImageViewType viewType = createInfo.m_viewType;
+
+	if (imageDesc.m_layers > 1)
+	{
+		switch (imageDesc.m_imageType)
+		{
+		case ImageType::_1D:
+			viewType = ImageViewType::_1D_ARRAY;
+			break;
+		case ImageType::_2D:
+			viewType = ImageViewType::_2D_ARRAY;
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
+
 	// SRV
 	if (imageDesc.m_usageFlags & ImageUsageFlagBits::TEXTURE_BIT)
 	{
@@ -209,7 +227,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 			}
 		}
 
-		switch (createInfo.m_viewType)
+		switch (viewType)
 		{
 		case ImageViewType::_1D:
 			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
@@ -305,7 +323,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
 
-		switch (createInfo.m_viewType)
+		switch (viewType)
 		{
 		case ImageViewType::_1D:
 			viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
@@ -362,7 +380,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 		D3D12_RENDER_TARGET_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
 
-		switch (createInfo.m_viewType)
+		switch (viewType)
 		{
 		case ImageViewType::_1D:
 			viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
@@ -436,7 +454,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 		viewDesc.Format = format;
 		viewDesc.Flags = D3D12_DSV_FLAG_NONE;
 
-		switch (createInfo.m_viewType)
+		switch (viewType)
 		{
 		case ImageViewType::_1D:
 			viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
