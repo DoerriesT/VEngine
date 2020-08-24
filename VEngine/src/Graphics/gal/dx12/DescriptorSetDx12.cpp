@@ -88,7 +88,7 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 			{
 				D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc{};
 				viewDesc.BufferLocation = ((ID3D12Resource *)update.m_bufferInfo[j].m_buffer->getNativeHandle())->GetGPUVirtualAddress() + update.m_bufferInfo[j].m_offset;
-				viewDesc.SizeInBytes = static_cast<UINT>(update.m_bufferInfo[j].m_range);
+				viewDesc.SizeInBytes = Utility::alignUp(static_cast<UINT>(update.m_bufferInfo[j].m_range), (UINT)D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 				m_device->CreateConstantBufferView(&viewDesc, dstRangeStart);
 				break;
 			}
@@ -159,11 +159,10 @@ void VEngine::gal::DescriptorSetDx12::update(uint32_t count, const DescriptorSet
 				break;
 			}
 
-			assert(srcRangeStart.ptr);
-
 			// TODO: batch these calls
 			if (copy)
 			{
+				assert(srcRangeStart.ptr);
 				m_device->CopyDescriptorsSimple(1, dstRangeStart, srcRangeStart, m_samplerHeap ? D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER : D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 			}
 		}

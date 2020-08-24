@@ -119,9 +119,9 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
     imageCreateInfo.m_levels = 1;
     imageCreateInfo.m_samples = SampleCount::_1;
     imageCreateInfo.m_imageType = ImageType::_2D;
-    imageCreateInfo.m_format = static_cast<Format>(swapChainDesc.Format);
+    imageCreateInfo.m_format = m_imageFormat;
     imageCreateInfo.m_createFlags = 0;
-    imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+    imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT | gal::ImageUsageFlagBits::TEXTURE_BIT;
 
     for (uint32_t i = 0; i < m_imageCount; ++i)
     {

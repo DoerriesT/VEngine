@@ -18,13 +18,13 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 {
 	graph.addPass("Reflection Probe BCH6 Compression", rg::QueueType::GRAPHICS, 0, nullptr, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
-			// transition tmp result image from READ_IMAGE_TRANSFER to WRITE_STORAGE_IMAGE
+			// transition tmp result image from READ_IMAGE_TRANSFER to WRITE_RW_IMAGE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_tmpResultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::READ_IMAGE_TRANSFER,
-					ResourceState::WRITE_STORAGE_IMAGE,
+					ResourceState::WRITE_RW_IMAGE,
 					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);
 			}
@@ -68,13 +68,13 @@ void VEngine::ProbeCompressBCH6Pass::addToGraph(rg::RenderGraph &graph, const Da
 				mipSize /= 2;
 			}
 
-			// transition tmp result image from WRITE_STORAGE_IMAGE to READ_IMAGE_TRANSFER
+			// transition tmp result image from WRITE_RW_IMAGE to READ_IMAGE_TRANSFER
 			// transition actual result image from READ_TEXTURE to WRITE_IMAGE_TRANSFER
 			{
 				gal::Barrier barrier0 = Initializers::imageBarrier(data.m_tmpResultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					ResourceState::WRITE_STORAGE_IMAGE,
+					ResourceState::WRITE_RW_IMAGE,
 					ResourceState::READ_IMAGE_TRANSFER,
 					{ 0, RendererConsts::REFLECTION_PROBE_MIPS, data.m_tmpResultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 

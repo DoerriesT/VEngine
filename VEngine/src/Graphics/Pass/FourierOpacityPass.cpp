@@ -67,8 +67,8 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(data.m_fomImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		//{rg::ResourceViewHandle(tempImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_fomImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		//{rg::ResourceViewHandle(tempImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Fourier Opacity", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -127,7 +127,7 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 				{
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_fomImageViewHandle),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::READ_WRITE_STORAGE_IMAGE, { 0, 1, 0, 2 });
+						gal::ResourceState::WRITE_RW_IMAGE, gal::ResourceState::READ_WRITE_RW_TEXTURE, { 0, 1, 0, 2 });
 
 					cmdList->barrier(1, &barrier);
 				}
@@ -240,12 +240,12 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 			//			// fom goes from write to read
 			//			Barrier fom = Initializers::imageBarrier(registry.getImage(data.m_fomImageViewHandle),
 			//				PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-			//				gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::READ_TEXTURE, { 0, 1, 0, 2 });
+			//				gal::ResourceState::WRITE_RW_IMAGE, gal::ResourceState::READ_TEXTURE, { 0, 1, 0, 2 });
 			//
 			//			// tmp goes from read to write
 			//			Barrier tmp = Initializers::imageBarrier(registry.getImage(tempImageViewHandle),
 			//				PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-			//				gal::ResourceState::READ_TEXTURE, gal::ResourceState::WRITE_STORAGE_IMAGE, { 0, 1, 0, 2 });
+			//				gal::ResourceState::READ_TEXTURE, gal::ResourceState::WRITE_RW_IMAGE, { 0, 1, 0, 2 });
 			//
 			//			// no need to transition temp images on first iteration as they are already in the correct state
 			//			Barrier barriers[]{ fom, tmp };
@@ -272,12 +272,12 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 			//			// fom goes from read to write
 			//			Barrier fom = Initializers::imageBarrier(registry.getImage(data.m_fomImageViewHandle),
 			//				PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-			//				gal::ResourceState::READ_TEXTURE, gal::ResourceState::WRITE_STORAGE_IMAGE, { 0, 1, 0, 2 });
+			//				gal::ResourceState::READ_TEXTURE, gal::ResourceState::WRITE_RW_IMAGE, { 0, 1, 0, 2 });
 			//
 			//			// tmp goes from write to read
 			//			Barrier tmp = Initializers::imageBarrier(registry.getImage(tempImageViewHandle),
 			//				PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-			//				gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::READ_TEXTURE, { 0, 1, 0, 2 });
+			//				gal::ResourceState::WRITE_RW_IMAGE, gal::ResourceState::READ_TEXTURE, { 0, 1, 0, 2 });
 			//
 			//			Barrier barriers[]{ fom, tmp };
 			//			cmdList->barrier(2, barriers);

@@ -24,7 +24,7 @@ void VEngine::SharpenFfxCasPass::addToGraph(rg::RenderGraph &graph, const Data &
 	rg::ResourceUsageDescription passUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_srcImageHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_dstImageHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_dstImageHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Sharpen (FFX CAS)", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)

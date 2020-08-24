@@ -49,7 +49,7 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 	desc.m_levels = levels;
 	desc.m_samples = SampleCount::_1;
 	desc.m_format = Format::R32_SFLOAT;
-	desc.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::STORAGE_BIT;
+	desc.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
 
 	outData.m_resultImageHandle = graph.createImage(desc);
 
@@ -78,11 +78,11 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 		// last level isnt read from in this pass
 		if (i == (levels - 1))
 		{
-			passUsages[i] = { resViewHandle, {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+			passUsages[i] = { resViewHandle, {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
 		}
 		else
 		{
-			passUsages[i] = { resViewHandle, {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+			passUsages[i] = { resViewHandle, {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
 		}
 	}
 	passUsages[levels] = { rg::ResourceViewHandle(data.m_inputImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
@@ -143,7 +143,7 @@ void VEngine::HiZPyramidPass::addToGraph(rg::RenderGraph &graph, const Data &dat
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(viewHandles[i]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE,
+						gal::ResourceState::WRITE_RW_IMAGE,
 						gal::ResourceState::READ_TEXTURE,
 						{ i, 1, 0, 1 });
 

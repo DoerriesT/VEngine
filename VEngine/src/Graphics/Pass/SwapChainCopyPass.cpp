@@ -50,7 +50,7 @@ void VEngine::SwapChainCopyPass::addToGraph(rg::RenderGraph &graph, const Data &
 			{
 				Barrier barrier = Initializers::imageBarrier(data.m_resultImageView->getImage(),
 					PipelineStageFlagBits::FRAGMENT_SHADER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					gal::ResourceState::UNDEFINED, gal::ResourceState::WRITE_STORAGE_IMAGE);
+					gal::ResourceState::UNDEFINED, gal::ResourceState::WRITE_RW_IMAGE);
 
 				cmdList->barrier(1, &barrier);
 			}
@@ -61,7 +61,7 @@ void VEngine::SwapChainCopyPass::addToGraph(rg::RenderGraph &graph, const Data &
 			{
 				Barrier barrier = Initializers::imageBarrier(data.m_resultImageView->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT, PipelineStageFlagBits::FRAGMENT_SHADER_BIT,
-					gal::ResourceState::WRITE_STORAGE_IMAGE, gal::ResourceState::READ_TEXTURE);
+					gal::ResourceState::WRITE_RW_IMAGE, gal::ResourceState::READ_TEXTURE);
 
 				cmdList->barrier(1, &barrier);
 			}

@@ -41,12 +41,12 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(tmpImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(tmpImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_prevImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_inputImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
@@ -129,7 +129,7 @@ void VEngine::VolumetricFogFilterPass::addToGraph(rg::RenderGraph &graph, const 
 				Barrier barrier = Initializers::imageBarrier(registry.getImage(tmpImageViewHandle),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					gal::ResourceState::WRITE_STORAGE_IMAGE,
+					gal::ResourceState::WRITE_RW_IMAGE,
 					gal::ResourceState::READ_TEXTURE,
 					{ 0, 1, 0, 1 });
 

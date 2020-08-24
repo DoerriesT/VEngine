@@ -236,7 +236,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_transmittanceImage);
 	}
@@ -253,7 +253,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_imageType = ImageType::_3D;
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_scatteringImage);
 	}
@@ -270,7 +270,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_irradianceImage);
 	}
@@ -280,7 +280,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = sizeof(AtmosphereParameters);
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::UNIFORM_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::CONSTANT_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_COHERENT_BIT | MemoryPropertyFlagBits::HOST_VISIBLE_BIT, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, false, &m_constantBuffer);
 	}
@@ -415,7 +415,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 	{
 		rg::ResourceUsageDescription passUsages[]
 		{
-			{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		};
 
 		graph.addPass("AS Transmittance", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -454,8 +454,8 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 	{
 		rg::ResourceUsageDescription passUsages[]
 		{
-			{rg::ResourceViewHandle(deltaIrradianceImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-			{rg::ResourceViewHandle(irradianceImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(deltaIrradianceImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(irradianceImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 			{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		};
 
@@ -500,9 +500,9 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 	{
 		rg::ResourceUsageDescription passUsages[]
 		{
-			{rg::ResourceViewHandle(deltaRayleighScatteringImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-			{rg::ResourceViewHandle(deltaMieScatteringImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-			{rg::ResourceViewHandle(scatteringImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(deltaRayleighScatteringImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(deltaMieScatteringImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+			{rg::ResourceViewHandle(scatteringImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 			{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		};
 
@@ -552,7 +552,7 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 		{
 			rg::ResourceUsageDescription passUsages[]
 			{
-				{rg::ResourceViewHandle(deltaScatteringDensityImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+				{rg::ResourceViewHandle(deltaScatteringDensityImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaRayleighScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaMieScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -609,8 +609,8 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 		{
 			rg::ResourceUsageDescription passUsages[]
 			{
-				{rg::ResourceViewHandle(deltaIrradianceImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-				{rg::ResourceViewHandle(irradianceImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+				{rg::ResourceViewHandle(deltaIrradianceImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+				{rg::ResourceViewHandle(irradianceImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaRayleighScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaMieScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaMultipleScatteringImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
@@ -663,8 +663,8 @@ void VEngine::AtmosphericScatteringModule::addPrecomputationToGraph(rg::RenderGr
 		{
 			rg::ResourceUsageDescription passUsages[]
 			{
-				{rg::ResourceViewHandle(deltaMultipleScatteringImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-				{rg::ResourceViewHandle(scatteringImageViewHandle), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+				{rg::ResourceViewHandle(deltaMultipleScatteringImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+				{rg::ResourceViewHandle(scatteringImageViewHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(transmittanceImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 				{rg::ResourceViewHandle(deltaScatteringDensityImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 			};

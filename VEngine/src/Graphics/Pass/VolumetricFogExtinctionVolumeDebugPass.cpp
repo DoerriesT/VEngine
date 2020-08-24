@@ -18,7 +18,7 @@ void VEngine::VolumetricFogExtinctionVolumeDebugPass::addToGraph(rg::RenderGraph
 {
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::READ_WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::READ_WRITE_RW_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_extinctionVolumeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 

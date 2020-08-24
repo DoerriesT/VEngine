@@ -288,7 +288,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	{
 		rg::ResourceUsageDescription passUsages[]
 		{
-			{rg::ResourceViewHandle(downsampledDepthImageViewHandle), { gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+			{rg::ResourceViewHandle(downsampledDepthImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 			{rg::ResourceViewHandle(data.m_depthImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		};
 
@@ -396,7 +396,7 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 	imageCreateInfo.m_imageType = ImageType::_3D;
 	imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
 	imageCreateInfo.m_createFlags = 0;
-	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 
 	ImageCreateInfo raymarchedImageCreateInfo{};
@@ -409,7 +409,7 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 	raymarchedImageCreateInfo.m_imageType = ImageType::_2D;
 	raymarchedImageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
 	raymarchedImageCreateInfo.m_createFlags = 0;
-	raymarchedImageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+	raymarchedImageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 
 	ImageCreateInfo downsampledDepthImageCreateInfo{};
@@ -422,7 +422,7 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 	downsampledDepthImageCreateInfo.m_imageType = ImageType::_2D;
 	downsampledDepthImageCreateInfo.m_format = Format::R32_SFLOAT;
 	downsampledDepthImageCreateInfo.m_createFlags = 0;
-	downsampledDepthImageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+	downsampledDepthImageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)

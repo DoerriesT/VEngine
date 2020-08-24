@@ -5,6 +5,7 @@
 #include "gal/Initializers.h"
 #include "imgui/imgui.h"
 #include "ProxyMeshes.h"
+#include "Utility/Utility.h"
 
 using namespace VEngine::gal;
 
@@ -110,7 +111,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R16G16_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_brdfLUT);
 	}
@@ -127,7 +128,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::D32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_shadowAtlasImage);
 	}
@@ -141,7 +142,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 			BufferCreateInfo bufferCreateInfo{};
 			bufferCreateInfo.m_size = RendererConsts::MAPPABLE_UBO_BLOCK_SIZE;
 			bufferCreateInfo.m_createFlags = 0;
-			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::UNIFORM_BUFFER_BIT;
+			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::CONSTANT_BUFFER_BIT;
 
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
@@ -155,7 +156,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 			BufferCreateInfo bufferCreateInfo{};
 			bufferCreateInfo.m_size = RendererConsts::MAPPABLE_SSBO_BLOCK_SIZE;
 			bufferCreateInfo.m_createFlags = 0;
-			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TYPED_BUFFER_BIT | BufferUsageFlagBits::BYTE_BUFFER_BIT  | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
@@ -171,7 +172,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = sizeof(float) * RendererConsts::FRAMES_IN_FLIGHT;
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::BYTE_BUFFER_BIT | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_avgLuminanceBuffer);
 	}
@@ -181,7 +182,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = sizeof(float) * 2;
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::STORAGE_BUFFER_BIT | BufferUsageFlagBits::TRANSFER_DST_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::BYTE_BUFFER_BIT | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT | BufferUsageFlagBits::TRANSFER_DST_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_exposureDataBuffer);
 
@@ -210,18 +211,18 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		}
 	}
 
-	// luminance histogram readback buffers
-	{
-		BufferCreateInfo bufferCreateInfo{};
-		bufferCreateInfo.m_size = sizeof(uint32_t);
-		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
-
-		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
-		{
-			m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_CACHED_BIT, 0, false, &m_occlusionCullStatsReadBackBuffers[i]);
-		}
-	}
+	// occlusion cull stats readback buffers
+	//{
+	//	BufferCreateInfo bufferCreateInfo{};
+	//	bufferCreateInfo.m_size = sizeof(uint32_t);
+	//	bufferCreateInfo.m_createFlags = 0;
+	//	bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT;// | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT;
+	//
+	//	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+	//	{
+	//		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::HOST_VISIBLE_BIT | MemoryPropertyFlagBits::HOST_CACHED_BIT, 0, false, &m_occlusionCullStatsReadBackBuffers[i]);
+	//	}
+	//}
 
 	// staging buffer
 	{
@@ -238,7 +239,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = sizeof(MaterialData) * RendererConsts::MAX_MATERIALS;
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_materialBuffer);
 	}
@@ -248,7 +249,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = RendererConsts::MAX_VERTICES * (sizeof(VertexPosition) + sizeof(VertexQTangent) + sizeof(VertexTexCoord));
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::VERTEX_BUFFER_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::VERTEX_BUFFER_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_vertexBuffer);
 	}
@@ -258,7 +259,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = RendererConsts::MAX_INDICES * sizeof(uint16_t);
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::INDEX_BUFFER_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_indexBuffer);
 	}
@@ -268,7 +269,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = RendererConsts::MAX_SUB_MESHES * sizeof(SubMeshInfo);
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_subMeshDataInfoBuffer);
 	}
@@ -278,7 +279,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = RendererConsts::MAX_SUB_MESHES * sizeof(float) * 6;
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_subMeshBoundingBoxBuffer);
 	}
@@ -288,7 +289,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		BufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.m_size = RendererConsts::MAX_SUB_MESHES * sizeof(float) * 4;
 		bufferCreateInfo.m_createFlags = 0;
-		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+		bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TRANSFER_DST_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 		m_graphicsDevice->createBuffer(bufferCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_subMeshTexCoordScaleBiasBuffer);
 	}
@@ -620,7 +621,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::D32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -646,7 +647,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -670,7 +671,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -694,7 +695,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::STORAGE_BIT | ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
 		if (m_editorSceneTexture)
 		{
@@ -771,7 +772,7 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_imGuiFontsTexture);
 
@@ -779,12 +780,24 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 		m_graphicsDevice->createImageView(m_imGuiFontsTexture, &m_imGuiFontsTextureView);
 	}
 
+	size_t rowPitch = Utility::alignUp((size_t)(width * 4u), (size_t)m_graphicsDevice->getBufferCopyRowPitchAlignment());
+
 	// Upload to Buffer:
 	{
 		uint8_t *map = nullptr;
 		m_stagingBuffer->map((void **)&map);
 		{
-			memcpy(map, pixels, upload_size);
+			// keep track of current offset in staging buffer
+			size_t currentOffset = 0;
+
+			const uint8_t *srcData = pixels;
+
+			for (size_t row = 0; row < height; ++row)
+			{
+				memcpy(map + currentOffset, srcData, width * 4u);
+				srcData += width * 4u;
+				currentOffset += rowPitch;
+			}
 		}
 		m_stagingBuffer->unmap();
 	}
@@ -798,13 +811,18 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 			Barrier b0 = Initializers::imageBarrier(m_imGuiFontsTexture, PipelineStageFlagBits::HOST_BIT, PipelineStageFlagBits::TRANSFER_BIT, ResourceState::UNDEFINED, ResourceState::WRITE_IMAGE_TRANSFER);
 			m_commandList->barrier(1, &b0);
 
-			BufferImageCopy region{};
-			region.m_imageLayerCount = 1;
-			region.m_extent.m_width = width;
-			region.m_extent.m_height = height;
-			region.m_extent.m_depth = 1;
+			BufferImageCopy bufferCopyRegion{};
+			bufferCopyRegion.m_imageMipLevel = 0;
+			bufferCopyRegion.m_imageBaseLayer = 0;
+			bufferCopyRegion.m_imageLayerCount = 1;
+			bufferCopyRegion.m_extent.m_width = width;
+			bufferCopyRegion.m_extent.m_height = height;
+			bufferCopyRegion.m_extent.m_depth = 1;
+			bufferCopyRegion.m_bufferOffset = 0;
+			bufferCopyRegion.m_bufferRowLength = rowPitch / 4u; // this is in pixels
+			bufferCopyRegion.m_bufferImageHeight = height;
 
-			m_commandList->copyBufferToImage(m_stagingBuffer, m_imGuiFontsTexture, 1, &region);
+			m_commandList->copyBufferToImage(m_stagingBuffer, m_imGuiFontsTexture, 1, &bufferCopyRegion);
 			
 			// transition from TRANSFER_DST to TEXTURE
 			Barrier b1 = Initializers::imageBarrier(m_imGuiFontsTexture, PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::FRAGMENT_SHADER_BIT, ResourceState::WRITE_IMAGE_TRANSFER, ResourceState::READ_TEXTURE);

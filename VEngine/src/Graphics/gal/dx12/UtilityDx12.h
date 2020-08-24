@@ -23,6 +23,7 @@ namespace VEngine
 			D3D12_RESOURCE_FLAGS translateImageUsageFlags(ImageUsageFlags flags);
 			D3D12_RESOURCE_FLAGS translateBufferUsageFlags(BufferUsageFlags flags);
 			UINT formatByteSize(Format format);
+			DXGI_FORMAT getTypeless(DXGI_FORMAT format);
 		}
 	}
 }

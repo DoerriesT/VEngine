@@ -21,7 +21,7 @@ void VEngine::BloomModule::addToGraph(rg::RenderGraph &graph, const InputData &i
 		desc.m_levels = BLOOM_MIP_COUNT;
 		desc.m_samples = SampleCount::_1;
 		desc.m_format = Format::B10G11R11_UFLOAT_PACK32;
-		desc.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT;
+		desc.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT;
 
 		desc.m_name = "Bloom Downsample Image";
 		downsampleImageHandle = graph.createImage(desc);

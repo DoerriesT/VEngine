@@ -20,7 +20,7 @@
 #if VULKAN
 #define PUSH_CONSTS(push_const_type, name) [[vk::push_constant]] push_const_type name
 #else
-#define PUSH_CONSTS(push_const_type, name) ConstantBuffer<push_const_type> name : register(b0, space500);
+#define PUSH_CONSTS(push_const_type, name) ConstantBuffer<push_const_type> name : register(b0, space5000);
 #endif // VULKAN
 
 #endif //BINDING_HELPER_H

@@ -1158,11 +1158,11 @@ VkImageUsageFlags VEngine::gal::UtilityVk::translateImageUsageFlags(gal::ImageUs
 	{
 		result |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
-	if (testFlagBit(flags, ImageUsageFlagBits::SAMPLED_BIT))
+	if (testFlagBit(flags, ImageUsageFlagBits::TEXTURE_BIT))
 	{
 		result |= VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
-	if (testFlagBit(flags, ImageUsageFlagBits::STORAGE_BIT))
+	if (testFlagBit(flags, ImageUsageFlagBits::RW_TEXTURE_BIT))
 	{
 		result |= VK_IMAGE_USAGE_STORAGE_BIT;
 	}
@@ -1214,19 +1214,31 @@ VkBufferUsageFlags VEngine::gal::UtilityVk::translateBufferUsageFlags(gal::Buffe
 	{
 		result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
-	if (testFlagBit(flags, BufferUsageFlagBits::UNIFORM_TEXEL_BUFFER_BIT))
+	if (testFlagBit(flags, BufferUsageFlagBits::TYPED_BUFFER_BIT))
 	{
 		result |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 	}
-	if (testFlagBit(flags, BufferUsageFlagBits::STORAGE_TEXEL_BUFFER_BIT))
+	if (testFlagBit(flags, BufferUsageFlagBits::RW_TYPED_BUFFER_BIT))
 	{
 		result |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 	}
-	if (testFlagBit(flags, BufferUsageFlagBits::UNIFORM_BUFFER_BIT))
+	if (testFlagBit(flags, BufferUsageFlagBits::CONSTANT_BUFFER_BIT))
 	{
 		result |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	}
-	if (testFlagBit(flags, BufferUsageFlagBits::STORAGE_BUFFER_BIT))
+	if (testFlagBit(flags, BufferUsageFlagBits::BYTE_BUFFER_BIT))
+	{
+		result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::RW_BYTE_BUFFER_BIT))
+	{
+		result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::STRUCTURED_BUFFER_BIT))
+	{
+		result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
+	if (testFlagBit(flags, BufferUsageFlagBits::RW_STRUCTURED_BUFFER_BIT))
 	{
 		result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	}

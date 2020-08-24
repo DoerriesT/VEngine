@@ -89,8 +89,8 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(indirectDrawCmdBufferViewHandle), {gal::ResourceState::WRITE_BUFFER_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT}, true, {gal::ResourceState::READ_WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(filteredIndicesBufferViewHandle), {gal::ResourceState::WRITE_STORAGE_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(indirectDrawCmdBufferViewHandle), {gal::ResourceState::WRITE_BUFFER_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT}, true, {gal::ResourceState::READ_WRITE_RW_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(filteredIndicesBufferViewHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
 	graph.addPass("Build Index Buffer", data.m_async ? rg::QueueType::COMPUTE : rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -103,7 +103,7 @@ void VEngine::BuildIndexBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 				Barrier barrier = Initializers::bufferBarrier(registry.getBuffer(indirectDrawCmdBufferViewHandle),
 					PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					gal::ResourceState::WRITE_BUFFER_TRANSFER, gal::ResourceState::READ_WRITE_STORAGE_BUFFER);
+					gal::ResourceState::WRITE_BUFFER_TRANSFER, gal::ResourceState::READ_WRITE_RW_BUFFER);
 				cmdList->barrier(1, &barrier);
 			}
 

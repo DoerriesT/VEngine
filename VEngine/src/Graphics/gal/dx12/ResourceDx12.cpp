@@ -101,7 +101,8 @@ const VEngine::gal::BufferCreateInfo &VEngine::gal::BufferDx12::getDescription()
 
 void VEngine::gal::BufferDx12::map(void **data)
 {
-	m_buffer->Map(0, nullptr, data);
+	D3D12_RANGE range{0, m_description.m_size};
+	m_buffer->Map(0, &range, data);
 }
 
 void VEngine::gal::BufferDx12::unmap()
@@ -150,11 +151,39 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 	DXGI_FORMAT format = UtilityDx12::translate(createInfo.m_format);
 
 	// SRV
-	if (imageDesc.m_usageFlags & ImageUsageFlagBits::SAMPLED_BIT)
+	if (imageDesc.m_usageFlags & ImageUsageFlagBits::TEXTURE_BIT)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
 		viewDesc.Shader4ComponentMapping = UtilityDx12::translate(createInfo.m_components);
+
+		if (imageDesc.m_usageFlags & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			switch (imageDesc.m_format)
+			{
+			case Format::D16_UNORM:
+				viewDesc.Format = DXGI_FORMAT_R16_UNORM;
+				break;
+			case Format::X8_D24_UNORM_PACK32:
+				viewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+				break;
+			case Format::D32_SFLOAT:
+				viewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+				break;
+			case Format::S8_UINT:
+				viewDesc.Format = DXGI_FORMAT_R8_UINT;
+				break;
+			case Format::D24_UNORM_S8_UINT:
+				viewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // TODO: is this correct?
+				break;
+			case Format::D32_SFLOAT_S8_UINT:
+				viewDesc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+				break;
+			default:
+				assert(false);
+				break;
+			}
+		}
 
 		switch (createInfo.m_viewType)
 		{
@@ -247,7 +276,7 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 	}
 
 	// UAV
-	if (imageDesc.m_usageFlags & ImageUsageFlagBits::STORAGE_BIT && createInfo.m_viewType != ImageViewType::CUBE && createInfo.m_viewType != ImageViewType::CUBE_ARRAY && imageDesc.m_samples == SampleCount::_1)
+	if (imageDesc.m_usageFlags & ImageUsageFlagBits::RW_TEXTURE_BIT && createInfo.m_viewType != ImageViewType::CUBE && createInfo.m_viewType != ImageViewType::CUBE_ARRAY && imageDesc.m_samples == SampleCount::_1)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
@@ -518,7 +547,7 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 	assert((createInfo.m_range % formatSize) == 0);
 
 	// SRV
-	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::UNIFORM_TEXEL_BUFFER_BIT)
+	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::TYPED_BUFFER_BIT)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;
@@ -546,7 +575,7 @@ VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferV
 	}
 
 	// UAV
-	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::STORAGE_TEXEL_BUFFER_BIT)
+	if (bufferDesc.m_usageFlags & BufferUsageFlagBits::RW_TYPED_BUFFER_BIT)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
 		viewDesc.Format = format;

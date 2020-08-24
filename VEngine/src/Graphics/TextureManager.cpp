@@ -40,7 +40,7 @@ VEngine::TextureManager::TextureManager(gal::GraphicsDevice *graphicsDevice)
 		imageCreateInfo.m_imageType = ImageType::_2D;
 		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = (uint32_t)ImageUsageFlagBits::SAMPLED_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, (uint32_t)MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_dummy2DImage);
 		m_graphicsDevice->setDebugObjectName(ObjectType::IMAGE, m_dummy2DImage, "Dummy Image");

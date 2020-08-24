@@ -19,13 +19,13 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 	graph.addPass("Reflection Probe Filter", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
-			// transition result image from READ_TEXTURE to WRITE_STORAGE_IMAGE
+			// transition result image from READ_TEXTURE to WRITE_RW_IMAGE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::READ_TEXTURE,
-					ResourceState::WRITE_STORAGE_IMAGE,
+					ResourceState::WRITE_RW_IMAGE,
 					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);
 			}
@@ -66,12 +66,12 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 			cmdList->dispatch(342, 6, 1);
 
-			// transition result image from WRITE_STORAGE_IMAGE to READ_TEXTURE
+			// transition result image from WRITE_RW_IMAGE to READ_TEXTURE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					ResourceState::WRITE_STORAGE_IMAGE,
+					ResourceState::WRITE_RW_IMAGE,
 					ResourceState::READ_TEXTURE,
 					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });
 				cmdList->barrier(1, &barrier);

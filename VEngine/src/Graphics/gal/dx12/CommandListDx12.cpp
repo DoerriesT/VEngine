@@ -18,6 +18,7 @@ VEngine::gal::CommandListDx12::CommandListDx12(ID3D12Device *device, D3D12_COMMA
 {
 	UtilityDx12::checkResult(device->CreateCommandAllocator(cmdListType, __uuidof(ID3D12CommandAllocator), (void **)&m_commandAllocator), "Failed to create command list allocator!");
 	UtilityDx12::checkResult(device->CreateCommandList(0, cmdListType, m_commandAllocator, nullptr, __uuidof(ID3D12GraphicsCommandList5), (void **)&m_commandList), "Failed to create command list!");
+	m_commandList->Close();
 }
 
 VEngine::gal::CommandListDx12::~CommandListDx12()
@@ -247,30 +248,8 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 	Format format = dstImage->getDescription().m_format;
 	DXGI_FORMAT formatDx = UtilityDx12::translate(format);
 	UINT texelSize = UtilityDx12::formatByteSize(format);
-	UINT texelsPerBlock = 1;
-	switch (format)
-	{
-	case Format::BC1_RGB_UNORM_BLOCK:
-	case Format::BC1_RGB_SRGB_BLOCK:
-	case Format::BC1_RGBA_UNORM_BLOCK:
-	case Format::BC1_RGBA_SRGB_BLOCK:
-	case Format::BC2_UNORM_BLOCK:
-	case Format::BC2_SRGB_BLOCK:
-	case Format::BC3_UNORM_BLOCK:
-	case Format::BC3_SRGB_BLOCK:
-	case Format::BC4_UNORM_BLOCK:
-	case Format::BC4_SNORM_BLOCK:
-	case Format::BC5_UNORM_BLOCK:
-	case Format::BC5_SNORM_BLOCK:
-	case Format::BC6H_UFLOAT_BLOCK:
-	case Format::BC6H_SFLOAT_BLOCK:
-	case Format::BC7_UNORM_BLOCK:
-	case Format::BC7_SRGB_BLOCK:
-		texelsPerBlock = 4;
-		break;
-	default:
-		texelsPerBlock = 1;
-	}
+	bool compressedFormat = Initializers::getFormatInfo(format).m_compressed;
+	UINT texelsPerBlock = compressedFormat ? 4 : 1;
 
 	for (size_t i = 0; i < regionCount; ++i)
 	{
@@ -279,8 +258,8 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 
 		D3D12_SUBRESOURCE_FOOTPRINT srcFootprint{};
 		srcFootprint.Format = formatDx;
-		srcFootprint.Width = regions[i].m_extent.m_width;
-		srcFootprint.Height = regions[i].m_extent.m_height;
+		srcFootprint.Width = compressedFormat ? max(regions[i].m_extent.m_width, 4) : regions[i].m_extent.m_width;
+		srcFootprint.Height = compressedFormat ? max(regions[i].m_extent.m_height, 4) : regions[i].m_extent.m_height;
 		srcFootprint.Depth = regions[i].m_extent.m_depth;
 		srcFootprint.RowPitch = regions[i].m_bufferRowLength / texelsPerBlock * texelSize;
 
@@ -296,30 +275,8 @@ void VEngine::gal::CommandListDx12::copyImageToBuffer(const Image *srcImage, con
 	Format format = srcImage->getDescription().m_format;
 	DXGI_FORMAT formatDx = UtilityDx12::translate(format);
 	UINT texelSize = UtilityDx12::formatByteSize(format);
-	UINT texelsPerBlock = 1;
-	switch (format)
-	{
-	case Format::BC1_RGB_UNORM_BLOCK:
-	case Format::BC1_RGB_SRGB_BLOCK:
-	case Format::BC1_RGBA_UNORM_BLOCK:
-	case Format::BC1_RGBA_SRGB_BLOCK:
-	case Format::BC2_UNORM_BLOCK:
-	case Format::BC2_SRGB_BLOCK:
-	case Format::BC3_UNORM_BLOCK:
-	case Format::BC3_SRGB_BLOCK:
-	case Format::BC4_UNORM_BLOCK:
-	case Format::BC4_SNORM_BLOCK:
-	case Format::BC5_UNORM_BLOCK:
-	case Format::BC5_SNORM_BLOCK:
-	case Format::BC6H_UFLOAT_BLOCK:
-	case Format::BC6H_SFLOAT_BLOCK:
-	case Format::BC7_UNORM_BLOCK:
-	case Format::BC7_SRGB_BLOCK:
-		texelsPerBlock = 4;
-		break;
-	default:
-		texelsPerBlock = 1;
-	}
+	bool compressedFormat = Initializers::getFormatInfo(format).m_compressed;
+	UINT texelsPerBlock = compressedFormat ? 4 : 1;
 
 	for (size_t i = 0; i < regionCount; ++i)
 	{
@@ -550,59 +507,96 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 
 	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags, Format format) -> ResourceStateInfo
 	{
+		// determine if resource is used in pixel shader or non-pixel shader
+		D3D12_RESOURCE_STATES shaderResourceState = D3D12_RESOURCE_STATE_COMMON;
+		if ((stageFlags & PipelineStageFlagBits::FRAGMENT_SHADER_BIT) != 0)
+		{
+			shaderResourceState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		}
+		if ((stageFlags
+			& PipelineStageFlagBits::VERTEX_SHADER_BIT
+			& PipelineStageFlagBits::TESSELLATION_CONTROL_SHADER_BIT
+			& PipelineStageFlagBits::TESSELLATION_EVALUATION_SHADER_BIT
+			& PipelineStageFlagBits::GEOMETRY_SHADER_BIT
+			& PipelineStageFlagBits::COMPUTE_SHADER_BIT) != 0)
+		{
+			shaderResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		}
+
 		switch (state)
 		{
 		case ResourceState::UNDEFINED:
 			return { D3D12_RESOURCE_STATE_COMMON, false, false, false };
+
 		case ResourceState::READ_IMAGE_HOST:
 		case ResourceState::READ_BUFFER_HOST:
 			return { D3D12_RESOURCE_STATE_COMMON, false, true, false };
+
 		case ResourceState::READ_DEPTH_STENCIL:
 			return { D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
-		case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
-			return { D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false, true, false };
+
+		case ResourceState::READ_DEPTH_STENCIL_SHADER:
+			return { shaderResourceState, false, true, false };
+
 		case ResourceState::READ_TEXTURE:
-			// TODO
-			return { D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false, true, false };
-		case ResourceState::READ_STORAGE_IMAGE:
-		case ResourceState::READ_STORAGE_BUFFER:
+		case ResourceState::READ_BUFFER:
+			return { shaderResourceState, false, true, false };
+
+		case ResourceState::READ_RW_TEXTURE:
+		case ResourceState::READ_RW_BUFFER:
 			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, true, false };
-		case ResourceState::READ_UNIFORM_BUFFER:
+
+		case ResourceState::READ_CONSTANT_BUFFER:
 			return { D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, false, true, false };
+
 		case ResourceState::READ_VERTEX_BUFFER:
 			return { D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, false, true, false };
+
 		case ResourceState::READ_INDEX_BUFFER:
 			return { D3D12_RESOURCE_STATE_INDEX_BUFFER, false, true, false };
+
 		case ResourceState::READ_INDIRECT_BUFFER:
 			return { D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, false, true, false };
+
 		case ResourceState::READ_BUFFER_TRANSFER:
 		case ResourceState::READ_IMAGE_TRANSFER:
 			return { D3D12_RESOURCE_STATE_COPY_SOURCE, false, true, false };
+
 		case ResourceState::READ_WRITE_IMAGE_HOST:
 		case ResourceState::READ_WRITE_BUFFER_HOST:
 			return { D3D12_RESOURCE_STATE_COMMON, false, true, true };
-		case ResourceState::READ_WRITE_STORAGE_IMAGE:
-		case ResourceState::READ_WRITE_STORAGE_BUFFER:
+
+		case ResourceState::READ_WRITE_RW_TEXTURE:
+		case ResourceState::READ_WRITE_RW_BUFFER:
 			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, true, true };
+
 		case ResourceState::READ_WRITE_DEPTH_STENCIL:
-			return { D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_DEPTH_WRITE, false, true, true };
+			return { D3D12_RESOURCE_STATE_DEPTH_WRITE, false, true, true };
+
 		case ResourceState::WRITE_IMAGE_HOST:
 		case ResourceState::WRITE_BUFFER_HOST:
 			return { D3D12_RESOURCE_STATE_COMMON, false, false, true };
+
 		case ResourceState::WRITE_ATTACHMENT:
 			return { D3D12_RESOURCE_STATE_RENDER_TARGET, false, false, true };
-		case ResourceState::WRITE_STORAGE_IMAGE:
-		case ResourceState::WRITE_STORAGE_BUFFER:
+
+		case ResourceState::WRITE_RW_IMAGE:
+		case ResourceState::WRITE_RW_BUFFER:
 			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, false, true };
+
 		case ResourceState::WRITE_BUFFER_TRANSFER:
 		case ResourceState::WRITE_IMAGE_TRANSFER:
 			return { D3D12_RESOURCE_STATE_COPY_DEST, false, false, true };
+
 		case ResourceState::CLEAR_BUFFER:
 			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+
 		case ResourceState::CLEAR_IMAGE:
 			return { Initializers::isDepthFormat(format) ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+
 		case ResourceState::PRESENT_IMAGE:
 			return { D3D12_RESOURCE_STATE_PRESENT, false, true, false };
+
 		default:
 			assert(false);
 			break;
@@ -633,10 +627,12 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 
 		ID3D12Resource *resouceDx = barrier.m_image ? (ID3D12Resource *)barrier.m_image->getNativeHandle() : (ID3D12Resource *)barrier.m_buffer->getNativeHandle();
 
-		// transitions from UNDEFINED require us to discard the resource
-		if (barrier.m_stateBefore == ResourceState::UNDEFINED)
+		if (barrier.m_image)
 		{
-			if (barrier.m_image)
+			const auto &resDesc = barrier.m_image->getDescription();
+
+			// transitions on render targets / depth-stencil textures from UNDEFINED require us to discard the resource
+			if ((resDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT) != 0 && barrier.m_stateBefore == ResourceState::UNDEFINED)
 			{
 				const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
 				const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
@@ -660,21 +656,23 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 						m_commandList->DiscardResource(resouceDx, &region);
 					}
 				}
-			}
-			else
-			{
-				m_commandList->DiscardResource(resouceDx, nullptr);
+
+				// correct the before state: DiscardResource promoted the state from COMMON to RENDER_TARGET or DEPTH_WRITE
+				beforeState.m_state = (resDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0 ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+				beforeState.m_writeAccess = true;
 			}
 		}
 
-		D3D12_RESOURCE_BARRIER barrierDx;
+		D3D12_RESOURCE_BARRIER barrierDx{};
+		barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
 		if (uavBarrier)
 		{
 			barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 			barrierDx.UAV.pResource = resouceDx;
 			barriersDx.push_back(barrierDx);
 		}
-		else
+		else if (beforeState.m_state != afterState.m_state)
 		{
 			barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 			barrierDx.Transition.pResource = resouceDx;

@@ -30,7 +30,7 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 	tempImageDesc.m_levels = data.m_levels - 1;
 	tempImageDesc.m_samples = SampleCount::_1;
 	tempImageDesc.m_format = data.m_format;
-	tempImageDesc.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+	tempImageDesc.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
 
 	rg::ImageHandle tempImageHandle = graph.createImage(tempImageDesc);
 
@@ -64,7 +64,7 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 		// last level isnt read from in this pass
 		if (i == (data.m_levels - 1))
 		{
-			passUsages[passUsageCount++] = { resViewHandle, {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+			passUsages[passUsageCount++] = { resViewHandle, {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
 		}
 		else if (i == 0)
 		{
@@ -72,12 +72,12 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 		}
 		else
 		{
-			passUsages[passUsageCount++] = { resViewHandle, {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+			passUsages[passUsageCount++] = { resViewHandle, {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
 		}
 		
 		if (i > 0)
 		{
-			passUsages[passUsageCount++] = { rg::ResourceViewHandle(tmpImgViewHandles[i - 1]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
+			passUsages[passUsageCount++] = { rg::ResourceViewHandle(tmpImgViewHandles[i - 1]), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT} };
 		}
 	}
 
@@ -137,7 +137,7 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(tmpImgViewHandles[0]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE,
+						gal::ResourceState::WRITE_RW_IMAGE,
 						gal::ResourceState::READ_TEXTURE,
 						{ i - 1, 1, 0, 1 });
 
@@ -184,7 +184,7 @@ void VEngine::GaussianDownsamplePass::addToGraph(rg::RenderGraph &graph, const D
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(viewHandles[i]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE,
+						gal::ResourceState::WRITE_RW_IMAGE,
 						gal::ResourceState::READ_TEXTURE,
 						{ i, 1, 0, 1 });
 

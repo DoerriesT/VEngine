@@ -30,11 +30,12 @@ bool Initializers::isReadAccess(ResourceState state)
 	case ResourceState::READ_IMAGE_HOST:
 	case ResourceState::READ_BUFFER_HOST:
 	case ResourceState::READ_DEPTH_STENCIL:
-	case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
+	case ResourceState::READ_DEPTH_STENCIL_SHADER:
 	case ResourceState::READ_TEXTURE:
-	case ResourceState::READ_STORAGE_IMAGE:
-	case ResourceState::READ_STORAGE_BUFFER:
-	case ResourceState::READ_UNIFORM_BUFFER:
+	case ResourceState::READ_BUFFER:
+	case ResourceState::READ_RW_TEXTURE:
+	case ResourceState::READ_RW_BUFFER:
+	case ResourceState::READ_CONSTANT_BUFFER:
 	case ResourceState::READ_VERTEX_BUFFER:
 	case ResourceState::READ_INDEX_BUFFER:
 	case ResourceState::READ_INDIRECT_BUFFER:
@@ -42,8 +43,8 @@ bool Initializers::isReadAccess(ResourceState state)
 	case ResourceState::READ_IMAGE_TRANSFER:
 	case ResourceState::READ_WRITE_IMAGE_HOST:
 	case ResourceState::READ_WRITE_BUFFER_HOST:
-	case ResourceState::READ_WRITE_STORAGE_IMAGE:
-	case ResourceState::READ_WRITE_STORAGE_BUFFER:
+	case ResourceState::READ_WRITE_RW_TEXTURE:
+	case ResourceState::READ_WRITE_RW_BUFFER:
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
 	case ResourceState::PRESENT_IMAGE:
 		return true;
@@ -59,14 +60,14 @@ bool Initializers::isWriteAccess(ResourceState state)
 	{
 	case ResourceState::READ_WRITE_IMAGE_HOST:
 	case ResourceState::READ_WRITE_BUFFER_HOST:
-	case ResourceState::READ_WRITE_STORAGE_IMAGE:
-	case ResourceState::READ_WRITE_STORAGE_BUFFER:
+	case ResourceState::READ_WRITE_RW_TEXTURE:
+	case ResourceState::READ_WRITE_RW_BUFFER:
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
 	case ResourceState::WRITE_IMAGE_HOST:
 	case ResourceState::WRITE_BUFFER_HOST:
 	case ResourceState::WRITE_ATTACHMENT:
-	case ResourceState::WRITE_STORAGE_IMAGE:
-	case ResourceState::WRITE_STORAGE_BUFFER:
+	case ResourceState::WRITE_RW_IMAGE:
+	case ResourceState::WRITE_RW_BUFFER:
 	case ResourceState::WRITE_BUFFER_TRANSFER:
 	case ResourceState::WRITE_IMAGE_TRANSFER:
 		return true;
@@ -92,20 +93,23 @@ uint32_t Initializers::getUsageFlags(ResourceState state)
 	case ResourceState::READ_DEPTH_STENCIL:
 		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
 
-	case ResourceState::READ_DEPTH_STENCIL_FRAG_SHADER:
-		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+	case ResourceState::READ_DEPTH_STENCIL_SHADER:
+		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 
 	case ResourceState::READ_TEXTURE:
-		return ImageUsageFlagBits::SAMPLED_BIT;
+		return ImageUsageFlagBits::TEXTURE_BIT;
 
-	case ResourceState::READ_STORAGE_IMAGE:
-		return ImageUsageFlagBits::STORAGE_BIT;
+	case ResourceState::READ_BUFFER:
+		return BufferUsageFlagBits::TYPED_BUFFER_BIT | BufferUsageFlagBits::BYTE_BUFFER_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
-	case ResourceState::READ_STORAGE_BUFFER:
-		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+	case ResourceState::READ_RW_TEXTURE:
+		return ImageUsageFlagBits::RW_TEXTURE_BIT;
 
-	case ResourceState::READ_UNIFORM_BUFFER:
-		return BufferUsageFlagBits::UNIFORM_BUFFER_BIT;
+	case ResourceState::READ_RW_BUFFER:
+		return BufferUsageFlagBits::RW_TYPED_BUFFER_BIT | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT | BufferUsageFlagBits::RW_STRUCTURED_BUFFER_BIT;
+
+	case ResourceState::READ_CONSTANT_BUFFER:
+		return BufferUsageFlagBits::CONSTANT_BUFFER_BIT;
 
 	case ResourceState::READ_VERTEX_BUFFER:
 		return BufferUsageFlagBits::VERTEX_BUFFER_BIT;
@@ -128,11 +132,11 @@ uint32_t Initializers::getUsageFlags(ResourceState state)
 	case ResourceState::READ_WRITE_BUFFER_HOST:
 		return 0;
 
-	case ResourceState::READ_WRITE_STORAGE_IMAGE:
-		return ImageUsageFlagBits::STORAGE_BIT;
+	case ResourceState::READ_WRITE_RW_TEXTURE:
+		return ImageUsageFlagBits::RW_TEXTURE_BIT;
 
-	case ResourceState::READ_WRITE_STORAGE_BUFFER:
-		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+	case ResourceState::READ_WRITE_RW_BUFFER:
+		return BufferUsageFlagBits::RW_TYPED_BUFFER_BIT | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT | BufferUsageFlagBits::RW_STRUCTURED_BUFFER_BIT;
 
 	case ResourceState::READ_WRITE_DEPTH_STENCIL:
 		return ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -146,11 +150,11 @@ uint32_t Initializers::getUsageFlags(ResourceState state)
 	case ResourceState::WRITE_ATTACHMENT:
 		return ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
-	case ResourceState::WRITE_STORAGE_IMAGE:
-		return ImageUsageFlagBits::STORAGE_BIT;
+	case ResourceState::WRITE_RW_IMAGE:
+		return ImageUsageFlagBits::RW_TEXTURE_BIT;
 
-	case ResourceState::WRITE_STORAGE_BUFFER:
-		return BufferUsageFlagBits::STORAGE_BUFFER_BIT;
+	case ResourceState::WRITE_RW_BUFFER:
+		return BufferUsageFlagBits::RW_TYPED_BUFFER_BIT | BufferUsageFlagBits::RW_BYTE_BUFFER_BIT | BufferUsageFlagBits::RW_STRUCTURED_BUFFER_BIT;
 
 	case ResourceState::WRITE_BUFFER_TRANSFER:
 		return BufferUsageFlagBits::TRANSFER_DST_BIT;

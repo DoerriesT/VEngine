@@ -4,7 +4,7 @@
 #include "Utility/ContainerUtility.h"
 
 VEngine::gal::CommandListPoolDx12::CommandListPoolDx12(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE cmdListType, const CommandListRecordContextDx12 *recordContext)
-	:m_device(),
+	:m_device(device),
 	m_cmdListType(cmdListType),
 	m_recordContext(recordContext),
 	m_liveCmdLists(),

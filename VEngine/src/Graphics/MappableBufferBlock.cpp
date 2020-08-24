@@ -21,6 +21,8 @@ void VEngine::MappableBufferBlock::allocate(uint64_t &size, uint64_t &offset, ga
 {
 	assert(size);
 
+	size = Utility::alignUp(size, m_alignment);
+
 	// offset after allocating from block
 	uint64_t newOffset = Utility::alignUp(m_currentOffset + size, m_alignment);
 

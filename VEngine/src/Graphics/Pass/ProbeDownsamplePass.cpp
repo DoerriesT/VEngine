@@ -18,11 +18,11 @@ void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 		// last level isnt read from in this pass
 		if (i == RendererConsts::REFLECTION_PROBE_MIPS - 1)
 		{
-			passUsages[i] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
+			passUsages[i] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 		}
 		else
 		{
-			passUsages[i] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_STORAGE_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
+			passUsages[i] = { rg::ResourceViewHandle(data.m_resultImageViewHandles[i]), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }, true, {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT } };
 		}
 	}
 
@@ -70,7 +70,7 @@ void VEngine::ProbeDownsamplePass::addToGraph(rg::RenderGraph &graph, const Data
 					Barrier barrier = Initializers::imageBarrier(registry.getImage(data.m_resultImageViewHandles[i]),
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 						PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-						gal::ResourceState::WRITE_STORAGE_IMAGE,
+						gal::ResourceState::WRITE_RW_IMAGE,
 						gal::ResourceState::READ_TEXTURE,
 						{ i, 1, 0, 6 });
 

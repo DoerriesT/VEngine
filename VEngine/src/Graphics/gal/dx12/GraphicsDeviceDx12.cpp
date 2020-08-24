@@ -158,7 +158,9 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 
 			ID3D12CommandQueue *queue;
 			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create graphics queue!");
-			m_graphicsQueue.init(queue, QueueType::GRAPHICS, 64, true);
+			Semaphore *waitIdleSemaphore;
+			createSemaphore(0, &waitIdleSemaphore);
+			m_graphicsQueue.init(queue, QueueType::GRAPHICS, 64, true, waitIdleSemaphore);
 		}
 
 		// compute queue
@@ -167,7 +169,9 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 
 			ID3D12CommandQueue *queue;
 			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create compute queue!");
-			m_computeQueue.init(queue, QueueType::COMPUTE, 64, true);
+			Semaphore *waitIdleSemaphore;
+			createSemaphore(0, &waitIdleSemaphore);
+			m_computeQueue.init(queue, QueueType::COMPUTE, 64, true, waitIdleSemaphore);
 		}
 
 		// transfer queue
@@ -176,7 +180,9 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 
 			ID3D12CommandQueue *queue;
 			UtilityDx12::checkResult(m_device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), (void **)&queue), "Failed to create transfer queue!");
-			m_transferQueue.init(queue, QueueType::TRANSFER, 0, false);
+			Semaphore *waitIdleSemaphore;
+			createSemaphore(0, &waitIdleSemaphore);
+			m_transferQueue.init(queue, QueueType::TRANSFER, 0, false, waitIdleSemaphore);
 		}
 	}
 
@@ -192,6 +198,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 			cpuHeapDesc.NodeMask = 0;
 
 			UtilityDx12::checkResult(m_device->CreateDescriptorHeap(&cpuHeapDesc, __uuidof(ID3D12DescriptorHeap), (void **)&m_cpuDescriptorHeap), "Failed to create descriptor heap");
+			m_cmdListRecordContext.m_cpuDescriptorHeap = m_cpuDescriptorHeap;
 
 			// cpu sampler heap
 			D3D12_DESCRIPTOR_HEAP_DESC cpuSamplerHeapDesc{};
@@ -213,7 +220,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 
 			// cpu dsv heap
 			D3D12_DESCRIPTOR_HEAP_DESC cpuDsvHeapDesc{};
-			cpuDsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			cpuDsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 			cpuDsvHeapDesc.NumDescriptors = CPU_DSV_DESCRIPTOR_HEAP_SIZE;
 			cpuDsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			cpuDsvHeapDesc.NodeMask = 0;
@@ -251,6 +258,8 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 		m_cmdListRecordContext.m_cpuDescriptorAllocator = &m_cpuDescriptorAllocator;
 		m_cmdListRecordContext.m_dsvDescriptorAllocator = &m_cpuDSVDescriptorAllocator;
 		m_cmdListRecordContext.m_gpuDescriptorAllocator = &m_gpuDescriptorAllocator;
+
+		m_cmdListRecordContext.m_device = m_device;
 	}
 
 	// create command signatures
@@ -305,6 +314,10 @@ VEngine::gal::GraphicsDeviceDx12::~GraphicsDeviceDx12()
 	{
 		delete m_swapChain;
 	}
+
+	destroySemaphore(m_graphicsQueue.getWaitIdleSemaphore());
+	destroySemaphore(m_computeQueue.getWaitIdleSemaphore());
+	destroySemaphore(m_transferQueue.getWaitIdleSemaphore());
 
 	m_cmdListRecordContext.m_drawIndirectSignature->Release();
 	m_cmdListRecordContext.m_drawIndexedIndirectSignature->Release();
@@ -484,20 +497,37 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 		resourceDesc.SampleDesc.Quality = 0;
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		resourceDesc.Flags = UtilityDx12::translateImageUsageFlags(imageCreateInfo.m_usageFlags);
+
+		// if the image is used both as depth buffer and as texture, we need to set its format to TYPELESS and use typed formats for the DSV and SRV
+		if (imageCreateInfo.m_usageFlags & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT & ImageUsageFlagBits::TEXTURE_BIT)
+		{
+			resourceDesc.Format = UtilityDx12::getTypeless(resourceDesc.Format);
+		}
 	}
 
 	// TODO: add this to gal::ImageCreateInfo?
 	D3D12_CLEAR_VALUE optimizedClearValue{};
 	optimizedClearValue.Format = resourceDesc.Format;
+	bool useClearValue = (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0;
 
 	D3D12MA::ALLOCATION_DESC allocationDesc{};
 	allocationDesc.Flags = dedicated ? D3D12MA::ALLOCATION_FLAG_COMMITTED : D3D12MA::ALLOCATION_FLAG_NONE;
 	allocationDesc.HeapType = getHeapProperties(requiredMemoryPropertyFlags).Type;
 
+	D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+	if (allocationDesc.HeapType == D3D12_HEAP_TYPE_UPLOAD)
+	{
+		initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	}
+	else if (allocationDesc.HeapType == D3D12_HEAP_TYPE_READBACK)
+	{
+		initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+	}
+
 	ID3D12Resource *nativeHandle = nullptr;
 	D3D12MA::Allocation *allocHandle = nullptr;
 
-	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, &optimizedClearValue, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
+	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, initialState, useClearValue ? &optimizedClearValue : nullptr, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
 
 	*image = new(memory) ImageDx12(nativeHandle, allocHandle, imageCreateInfo);
 }
@@ -511,7 +541,7 @@ void VEngine::gal::GraphicsDeviceDx12::createBuffer(const BufferCreateInfo &buff
 	{
 		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		resourceDesc.Alignment = 0;
-		resourceDesc.Width = bufferCreateInfo.m_size;
+		resourceDesc.Width = Utility::alignUp((UINT64)bufferCreateInfo.m_size, (UINT64)D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 		resourceDesc.Height = 1;
 		resourceDesc.DepthOrArraySize = 1;
 		resourceDesc.MipLevels = 1;
@@ -522,18 +552,24 @@ void VEngine::gal::GraphicsDeviceDx12::createBuffer(const BufferCreateInfo &buff
 		resourceDesc.Flags = UtilityDx12::translateBufferUsageFlags(bufferCreateInfo.m_usageFlags);
 	}
 
-	// TODO: add this to gal::ImageCreateInfo?
-	D3D12_CLEAR_VALUE optimizedClearValue{};
-	optimizedClearValue.Format = resourceDesc.Format;
-
 	D3D12MA::ALLOCATION_DESC allocationDesc{};
 	allocationDesc.Flags = dedicated ? D3D12MA::ALLOCATION_FLAG_COMMITTED : D3D12MA::ALLOCATION_FLAG_NONE;
 	allocationDesc.HeapType = getHeapProperties(requiredMemoryPropertyFlags).Type;
 
+	D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+	if (allocationDesc.HeapType == D3D12_HEAP_TYPE_UPLOAD)
+	{
+		initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+	}
+	else if (allocationDesc.HeapType == D3D12_HEAP_TYPE_READBACK)
+	{
+		initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+	}
+
 	ID3D12Resource *nativeHandle = nullptr;
 	D3D12MA::Allocation *allocHandle = nullptr;
 
-	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, &optimizedClearValue, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
+	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
 
 	*buffer = new(memory) BufferDx12(nativeHandle, allocHandle, bufferCreateInfo);
 }

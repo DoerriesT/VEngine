@@ -51,7 +51,7 @@ void VEngine::TextureLoader::load(const char *filepath, gal::Image *&image, gal:
 		imageCreateInfo.m_imageType = (gliTex.target() == gli::TARGET_2D || gliTex.target() == gli::TARGET_2D_ARRAY) ? ImageType::_2D : ImageType::_3D;
 		imageCreateInfo.m_format = static_cast<Format>(gliTex.format());
 		imageCreateInfo.m_createFlags = 0;
-		imageCreateInfo.m_usageFlags = (uint32_t)ImageUsageFlagBits::SAMPLED_BIT | (uint32_t)ImageUsageFlagBits::TRANSFER_DST_BIT;
+		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT;
 
 		m_graphicsDevice->createImage(imageCreateInfo, (uint32_t)MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &image);
 

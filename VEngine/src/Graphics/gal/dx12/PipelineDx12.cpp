@@ -53,11 +53,25 @@ namespace
 }
 
 static void reflectShader(ID3D12Device *device, size_t blobSize, void *blobData, uint32_t stageFlag, ReflectionInfo &reflectionInfo);
-static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const ReflectionInfo &reflectionInfo, bool useIA, uint32_t &descriptorTableOffset, uint32_t &descriptorTableCount);
+static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const ReflectionInfo &reflectionInfo, bool useIA, uint32_t &descriptorTableOffset, uint32_t &descriptorTableCount, DescriptorSetLayoutsDx12 &layouts);
+
+static std::vector<char> loadShaderFile(const char *filename)
+{
+	char path[ShaderStageCreateInfo::MAX_PATH_LENGTH + 6];
+	strcpy_s(path, filename);
+	strcat_s(path, ".dxil");
+	return VEngine::Utility::readBinaryFile(path);
+}
+
+constexpr UINT rootConstRegister = 0;
+constexpr UINT rootConstSpace = 5000;
 
 VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, const GraphicsPipelineCreateInfo &createInfo)
 	:m_pipeline(),
 	m_rootSignature(),
+	m_descriptorSetLayouts(),
+	m_descriptorTableOffset(),
+	m_descriptorTableCount(),
 	m_vertexBufferStrides(),
 	m_blendFactors(),
 	m_stencilRef()
@@ -69,14 +83,6 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	std::vector<char> psCode;
 
 	ReflectionInfo reflectionInfo{};
-
-	auto loadShaderFile = [](const char *filename) -> std::vector<char>
-	{
-		char path[ShaderStageCreateInfo::MAX_PATH_LENGTH + 6];
-		strcpy_s(path, filename);
-		strcat_s(path, ".dxil");
-		return VEngine::Utility::readBinaryFile(path);
-	};
 
 	if (createInfo.m_vertexShader.m_path[0])
 	{
@@ -105,7 +111,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	}
 
 	// create root signature from reflection data
-	m_rootSignature = createRootSignature(device, reflectionInfo, createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount > 0, m_descriptorTableOffset, m_descriptorTableCount);
+	m_rootSignature = createRootSignature(device, reflectionInfo, createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount > 0, m_descriptorTableOffset, m_descriptorTableCount, m_descriptorSetLayouts);
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC stateDesc{};
 	stateDesc.pRootSignature = m_rootSignature;
@@ -217,7 +223,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	}
 
 	stateDesc.InputLayout.NumElements = createInfo.m_vertexInputState.m_vertexAttributeDescriptionCount;
-	stateDesc.InputLayout.pInputElementDescs = inputElements;
+	stateDesc.InputLayout.pInputElementDescs = stateDesc.InputLayout.NumElements > 0 ? inputElements : nullptr;
 
 	stateDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // TODO
 	stateDesc.PrimitiveTopologyType = UtilityDx12::translate(createInfo.m_inputAssemblyState.m_primitiveTopology);
@@ -288,14 +294,17 @@ void VEngine::gal::GraphicsPipelineDx12::initializeState(ID3D12GraphicsCommandLi
 
 VEngine::gal::ComputePipelineDx12::ComputePipelineDx12(ID3D12Device *device, const ComputePipelineCreateInfo &createInfo)
 	:m_pipeline(),
-	m_rootSignature()
+	m_rootSignature(),
+	m_descriptorSetLayouts(),
+	m_descriptorTableOffset(),
+	m_descriptorTableCount()
 {
-	std::vector<char> csCode = VEngine::Utility::readBinaryFile(createInfo.m_computeShader.m_path);
+	std::vector<char> csCode = loadShaderFile(createInfo.m_computeShader.m_path);
 
 	// create root signature from reflection data
 	ReflectionInfo reflectionInfo{};
 	reflectShader(device, csCode.size(), csCode.data(), ReflectionInfo::COMPUTE_BIT, reflectionInfo);
-	m_rootSignature = createRootSignature(device, reflectionInfo, false, m_descriptorTableOffset, m_descriptorTableCount);
+	m_rootSignature = createRootSignature(device, reflectionInfo, false, m_descriptorTableOffset, m_descriptorTableCount, m_descriptorSetLayouts);
 
 	D3D12_COMPUTE_PIPELINE_STATE_DESC stateDesc{};
 	stateDesc.pRootSignature = m_rootSignature;
@@ -352,9 +361,9 @@ static void reflectShader(ID3D12Device *device, size_t blobSize, void *blobData,
 		explicit ShaderBlob(size_t size, void *data) : m_size(size), m_data(data) { }
 
 		// IUnknown interface (not actually implemented)
-		HRESULT QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) override { assert(false); return 0; }
-		ULONG AddRef(void)  override { assert(false); return 0; }
-		ULONG Release(void) override { assert(false); return 0; }
+		HRESULT QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) override { return 0; }
+		ULONG AddRef(void)  override { return 0; }
+		ULONG Release(void) override { return 0; }
 
 		// IDxcBlob interface
 		LPVOID GetBufferPointer(void) override { return m_data; }
@@ -392,50 +401,61 @@ static void reflectShader(ID3D12Device *device, size_t blobSize, void *blobData,
 		D3D12_SHADER_INPUT_BIND_DESC bindDesc;
 		UtilityDx12::checkResult(shaderReflection->GetResourceBindingDesc(i, &bindDesc), "Failed to retrieve resource binding description from shader description!");
 
-		if (bindDesc.Space >= 4)
+		// push const/root const
+		if (bindDesc.Type == D3D_SIT_CBUFFER && bindDesc.Space == rootConstSpace && bindDesc.BindPoint == rootConstRegister)
 		{
-			Utility::fatalExit("Shader uses a register space >= 4! Only spaces 0-3 are permitted.", EXIT_FAILURE);
+			reflectionInfo.m_pushConstants.m_size = 128; // TODO: reflect size
+			reflectionInfo.m_pushConstants.m_stageFlags |= stageFlag;
 		}
-
-		if (bindDesc.BindPoint >= 32)
+		// descriptor from descriptor table
+		else
 		{
-			Utility::fatalExit("Shader uses a register >= 32! Only registers 0-31 are permitted.", EXIT_FAILURE);
+			if (bindDesc.Space >= 4)
+			{
+				Utility::fatalExit("Shader uses a register space >= 4! Only spaces 0-3 are permitted.", EXIT_FAILURE);
+			}
+
+			if (bindDesc.BindPoint >= 32)
+			{
+				Utility::fatalExit("Shader uses a register >= 32! Only registers 0-31 are permitted.", EXIT_FAILURE);
+			}
+
+			uint32_t *mask = nullptr;
+
+			switch (bindDesc.Type)
+			{
+			case D3D_SIT_CBUFFER:
+				mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_cbvMask;
+				break;
+			case D3D_SIT_TBUFFER:
+			case D3D_SIT_TEXTURE:
+			case D3D_SIT_STRUCTURED:
+			case D3D_SIT_BYTEADDRESS:
+				mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_srvMask;
+				break;
+			case D3D_SIT_SAMPLER:
+				mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_samplerMask;
+				break;
+			case D3D_SIT_UAV_RWTYPED:
+			case D3D_SIT_UAV_RWSTRUCTURED:
+			case D3D_SIT_UAV_RWBYTEADDRESS:
+			case D3D_SIT_UAV_APPEND_STRUCTURED:
+			case D3D_SIT_UAV_CONSUME_STRUCTURED:
+			case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+				mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_uavMask;
+				break;
+			default:
+				assert(false);
+				break;
+			}
+
+			assert(mask);
+
+			*mask |= 1u << bindDesc.BindPoint;
+			reflectionInfo.m_setLayouts[bindDesc.Space].m_arraySizes[bindDesc.BindPoint] = bindDesc.BindCount;
+			reflectionInfo.m_setLayouts[bindDesc.Space].m_stageFlags[bindDesc.BindPoint] |= stageFlag;
+			reflectionInfo.m_setMask |= 1u << bindDesc.Space;
 		}
-
-		uint32_t *mask = nullptr;
-
-		switch (bindDesc.Type)
-		{
-		case D3D_SIT_CBUFFER:
-			mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_cbvMask;
-			break;
-		case D3D_SIT_TBUFFER:
-		case D3D_SIT_TEXTURE:
-		case D3D_SIT_STRUCTURED:
-		case D3D_SIT_BYTEADDRESS:
-			mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_srvMask;
-			break;
-		case D3D_SIT_SAMPLER:
-			mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_samplerMask;
-			break;
-		case D3D_SIT_UAV_RWTYPED:
-		case D3D_SIT_UAV_RWSTRUCTURED:
-		case D3D_SIT_UAV_RWBYTEADDRESS:
-		case D3D_SIT_UAV_APPEND_STRUCTURED:
-		case D3D_SIT_UAV_CONSUME_STRUCTURED:
-		case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-			mask = &reflectionInfo.m_setLayouts[bindDesc.Space].m_uavMask;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-
-		assert(mask);
-
-		*mask |= 1u << bindDesc.BindPoint;
-		reflectionInfo.m_setLayouts[bindDesc.Space].m_arraySizes[bindDesc.BindPoint] = bindDesc.BindCount;
-		reflectionInfo.m_setLayouts[bindDesc.Space].m_stageFlags[bindDesc.BindPoint] |= stageFlag;
 	}
 
 
@@ -444,7 +464,7 @@ static void reflectShader(ID3D12Device *device, size_t blobSize, void *blobData,
 	containerReflection->Release();
 }
 
-static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const ReflectionInfo &reflectionInfo, bool useIA, uint32_t &descriptorTableOffset, uint32_t &descriptorTableCount)
+static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const ReflectionInfo &reflectionInfo, bool useIA, uint32_t &descriptorTableOffset, uint32_t &descriptorTableCount, DescriptorSetLayoutsDx12 &layouts)
 {
 	descriptorTableOffset = 0;
 	descriptorTableCount = 0;
@@ -484,9 +504,6 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 		// root consts
 		if (reflectionInfo.m_pushConstants.m_size)
 		{
-			constexpr UINT rootConstRegister = 0;
-			constexpr UINT rootConstSpace = 5000;
-
 			assert(reflectionInfo.m_pushConstants.m_size % 4u == 0);
 
 			auto &param = rootParams[rootParamCount++];
@@ -513,8 +530,10 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 				const size_t rangeOffset = descriptorRanges.size();
 				uint32_t tableStageMask = 0;
 
-				// keep track of current descriptor offset in this table
-				UINT curDescriptorOffset = 0;
+				bool samplerSet = false;
+				bool nonSamplerSet = false;
+
+				UINT highestDescriptorIndex = 0;
 
 				// iterate over all possible bindings
 				for (uint32_t j = 0; j < ReflectionInfo::MAX_BINDING_COUNT; ++j)
@@ -530,12 +549,15 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 						range.BaseShaderRegister = j;
 						range.RegisterSpace = i;
 						range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE; // TODO: define more exact flags
-						range.OffsetInDescriptorsFromTableStart = curDescriptorOffset;
+						range.OffsetInDescriptorsFromTableStart = j;
 
 						descriptorRanges.push_back(range);
 						++count;
 
+						highestDescriptorIndex = max(range.BaseShaderRegister + range.NumDescriptors, highestDescriptorIndex);
+
 						tableStageMask |= setLayout.m_stageFlags[j];
+						nonSamplerSet = true;
 					}
 
 					// UAV
@@ -547,12 +569,15 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 						range.BaseShaderRegister = j;
 						range.RegisterSpace = i;
 						range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE; // TODO: define more exact flags
-						range.OffsetInDescriptorsFromTableStart = curDescriptorOffset;
+						range.OffsetInDescriptorsFromTableStart = j;
 
 						descriptorRanges.push_back(range);
 						++count;
 
+						highestDescriptorIndex = max(range.BaseShaderRegister + range.NumDescriptors, highestDescriptorIndex);
+
 						tableStageMask |= setLayout.m_stageFlags[j];
+						nonSamplerSet = true;
 					}
 
 					// CBV
@@ -564,12 +589,15 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 						range.BaseShaderRegister = j;
 						range.RegisterSpace = i;
 						range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE; // TODO: define more exact flags
-						range.OffsetInDescriptorsFromTableStart = curDescriptorOffset;
+						range.OffsetInDescriptorsFromTableStart = j;
 
 						descriptorRanges.push_back(range);
 						++count;
 
+						highestDescriptorIndex = max(range.BaseShaderRegister + range.NumDescriptors, highestDescriptorIndex);
+
 						tableStageMask |= setLayout.m_stageFlags[j];
+						nonSamplerSet = true;
 					}
 
 					// sampler
@@ -580,20 +608,24 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 						range.NumDescriptors = setLayout.m_arraySizes[j];
 						range.BaseShaderRegister = j;
 						range.RegisterSpace = i;
-						range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE; // TODO: define more exact flags
-						range.OffsetInDescriptorsFromTableStart = curDescriptorOffset;
+						range.Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: define more exact flags
+						range.OffsetInDescriptorsFromTableStart = j;
 
 						descriptorRanges.push_back(range);
 						++count;
 
-						tableStageMask |= setLayout.m_stageFlags[j];
-					}
+						highestDescriptorIndex = max(range.BaseShaderRegister + range.NumDescriptors, highestDescriptorIndex);
 
-					curDescriptorOffset += setLayout.m_arraySizes[j];
+						tableStageMask |= setLayout.m_stageFlags[j];
+						samplerSet = true;
+					}
 
 					// if count is lager than 1 we have multiple bindings in the same slot
 					assert(count <= 1);
 				}
+
+				// samplers cant be in the same set as non-sampler descriptors
+				assert(samplerSet != nonSamplerSet);
 
 				auto &param = rootParams[rootParamCount++];
 				param = {};
@@ -603,6 +635,11 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 				param.ShaderVisibility = determineShaderVisibility(tableStageMask);
 
 				mergedStageMask |= tableStageMask;
+
+				auto *memory = layouts.m_descriptorSetLayoutMemoryPool.alloc();
+				assert(memory);
+
+				layouts.m_descriptorSetLayouts[layouts.m_layoutCount++] = new(memory) VEngine::gal::DescriptorSetLayoutDx12(highestDescriptorIndex, samplerSet);
 
 				++descriptorTableCount;
 			}
@@ -614,6 +651,7 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 		rootSig.Desc_1_1.Flags = useIA ? D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT : D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
 		// try to add DENY flags
+		if ((mergedStageMask & ReflectionInfo::COMPUTE_BIT) == 0)
 		{
 			if ((mergedStageMask & ReflectionInfo::VERTEX_BIT) == 0)
 			{
@@ -637,9 +675,16 @@ static ID3D12RootSignature *createRootSignature(ID3D12Device *device, const Refl
 			}
 		}
 
+		D3D12_FEATURE_DATA_ROOT_SIGNATURE rootSigFeatureData{};
+		rootSigFeatureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		UtilityDx12::checkResult(device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &rootSigFeatureData, (UINT)sizeof(rootSigFeatureData)));
+
 		ID3DBlob *serializedRootSig;
 		ID3DBlob *errorBlob;
-		UtilityDx12::checkResult(D3D12SerializeVersionedRootSignature(&rootSig, &serializedRootSig, &errorBlob), "Failed to serialize root signature");
+		if (!SUCCEEDED(UtilityDx12::checkResult(D3D12SerializeVersionedRootSignature(&rootSig, &serializedRootSig, &errorBlob), "Failed to serialize root signature", false)))
+		{
+			printf((char *)errorBlob->GetBufferPointer());
+		}
 
 		ID3D12RootSignature *rootSignature;
 		UtilityDx12::checkResult(device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), __uuidof(ID3D12RootSignature), (void **)&rootSignature));

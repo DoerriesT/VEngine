@@ -1,7 +1,7 @@
 #include "QueueDx12.h"
 #include <vector>
 
-void VEngine::gal::QueueDx12::init(ID3D12CommandQueue *queue, QueueType queueType, uint32_t timestampBits, bool presentable)
+void VEngine::gal::QueueDx12::init(ID3D12CommandQueue *queue, QueueType queueType, uint32_t timestampBits, bool presentable, Semaphore *waitIdleSemaphore)
 {
 	m_queue = queue;
 	m_queueType = queueType;
@@ -11,6 +11,8 @@ void VEngine::gal::QueueDx12::init(ID3D12CommandQueue *queue, QueueType queueTyp
 	queue->GetTimestampFrequency(&timestampFrequency);
 	m_timestampPeriod = (float)((1.0 / double(timestampFrequency)) * 1e9);
 	m_presentable = presentable;
+	m_waitIdleSemaphore = waitIdleSemaphore;
+	m_semaphoreValue = 0;
 }
 
 void *VEngine::gal::QueueDx12::getNativeHandle() const
@@ -76,4 +78,9 @@ void VEngine::gal::QueueDx12::waitIdle() const
 	++m_semaphoreValue;
 	m_queue->Signal((ID3D12Fence *)m_waitIdleSemaphore->getNativeHandle(), m_semaphoreValue);
 	m_waitIdleSemaphore->wait(m_semaphoreValue);
+}
+
+VEngine::gal::Semaphore *VEngine::gal::QueueDx12::getWaitIdleSemaphore()
+{
+	return m_waitIdleSemaphore;
 }

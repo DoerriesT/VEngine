@@ -14,6 +14,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/ViewRenderList.h"
 #include <glm/vec4.hpp>
+#include "Utility/Utility.h"
 
 namespace
 {
@@ -41,7 +42,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		// depth
 		{
 			imageCreateInfo.m_format = Format::D16_UNORM;
-			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeDepthArrayImage);
 
@@ -78,7 +79,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		// albedo
 		{
 			imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
-			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeAlbedoRoughnessArrayImage);
 
@@ -115,7 +116,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		// normal
 		{
 			imageCreateInfo.m_format = Format::R16G16_SFLOAT;
-			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeNormalArrayImage);
 
@@ -225,7 +226,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_imageType = ImageType::_2D;
 		createInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		createInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
-		createInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+		createInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeArrayImage);
 
@@ -295,7 +296,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_imageType = ImageType::_2D;
 		createInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		createInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
-		createInfo.m_usageFlags = ImageUsageFlagBits::SAMPLED_BIT | ImageUsageFlagBits::STORAGE_BIT;
+		createInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeTmpImage);
 
@@ -329,7 +330,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 			imageCreateInfo.m_imageType = ImageType::_1D;
 			imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 			imageCreateInfo.m_createFlags = 0;
-			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::SAMPLED_BIT;
+			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::TEXTURE_BIT;
 	
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeFilterCoeffsImage);
 	
@@ -359,6 +360,9 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 				cmdList->barrier(1, &b0);
 	
 				BufferImageCopy region{};
+				region.m_bufferOffset = 0;
+				region.m_bufferRowLength = Utility::alignUp(sizeof(coeffs), m_graphicsDevice->getBufferCopyRowPitchAlignment()) / 16;
+				region.m_bufferImageHeight = 1;
 				region.m_imageLayerCount = 1;
 				region.m_extent.m_width = sizeof(coeffs) / 16;
 				region.m_extent.m_height = 1;

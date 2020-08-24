@@ -192,11 +192,28 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// import resources into graph
 
 	// get swapchain image
+	Image *swapchainImage = m_swapChain->getImage(m_swapChain->getCurrentImageIndex());
 	rg::ResourceStateData swapChainState{ {}, m_graphicsDevice->getGraphicsQueue() };
 	rg::ImageViewHandle swapchainImageViewHandle = 0;
 	{
-		auto imageHandle = graph.importImage(m_swapChain->getImage(m_swapChain->getCurrentImageIndex()), "Swapchain Image", false, {}, &swapChainState);
+		auto imageHandle = graph.importImage(swapchainImage, "Swapchain Image", false, {}, &swapChainState);
 		swapchainImageViewHandle = graph.createImageView({ "Swapchain Image", imageHandle, { 0, 1, 0, 1 } });
+	}
+
+	rg::ImageViewHandle swapchainDummyImageViewHandle;
+	{
+		rg::ImageDescription desc = {};
+		desc.m_name = "Dummy Swapchain Image";
+		desc.m_clear = false;
+		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_width = swapchainImage->getDescription().m_width;
+		desc.m_height = swapchainImage->getDescription().m_height;
+		desc.m_layers = 1;
+		desc.m_levels = 1;
+		desc.m_samples = SampleCount::_1;
+		desc.m_format = swapchainImage->getDescription().m_format;
+
+		swapchainDummyImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 	}
 
 	rg::ImageViewHandle shadowAtlasImageViewHandle = 0;
@@ -1221,7 +1238,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	rg::ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainImageViewHandle;
+	rg::ImageViewHandle tonemapTargetTextureHandle = g_FXAAEnabled || g_CASEnabled ? finalImageViewHandle : swapchainDummyImageViewHandle;
 
 	// tonemap
 	TonemapPass::Data tonemapPassData;
@@ -1240,7 +1257,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	currentOutput = tonemapTargetTextureHandle;
 
 
-	rg::ImageViewHandle fxaaTargetTextureHandle = g_CASEnabled ? finalImageViewHandle2 : swapchainImageViewHandle;
+	rg::ImageViewHandle fxaaTargetTextureHandle = g_CASEnabled ? finalImageViewHandle2 : swapchainDummyImageViewHandle;
 
 	// FXAA
 	FXAAPass::Data fxaaPassData;
@@ -1261,7 +1278,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	sharpenFfxCasPassData.m_gammaSpaceInput = tonemapPassData.m_applyLinearToGamma;
 	sharpenFfxCasPassData.m_sharpness = g_CASSharpness;
 	sharpenFfxCasPassData.m_srcImageHandle = currentOutput;
-	sharpenFfxCasPassData.m_dstImageHandle = swapchainImageViewHandle;
+	sharpenFfxCasPassData.m_dstImageHandle = swapchainDummyImageViewHandle;
 
 	if (g_CASEnabled)
 	{
@@ -1276,7 +1293,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		billboardPassData.m_billboardCount = renderData.m_billboardCount;
 		billboardPassData.m_billboards = renderData.m_billboardDrawData;
 		billboardPassData.m_depthImageViewHandle = depthImageViewHandle;
-		billboardPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+		billboardPassData.m_resultImageViewHandle = swapchainDummyImageViewHandle;
 
 		BillboardPass::addToGraph(graph, billboardPassData);
 	}
@@ -1288,7 +1305,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		debugDrawPassData.m_passRecordContext = &passRecordContext;
 		debugDrawPassData.m_debugDrawData = renderData.m_debugDrawData;
 		debugDrawPassData.m_depthImageViewHandle = depthImageViewHandle;
-		debugDrawPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+		debugDrawPassData.m_resultImageViewHandle = swapchainDummyImageViewHandle;
 
 		DebugDrawPass::addToGraph(graph, debugDrawPassData);
 	}
@@ -1299,7 +1316,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	imGuiPassData.m_passRecordContext = &passRecordContext;
 	imGuiPassData.m_clear = false;
 	imGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
-	imGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+	imGuiPassData.m_resultImageViewHandle = swapchainDummyImageViewHandle;
 
 	ImGuiPass::addToGraph(graph, imGuiPassData);
 
@@ -1310,7 +1327,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		// copy result from swapchain to a texture that can be read by imgui
 		SwapChainCopyPass::Data swapChainCopyPassData;
 		swapChainCopyPassData.m_passRecordContext = &passRecordContext;
-		swapChainCopyPassData.m_inputImageViewHandle = swapchainImageViewHandle;
+		swapChainCopyPassData.m_inputImageViewHandle = swapchainDummyImageViewHandle;
 		swapChainCopyPassData.m_resultImageView = m_renderResources->m_editorSceneTextureView;
 
 		SwapChainCopyPass::addToGraph(graph, swapChainCopyPassData);
@@ -1326,13 +1343,38 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		editorImGuiPassData.m_passRecordContext = &passRecordContext;
 		editorImGuiPassData.m_clear = true;
 		editorImGuiPassData.m_imGuiDrawData = ImGui::GetDrawData();
-		editorImGuiPassData.m_resultImageViewHandle = swapchainImageViewHandle;
+		editorImGuiPassData.m_resultImageViewHandle = swapchainDummyImageViewHandle;
 
 		ImGuiPass::addToGraph(graph, editorImGuiPassData);
 
 
 		// switch contexts back to main context
 		ImGui::SetCurrentContext(prevImGuiContext);
+	}
+
+	// copy from dummy image to actual swapchain
+	{
+		rg::ResourceUsageDescription passUsages[]
+		{
+			{rg::ResourceViewHandle(swapchainImageViewHandle), {gal::ResourceState::WRITE_IMAGE_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT}},
+			{rg::ResourceViewHandle(swapchainDummyImageViewHandle), {gal::ResourceState::READ_IMAGE_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT}},
+		};
+
+		graph.addPass("Swapchain Dummy Blit", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+			{
+				ImageCopy imageCopy{};
+				imageCopy.m_srcMipLevel = 0;
+				imageCopy.m_srcBaseLayer = 0;
+				imageCopy.m_srcLayerCount = 1;
+				imageCopy.m_srcOffset = {};
+				imageCopy.m_dstMipLevel = 0;
+				imageCopy.m_dstBaseLayer = 0;
+				imageCopy.m_dstLayerCount = 1;
+				imageCopy.m_dstOffset = {};
+				imageCopy.m_extent = { swapchainImage->getDescription().m_width, swapchainImage->getDescription().m_height, 1 };
+
+				cmdList->copyImage(registry.getImage(swapchainDummyImageViewHandle), swapchainImage, 1, &imageCopy);
+			}, true);
 	}
 
 	graph.execute(rg::ResourceViewHandle(swapchainImageViewHandle), { {ResourceState::PRESENT_IMAGE, PipelineStageFlagBits::BOTTOM_OF_PIPE_BIT}, m_graphicsDevice->getGraphicsQueue() }, true, m_semaphoreValues[0]);
