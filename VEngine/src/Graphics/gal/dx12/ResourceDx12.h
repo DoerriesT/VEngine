@@ -27,21 +27,25 @@ namespace VEngine
 		class ImageDx12 : public Image
 		{
 		public:
-			explicit ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo);
+			explicit ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap);
 			void *getNativeHandle() const override;
 			const ImageCreateInfo &getDescription() const override;
 			void *getAllocationHandle();
+			bool isUploadHeapResource() const;
+			bool isReadbackHeapResource() const;
 
 		private:
 			ID3D12Resource *m_image;
 			void *m_allocHandle;
 			ImageCreateInfo m_description;
+			bool m_uploadHeap;
+			bool m_readbackHeap;
 		};
 
 		class BufferDx12 : public Buffer
 		{
 		public:
-			explicit BufferDx12(ID3D12Resource *buffer, void *allocHandle, const BufferCreateInfo &createInfo);
+			explicit BufferDx12(ID3D12Resource *buffer, void *allocHandle, const BufferCreateInfo &createInfo, bool uploadHeap, bool readbackHeap);
 			void *getNativeHandle() const override;
 			const BufferCreateInfo &getDescription() const override;
 			void map(void **data) override;
@@ -49,11 +53,15 @@ namespace VEngine
 			void invalidate(uint32_t count, const MemoryRange *ranges) override;
 			void flush(uint32_t count, const MemoryRange *ranges) override;
 			void *getAllocationHandle();
+			bool isUploadHeapResource() const;
+			bool isReadbackHeapResource() const;
 
 		private:
 			ID3D12Resource *m_buffer;
 			void *m_allocHandle;
 			BufferCreateInfo m_description;
+			bool m_uploadHeap;
+			bool m_readbackHeap;
 		};
 
 		class ImageViewDx12 : public ImageView

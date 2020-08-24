@@ -180,7 +180,7 @@ void VEngine::gal::CommandListDx12::bindVertexBuffers(uint32_t firstBinding, uin
 		view.StrideInBytes = pipelineDx->getVertexBufferStride(firstBinding + i);
 	}
 
-	m_commandList->IASetVertexBuffers(firstBinding, count, nullptr);
+	m_commandList->IASetVertexBuffers(firstBinding, count, vertexBufferViews);
 }
 
 void VEngine::gal::CommandListDx12::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
@@ -661,6 +661,37 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 				beforeState.m_state = (resDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0 ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
 				beforeState.m_writeAccess = true;
 			}
+		}
+
+		bool uploadHeapResource = false;
+		bool readbackHeapResource = false;
+
+		if (barrier.m_image)
+		{
+			const ImageDx12 *imageDx = dynamic_cast<const ImageDx12 *>(barrier.m_image);
+			assert(imageDx);
+			uploadHeapResource = imageDx->isUploadHeapResource();
+			readbackHeapResource = imageDx->isReadbackHeapResource();
+		}
+		else
+		{
+			const BufferDx12 *bufferDx = dynamic_cast<const BufferDx12 *>(barrier.m_buffer);
+			assert(bufferDx);
+			uploadHeapResource = bufferDx->isUploadHeapResource();
+			readbackHeapResource = bufferDx->isReadbackHeapResource();
+		}
+
+		// resources on the upload heap must always be in D3D12_RESOURCE_STATE_GENERIC_READ
+		if (uploadHeapResource)
+		{
+			beforeState.m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+			afterState.m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+		}
+		// resources on the readback heap must always be in D3D12_RESOURCE_STATE_COPY_DEST
+		else if (readbackHeapResource)
+		{
+			beforeState.m_state = D3D12_RESOURCE_STATE_COPY_DEST;
+			afterState.m_state = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
 		D3D12_RESOURCE_BARRIER barrierDx{};

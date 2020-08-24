@@ -494,6 +494,7 @@ void VEngine::rg::RenderGraph::reset()
 				static_cast<float>((data[3] - data[0]) * (timestampPeriod * (1.0 / 1e6))),
 			};
 		}
+		m_queryResultBuffer->unmap();
 	}
 
 	// clear vectors

@@ -60,10 +60,12 @@ void *VEngine::gal::SamplerDx12::getNativeHandle() const
 	return (void *)&m_sampler;
 }
 
-VEngine::gal::ImageDx12::ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo)
+VEngine::gal::ImageDx12::ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap)
 	:m_image(image),
 	m_allocHandle(allocHandle),
-	m_description(createInfo)
+	m_description(createInfo),
+	m_uploadHeap(uploadHeap),
+	m_readbackHeap(readbackHeap)
 {
 }
 
@@ -82,10 +84,22 @@ void *VEngine::gal::ImageDx12::getAllocationHandle()
 	return m_allocHandle;
 }
 
-VEngine::gal::BufferDx12::BufferDx12(ID3D12Resource *buffer, void *allocHandle, const BufferCreateInfo &createInfo)
+bool VEngine::gal::ImageDx12::isUploadHeapResource() const
+{
+	return m_uploadHeap;
+}
+
+bool VEngine::gal::ImageDx12::isReadbackHeapResource() const
+{
+	return m_readbackHeap;
+}
+
+VEngine::gal::BufferDx12::BufferDx12(ID3D12Resource *buffer, void *allocHandle, const BufferCreateInfo &createInfo, bool uploadHeap, bool readbackHeap)
 	:m_buffer(buffer),
 	m_allocHandle(allocHandle),
-	m_description(createInfo)
+	m_description(createInfo),
+	m_uploadHeap(uploadHeap),
+	m_readbackHeap(readbackHeap)
 {
 }
 
@@ -125,6 +139,16 @@ void VEngine::gal::BufferDx12::flush(uint32_t count, const MemoryRange *ranges)
 void *VEngine::gal::BufferDx12::getAllocationHandle()
 {
 	return m_allocHandle;
+}
+
+bool VEngine::gal::BufferDx12::isUploadHeapResource() const
+{
+	return m_uploadHeap;
+}
+
+bool VEngine::gal::BufferDx12::isReadbackHeapResource() const
+{
+	return m_readbackHeap;
 }
 
 VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageViewCreateInfo &createInfo,

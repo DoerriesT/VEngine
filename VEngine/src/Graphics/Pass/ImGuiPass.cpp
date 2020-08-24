@@ -67,8 +67,8 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		VertexInputAttributeDescription attributeDescs[]
 		{
 			{ "POSITION", 0, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, pos) },
-			{ "TEXCOORD0", 1, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, uv) },
-			{ "COLOR0", 2, 0, Format::R8G8B8A8_UNORM, IM_OFFSETOF(ImDrawVert, col) },
+			{ "TEXCOORD", 1, 0, Format::R32G32_SFLOAT, IM_OFFSETOF(ImDrawVert, uv) },
+			{ "COLOR", 2, 0, Format::R8G8B8A8_UNORM, IM_OFFSETOF(ImDrawVert, col) },
 		};
 
 		PipelineColorBlendAttachmentState colorBlendAttachment{};

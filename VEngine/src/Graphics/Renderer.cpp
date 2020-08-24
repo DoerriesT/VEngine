@@ -66,7 +66,7 @@ using namespace VEngine::gal;
 extern bool g_raymarchedFog;
 
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
-	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN)),
+	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::D3D12)),
 	m_framesSinceLastResize()
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);
@@ -402,6 +402,13 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
 	//BufferViewHandle drawCountsBufferViewHandle = VKResourceDefinitions::createIndirectDrawCountsBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
 
+	PassRecordContext passRecordContext{};
+	passRecordContext.m_renderResources = m_renderResources;
+	passRecordContext.m_pipelineCache = m_pipelineCache;
+	passRecordContext.m_descriptorSetCache = m_descriptorSetCache;
+	passRecordContext.m_commonRenderData = &commonData;
+
+#if 0
 
 	// transform data write
 	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
@@ -581,12 +588,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 			particleDataPtr += renderData.m_particleDrawDataListSizes[i] * sizeof(ParticleDrawData);
 		}
 	}
-
-	PassRecordContext passRecordContext{};
-	passRecordContext.m_renderResources = m_renderResources;
-	passRecordContext.m_pipelineCache = m_pipelineCache;
-	passRecordContext.m_descriptorSetCache = m_descriptorSetCache;
-	passRecordContext.m_commonRenderData = &commonData;
 
 	m_atmosphericScatteringModule->registerResources(graph);
 
@@ -1309,6 +1310,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 		DebugDrawPass::addToGraph(graph, debugDrawPassData);
 	}
+#endif
 
 
 	// ImGui

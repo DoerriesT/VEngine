@@ -100,6 +100,8 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
     UtilityDx12::checkResult(factory->CreateSwapChainForHwnd((ID3D12CommandQueue *)m_presentQueue->getNativeHandle(), glfwGetWin32Window((GLFWwindow *)m_windowHandle), &swapChainDesc, nullptr, nullptr, &swapChain), "Failed to create swapchain!");
     UtilityDx12::checkResult(swapChain->QueryInterface(__uuidof(IDXGISwapChain4), (void **)&m_swapChain), "Failed to create swapchain!");
 
+    swapChain->Release();
+
     UtilityDx12::checkResult(factory->MakeWindowAssociation((HWND)m_windowHandle, DXGI_MWA_NO_ALT_ENTER), "Failed to create swapchain!");
 
     m_swapChain->GetDesc1(&swapChainDesc);
@@ -130,7 +132,7 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
         auto *memory = m_imageMemoryPool.alloc();
         assert(memory);
 
-        m_images[i] = new(memory) ImageDx12(imageDx, nullptr, imageCreateInfo);
+        m_images[i] = new(memory) ImageDx12(imageDx, nullptr, imageCreateInfo, false, false);
     }
 }
 
@@ -138,8 +140,10 @@ void VEngine::gal::SwapChainDx12::destroy()
 {
     for (uint32_t i = 0; i < m_imageCount; ++i)
     {
+        ((ID3D12Resource *)m_images[i]->getNativeHandle())->Release();
         // call destructor and free backing memory
         m_images[i]->~ImageDx12();
         m_imageMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageDx12)> *>(m_images[i]));
     }
+    m_swapChain->Release();
 }

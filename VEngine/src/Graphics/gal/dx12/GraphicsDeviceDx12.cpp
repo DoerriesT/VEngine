@@ -529,7 +529,7 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 
 	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, initialState, useClearValue ? &optimizedClearValue : nullptr, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
 
-	*image = new(memory) ImageDx12(nativeHandle, allocHandle, imageCreateInfo);
+	*image = new(memory) ImageDx12(nativeHandle, allocHandle, imageCreateInfo, allocationDesc.HeapType == D3D12_HEAP_TYPE_UPLOAD, allocationDesc.HeapType == D3D12_HEAP_TYPE_READBACK);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::createBuffer(const BufferCreateInfo &bufferCreateInfo, MemoryPropertyFlags requiredMemoryPropertyFlags, MemoryPropertyFlags preferredMemoryPropertyFlags, bool dedicated, Buffer **buffer)
@@ -571,7 +571,7 @@ void VEngine::gal::GraphicsDeviceDx12::createBuffer(const BufferCreateInfo &buff
 
 	UtilityDx12::checkResult(m_gpuMemoryAllocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &allocHandle, __uuidof(ID3D12Resource), (void **)&nativeHandle), "Failed to create resource!");
 
-	*buffer = new(memory) BufferDx12(nativeHandle, allocHandle, bufferCreateInfo);
+	*buffer = new(memory) BufferDx12(nativeHandle, allocHandle, bufferCreateInfo, allocationDesc.HeapType == D3D12_HEAP_TYPE_UPLOAD, allocationDesc.HeapType == D3D12_HEAP_TYPE_READBACK);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroyImage(Image *image)

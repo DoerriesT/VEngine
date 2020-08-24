@@ -29,6 +29,10 @@ HRESULT VEngine::gal::UtilityDx12::checkResult(HRESULT result, const char *error
 		break;
 	case S_FALSE:
 		break;
+	case E_UNEXPECTED:
+		strcat_s(msgBuffer, " E_UNEXPECTED\n");
+		error = true;
+		break;
 	case E_NOTIMPL:
 		strcat_s(msgBuffer, " E_NOTIMPL\n");
 		error = true;
@@ -41,8 +45,48 @@ HRESULT VEngine::gal::UtilityDx12::checkResult(HRESULT result, const char *error
 		strcat_s(msgBuffer, " E_INVALIDARG\n");
 		error = true;
 		break;
+	case E_NOINTERFACE:
+		strcat_s(msgBuffer, " E_NOINTERFACE\n");
+		error = true;
+		break;
+	case E_POINTER:
+		strcat_s(msgBuffer, " E_POINTER\n");
+		error = true;
+		break;
+	case E_HANDLE:
+		strcat_s(msgBuffer, " E_HANDLE\n");
+		error = true;
+		break;
+	case E_ABORT:
+		strcat_s(msgBuffer, " E_ABORT\n");
+		error = true;
+		break;
 	case E_FAIL:
 		strcat_s(msgBuffer, " E_FAIL\n");
+		error = true;
+		break;
+	case E_ACCESSDENIED:
+		strcat_s(msgBuffer, " E_ACCESSDENIED\n");
+		error = true;
+		break;
+	case E_PENDING:
+		strcat_s(msgBuffer, " E_PENDING\n");
+		error = true;
+		break;
+	case E_BOUNDS:
+		strcat_s(msgBuffer, " E_BOUNDS\n");
+		error = true;
+		break;
+	case E_CHANGED_STATE:
+		strcat_s(msgBuffer, " E_CHANGED_STATE\n");
+		error = true;
+		break;
+	case E_ILLEGAL_STATE_CHANGE:
+		strcat_s(msgBuffer, " E_ILLEGAL_STATE_CHANGE\n");
+		error = true;
+		break;
+	case E_ILLEGAL_METHOD_CALL:
+		strcat_s(msgBuffer, " E_ILLEGAL_METHOD_CALL\n");
 		error = true;
 		break;
 	case DXGI_ERROR_WAS_STILL_DRAWING:
