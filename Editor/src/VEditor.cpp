@@ -70,8 +70,8 @@ void VEditor::VEditor::initialize(VEngine::Engine *engine)
 		m_engine->getRenderSystem().initEditorImGuiCtx(m_editorImGuiContext);
 	}
 
-	uint32_t width = m_engine->getWidth();
-	uint32_t height = m_engine->getHeight();
+	uint32_t width = std::max(m_engine->getWidth(), 1u);
+	uint32_t height = std::max(m_engine->getHeight(), 1u);
 
 	auto &registry = m_engine->getEntityRegistry();
 	m_editorCameraEntity = registry.create();

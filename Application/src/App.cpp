@@ -403,7 +403,7 @@ void App::update(float timeDelta)
 	//	tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
 	//}
 
-	entityRegistry.get<VEngine::CameraComponent>(m_cameraEntity).m_aspectRatio = m_engine->getWidth() / (float)m_engine->getHeight();
+	entityRegistry.get<VEngine::CameraComponent>(m_cameraEntity).m_aspectRatio = std::max(m_engine->getWidth(), 1u) / (float)std::max(m_engine->getHeight(), 1u);
 
 	//auto &renderSystem = m_engine->getRenderSystem();
 	//
