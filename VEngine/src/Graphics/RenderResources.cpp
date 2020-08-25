@@ -189,8 +189,13 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		m_commandListPool->reset();
 		m_commandList->begin();
 		{
+			// transition from UNDEFINED to TRANSFER
+			Barrier b0 = Initializers::bufferBarrier(m_exposureDataBuffer, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::TRANSFER_BIT, ResourceState::UNDEFINED, ResourceState::WRITE_BUFFER_TRANSFER);
+			m_commandList->barrier(1, &b0);
+
 			float data[] = { 1.0f, 1.0f };
 			m_commandList->updateBuffer(m_exposureDataBuffer, 0, 8, data);
+
 			m_exposureDataBufferState.m_queue = m_graphicsDevice->getGraphicsQueue();
 			m_exposureDataBufferState.m_stateStageMask = { ResourceState::WRITE_BUFFER_TRANSFER, PipelineStageFlagBits::TRANSFER_BIT };
 		}

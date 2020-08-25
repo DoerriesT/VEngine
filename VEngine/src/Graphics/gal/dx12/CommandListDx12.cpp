@@ -339,9 +339,8 @@ void VEngine::gal::CommandListDx12::fillBuffer(const Buffer *dstBuffer, uint64_t
 	}
 
 	UINT values[4] = { data, data, data, data };
-	D3D12_RECT rect{ static_cast<LONG>(dstOffset / 4), 0, static_cast<LONG>((size + dstOffset) / 4), 1 };
 
-	m_commandList->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, resource, values, 1, &rect);
+	m_commandList->ClearUnorderedAccessViewUint(gpuDescriptorHandle, cpuDescriptorHandle, resource, values, 0, nullptr);
 }
 
 void VEngine::gal::CommandListDx12::clearColorImage(const Image *image, const ClearColorValue *color, uint32_t rangeCount, const ImageSubresourceRange *ranges)
@@ -595,10 +594,13 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			return { D3D12_RESOURCE_STATE_COPY_DEST, false, false, true };
 
 		case ResourceState::CLEAR_BUFFER:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, false, true };
 
 		case ResourceState::CLEAR_IMAGE:
-			return { Initializers::isDepthFormat(format) ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false, false, true };
+		{
+			bool isDepth = Initializers::isDepthFormat(format);
+			return { isDepth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS, !isDepth, false, true };
+		}
 
 		case ResourceState::PRESENT_IMAGE:
 			return { D3D12_RESOURCE_STATE_PRESENT, false, true, false };
