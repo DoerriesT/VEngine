@@ -94,11 +94,13 @@ void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 				for (uint32_t j = 0; j < instanceDataCount; ++j)
 				{
 					const auto &instanceData = data.m_instanceData[j + instanceDataOffset];
+					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
 					PushConsts pushConsts;
 					pushConsts.shadowMatrix = data.m_shadowMatrix;
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
+					pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 
 					if (i == 0)
 					{
@@ -112,9 +114,7 @@ void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 					}
 
-					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
-
-					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 				}
 
 				//vkCmdPushConstants(cmdBuf, pipelineData.m_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(data.m_shadowMatrix), &data.m_shadowMatrix);

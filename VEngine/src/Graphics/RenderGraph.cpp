@@ -543,6 +543,11 @@ void VEngine::rg::RenderGraph::getTimingInfo(size_t *count, const PassTimingInfo
 	*data = m_timingInfos.get();
 }
 
+VEngine::gal::GraphicsDevice *VEngine::rg::RenderGraph::getGraphicsDevice()
+{
+	return m_graphicsDevice;
+}
+
 Queue *VEngine::rg::RenderGraph::getQueue(QueueType queueType) const
 {
 	return m_queues[static_cast<size_t>(queueType)];

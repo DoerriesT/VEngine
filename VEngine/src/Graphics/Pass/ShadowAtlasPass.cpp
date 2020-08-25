@@ -107,11 +107,13 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 					for (uint32_t k = 0; k < instanceDataCount; ++k)
 					{
 						const auto &instanceData = data.m_instanceData[k + instanceDataOffset];
+						const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
 						PushConsts pushConsts;
 						pushConsts.shadowMatrix = data.m_shadowMatrices[drawInfo.m_shadowMatrixIdx];
 						pushConsts.transformIndex = instanceData.m_transformIndex;
 						pushConsts.materialIndex = instanceData.m_materialIndex;
+						pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 
 						if (j == 0)
 						{
@@ -125,9 +127,9 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 							cmdList->pushConstants(pipelines[j], ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 						}
 
-						const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
+						
 
-						cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+						cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 					}
 				}
 

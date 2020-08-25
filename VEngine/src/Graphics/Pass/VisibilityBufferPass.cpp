@@ -21,8 +21,9 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
 	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants), sizeof(Constants) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::CONSTANT_BUFFER, sizeof(Constants));
 	uint8_t *uboDataPtr = nullptr;
-	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+	uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
 	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
@@ -117,6 +118,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
 					pushConsts.instanceID = j + instanceDataOffset;
+					pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 
 					if (i == 0)
 					{
@@ -130,7 +132,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT,0, sizeof(pushConsts), &pushConsts);
 					}
 
-					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 				}
 			}
 

@@ -37,8 +37,9 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	{
 		auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::CONSTANT_BUFFER, sizeof(Constants));
 		uint8_t *uboDataPtr = nullptr;
-		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+		uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 		Constants consts;
 		consts.viewMatrix = commonData->m_viewMatrix;

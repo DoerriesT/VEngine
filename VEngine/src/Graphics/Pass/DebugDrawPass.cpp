@@ -28,8 +28,9 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	{
 		auto *ssboBuffer = data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[commonData->m_curResIdx].get();
 
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(DebugDrawVertex));
 		uint8_t *dataPtr = nullptr;
-		ssboBuffer->allocate(vertexBufferInfo.m_range, vertexBufferInfo.m_offset, vertexBufferInfo.m_buffer, dataPtr);
+		ssboBuffer->allocate(alignment, vertexBufferInfo.m_range, vertexBufferInfo.m_offset, vertexBufferInfo.m_buffer, dataPtr);
 
 		size_t currentOffset = 0;
 		for (size_t i = 0; i < 6; ++i)
@@ -136,8 +137,18 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					cmdList->setViewport(0, 1, &viewport);
 					cmdList->setScissor(0, 1, &scissor);
 
-					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(glm::mat4), &data.m_passRecordContext->m_commonRenderData->m_viewProjectionMatrix);
-					cmdList->draw(data.m_debugDrawData->m_vertexCounts[i], 1, currentVertexOffset, 0);
+					struct PushConsts
+					{
+						glm::mat4 viewProjectionMatrix;
+						uint32_t vertexOffset;
+					};
+
+					PushConsts pushConsts{};
+					pushConsts.viewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_viewProjectionMatrix;
+					pushConsts.vertexOffset = currentVertexOffset;
+
+					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
+					cmdList->draw(data.m_debugDrawData->m_vertexCounts[i], 1, 0, 0);
 					currentVertexOffset += data.m_debugDrawData->m_vertexCounts[i];
 				}
 				cmdList->endRenderPass();

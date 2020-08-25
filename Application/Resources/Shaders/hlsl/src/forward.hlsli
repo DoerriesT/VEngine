@@ -29,6 +29,7 @@ struct PushConsts
 	float2 texCoordBias;
 	uint transformIndex;
 	uint materialIndex;
+	uint vertexOffset;
 };
 
 struct Constants

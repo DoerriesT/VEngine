@@ -3,9 +3,8 @@
 #include "Utility/Utility.h"
 #include "gal/GraphicsAbstractionLayer.h"
 
-VEngine::MappableBufferBlock::MappableBufferBlock(gal::Buffer *buffer, uint64_t alignment)
+VEngine::MappableBufferBlock::MappableBufferBlock(gal::Buffer *buffer)
 	:m_currentOffset(),
-	m_alignment(alignment),
 	m_ptr(),
 	m_buffer(buffer)
 {
@@ -17,26 +16,24 @@ VEngine::MappableBufferBlock::~MappableBufferBlock()
 	m_buffer->unmap();
 }
 
-void VEngine::MappableBufferBlock::allocate(uint64_t &size, uint64_t &offset, gal::Buffer *&buffer, uint8_t *&data)
+void VEngine::MappableBufferBlock::allocate(uint64_t alignment, uint64_t &size, uint64_t &offset, gal::Buffer *&buffer, uint8_t *&data)
 {
 	assert(size);
 
-	size = Utility::alignUp(size, m_alignment);
-
+	offset = Utility::alignUp(m_currentOffset, alignment);
+	
 	// offset after allocating from block
-	uint64_t newOffset = Utility::alignUp(m_currentOffset + size, m_alignment);
+	uint64_t newOffset = Utility::alignUp(offset + size, alignment);
 
 	if (newOffset > m_buffer->getDescription().m_size)
 	{
-		// TODO find a better way
 		assert(false);
 	}
 	else
 	{
-		size = newOffset - m_currentOffset;
-		offset = m_currentOffset;
+		size = newOffset - offset;
 		buffer = m_buffer;
-		data = m_ptr + m_currentOffset;
+		data = m_ptr + offset;
 		m_currentOffset = newOffset;
 	}
 }

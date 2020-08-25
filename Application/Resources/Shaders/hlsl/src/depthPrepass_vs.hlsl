@@ -29,6 +29,8 @@ VSOutput main(uint vertexID : SV_VertexID)
 {
 	VSOutput output;
 	
+	vertexID += g_PushConsts.vertexOffset;
+	
 	const float3 pos = getPosition(vertexID, g_Positions);
 	float3 worldPos;
 	worldPos.x = dot(g_TransformData[g_PushConsts.transformIndex * 4 + 0], float4(pos, 1.0));

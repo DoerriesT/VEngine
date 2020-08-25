@@ -15,6 +15,7 @@ struct DebugVertex
 struct PushConsts
 {
 	float4x4 viewProjectionMatrix;
+	uint vertexOffset;
 };
 
 StructuredBuffer<DebugVertex> g_Vertices : REGISTER_SRV(0, 0);
@@ -24,7 +25,7 @@ PUSH_CONSTS(PushConsts, g_PushConsts);
 
 VSOutput main(uint vertexID : SV_VertexID) 
 {
-	DebugVertex vertex = g_Vertices[vertexID];
+	DebugVertex vertex = g_Vertices[vertexID + g_PushConsts.vertexOffset];
 	
 	VSOutput output;
 	

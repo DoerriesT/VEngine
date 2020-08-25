@@ -490,8 +490,9 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 	// shadowed directional light probe data write
 	DescriptorBufferInfo directionalLightsShadowedProbeBufferInfo{ nullptr, 0, std::max(data.m_lightData->m_directionalLightsShadowedProbe.size(), size_t(1)) * sizeof(DirectionalLight), sizeof(DirectionalLight) };
 	{
+		uint64_t alignment = m_graphicsDevice->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(DirectionalLight));
 		uint8_t *bufferPtr;
-		data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[data.m_passRecordContext->m_commonRenderData->m_curResIdx]->allocate(directionalLightsShadowedProbeBufferInfo.m_range, directionalLightsShadowedProbeBufferInfo.m_offset, directionalLightsShadowedProbeBufferInfo.m_buffer, bufferPtr);
+		data.m_passRecordContext->m_renderResources->m_mappableSSBOBlock[data.m_passRecordContext->m_commonRenderData->m_curResIdx]->allocate(alignment, directionalLightsShadowedProbeBufferInfo.m_range, directionalLightsShadowedProbeBufferInfo.m_offset, directionalLightsShadowedProbeBufferInfo.m_buffer, bufferPtr);
 		if (!data.m_lightData->m_directionalLightsShadowedProbe.empty())
 		{
 			memcpy(bufferPtr, data.m_lightData->m_directionalLightsShadowedProbe.data(), data.m_lightData->m_directionalLightsShadowedProbe.size() * sizeof(DirectionalLight));

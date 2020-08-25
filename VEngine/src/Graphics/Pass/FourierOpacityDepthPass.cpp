@@ -46,8 +46,9 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 
 	// transform buffer info
 	DescriptorBufferInfo particleTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(mediaCount, 1u), sizeof(glm::vec4) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(glm::vec4));
 	uint8_t *transformDataPtr = nullptr;
-	ssboBuffer->allocate(particleTransformBufferInfo.m_range, particleTransformBufferInfo.m_offset, particleTransformBufferInfo.m_buffer, transformDataPtr);
+	ssboBuffer->allocate(alignment, particleTransformBufferInfo.m_range, particleTransformBufferInfo.m_offset, particleTransformBufferInfo.m_buffer, transformDataPtr);
 
 	for (size_t i = 0; i < data.m_listCount; ++i)
 	{

@@ -104,9 +104,11 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				for (uint32_t j = 0; j < instanceDataCount; ++j)
 				{
 					const auto &instanceData = data.m_instanceData[j + instanceDataOffset];
+					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
+					pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 
 					if (i == 0)
 					{
@@ -120,9 +122,9 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 						cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, offsetof(PushConsts, texCoordScale), sizeof(pushConsts) - offsetof(PushConsts, texCoordScale), (uint8_t *)&pushConsts + offsetof(PushConsts, texCoordScale));
 					}
 
-					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
+					
 
-					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 				}
 			}
 

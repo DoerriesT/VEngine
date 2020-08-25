@@ -413,8 +413,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// transform data write
 	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(glm::vec4));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(transformDataBufferInfo.m_range, transformDataBufferInfo.m_offset, transformDataBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, transformDataBufferInfo.m_range, transformDataBufferInfo.m_offset, transformDataBufferInfo.m_buffer, bufferPtr);
 		if (renderData.m_transformDataCount)
 		{
 			memcpy(bufferPtr, renderData.m_transformData, renderData.m_transformDataCount * sizeof(glm::vec4));
@@ -424,8 +425,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// directional light data write
 	DescriptorBufferInfo directionalLightsBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLights.size() * sizeof(DirectionalLight), sizeof(DirectionalLight)), sizeof(DirectionalLight) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(DirectionalLight));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsBufferInfo.m_range, directionalLightsBufferInfo.m_offset, directionalLightsBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, directionalLightsBufferInfo.m_range, directionalLightsBufferInfo.m_offset, directionalLightsBufferInfo.m_buffer, bufferPtr);
 		if (!lightData.m_directionalLights.empty())
 		{
 			memcpy(bufferPtr, lightData.m_directionalLights.data(), lightData.m_directionalLights.size() * sizeof(DirectionalLight));
@@ -435,8 +437,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// shadowed directional light data write
 	DescriptorBufferInfo directionalLightsShadowedBufferInfo{ nullptr, 0, std::max(lightData.m_directionalLightsShadowed.size() * sizeof(DirectionalLight), sizeof(DirectionalLight)), sizeof(DirectionalLight) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(DirectionalLight));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(directionalLightsShadowedBufferInfo.m_range, directionalLightsShadowedBufferInfo.m_offset, directionalLightsShadowedBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, directionalLightsShadowedBufferInfo.m_range, directionalLightsShadowedBufferInfo.m_offset, directionalLightsShadowedBufferInfo.m_buffer, bufferPtr);
 		if (!lightData.m_directionalLightsShadowed.empty())
 		{
 			memcpy(bufferPtr, lightData.m_directionalLightsShadowed.data(), lightData.m_directionalLightsShadowed.size() * sizeof(DirectionalLight));
@@ -447,10 +450,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	DescriptorBufferInfo punctualLightDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLights.size() * sizeof(PunctualLight), sizeof(PunctualLight)), sizeof(PunctualLight) };
 	DescriptorBufferInfo punctualLightZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
+		uint64_t lightsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(PunctualLight));
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightDataBufferInfo.m_range, punctualLightDataBufferInfo.m_offset, punctualLightDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(lightsAlignment, punctualLightDataBufferInfo.m_range, punctualLightDataBufferInfo.m_offset, punctualLightDataBufferInfo.m_buffer, dataBufferPtr);
+		uint64_t binsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::BYTE_BUFFER, sizeof(uint32_t));
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightZBinsBufferInfo.m_range, punctualLightZBinsBufferInfo.m_offset, punctualLightZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(binsAlignment, punctualLightZBinsBufferInfo.m_range, punctualLightZBinsBufferInfo.m_offset, punctualLightZBinsBufferInfo.m_buffer, zBinsBufferPtr);
 		if (!lightData.m_punctualLights.empty())
 		{
 			for (size_t i = 0; i < lightData.m_punctualLightOrder.size(); ++i)
@@ -466,10 +471,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	DescriptorBufferInfo punctualLightShadowedDataBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightsShadowed.size() * sizeof(PunctualLightShadowed), sizeof(PunctualLightShadowed)), sizeof(PunctualLightShadowed) };
 	DescriptorBufferInfo punctualLightShadowedZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_punctualLightShadowedDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
+		uint64_t lightsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(PunctualLightShadowed));
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightShadowedDataBufferInfo.m_range, punctualLightShadowedDataBufferInfo.m_offset, punctualLightShadowedDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(lightsAlignment, punctualLightShadowedDataBufferInfo.m_range, punctualLightShadowedDataBufferInfo.m_offset, punctualLightShadowedDataBufferInfo.m_buffer, dataBufferPtr);
+		uint64_t binsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::BYTE_BUFFER, sizeof(uint32_t));
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(punctualLightShadowedZBinsBufferInfo.m_range, punctualLightShadowedZBinsBufferInfo.m_offset, punctualLightShadowedZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(binsAlignment, punctualLightShadowedZBinsBufferInfo.m_range, punctualLightShadowedZBinsBufferInfo.m_offset, punctualLightShadowedZBinsBufferInfo.m_buffer, zBinsBufferPtr);
 		if (!lightData.m_punctualLightsShadowed.empty())
 		{
 			for (size_t i = 0; i < lightData.m_punctualLightShadowedOrder.size(); ++i)
@@ -485,10 +492,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	DescriptorBufferInfo localMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_localParticipatingMedia.size() * sizeof(LocalParticipatingMedium), sizeof(LocalParticipatingMedium)), sizeof(LocalParticipatingMedium) };
 	DescriptorBufferInfo localMediaZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localMediaDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
+		uint64_t mediaAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(LocalParticipatingMedium));
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localMediaDataBufferInfo.m_range, localMediaDataBufferInfo.m_offset, localMediaDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(mediaAlignment, localMediaDataBufferInfo.m_range, localMediaDataBufferInfo.m_offset, localMediaDataBufferInfo.m_buffer, dataBufferPtr);
+		uint64_t binsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::BYTE_BUFFER, sizeof(uint32_t));
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localMediaZBinsBufferInfo.m_range, localMediaZBinsBufferInfo.m_offset, localMediaZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(binsAlignment, localMediaZBinsBufferInfo.m_range, localMediaZBinsBufferInfo.m_offset, localMediaZBinsBufferInfo.m_buffer, zBinsBufferPtr);
 		if (!lightData.m_localParticipatingMedia.empty())
 		{
 			for (size_t i = 0; i < lightData.m_localMediaOrder.size(); ++i)
@@ -503,8 +512,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// global participating media data write
 	DescriptorBufferInfo globalMediaDataBufferInfo{ nullptr, 0, std::max(lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium), sizeof(GlobalParticipatingMedium)), sizeof(GlobalParticipatingMedium) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(GlobalParticipatingMedium));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(globalMediaDataBufferInfo.m_range, globalMediaDataBufferInfo.m_offset, globalMediaDataBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, globalMediaDataBufferInfo.m_range, globalMediaDataBufferInfo.m_offset, globalMediaDataBufferInfo.m_buffer, bufferPtr);
 		if (!lightData.m_globalParticipatingMedia.empty())
 		{
 			memcpy(bufferPtr, lightData.m_globalParticipatingMedia.data(), lightData.m_globalParticipatingMedia.size() * sizeof(GlobalParticipatingMedium));
@@ -515,10 +525,12 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	DescriptorBufferInfo localReflProbesDataBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbes.size() * sizeof(LocalReflectionProbe), sizeof(LocalReflectionProbe)), sizeof(LocalReflectionProbe) };
 	DescriptorBufferInfo localReflProbesZBinsBufferInfo{ nullptr, 0, std::max(lightData.m_localReflectionProbeDepthBins.size() * sizeof(uint32_t), size_t(1)) };
 	{
+		uint64_t probesAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(LocalReflectionProbe));
 		uint8_t *dataBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localReflProbesDataBufferInfo.m_range, localReflProbesDataBufferInfo.m_offset, localReflProbesDataBufferInfo.m_buffer, dataBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(probesAlignment, localReflProbesDataBufferInfo.m_range, localReflProbesDataBufferInfo.m_offset, localReflProbesDataBufferInfo.m_buffer, dataBufferPtr);
+		uint64_t binsAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::BYTE_BUFFER, sizeof(uint32_t));
 		uint8_t *zBinsBufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(localReflProbesZBinsBufferInfo.m_range, localReflProbesZBinsBufferInfo.m_offset, localReflProbesZBinsBufferInfo.m_buffer, zBinsBufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(binsAlignment, localReflProbesZBinsBufferInfo.m_range, localReflProbesZBinsBufferInfo.m_offset, localReflProbesZBinsBufferInfo.m_buffer, zBinsBufferPtr);
 		if (!lightData.m_localReflectionProbes.empty())
 		{
 			for (size_t i = 0; i < lightData.m_localReflectionProbeOrder.size(); ++i)
@@ -532,8 +544,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// shadow matrices write
 	DescriptorBufferInfo shadowMatricesBufferInfo{ nullptr, 0, std::max(renderData.m_shadowMatrixCount * sizeof(glm::mat4), sizeof(glm::mat4)), sizeof(glm::mat4) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(glm::mat4));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowMatricesBufferInfo.m_range, shadowMatricesBufferInfo.m_offset, shadowMatricesBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, shadowMatricesBufferInfo.m_range, shadowMatricesBufferInfo.m_offset, shadowMatricesBufferInfo.m_buffer, bufferPtr);
 		if (renderData.m_shadowMatrixCount)
 		{
 			memcpy(bufferPtr, renderData.m_shadowMatrices, renderData.m_shadowMatrixCount * sizeof(glm::mat4));
@@ -543,8 +556,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// shadow cascade params write
 	DescriptorBufferInfo shadowCascadeParamsBufferInfo{ nullptr, 0, std::max(renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(glm::vec4));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(shadowCascadeParamsBufferInfo.m_range, shadowCascadeParamsBufferInfo.m_offset, shadowCascadeParamsBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, shadowCascadeParamsBufferInfo.m_range, shadowCascadeParamsBufferInfo.m_offset, shadowCascadeParamsBufferInfo.m_buffer, bufferPtr);
 		if (renderData.m_shadowCascadeViewRenderListCount)
 		{
 			memcpy(bufferPtr, renderData.m_shadowCascadeParams, renderData.m_shadowCascadeViewRenderListCount * sizeof(glm::vec4));
@@ -555,8 +569,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	std::vector<SubMeshInstanceData> sortedInstanceData(renderData.m_subMeshInstanceDataCount);
 	DescriptorBufferInfo instanceDataBufferInfo{ nullptr, 0, std::max(renderData.m_subMeshInstanceDataCount * sizeof(SubMeshInstanceData), sizeof(SubMeshInstanceData)), sizeof(SubMeshInstanceData) };
 	{
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(SubMeshInstanceData));
 		uint8_t *bufferPtr;
-		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(instanceDataBufferInfo.m_range, instanceDataBufferInfo.m_offset, instanceDataBufferInfo.m_buffer, bufferPtr);
+		m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx]->allocate(alignment, instanceDataBufferInfo.m_range, instanceDataBufferInfo.m_offset, instanceDataBufferInfo.m_buffer, bufferPtr);
 
 		// copy instance data to gpu memory and sort it according to the sorted drawCallKeys list
 		SubMeshInstanceData *instanceData = (SubMeshInstanceData *)bufferPtr;
@@ -579,8 +594,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 		auto *storageBuffer = m_renderResources->m_mappableSSBOBlock[commonData.m_curResIdx].get();
 
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(ParticleDrawData));
 		uint8_t *particleDataPtr = nullptr;
-		storageBuffer->allocate(particleBufferInfo.m_range, particleBufferInfo.m_offset, particleBufferInfo.m_buffer, particleDataPtr);
+		storageBuffer->allocate(alignment, particleBufferInfo.m_range, particleBufferInfo.m_offset, particleBufferInfo.m_buffer, particleDataPtr);
 
 		for (size_t i = 0; i < renderData.m_particleDataDrawListCount; ++i)
 		{

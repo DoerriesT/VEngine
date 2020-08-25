@@ -25,8 +25,9 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 	// light info
 	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount, sizeof(LightInfo) };
+	uint64_t lightInfoAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(LightInfo));
 	uint8_t *lightDataPtr = nullptr;
-	ssboBuffer->allocate(lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
+	ssboBuffer->allocate(lightInfoAlignment, lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
 
 	for (size_t i = 0; i < data.m_drawCount; ++i)
 	{
@@ -48,8 +49,9 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 
 	// volume transforms
 	DescriptorBufferInfo volumeTransformBufferInfo{ nullptr, 0, sizeof(float4) * 3 * commonData->m_localParticipatingMediaCount };
+	uint64_t volumeTransformAlignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(float4));
 	uint8_t *volumeTransformDataPtr = nullptr;
-	ssboBuffer->allocate(volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, volumeTransformDataPtr);
+	ssboBuffer->allocate(volumeTransformAlignment, volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, volumeTransformDataPtr);
 
 	for (size_t i = 0; i < commonData->m_localParticipatingMediaCount; ++i)
 	{

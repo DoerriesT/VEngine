@@ -23,8 +23,9 @@ void VEngine::LightProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Da
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
 	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::CONSTANT_BUFFER, sizeof(Constants));
 	uint8_t *uboDataPtr = nullptr;
-	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+	uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, data.m_probeNearPlane, data.m_probeFarPlane);
 

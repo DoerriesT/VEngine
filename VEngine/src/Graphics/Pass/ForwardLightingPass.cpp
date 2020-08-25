@@ -24,8 +24,9 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
 	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(Constants) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::CONSTANT_BUFFER, sizeof(Constants));
 	uint8_t *uboDataPtr = nullptr;
-	uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
+	uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
 	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
@@ -245,18 +246,20 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 				for (uint32_t i = 0; i < data.m_instanceDataCount; ++i)
 				{
 					const auto &instanceData = data.m_instanceData[i + data.m_instanceDataOffset];
+					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
 
 					PushConsts pushConsts;
 					pushConsts.texCoordScale = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 0], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 1]);
 					pushConsts.texCoordBias = float2(data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 2], data.m_texCoordScaleBias[instanceData.m_subMeshIndex * 4 + 3]);
 					pushConsts.transformIndex = instanceData.m_transformIndex;
 					pushConsts.materialIndex = instanceData.m_materialIndex;
+					pushConsts.vertexOffset = subMeshInfo.m_vertexOffset;
 
 					cmdList->pushConstants(pipeline, ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 
-					const auto &subMeshInfo = data.m_subMeshInfo[instanceData.m_subMeshIndex];
+					
 
-					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, subMeshInfo.m_vertexOffset, 0);
+					cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 				}
 			}
 

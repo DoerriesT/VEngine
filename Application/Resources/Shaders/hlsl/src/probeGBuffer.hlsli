@@ -12,6 +12,7 @@ struct PushConsts
 	uint face;
 	uint transformIndex;
 	uint materialIndex;
+	uint vertexOffset;
 };
 
 struct Constants

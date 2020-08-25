@@ -47,8 +47,9 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 
 	// direction info
 	DescriptorBufferInfo dirBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 2 * data.m_lightData->m_directionalLightsShadowed.size(), sizeof(glm::vec4) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(glm::vec4));
 	uint8_t *dirDataPtr = nullptr;
-	ssboBuffer->allocate(dirBufferInfo.m_range, dirBufferInfo.m_offset, dirBufferInfo.m_buffer, dirDataPtr);
+	ssboBuffer->allocate(alignment, dirBufferInfo.m_range, dirBufferInfo.m_offset, dirBufferInfo.m_buffer, dirDataPtr);
 
 	for (size_t i = 0; i < data.m_lightData->m_directionalLightsShadowed.size(); ++i)
 	{
@@ -71,7 +72,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	// transform buffer info
 	DescriptorBufferInfo volumeTransformBufferInfo{ nullptr, 0, sizeof(glm::vec4) * 3 * glm::max(commonData->m_localParticipatingMediaCount, 1u), sizeof(glm::vec4) };
 	uint8_t *transformDataPtr = nullptr;
-	ssboBuffer->allocate(volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, transformDataPtr);
+	ssboBuffer->allocate(alignment, volumeTransformBufferInfo.m_range, volumeTransformBufferInfo.m_offset, volumeTransformBufferInfo.m_buffer, transformDataPtr);
 
 	for (size_t i = 0; i < data.m_lightData->m_localParticipatingMedia.size(); ++i)
 	{

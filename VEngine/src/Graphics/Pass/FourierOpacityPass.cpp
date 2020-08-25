@@ -25,8 +25,9 @@ void VEngine::FourierOpacityPass::addToGraph(rg::RenderGraph &graph, const Data 
 
 	// light info
 	DescriptorBufferInfo lightBufferInfo{ nullptr, 0, sizeof(LightInfo) * data.m_drawCount, sizeof(LightInfo) };
+	uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::STRUCTURED_BUFFER, sizeof(LightInfo));
 	uint8_t *lightDataPtr = nullptr;
-	ssboBuffer->allocate(lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
+	ssboBuffer->allocate(alignment, lightBufferInfo.m_range, lightBufferInfo.m_offset, lightBufferInfo.m_buffer, lightDataPtr);
 
 	for (size_t i = 0; i < data.m_drawCount; ++i)
 	{

@@ -16,4 +16,5 @@ struct PushConsts
 	uint transformIndex;
 	uint materialIndex;
 	uint instanceID;
+	uint vertexOffset;
 };

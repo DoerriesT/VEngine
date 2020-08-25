@@ -8,6 +8,7 @@ struct PushConsts
 	float4x4 shadowMatrix;
 	uint transformIndex;
 	uint materialIndex;
+	uint vertexOffset;
 	float2 texCoordScale;
 	float2 texCoordBias;
 };

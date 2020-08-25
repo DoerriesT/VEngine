@@ -14,13 +14,14 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 
 	// constant buffer
-	DescriptorBufferInfo uboBufferInfo{ nullptr, 0, sizeof(glm::mat4) };
+	DescriptorBufferInfo constantBufferInfo{ nullptr, 0, sizeof(glm::mat4) };
 	{
-		auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
+		auto *constantBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
-		uint8_t *uboDataPtr = nullptr;
-		uboBuffer->allocate(uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
-		memcpy(uboDataPtr, &commonData->m_projectionMatrix, sizeof(glm::mat4));
+		uint64_t alignment = graph.getGraphicsDevice()->getBufferAlignment(DescriptorType2::CONSTANT_BUFFER, sizeof(glm::mat4));
+		uint8_t *constantDataPtr = nullptr;
+		constantBuffer->allocate(alignment, constantBufferInfo.m_range, constantBufferInfo.m_offset, constantBufferInfo.m_buffer, constantDataPtr);
+		memcpy(constantDataPtr, &commonData->m_projectionMatrix, sizeof(glm::mat4));
 	}
 
 	rg::ResourceUsageDescription passUsages[]
@@ -80,7 +81,7 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			{
 				DescriptorSetUpdate2 updates[] =
 				{
-					Initializers::constantBuffer(&uboBufferInfo, 0),
+					Initializers::constantBuffer(&constantBufferInfo, 0),
 				};
 
 				descriptorSet->update((uint32_t)std::size(updates), updates);

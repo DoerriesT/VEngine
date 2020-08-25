@@ -20,7 +20,7 @@ void VEngine::ExposurePass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(data.m_luminanceHistogramBufferHandle), {gal::ResourceState::READ_WRITE_RW_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_luminanceHistogramBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_avgLuminanceBufferHandle), {gal::ResourceState::READ_WRITE_RW_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};

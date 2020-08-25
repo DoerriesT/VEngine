@@ -155,6 +155,7 @@ namespace VEngine
 			void reset();
 			void execute(ResourceViewHandle finalResourceHandle, const ResourceStateData &finalResourceStateData, bool forceWaitOnSemaphore = false, uint64_t waitValue = 0);
 			void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
+			gal::GraphicsDevice *getGraphicsDevice();
 
 		private:
 			struct ResourceDescription
