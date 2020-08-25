@@ -1344,6 +1344,7 @@ namespace VEngine
 			virtual Queue *getGraphicsQueue() = 0;
 			virtual Queue *getComputeQueue() = 0;
 			virtual Queue *getTransferQueue() = 0;
+			virtual uint64_t getBufferAlignment(DescriptorType2 bufferType, uint64_t elementSize) const = 0;
 			virtual uint64_t getMinUniformBufferOffsetAlignment() const = 0;
 			virtual uint64_t getMinStorageBufferOffsetAlignment() const = 0;
 			virtual uint64_t getBufferCopyOffsetAlignment() const = 0;

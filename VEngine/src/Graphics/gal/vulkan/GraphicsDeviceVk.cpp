@@ -1062,6 +1062,31 @@ VEngine::gal::Queue *VEngine::gal::GraphicsDeviceVk::getTransferQueue()
 	return m_transferQueue.m_queue == m_graphicsQueue.m_queue ? &m_graphicsQueue : &m_transferQueue;
 }
 
+uint64_t VEngine::gal::GraphicsDeviceVk::getBufferAlignment(DescriptorType2 bufferType, uint64_t elementSize) const
+{
+	switch (bufferType)
+	{
+	case DescriptorType2::TYPED_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::RW_TYPED_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::CONSTANT_BUFFER:
+		return m_properties.limits.minUniformBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::BYTE_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::RW_BYTE_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::STRUCTURED_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	case VEngine::gal::DescriptorType2::RW_STRUCTURED_BUFFER:
+		return m_properties.limits.minStorageBufferOffsetAlignment;
+	default:
+		assert(false);
+		break;
+	}
+	return uint64_t();
+}
+
 uint64_t VEngine::gal::GraphicsDeviceVk::getMinUniformBufferOffsetAlignment() const
 {
 	return m_properties.limits.minUniformBufferOffsetAlignment;

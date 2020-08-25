@@ -116,7 +116,7 @@ const VEngine::gal::BufferCreateInfo &VEngine::gal::BufferDx12::getDescription()
 void VEngine::gal::BufferDx12::map(void **data)
 {
 	D3D12_RANGE range{0, m_description.m_size};
-	m_buffer->Map(0, &range, data);
+	UtilityDx12::checkResult(m_buffer->Map(0, &range, data), "Failed to map buffer!");
 }
 
 void VEngine::gal::BufferDx12::unmap()

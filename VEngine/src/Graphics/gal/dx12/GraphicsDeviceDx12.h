@@ -63,6 +63,7 @@ namespace VEngine
 			Queue *getGraphicsQueue() override;
 			Queue *getComputeQueue() override;
 			Queue *getTransferQueue() override;
+			uint64_t getBufferAlignment(DescriptorType2 bufferType, uint64_t elementSize) const override;
 			uint64_t getMinUniformBufferOffsetAlignment() const override;
 			uint64_t getMinStorageBufferOffsetAlignment() const override;
 			uint64_t getBufferCopyOffsetAlignment() const  override;

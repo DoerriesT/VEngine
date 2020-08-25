@@ -873,6 +873,31 @@ VEngine::gal::Queue *VEngine::gal::GraphicsDeviceDx12::getTransferQueue()
 	return &m_transferQueue;
 }
 
+uint64_t VEngine::gal::GraphicsDeviceDx12::getBufferAlignment(DescriptorType2 bufferType, uint64_t elementSize) const
+{
+	switch (bufferType)
+	{
+	case VEngine::gal::DescriptorType2::TYPED_BUFFER:
+		return elementSize;
+	case VEngine::gal::DescriptorType2::RW_TYPED_BUFFER:
+		return elementSize;
+	case VEngine::gal::DescriptorType2::CONSTANT_BUFFER:
+		return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+	case VEngine::gal::DescriptorType2::BYTE_BUFFER:
+		return D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
+	case VEngine::gal::DescriptorType2::RW_BYTE_BUFFER:
+		return D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
+	case VEngine::gal::DescriptorType2::STRUCTURED_BUFFER:
+		return elementSize;
+	case VEngine::gal::DescriptorType2::RW_STRUCTURED_BUFFER:
+		return elementSize;
+	default:
+		assert(false);
+		break;
+	}
+	return uint64_t();
+}
+
 uint64_t VEngine::gal::GraphicsDeviceDx12::getMinUniformBufferOffsetAlignment() const
 {
 	return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
