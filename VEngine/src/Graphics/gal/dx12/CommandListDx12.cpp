@@ -8,6 +8,7 @@
 #include "./../Initializers.h"
 #include "Utility/TLSFAllocator.h"
 #include "Utility/Utility.h"
+#include <WinPixEventRuntime/pix3.h>
 
 
 VEngine::gal::CommandListDx12::CommandListDx12(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE cmdListType, const CommandListRecordContextDx12 *recordContext)
@@ -628,7 +629,7 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		auto afterState = getResourceStateInfo(barrier.m_stateAfter, barrier.m_stagesAfter, format);
 
 		// only if one of the states is uav and there is a writing access
-		bool uavBarrier = (beforeState.m_uavBarrier || afterState.m_uavBarrier) && (beforeState.m_writeAccess || afterState.m_writeAccess);
+		bool uavBarrier = (beforeState.m_uavBarrier /*|| afterState.m_uavBarrier*/) && (beforeState.m_writeAccess || afterState.m_writeAccess);
 
 		ID3D12Resource *resouceDx = barrier.m_image ? (ID3D12Resource *)barrier.m_image->getNativeHandle() : (ID3D12Resource *)barrier.m_buffer->getNativeHandle();
 
@@ -950,17 +951,17 @@ void VEngine::gal::CommandListDx12::endRenderPass()
 
 void VEngine::gal::CommandListDx12::insertDebugLabel(const char *label)
 {
-	// no implementation
+	PIXSetMarker(m_commandList, PIX_COLOR(0, 255, 0), label);
 }
 
 void VEngine::gal::CommandListDx12::beginDebugLabel(const char *label)
 {
-	// no implementation
+	PIXBeginEvent(m_commandList, PIX_COLOR(0, 255, 0), label);
 }
 
 void VEngine::gal::CommandListDx12::endDebugLabel()
 {
-	// no implementation
+	PIXEndEvent(m_commandList);
 }
 
 void VEngine::gal::CommandListDx12::reset()
