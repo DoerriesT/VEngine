@@ -304,17 +304,17 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		SamplerCreateInfo samplerCreateInfo{};
 		samplerCreateInfo.m_magFilter = Filter::LINEAR;
 		samplerCreateInfo.m_minFilter = Filter::LINEAR;
-		samplerCreateInfo.m_mipmapMode = SamplerMipmapMode::LINEAR;
-		samplerCreateInfo.m_addressModeU = SamplerAddressMode::REPEAT;
-		samplerCreateInfo.m_addressModeV = SamplerAddressMode::REPEAT;
-		samplerCreateInfo.m_addressModeW = SamplerAddressMode::REPEAT;
+		samplerCreateInfo.m_mipmapMode = SamplerMipmapMode::NEAREST;
+		samplerCreateInfo.m_addressModeU = SamplerAddressMode::CLAMP_TO_BORDER;
+		samplerCreateInfo.m_addressModeV = SamplerAddressMode::CLAMP_TO_BORDER;
+		samplerCreateInfo.m_addressModeW = SamplerAddressMode::CLAMP_TO_BORDER;
 		samplerCreateInfo.m_mipLodBias = 0.0f;
-		samplerCreateInfo.m_anisotropyEnable = true;
+		samplerCreateInfo.m_anisotropyEnable = false;
 		samplerCreateInfo.m_maxAnisotropy = 1.0f;
 		samplerCreateInfo.m_compareEnable = true;
 		samplerCreateInfo.m_compareOp = CompareOp::LESS_OR_EQUAL;
 		samplerCreateInfo.m_minLod = 0.0f;
-		samplerCreateInfo.m_maxLod = 1;
+		samplerCreateInfo.m_maxLod = 0.0f;
 		samplerCreateInfo.m_borderColor = BorderColor::FLOAT_OPAQUE_WHITE;
 		samplerCreateInfo.m_unnormalizedCoordinates = false;
 

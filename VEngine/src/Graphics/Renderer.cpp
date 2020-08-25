@@ -408,7 +408,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache;
 	passRecordContext.m_commonRenderData = &commonData;
 
-#if 0
+#if 1
 
 	// transform data write
 	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };

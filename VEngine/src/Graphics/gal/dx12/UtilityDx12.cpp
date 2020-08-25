@@ -254,7 +254,7 @@ D3D12_TEXTURE_ADDRESS_MODE VEngine::gal::UtilityDx12::translate(SamplerAddressMo
 
 D3D12_FILTER VEngine::gal::UtilityDx12::translate(Filter magFilter, Filter minFilter, SamplerMipmapMode mipmapMode, bool compareEnable)
 {
-	if (compareEnable)
+	if (!compareEnable)
 	{
 		if (minFilter == Filter::NEAREST && magFilter == Filter::NEAREST && mipmapMode == SamplerMipmapMode::NEAREST)
 		{
