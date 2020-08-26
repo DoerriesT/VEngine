@@ -190,7 +190,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	// depth stencil state
 	{
 		stateDesc.DepthStencilState.DepthEnable = createInfo.m_depthStencilState.m_depthTestEnable;
-		stateDesc.DepthStencilState.DepthWriteMask = createInfo.m_depthStencilState.m_depthTestEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+		stateDesc.DepthStencilState.DepthWriteMask = createInfo.m_depthStencilState.m_depthWriteEnable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
 		stateDesc.DepthStencilState.DepthFunc = UtilityDx12::translate(createInfo.m_depthStencilState.m_depthCompareOp);
 		stateDesc.DepthStencilState.StencilEnable = createInfo.m_depthStencilState.m_stencilTestEnable;
 		stateDesc.DepthStencilState.StencilReadMask = static_cast<UINT8>(createInfo.m_depthStencilState.m_front.m_compareMask);

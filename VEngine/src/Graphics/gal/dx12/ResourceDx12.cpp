@@ -3,6 +3,7 @@
 #include <cassert>
 #include "Utility/TLSFAllocator.h"
 #include "Utility/Utility.h"
+#include "./../Initializers.h"
 
 VEngine::gal::SamplerDx12::SamplerDx12(ID3D12Device *device, const SamplerCreateInfo &createInfo, TLSFAllocator &cpuSamplerDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &heapCpuBaseHandle, UINT descriptorIncSize)
 	:m_sampler(),
@@ -115,7 +116,7 @@ const VEngine::gal::BufferCreateInfo &VEngine::gal::BufferDx12::getDescription()
 
 void VEngine::gal::BufferDx12::map(void **data)
 {
-	D3D12_RANGE range{0, m_description.m_size};
+	D3D12_RANGE range{ 0, m_description.m_size };
 	UtilityDx12::checkResult(m_buffer->Map(0, &range, data), "Failed to map buffer!");
 }
 
@@ -159,10 +160,12 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 	m_uav(),
 	m_rtv(),
 	m_dsv(),
+	m_dsvDepthReadOnly(),
 	m_srvAllocationHandle(),
 	m_uavAllocationHandle(),
 	m_rtvAllocationHandle(),
 	m_dsvAllocationHandle(),
+	m_dsvDepthReadOnlyAllocationHandle(),
 	m_cpuDescriptorAllocator(cpuDescriptorAllocator),
 	m_cpuRTVDescriptorAllocator(cpuRTVDescriptorAllocator),
 	m_cpuDSVDescriptorAllocator(cpuDSVDescriptorAllocator),
@@ -497,20 +500,37 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 			break;
 		}
 
-		// allocate DSV descriptor
+		D3D12_DSV_FLAGS readOnlyFlags = D3D12_DSV_FLAG_NONE;
+		if (Initializers::isDepthFormat(createInfo.m_format))
 		{
-			uint32_t offset = 0;
-			bool allocSucceeded = m_cpuDSVDescriptorAllocator.alloc(1, 1, offset, m_dsvAllocationHandle);
-
-			if (!allocSucceeded)
-			{
-				Utility::fatalExit("Failed to allocate CPU descriptor for DSV!", EXIT_FAILURE);
-			}
-
-			m_dsv.ptr = descriptorDSVHeapCpuBaseHandle.ptr + dsvDescriptorIncSize * offset;
+			readOnlyFlags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+		}
+		if (Initializers::isStencilFormat(createInfo.m_format))
+		{
+			readOnlyFlags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
 		}
 
-		device->CreateDepthStencilView(resource, &viewDesc, m_dsv);
+		// create two descriptors, a normal DSV and a depth read only DSV
+		for (int i = 0; i < 2; ++i)
+		{
+			auto &descriptorHandle = (i == 0) ? m_dsv : m_dsvDepthReadOnly;
+			viewDesc.Flags = (i == 0) ? D3D12_DSV_FLAG_NONE : readOnlyFlags;
+
+			// allocate DSV descriptor
+			{
+				uint32_t offset = 0;
+				bool allocSucceeded = m_cpuDSVDescriptorAllocator.alloc(1, 1, offset, (i == 0) ? m_dsvAllocationHandle : m_dsvDepthReadOnlyAllocationHandle);
+
+				if (!allocSucceeded)
+				{
+					Utility::fatalExit("Failed to allocate CPU descriptor for DSV!", EXIT_FAILURE);
+				}
+
+				descriptorHandle.ptr = descriptorDSVHeapCpuBaseHandle.ptr + dsvDescriptorIncSize * offset;
+			}
+
+			device->CreateDepthStencilView(resource, &viewDesc, descriptorHandle);
+		}
 	}
 }
 
@@ -532,6 +552,10 @@ VEngine::gal::ImageViewDx12::~ImageViewDx12()
 	if (m_dsvAllocationHandle)
 	{
 		m_cpuDSVDescriptorAllocator.free(m_dsvAllocationHandle);
+	}
+	if (m_dsvDepthReadOnlyAllocationHandle)
+	{
+		m_cpuDSVDescriptorAllocator.free(m_dsvDepthReadOnlyAllocationHandle);
 	}
 }
 
@@ -568,6 +592,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::ImageViewDx12::getRTV() const
 D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::ImageViewDx12::getDSV() const
 {
 	return m_dsv;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE VEngine::gal::ImageViewDx12::getDSVDepthReadOnly() const
+{
+	return m_dsvDepthReadOnly;
 }
 
 VEngine::gal::BufferViewDx12::BufferViewDx12(ID3D12Device *device, const BufferViewCreateInfo &createInfo, TLSFAllocator &cpuDescriptorAllocator, const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHeapCpuBaseHandle, UINT descriptorIncSize)

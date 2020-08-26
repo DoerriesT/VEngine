@@ -538,7 +538,7 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			return { D3D12_RESOURCE_STATE_COMMON, false, true, false };
 
 		case ResourceState::READ_DEPTH_STENCIL:
-			return { D3D12_RESOURCE_STATE_DEPTH_WRITE, false, true, false };
+			return { D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
 
 		case ResourceState::READ_DEPTH_STENCIL_SHADER:
 			return { D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
@@ -930,7 +930,7 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		const ImageViewDx12 *imageViewDx = dynamic_cast<const ImageViewDx12 *>(attachment.m_imageView);
 		assert(imageViewDx);
 
-		depthStencilDesc.cpuDescriptor = imageViewDx->getDSV();
+		depthStencilDesc.cpuDescriptor = attachment.m_readOnly ? imageViewDx->getDSVDepthReadOnly() : imageViewDx->getDSV();
 		depthStencilDesc.DepthBeginningAccess.Type = translateLoadOp(attachment.m_loadOp);
 		depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.Format = UtilityDx12::translate(imageViewDx->getDescription().m_format);
 		depthStencilDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil = { attachment.m_clearValue.m_depth, static_cast<UINT8>(attachment.m_clearValue.m_stencil) };
@@ -941,6 +941,14 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		depthStencilDesc.DepthEndingAccess.Resolve = {};
 		depthStencilDesc.StencilEndingAccess.Type = translateStoreOp(attachment.m_stencilStoreOp);
 		depthStencilDesc.StencilEndingAccess.Resolve = {};
+
+		// TODO FIXME workaround for being able to use D3D12_RESOURCE_STATE_DEPTH_READ.
+		// need to implement support for arbitrary read/write combinations of depth/stencil planes
+		if (attachment.m_readOnly)
+		{
+			depthStencilDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+			depthStencilDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+		}
 	}
 
 	m_commandList->BeginRenderPass(colorAttachmentCount, renderTargetDescs, depthStencilAttachment ? &depthStencilDesc : nullptr, D3D12_RENDER_PASS_FLAG_NONE);

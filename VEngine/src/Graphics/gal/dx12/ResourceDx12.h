@@ -83,16 +83,19 @@ namespace VEngine
 			D3D12_CPU_DESCRIPTOR_HANDLE getUAV() const;
 			D3D12_CPU_DESCRIPTOR_HANDLE getRTV() const;
 			D3D12_CPU_DESCRIPTOR_HANDLE getDSV() const;
+			D3D12_CPU_DESCRIPTOR_HANDLE getDSVDepthReadOnly() const;
 
 		private:
 			D3D12_CPU_DESCRIPTOR_HANDLE m_srv;
 			D3D12_CPU_DESCRIPTOR_HANDLE m_uav;
 			D3D12_CPU_DESCRIPTOR_HANDLE m_rtv;
 			D3D12_CPU_DESCRIPTOR_HANDLE m_dsv;
+			D3D12_CPU_DESCRIPTOR_HANDLE m_dsvDepthReadOnly;
 			void *m_srvAllocationHandle;
 			void *m_uavAllocationHandle;
 			void *m_rtvAllocationHandle;
 			void *m_dsvAllocationHandle;
+			void *m_dsvDepthReadOnlyAllocationHandle;
 			TLSFAllocator &m_cpuDescriptorAllocator;
 			TLSFAllocator &m_cpuRTVDescriptorAllocator;
 			TLSFAllocator &m_cpuDSVDescriptorAllocator;
