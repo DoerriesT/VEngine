@@ -22,7 +22,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 			// transition result image from READ_TEXTURE to WRITE_RW_IMAGE
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
-					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT | PipelineStageFlagBits::FRAGMENT_SHADER_BIT,
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
 					ResourceState::READ_TEXTURE,
 					ResourceState::WRITE_RW_IMAGE,
@@ -70,7 +70,7 @@ void VEngine::ProbeFilterPass::addToGraph(rg::RenderGraph &graph, const Data &da
 			{
 				gal::Barrier barrier = Initializers::imageBarrier(data.m_resultImageViews[0]->getImage(),
 					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
-					PipelineStageFlagBits::COMPUTE_SHADER_BIT,
+					PipelineStageFlagBits::COMPUTE_SHADER_BIT | PipelineStageFlagBits::FRAGMENT_SHADER_BIT,
 					ResourceState::WRITE_RW_IMAGE,
 					ResourceState::READ_TEXTURE,
 					{ 0, 7, data.m_resultImageViews[0]->getDescription().m_baseArrayLayer, 6 });

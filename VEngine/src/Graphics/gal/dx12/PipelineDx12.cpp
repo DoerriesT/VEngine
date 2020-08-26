@@ -183,8 +183,15 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 		stateDesc.RasterizerState.DepthClipEnable = createInfo.m_rasterizationState.m_depthClampEnable;
 		stateDesc.RasterizerState.MultisampleEnable = createInfo.m_multiSampleState.m_rasterizationSamples != SampleCount::_1;
 		stateDesc.RasterizerState.AntialiasedLineEnable = false;
-		stateDesc.RasterizerState.ForcedSampleCount = createInfo.m_multiSampleState.m_sampleShadingEnable;
+		stateDesc.RasterizerState.ForcedSampleCount = 0;
 		stateDesc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+		if (createInfo.m_attachmentFormats.m_colorAttachmentCount == 0
+			&& createInfo.m_attachmentFormats.m_depthStencilFormat == Format::UNDEFINED
+			&& !createInfo.m_depthStencilState.m_depthTestEnable)
+		{
+			stateDesc.RasterizerState.ForcedSampleCount = (UINT)createInfo.m_multiSampleState.m_rasterizationSamples;
+		}
 	}
 
 	// depth stencil state
@@ -238,8 +245,8 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 	}
 	stateDesc.DSVFormat = UtilityDx12::translate(createInfo.m_attachmentFormats.m_depthStencilFormat);
 
-	stateDesc.SampleDesc.Count = static_cast<UINT>(createInfo.m_multiSampleState.m_rasterizationSamples);
-	stateDesc.SampleDesc.Quality = createInfo.m_multiSampleState.m_rasterizationSamples != SampleCount::_1 ? 1 : 0;
+	stateDesc.SampleDesc.Count = stateDesc.RasterizerState.ForcedSampleCount != 0 ? 1 : static_cast<UINT>(createInfo.m_multiSampleState.m_rasterizationSamples);
+	stateDesc.SampleDesc.Quality = 0;// createInfo.m_multiSampleState.m_rasterizationSamples != SampleCount::_1 ? 1 : 0;
 
 	stateDesc.NodeMask = 0;
 

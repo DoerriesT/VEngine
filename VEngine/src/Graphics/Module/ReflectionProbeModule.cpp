@@ -276,7 +276,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 				Initializers::imageBarrier(m_probeNormalArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, 1, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 				//Initializers::imageBarrier(m_probeUncompressedLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
 				//Initializers::imageBarrier(m_probeCompressedTmpLitImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_IMAGE_TRANSFER, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6}),
-				Initializers::imageBarrier(m_probeArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
+				Initializers::imageBarrier(m_probeArrayImage, PipelineStageFlagBits::TOP_OF_PIPE_BIT, PipelineStageFlagBits::COMPUTE_SHADER_BIT | PipelineStageFlagBits::FRAGMENT_SHADER_BIT, ResourceState::UNDEFINED, ResourceState::READ_TEXTURE, {0, RendererConsts::REFLECTION_PROBE_MIPS, 0, 6 * RendererConsts::REFLECTION_PROBE_CACHE_SIZE}),
 			};
 			cmdList->barrier(sizeof(barriers) / sizeof(barriers[0]), barriers);
 		}
@@ -535,18 +535,20 @@ void VEngine::ReflectionProbeModule::addRelightingToGraph(rg::RenderGraph &graph
 
 
 		// downsample reflection probe
+#if 1
 		ProbeDownsamplePass::Data probeDownsamplePassData;
 		probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
 		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
 		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_cubeImageViews[j] = m_probeTmpCubeViews[j];
 		
 		ProbeDownsamplePass::addToGraph(graph, probeDownsamplePassData);
-
-		//ProbeDownsamplePass2::Data probeDownsamplePassData;
-		//probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
-		//for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
-		//
-		//ProbeDownsamplePass2::addToGraph(graph, probeDownsamplePassData);
+#else
+		ProbeDownsamplePass2::Data probeDownsamplePassData;
+		probeDownsamplePassData.m_passRecordContext = data.m_passRecordContext;
+		for (size_t j = 0; j < RendererConsts::REFLECTION_PROBE_MIPS; ++j) probeDownsamplePassData.m_resultImageViewHandles[j] = probeTmpArrayImageViewHandles[j];
+		
+		ProbeDownsamplePass2::addToGraph(graph, probeDownsamplePassData);
+#endif
 
 
 		// filter reflection probe

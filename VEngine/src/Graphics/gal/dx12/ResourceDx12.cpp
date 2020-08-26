@@ -179,7 +179,8 @@ VEngine::gal::ImageViewDx12::ImageViewDx12(ID3D12Device *device, const ImageView
 
 	ImageViewType viewType = createInfo.m_viewType;
 
-	if (imageDesc.m_layers > 1)
+	// remap 1D/2D views of layered images to their array variants
+	if (imageDesc.m_layers > 1 && (viewType == ImageViewType::_1D || viewType == ImageViewType::_2D))
 	{
 		switch (imageDesc.m_imageType)
 		{
