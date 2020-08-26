@@ -254,7 +254,13 @@ void VEngine::gal::DescriptorSetPoolDx12::allocateDescriptorSets(uint32_t count,
 	// placement new the sets and increment the offset
 	for (size_t i = 0; i < count; ++i)
 	{
-		sets[i] = new (m_descriptorSetMemory + sizeof(DescriptorSetDx12) * m_currentOffset) DescriptorSetDx12(m_device, m_cpuBaseHandle, m_gpuBaseHandle, m_layout, m_incSize, m_layout->needsSamplerHeap());
+		uint32_t setOffset = m_currentOffset * m_layout->getDescriptorCount() * m_incSize;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE tableCpuBaseHandle{ m_cpuBaseHandle.ptr + setOffset };
+		D3D12_GPU_DESCRIPTOR_HANDLE tableGpuBaseHandle{ m_gpuBaseHandle.ptr + setOffset };
+
+
+		sets[i] = new (m_descriptorSetMemory + sizeof(DescriptorSetDx12) * m_currentOffset) DescriptorSetDx12(m_device, tableCpuBaseHandle, tableGpuBaseHandle, m_layout, m_incSize, m_layout->needsSamplerHeap());
 		++m_currentOffset;
 	}
 }

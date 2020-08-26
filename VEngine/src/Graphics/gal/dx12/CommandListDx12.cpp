@@ -508,25 +508,25 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags, Format format) -> ResourceStateInfo
 	{
 		// determine if resource is used in pixel shader or non-pixel shader
-		//D3D12_RESOURCE_STATES shaderResourceState = D3D12_RESOURCE_STATE_COMMON;
-		//if ((stageFlags & PipelineStageFlagBits::FRAGMENT_SHADER_BIT) != 0)
-		//{
-		//	shaderResourceState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		//}
-		//if ((stageFlags
-		//	& (PipelineStageFlagBits::VERTEX_SHADER_BIT
-		//	| PipelineStageFlagBits::TESSELLATION_CONTROL_SHADER_BIT
-		//	| PipelineStageFlagBits::TESSELLATION_EVALUATION_SHADER_BIT
-		//	| PipelineStageFlagBits::GEOMETRY_SHADER_BIT
-		//	| PipelineStageFlagBits::COMPUTE_SHADER_BIT)) != 0)
-		//{
-		//	shaderResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-		//}
-		//
-		//if (shaderResourceState == D3D12_RESOURCE_STATE_COMMON)
-		//{
-		//	shaderResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-		//}
+		D3D12_RESOURCE_STATES shaderResourceState = D3D12_RESOURCE_STATE_COMMON;
+		if ((stageFlags & PipelineStageFlagBits::FRAGMENT_SHADER_BIT) != 0)
+		{
+			shaderResourceState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		}
+		if ((stageFlags
+			& (PipelineStageFlagBits::VERTEX_SHADER_BIT
+			| PipelineStageFlagBits::TESSELLATION_CONTROL_SHADER_BIT
+			| PipelineStageFlagBits::TESSELLATION_EVALUATION_SHADER_BIT
+			| PipelineStageFlagBits::GEOMETRY_SHADER_BIT
+			| PipelineStageFlagBits::COMPUTE_SHADER_BIT)) != 0)
+		{
+			shaderResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		}
+		
+		if (shaderResourceState == D3D12_RESOURCE_STATE_COMMON)
+		{
+			shaderResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		}
 
 		switch (state)
 		{

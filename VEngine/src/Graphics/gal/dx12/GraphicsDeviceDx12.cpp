@@ -508,7 +508,7 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 	// TODO: add this to gal::ImageCreateInfo?
 	D3D12_CLEAR_VALUE optimizedClearValue{};
 	optimizedClearValue.Format = resourceDesc.Format;
-	bool useClearValue = (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0;
+	bool useClearValue = (resourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
 
 	D3D12MA::ALLOCATION_DESC allocationDesc{};
 	allocationDesc.Flags = dedicated ? D3D12MA::ALLOCATION_FLAG_COMMITTED : D3D12MA::ALLOCATION_FLAG_NONE;
