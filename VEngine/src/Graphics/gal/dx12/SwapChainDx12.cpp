@@ -45,7 +45,7 @@ uint32_t VEngine::gal::SwapChainDx12::getCurrentImageIndex()
 
 void VEngine::gal::SwapChainDx12::present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue)
 {
-	//waitSemaphore->wait(semaphoreWaitValue);
+	waitSemaphore->wait(semaphoreWaitValue);
 	UtilityDx12::checkResult(m_swapChain->Present(0, 0), "Failed to present!");
 	signalSemaphore->signal(semaphoreSignalValue);
 }

@@ -3,6 +3,7 @@
 #include "UtilityDx12.h"
 #include "Utility/Utility.h"
 #include "D3D12MemAlloc.h"
+#include "./../Initializers.h"
 
 #define GPU_DESCRIPTOR_HEAP_SIZE (1000000)
 #define GPU_SAMPLER_DESCRIPTOR_HEAP_SIZE (1024)
@@ -44,6 +45,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 	m_debugLayers(debugLayer)
 {
 	// Enable the D3D12 debug layer.
+	if (m_debugLayers)
 	{
 		ID3D12Debug *debugController;
 		if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), (void **)&debugController)))
@@ -59,7 +61,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 		IDXGIFactory4 *dxgiFactory;
 		UINT createFactoryFlags = 0;
 
-		if (debugLayer)
+		if (m_debugLayers)
 		{
 			createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 		}
@@ -91,7 +93,7 @@ VEngine::gal::GraphicsDeviceDx12::GraphicsDeviceDx12(void *windowHandle, bool de
 		ID3D12Device2 *d3d12Device2;
 		UtilityDx12::checkResult(D3D12CreateDevice(dxgiAdapter4, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), (void **)&d3d12Device2), "Failed to create device!");
 
-		if (debugLayer)
+		if (m_debugLayers)
 		{
 			ID3D12InfoQueue *pInfoQueue;
 			if (SUCCEEDED(d3d12Device2->QueryInterface(__uuidof(ID3D12InfoQueue), (void **)&pInfoQueue)))
@@ -487,9 +489,11 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 			break;
 		}
 
+		bool compressedFormat = Initializers::getFormatInfo(imageCreateInfo.m_format).m_compressed;
+
 		resourceDesc.Alignment = 0;
-		resourceDesc.Width = imageCreateInfo.m_width;
-		resourceDesc.Height = imageCreateInfo.m_height;
+		resourceDesc.Width = compressedFormat ? max(4, imageCreateInfo.m_width) : imageCreateInfo.m_width;
+		resourceDesc.Height = compressedFormat ? max(4, imageCreateInfo.m_height) : imageCreateInfo.m_height;
 		resourceDesc.DepthOrArraySize = (imageCreateInfo.m_imageType == ImageType::_3D) ? imageCreateInfo.m_depth : imageCreateInfo.m_layers;
 		resourceDesc.MipLevels = imageCreateInfo.m_levels;
 		resourceDesc.Format = UtilityDx12::translate(imageCreateInfo.m_format);
