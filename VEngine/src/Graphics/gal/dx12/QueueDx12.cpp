@@ -48,28 +48,48 @@ void VEngine::gal::QueueDx12::submit(uint32_t count, const SubmitInfo *submitInf
 	{
 		const auto &submit = submitInfo[i];
 
+		// flush pending command lists if this submission needs to wait
+		if (submit.m_waitSemaphoreCount && !commandLists.empty())
+		{
+			m_queue->ExecuteCommandLists((UINT)commandLists.size(), commandLists.data());
+			commandLists.clear();
+		}
+
+		// wait on fences
 		for (size_t j = 0; j < submit.m_waitSemaphoreCount; ++j)
 		{
 			m_queue->Wait((ID3D12Fence *)submit.m_waitSemaphores[j]->getNativeHandle(), submit.m_waitValues[j]);
 		}
 
+		// add command lists of this submission
 		if (submit.m_commandListCount > 0)
 		{
-			commandLists.clear();
-			commandLists.reserve(submit.m_commandListCount);
+			commandLists.reserve(commandLists.size() + submit.m_commandListCount);
 
 			for (size_t j = 0; j < submit.m_commandListCount; ++j)
 			{
 				commandLists.push_back((ID3D12CommandList *)submit.m_commandLists[j]->getNativeHandle());
 			}
+		}
 
-			m_queue->ExecuteCommandLists(submit.m_commandListCount, commandLists.data());
+		// flush pending command lists if this submission needs to signal
+		if (submit.m_signalSemaphoreCount && !commandLists.empty())
+		{
+			m_queue->ExecuteCommandLists((UINT)commandLists.size(), commandLists.data());
+			commandLists.clear();
 		}
 		
+		// signal fences
 		for (size_t j = 0; j < submit.m_signalSemaphoreCount; ++j)
 		{
 			m_queue->Signal((ID3D12Fence *)submit.m_signalSemaphores[j]->getNativeHandle(), submit.m_signalValues[j]);
 		}
+	}
+
+	// flush remaining command lists
+	if (!commandLists.empty())
+	{
+		m_queue->ExecuteCommandLists((UINT)commandLists.size(), commandLists.data());
 	}
 }
 

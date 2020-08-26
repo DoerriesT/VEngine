@@ -541,11 +541,11 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			return { D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
 
 		case ResourceState::READ_DEPTH_STENCIL_SHADER:
-			return { D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
+			return { shaderResourceState | D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
 
 		case ResourceState::READ_TEXTURE:
 		case ResourceState::READ_BUFFER:
-			return { D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false, true, false };
+			return { shaderResourceState, false, true, false };
 
 		case ResourceState::READ_RW_TEXTURE:
 		case ResourceState::READ_RW_BUFFER:
