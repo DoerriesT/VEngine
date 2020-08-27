@@ -36,8 +36,7 @@ Texture2D<float> g_AmbientOcclusionImage : REGISTER_SRV(SSAO_IMAGE_BINDING, 0);
 Texture2DArray<float> g_DeferredShadowImage : REGISTER_SRV(DEFERRED_SHADOW_IMAGE_BINDING, 0);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
-Texture3D<float> g_ExtinctionImage : REGISTER_SRV(EXTINCTION_IMAGE_BINDING, 0);
-Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
@@ -59,32 +58,6 @@ Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 3);
-
-float raymarch(const float3 origin, const float3 dst)
-{
-	const int NUM_STEPS = 16;
-	
-	float3 dir = normalize(dst - origin);
-	float stepSize = distance(origin, dst) / float(NUM_STEPS);
-	
-	float accumulatedTransmittance = 1.0;
-	for (int i = 0; i <= NUM_STEPS; ++i)
-	{
-		float3 coord = (origin + dir * stepSize * i) * g_Constants.coordScale + g_Constants.coordBias;
-		coord *= g_Constants.extinctionVolumeTexelSize;
-		
-		if (all(coord >= 0.0) && all(coord < 1.0))
-		{
-			float extinction = g_ExtinctionImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], coord, 0.0).x;
-			
-			extinction = max(extinction, 1e-5);
-			float transmittance = exp(-extinction * stepSize);
-			accumulatedTransmittance *= transmittance;
-		}
-	}
-	
-	return accumulatedTransmittance;
-}
 
 [earlydepthstencil]
 PSOutput main(PSInput input)
@@ -260,37 +233,30 @@ PSOutput main(PSInput input)
 				
 				if (shadow > 0.0 && g_Constants.volumetricShadow && lightShadowed.fomShadowAtlasParams.w != 0.0)
 				{
-					if (g_Constants.volumetricShadow == 2)
+					float2 uv;
+					// spot light
+					if (isSpotLight)
 					{
-						shadow *= raymarch(worldSpacePos, lightShadowed.positionWS);
+						uv.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
+						uv.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
+						uv /= dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
+						uv = uv * float2(0.5, -0.5) + 0.5;
 					}
+					// point light
 					else
 					{
-						float2 uv;
-						// spot light
-						if (isSpotLight)
-						{
-							uv.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
-							uv.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
-							uv /= dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
-							uv = uv * float2(0.5, -0.5) + 0.5;
-						}
-						// point light
-						else
-						{
-							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos)) * 0.5 + 0.5;
-						}
-						
-						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
-						
-						float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
-						float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
-						
-						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
-						//depth = saturate(depth);
-						
-						shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
+						uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos)) * 0.5 + 0.5;
 					}
+					
+					uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
+					
+					float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
+					float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
+					
+					float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
+					//depth = saturate(depth);
+					
+					shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
 				}
 				
 				result += shadow * evaluatePunctualLight(lightingParams, lightShadowed.light);

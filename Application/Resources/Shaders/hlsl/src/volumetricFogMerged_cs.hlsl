@@ -12,13 +12,12 @@
 #define VOLUME_FAR (64.0)
 
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
-Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, 0);
 StructuredBuffer<float4x4> g_ShadowMatrices : REGISTER_SRV(SHADOW_MATRICES_BINDING, 0);
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
-Texture2DArray<float4> g_fomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
+Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
 Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
 
@@ -111,19 +110,10 @@ float henyeyGreenstein(float3 V, float3 L, float g)
 [numthreads(4, 4, 4)]
 void main(uint3 threadID : SV_DispatchThreadID)
 {
-	bool2 threadIDEven = bool2((threadID.x & 1) == 0, (threadID.y & 1) == 0);
-	float dither = 0.0;
-	dither = (threadIDEven.x && threadIDEven.y) ? 0.25 : dither;
-	dither = (!threadIDEven.x && threadIDEven.y) ? 0.75 : dither;
-	dither = (threadIDEven.x && !threadIDEven.y) ? 1.0 : dither;
-	dither = (!threadIDEven.x && !threadIDEven.y) ? 0.5 : dither;
-	
-	dither = g_Constants.useDithering != 0 ? dither : 0.0;
-	
 	float3 texelCoord = threadID;
 	texelCoord.z *= 2.0;
 	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
-	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ + dither));
+	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
 	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
 	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
 
@@ -342,13 +332,13 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						uv = uv * 0.5 + 0.5;
 						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
 						
-						float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
-						float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
+						float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
+						float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
 						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
 						
-						shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
+						shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
 					}
 					
 					const float3 radiance = lightShadowed.light.color * att;
@@ -363,31 +353,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	
 	// apply pre-exposure
 	result.rgb *= asfloat(g_ExposureData.Load(0));
-	
-	// reproject and combine with previous result from previous frame
-	//if (g_Constants.ignoreHistory == 0)
-	//{
-	//	float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
-	//	
-	//	float z = length(prevViewSpacePos.xyz);
-	//	float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-	//
-	//	float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
-	//	float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
-	//	//prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
-	//	
-	//	bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
-	//	float4 prevResult = 0.0;
-	//	if (validCoord)
-	//	{
-	//		prevResult = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], prevTexCoord, 0.0);
-	//		
-	//		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
-	//		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
-	//	}
-	//	
-	//	result = lerp(prevResult, result, validCoord ? g_Constants.alpha : 1.0);
-	//}
 	
 	g_ResultImage[threadID] = result;
 }

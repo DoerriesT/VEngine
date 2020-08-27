@@ -22,21 +22,6 @@ namespace
 
 void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
-	rg::ResourceUsageDescription passUsages[]
-	{
-		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		//{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
-		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_localMediaBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-	};
-
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
@@ -47,9 +32,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 
 	Constants consts;
 	consts.viewMatrix = commonData->m_viewMatrix;
-	consts.prevViewMatrix = commonData->m_prevViewMatrix;
-	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
-	consts.reprojectedTexCoordScaleBias = *(glm::vec4 *)data.m_reprojectedTexCoordScaleBias;
 	consts.volumeResResultRes = glm::vec4(160.0f, 90.0f, commonData->m_width, commonData->m_height);
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;
@@ -64,18 +46,28 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	consts.punctualLightCount = commonData->m_punctualLightCount;
 	consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
 	consts.jitter1 = g_fogJittering ? glm::vec3{ data.m_jitter[3], data.m_jitter[4], data.m_jitter[5] } : glm::vec3(0.5f);
-	consts.useDithering = g_fogDithering;
-	consts.sampleCount = g_fogDoubleSample ? 2 : 1;
 	consts.volumetricShadow = g_volumetricShadow;
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
-	consts.ignoreHistory = data.m_ignoreHistory;
-	consts.alpha = g_fogHistoryAlpha;
-	consts.checkerBoardCondition = (commonData->m_frame & 1) ? 1 : 0;
+	consts.checkerBoardCondition = commonData->m_frame & 1;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
-	graph.addPass("Volumetric Fog Merged", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	rg::ResourceUsageDescription passUsages[]
+	{
+		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_localMediaBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+	};
+
+	graph.addPass("Volumetric Fog Merged", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
@@ -91,7 +83,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
 				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
-				//ImageView *historyImageView = registry.getImageView(data.m_historyImageViewHandle);
 				ImageView *shadowImageView = registry.getImageView(data.m_shadowImageViewHandle);
 				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
 				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
@@ -105,7 +96,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				DescriptorSetUpdate2 updates[] =
 				{
 					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
-					//Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
 					Initializers::texture(&shadowImageView, SHADOW_IMAGE_BINDING),
 					Initializers::texture(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
 					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
@@ -137,7 +127,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet, 
 					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet 
 				};
-				cmdList->bindDescriptorSets(pipeline, 0, 4, sets);
+				cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
 			}
 
 

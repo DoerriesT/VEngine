@@ -56,7 +56,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 
 		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
 		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
-		//prevTexCoord.xy = prevTexCoord.xy * g_Constants.reprojectedTexCoordScaleBias.xy + g_Constants.reprojectedTexCoordScaleBias.zw;
 		
 		bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
 		float4 prevResult = 0.0;

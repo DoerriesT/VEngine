@@ -51,7 +51,6 @@ namespace VEngine
 		void resize(uint32_t width, uint32_t height);
 		rg::ImageViewHandle getVolumetricScatteringImageViewHandle();
 		rg::ImageViewHandle getRaymarchedScatteringImageViewHandle();
-		rg::ImageViewHandle getExtinctionVolumeImageViewHandle();
 		rg::ImageViewHandle getDownsampledDepthImageViewHandle();
 
 	private:
@@ -62,7 +61,6 @@ namespace VEngine
 		float *m_haltonJitter;
 		rg::ImageViewHandle m_volumetricScatteringImageViewHandle = 0;
 		rg::ImageViewHandle m_raymarchedScatteringImageViewHandle = 0;
-		rg::ImageViewHandle m_extinctionVolumeImageViewHandle = 0;
 		rg::ImageViewHandle m_downsampledDepthImageViewHandle = 0;
 
 		gal::Image *m_scatteringImages[RendererConsts::FRAMES_IN_FLIGHT] = {};

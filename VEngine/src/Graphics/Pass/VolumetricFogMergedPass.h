@@ -11,10 +11,8 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
-			bool m_ignoreHistory;
 			float m_frustumCorners[4][3];
 			float m_jitter[6];
-			float m_reprojectedTexCoordScaleBias[4];
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;
@@ -29,7 +27,6 @@ namespace VEngine
 			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
-			rg::ImageViewHandle m_historyImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;

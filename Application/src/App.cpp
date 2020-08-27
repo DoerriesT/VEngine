@@ -27,25 +27,8 @@
 #include <Graphics/imgui/imgui.h>
 #include <Utility/Utility.h>
 
-float g_fogAlbedo[3] = { 0.01f, 0.01f, 0.01f };
-float g_fogExtinction = 0.01f;
-float g_fogEmissiveColor[3] = { 1.0f, 1.0f, 1.0f };
-float g_fogEmissiveIntensity = 0.0f;
-float g_fogPhase = 0.0f;
-bool g_heightFogEnabled = false;
-float g_heightFogStart = 0.0f;
-float g_heightFogFalloff = 1.0f;
-float g_fogMaxHeight = 100.0f;
-
-uint32_t g_fogLookupDitherType = 1;
 
 bool g_fogJittering = true;
-bool g_fogDithering = true;
-bool g_fogLookupDithering = false;
-bool g_fogClamping = false;
-bool g_fogPrevFrameCombine = false;
-bool g_fogHistoryCombine = false;
-bool g_fogDoubleSample = false;
 float g_fogHistoryAlpha = 0.2f;
 
 bool g_raymarchedFog = false;
@@ -186,7 +169,16 @@ void App::initialize(VEngine::Engine *engine)
 
 
 	g_globalFogEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity, glm::vec3(1.0f), 0.0001f, glm::vec3(1.0f), 0.0f, 0.0f, g_heightFogEnabled, g_heightFogStart, g_heightFogFalloff);
+	auto &gpmc = entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
+	gpmc.m_albedo = glm::vec3(1.0f);
+	gpmc.m_extinction = 0.1f;
+	gpmc.m_emissiveColor = glm::vec3(1.0f);
+	gpmc.m_emissiveIntensity = 0.0f;
+	gpmc.m_phaseAnisotropy = 0.7f;
+	gpmc.m_heightFogEnabled = true;
+	gpmc.m_heightFogStart = 0.0f;
+	gpmc.m_heightFogFalloff = 0.1f;
+	gpmc.m_maxHeight = 100.0f;
 	entityRegistry.assign<VEngine::RenderableComponent>(g_globalFogEntity);
 	scene.m_entities.push_back({ "Global Fog", g_globalFogEntity });
 
@@ -278,54 +270,11 @@ void App::update(float timeDelta)
 {
 	auto &entityRegistry = m_engine->getEntityRegistry();
 
-	static int entityIdx = 0;
-
 	ImGui::Begin("Volumetric Fog");
 	{
-		//ImGui::DragFloat("SSR Bias", &g_ssrBias, 0.01f, 0.0f, 1.0f);
-
-		ImGui::RadioButton("Spot Light", &entityIdx, 0); ImGui::SameLine();
-		ImGui::RadioButton("Sun Light", &entityIdx, 1); ImGui::SameLine();
-		ImGui::RadioButton("Local Fog Volume", &entityIdx, 2);
-
-		ImGui::NewLine();
-
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
-
-		ImGui::InputInt("Fog Lookup Dither Type", (int *)&g_fogLookupDitherType, 1, 1);
-		g_fogLookupDitherType = glm::clamp(g_fogLookupDitherType, 0u, 2u);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
-		ImGui::Checkbox("Fog Lookup Dithering", &g_fogLookupDithering);
-		ImGui::Checkbox("Fog Volume Dithering", &g_fogDithering);
-		ImGui::Checkbox("Fog Neighborhood Clamping", &g_fogClamping);
-		ImGui::Checkbox("Fog Prev Frame Combine", &g_fogPrevFrameCombine);
-		ImGui::Checkbox("Fog History Combine", &g_fogHistoryCombine);
-		ImGui::Checkbox("Fog 2x Sample", &g_fogDoubleSample);
 		ImGui::DragFloat("Fog History Alpha", &g_fogHistoryAlpha, 0.01f, 0.0f, 1.0f, "%.7f");
-
-		ImGui::NewLine();
-		ImGui::Separator();
-		ImGui::NewLine();
-		ImGui::ColorEdit3("Albedo", g_fogAlbedo);
-		ImGui::DragFloat("Extinction", &g_fogExtinction, 0.001f, 0.0f, FLT_MAX, "%.7f");
-		ImGui::DragFloat("Phase", &g_fogPhase, 0.001f, -0.9f, 0.9f, "%.7f");
-		ImGui::ColorEdit3("Emissive Color", g_fogEmissiveColor);
-		ImGui::DragFloat("Emissive Intensity", &g_fogEmissiveIntensity, 0.001f, 0.0f, FLT_MAX, "%.7f");
-		ImGui::Checkbox("Height Fog", &g_heightFogEnabled);
-		ImGui::DragFloat("Height Fog Start", &g_heightFogStart, 0.1f);
-		ImGui::DragFloat("Height Fog Falloff", &g_heightFogFalloff, 0.1f);
-		ImGui::DragFloat("Max Height", &g_fogMaxHeight, 0.1f);
-
-		auto &mediaC = entityRegistry.get<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
-		mediaC.m_albedo = glm::vec3(g_fogAlbedo[0], g_fogAlbedo[1], g_fogAlbedo[2]);
-		mediaC.m_extinction = g_fogExtinction;
-		mediaC.m_emissiveColor = glm::vec3(g_fogEmissiveColor[0], g_fogEmissiveColor[1], g_fogEmissiveColor[2]);
-		mediaC.m_emissiveIntensity = g_fogEmissiveIntensity;
-		mediaC.m_phaseAnisotropy = g_fogPhase;
-		mediaC.m_heightFogEnabled = g_heightFogEnabled;
-		mediaC.m_heightFogStart = g_heightFogStart;
-		mediaC.m_heightFogFalloff = g_heightFogFalloff;
-		mediaC.m_maxHeight = g_fogMaxHeight;
 
 		static float time = 0.0f;
 		time += timeDelta;

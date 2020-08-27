@@ -17,16 +17,12 @@
 #define SHADOW_ATLAS_IMAGE_BINDING 16
 #define EXPOSURE_DATA_BUFFER_BINDING 17
 #define FOM_IMAGE_BINDING 18
-#define HISTORY_IMAGE_BINDING 19
-#define FOM_DIRECTIONAL_IMAGE_BINDING 20
-#define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 21
+#define FOM_DIRECTIONAL_IMAGE_BINDING 19
+#define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 20
 
 struct Constants
 {
 	float4x4 viewMatrix;
-	float4x4 prevViewMatrix;
-	float4x4 prevProjMatrix;
-	float4 reprojectedTexCoordScaleBias;
 	float4 volumeResResultRes;
 	float3 frustumCornerTL;
 	float jitterX;
@@ -41,12 +37,8 @@ struct Constants
 	float3 jitter1;
 	uint punctualLightCount;
 	uint punctualLightShadowedCount;
-	uint useDithering;
-	uint sampleCount;
 	int volumetricShadow;
 	uint globalMediaCount;
 	uint localMediaCount;
-	uint ignoreHistory;
-	float alpha;
 	uint checkerBoardCondition;
 };

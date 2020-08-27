@@ -8,16 +8,14 @@ struct Constants
 {
 	float4x4 prevViewMatrix;
 	float4x4 prevProjMatrix;
-	float4 reprojectedTexCoordScaleBias;
 	float3 frustumCornerTL;
 	uint ignoreHistory;
 	float3 frustumCornerTR;
-	float pad1;
-	float3 frustumCornerBL;
-	float pad2;
-	float3 frustumCornerBR;
-	uint pad3;
-	float3 cameraPos;
 	uint checkerBoardCondition;
+	float3 frustumCornerBL;
 	float alpha;
+	float3 frustumCornerBR;
+	uint pad0;
+	float3 cameraPos;
+	uint pad1;
 };
