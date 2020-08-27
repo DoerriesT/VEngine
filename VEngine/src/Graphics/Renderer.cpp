@@ -66,7 +66,7 @@ using namespace VEngine::gal;
 extern bool g_raymarchedFog;
 
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
-	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::D3D12)),
+	:m_graphicsDevice(GraphicsDevice::create(windowHandle, false, GraphicsBackendType::D3D12)),
 	m_framesSinceLastResize()
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);

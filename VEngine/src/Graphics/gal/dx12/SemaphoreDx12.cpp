@@ -31,8 +31,11 @@ uint64_t VEngine::gal::SemaphoreDx12::getCompletedValue() const
 
 void VEngine::gal::SemaphoreDx12::wait(uint64_t waitValue) const
 {
-	m_fence->SetEventOnCompletion(waitValue, m_fenceEvent);
-	WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+	if (m_fence->GetCompletedValue() < waitValue)
+	{
+		m_fence->SetEventOnCompletion(waitValue, m_fenceEvent);
+		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+	}
 }
 
 void VEngine::gal::SemaphoreDx12::signal(uint64_t signalValue) const
