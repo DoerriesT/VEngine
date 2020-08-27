@@ -8,6 +8,7 @@
 #include "./../Initializers.h"
 #include "Utility/TLSFAllocator.h"
 #include "Utility/Utility.h"
+#define USE_PIX
 #include <WinPixEventRuntime/pix3.h>
 
 
