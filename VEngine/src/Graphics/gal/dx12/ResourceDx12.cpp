@@ -61,12 +61,13 @@ void *VEngine::gal::SamplerDx12::getNativeHandle() const
 	return (void *)&m_sampler;
 }
 
-VEngine::gal::ImageDx12::ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap)
+VEngine::gal::ImageDx12::ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap, bool committedResource)
 	:m_image(image),
 	m_allocHandle(allocHandle),
 	m_description(createInfo),
 	m_uploadHeap(uploadHeap),
-	m_readbackHeap(readbackHeap)
+	m_readbackHeap(readbackHeap),
+	m_committedResource(committedResource)
 {
 }
 
@@ -93,6 +94,11 @@ bool VEngine::gal::ImageDx12::isUploadHeapResource() const
 bool VEngine::gal::ImageDx12::isReadbackHeapResource() const
 {
 	return m_readbackHeap;
+}
+
+bool VEngine::gal::ImageDx12::isCommittedResource() const
+{
+	return m_committedResource;
 }
 
 VEngine::gal::BufferDx12::BufferDx12(ID3D12Resource *buffer, void *allocHandle, const BufferCreateInfo &createInfo, bool uploadHeap, bool readbackHeap)

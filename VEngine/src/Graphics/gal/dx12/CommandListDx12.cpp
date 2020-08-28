@@ -498,15 +498,7 @@ void VEngine::gal::CommandListDx12::clearDepthStencilImage(const Image *image, c
 
 void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barriers)
 {
-	struct ResourceStateInfo
-	{
-		D3D12_RESOURCE_STATES m_state;
-		bool m_uavBarrier;
-		bool m_readAccess;
-		bool m_writeAccess;
-	};
-
-	auto getResourceStateInfo = [](ResourceState state, PipelineStageFlags stageFlags, Format format) -> ResourceStateInfo
+	auto getResourceStateDx12 = [](ResourceState state, PipelineStageFlags stageFlags, Format format) -> D3D12_RESOURCE_STATES
 	{
 		// determine if resource is used in pixel shader or non-pixel shader
 		D3D12_RESOURCE_STATES shaderResourceState = D3D12_RESOURCE_STATE_COMMON;
@@ -516,14 +508,14 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		}
 		if ((stageFlags
 			& (PipelineStageFlagBits::VERTEX_SHADER_BIT
-			| PipelineStageFlagBits::TESSELLATION_CONTROL_SHADER_BIT
-			| PipelineStageFlagBits::TESSELLATION_EVALUATION_SHADER_BIT
-			| PipelineStageFlagBits::GEOMETRY_SHADER_BIT
-			| PipelineStageFlagBits::COMPUTE_SHADER_BIT)) != 0)
+				| PipelineStageFlagBits::TESSELLATION_CONTROL_SHADER_BIT
+				| PipelineStageFlagBits::TESSELLATION_EVALUATION_SHADER_BIT
+				| PipelineStageFlagBits::GEOMETRY_SHADER_BIT
+				| PipelineStageFlagBits::COMPUTE_SHADER_BIT)) != 0)
 		{
 			shaderResourceState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		}
-		
+
 		if (shaderResourceState == D3D12_RESOURCE_STATE_COMMON)
 		{
 			shaderResourceState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
@@ -532,79 +524,79 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		switch (state)
 		{
 		case ResourceState::UNDEFINED:
-			return { D3D12_RESOURCE_STATE_COMMON, false, false, false };
+			return D3D12_RESOURCE_STATE_COMMON;
 
 		case ResourceState::READ_IMAGE_HOST:
 		case ResourceState::READ_BUFFER_HOST:
-			return { D3D12_RESOURCE_STATE_COMMON, false, true, false };
+			return D3D12_RESOURCE_STATE_COMMON;
 
 		case ResourceState::READ_DEPTH_STENCIL:
-			return { D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
+			return D3D12_RESOURCE_STATE_DEPTH_READ;
 
 		case ResourceState::READ_DEPTH_STENCIL_SHADER:
-			return { shaderResourceState | D3D12_RESOURCE_STATE_DEPTH_READ, false, true, false };
+			return shaderResourceState | D3D12_RESOURCE_STATE_DEPTH_READ;
 
 		case ResourceState::READ_TEXTURE:
 		case ResourceState::READ_BUFFER:
-			return { shaderResourceState, false, true, false };
+			return shaderResourceState;
 
 		case ResourceState::READ_RW_TEXTURE:
 		case ResourceState::READ_RW_BUFFER:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, true, false };
+			return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
 		case ResourceState::READ_CONSTANT_BUFFER:
-			return { D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, false, true, false };
+			return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
 		case ResourceState::READ_VERTEX_BUFFER:
-			return { D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, false, true, false };
+			return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
 		case ResourceState::READ_INDEX_BUFFER:
-			return { D3D12_RESOURCE_STATE_INDEX_BUFFER, false, true, false };
+			return D3D12_RESOURCE_STATE_INDEX_BUFFER;
 
 		case ResourceState::READ_INDIRECT_BUFFER:
-			return { D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, false, true, false };
+			return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
 
 		case ResourceState::READ_BUFFER_TRANSFER:
 		case ResourceState::READ_IMAGE_TRANSFER:
-			return { D3D12_RESOURCE_STATE_COPY_SOURCE, false, true, false };
+			return D3D12_RESOURCE_STATE_COPY_SOURCE;
 
 		case ResourceState::READ_WRITE_IMAGE_HOST:
 		case ResourceState::READ_WRITE_BUFFER_HOST:
-			return { D3D12_RESOURCE_STATE_COMMON, false, true, true };
+			return D3D12_RESOURCE_STATE_COMMON;
 
 		case ResourceState::READ_WRITE_RW_TEXTURE:
 		case ResourceState::READ_WRITE_RW_BUFFER:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, true, true };
+			return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
 		case ResourceState::READ_WRITE_DEPTH_STENCIL:
-			return { D3D12_RESOURCE_STATE_DEPTH_WRITE, false, true, true };
+			return D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
 		case ResourceState::WRITE_IMAGE_HOST:
 		case ResourceState::WRITE_BUFFER_HOST:
-			return { D3D12_RESOURCE_STATE_COMMON, false, false, true };
+			return D3D12_RESOURCE_STATE_COMMON;
 
 		case ResourceState::WRITE_ATTACHMENT:
-			return { D3D12_RESOURCE_STATE_RENDER_TARGET, false, false, true };
+			return D3D12_RESOURCE_STATE_RENDER_TARGET;
 
 		case ResourceState::WRITE_RW_IMAGE:
 		case ResourceState::WRITE_RW_BUFFER:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, false, true };
+			return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
 		case ResourceState::WRITE_BUFFER_TRANSFER:
 		case ResourceState::WRITE_IMAGE_TRANSFER:
-			return { D3D12_RESOURCE_STATE_COPY_DEST, false, false, true };
+			return D3D12_RESOURCE_STATE_COPY_DEST;
 
 		case ResourceState::CLEAR_BUFFER:
-			return { D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, false, true };
+			return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
 		case ResourceState::CLEAR_IMAGE:
 		{
 			bool isDepth = Initializers::isDepthFormat(format);
-			return { isDepth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS, !isDepth, false, true };
+			return isDepth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		}
 
 		case ResourceState::PRESENT_IMAGE:
-			return { D3D12_RESOURCE_STATE_PRESENT, false, true, false };
+			return D3D12_RESOURCE_STATE_PRESENT;
 
 		default:
 			assert(false);
@@ -613,7 +605,45 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		return {};
 	};
 
+	auto discardResource = [](ID3D12GraphicsCommandList *cmdList, const Barrier &barrier)
+	{
+		// we can assume that the resource is an image
+		ID3D12Resource *resouceDx = (ID3D12Resource *)barrier.m_image->getNativeHandle();
+		const auto &imageDesc = barrier.m_image->getDescription();
+		const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
+		const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
+		const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
+		const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
+
+		// collapse individual discards for each subresource into a single discard for the whole resource if all subresources are discarded
+		if (baseLayer == 0 && baseLevel == 0 && layerCount == imageDesc.m_layers && levelCount == imageDesc.m_levels)
+		{
+			cmdList->DiscardResource(resouceDx, nullptr);
+		}
+		else
+		{
+			for (uint32_t layer = 0; layer < layerCount; ++layer)
+			{
+				D3D12_DISCARD_REGION region{};
+				region.FirstSubresource = baseLevel + ((layer + baseLayer) * imageDesc.m_levels);
+				region.NumSubresources = levelCount;
+
+				cmdList->DiscardResource(resouceDx, &region);
+			}
+		}
+	};
+
+	// barrier design:
+	// 1.) barriers for transitioning resources to proper state for discard
+	// 2.) discard resources
+	// 3.) uav barriers + barriers for transitioning to original barriers after state
+	// 4.) discard resources where the original barrier wanted to transitition to the proper discard state anyways
+
+	std::vector<D3D12_RESOURCE_BARRIER> discardTransitionBarriers;
+	std::vector<uint32_t> discardBarrierIndicesBefore;
 	std::vector<D3D12_RESOURCE_BARRIER> barriersDx;
+	std::vector<uint32_t> discardBarrierIndicesAfter;
+
 	barriersDx.reserve(count);
 
 	for (size_t i = 0; i < count; ++i)
@@ -627,90 +657,18 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			continue;
 		}
 
-		Format format = barrier.m_image ? barrier.m_image->getDescription().m_format : Format::UNDEFINED;
-		auto beforeState = getResourceStateInfo(barrier.m_stateBefore, barrier.m_stagesBefore, format);
-		auto afterState = getResourceStateInfo(barrier.m_stateAfter, barrier.m_stagesAfter, format);
-
-		// only if one of the states is uav and there is a writing access
-		bool uavBarrier = (beforeState.m_uavBarrier /*|| afterState.m_uavBarrier*/) && (beforeState.m_writeAccess || afterState.m_writeAccess);
-
-		ID3D12Resource *resouceDx = barrier.m_image ? (ID3D12Resource *)barrier.m_image->getNativeHandle() : (ID3D12Resource *)barrier.m_buffer->getNativeHandle();
-
+		ImageCreateInfo imageDesc;
 		if (barrier.m_image)
 		{
-			const auto &resDesc = barrier.m_image->getDescription();
-
-			// transitions on render targets / depth-stencil textures from UNDEFINED require us to discard the resource
-			if ((resDesc.m_usageFlags & (ImageUsageFlagBits::COLOR_ATTACHMENT_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT)) != 0 && barrier.m_stateBefore == ResourceState::UNDEFINED)
-			{
-				const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
-				const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
-				const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
-				const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
-				const auto &resDesc = barrier.m_image->getDescription();
-
-				// transition to correct layout for DiscardResource
-				{
-					std::vector<D3D12_RESOURCE_BARRIER> discardTransitionBarriers;
-					discardTransitionBarriers.reserve(layerCount * levelCount);
-
-					D3D12_RESOURCE_BARRIER barrierDx{};
-					barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-					barrierDx.Transition.pResource = resouceDx;
-					barrierDx.Transition.StateBefore = beforeState.m_state;
-					barrierDx.Transition.StateAfter = (resDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0 ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
-
-					// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
-					if (baseLayer == 0 && baseLevel == 0 && layerCount == resDesc.m_layers && levelCount == resDesc.m_levels)
-					{
-						barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-						discardTransitionBarriers.push_back(barrierDx);
-					}
-					else
-					{
-						for (uint32_t layer = 0; layer < layerCount; ++layer)
-						{
-							for (uint32_t level = 0; level < levelCount; ++level)
-							{
-								const uint32_t index = (layer + baseLayer) * resDesc.m_levels + (level + baseLevel);
-								barrierDx.Transition.Subresource = index;
-
-								discardTransitionBarriers.push_back(barrierDx);
-							}
-						}
-					}
-
-					m_commandList->ResourceBarrier(static_cast<UINT>(discardTransitionBarriers.size()), discardTransitionBarriers.data());
-				}
-				
-
-				// collapse individual discards for each subresource into a single discard for the whole resource if all subresources are discarded
-				if (baseLayer == 0 && baseLevel == 0 && layerCount == resDesc.m_layers && levelCount == resDesc.m_levels)
-				{
-					m_commandList->DiscardResource(resouceDx, nullptr);
-				}
-				else
-				{
-					for (uint32_t layer = 0; layer < layerCount; ++layer)
-					{
-						D3D12_DISCARD_REGION region{};
-						region.FirstSubresource = baseLevel + ((layer + baseLayer) * resDesc.m_levels);
-						region.NumSubresources = levelCount;
-
-						m_commandList->DiscardResource(resouceDx, &region);
-					}
-				}
-
-				// correct the before state: DiscardResource promoted the state from COMMON to RENDER_TARGET or DEPTH_WRITE
-				beforeState.m_state = (resDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0 ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
-				beforeState.m_writeAccess = true;
-			}
+			imageDesc = barrier.m_image->getDescription();
 		}
+
+		auto beforeState = getResourceStateDx12(barrier.m_stateBefore, barrier.m_stagesBefore, imageDesc.m_format);
+		auto afterState = getResourceStateDx12(barrier.m_stateAfter, barrier.m_stagesAfter, imageDesc.m_format);
 
 		bool uploadHeapResource = false;
 		bool readbackHeapResource = false;
+		bool isCommittedImageResource = false;
 
 		if (barrier.m_image)
 		{
@@ -718,6 +676,7 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			assert(imageDx);
 			uploadHeapResource = imageDx->isUploadHeapResource();
 			readbackHeapResource = imageDx->isReadbackHeapResource();
+			isCommittedImageResource = imageDx->isCommittedResource();
 		}
 		else
 		{
@@ -730,71 +689,175 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		// resources on the upload heap must always be in D3D12_RESOURCE_STATE_GENERIC_READ
 		if (uploadHeapResource)
 		{
-			beforeState.m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
-			afterState.m_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+			beforeState = afterState = D3D12_RESOURCE_STATE_GENERIC_READ;
 		}
 		// resources on the readback heap must always be in D3D12_RESOURCE_STATE_COPY_DEST
 		else if (readbackHeapResource)
 		{
-			beforeState.m_state = D3D12_RESOURCE_STATE_COPY_DEST;
-			afterState.m_state = D3D12_RESOURCE_STATE_COPY_DEST;
+			beforeState = afterState = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
-		D3D12_RESOURCE_BARRIER barrierDx{};
-		barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		ID3D12Resource *resouceDx = barrier.m_image ? (ID3D12Resource *)barrier.m_image->getNativeHandle() : (ID3D12Resource *)barrier.m_buffer->getNativeHandle();
 
-		if (uavBarrier)
+		// UAV barrier
+		if (beforeState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS && afterState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
 		{
-			barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-			barrierDx.UAV.pResource = resouceDx;
-			barriersDx.push_back(barrierDx);
-		}
+			D3D12_RESOURCE_BARRIER uavBarrierDx{};
+			uavBarrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			uavBarrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+			uavBarrierDx.UAV.pResource = resouceDx;
 
-		if (beforeState.m_state != afterState.m_state)
-		{
-			barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			barrierDx.Transition.pResource = resouceDx;
-			barrierDx.Transition.StateBefore = beforeState.m_state;
-			barrierDx.Transition.StateAfter = afterState.m_state;
-
-			if (barrier.m_image)
+			// check if such a barrier is already in the list
+			bool duplicateBarrier = false;
+			for (const auto &b : barriersDx)
 			{
-				const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
-				const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
-				const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
-				const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
-				const auto &resDesc = barrier.m_image->getDescription();
-
-				// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
-				if (baseLayer == 0 && baseLevel == 0 && layerCount == resDesc.m_layers && levelCount == resDesc.m_levels)
+				if (b.Type == D3D12_RESOURCE_BARRIER_TYPE_UAV && b.UAV.pResource == resouceDx)
 				{
-					barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-					barriersDx.push_back(barrierDx);
+					duplicateBarrier = true;
+					break;
+				}
+			}
+
+			if (!duplicateBarrier)
+			{
+				barriersDx.push_back(uavBarrierDx);
+			}
+		}
+		// transition barrier
+		else
+		{
+			// transitions on placed render targets / depth-stencil textures from UNDEFINED require us to discard the resource
+			if (!uploadHeapResource && !readbackHeapResource && barrier.m_image && !isCommittedImageResource && barrier.m_stateBefore == ResourceState::UNDEFINED)
+			{
+				bool dsvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
+				bool rtvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0;
+
+				D3D12_RESOURCE_STATES newAfterState = D3D12_RESOURCE_STATE_COMMON;
+				if (dsvImage && afterState != D3D12_RESOURCE_STATE_DEPTH_WRITE)
+				{
+					newAfterState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+				}
+				else if (rtvImage && afterState != D3D12_RESOURCE_STATE_RENDER_TARGET)
+				{
+					newAfterState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+				}
+
+				// add discard transition barriers to list
+				if (newAfterState != D3D12_RESOURCE_STATE_COMMON)
+				{
+					const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
+					const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
+					const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
+					const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
+
+					D3D12_RESOURCE_BARRIER barrierDx{};
+					barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+					barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+					barrierDx.Transition.pResource = resouceDx;
+					barrierDx.Transition.StateBefore = beforeState;
+					barrierDx.Transition.StateAfter = newAfterState;
+
+					// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
+					if (baseLayer == 0 && baseLevel == 0 && layerCount == imageDesc.m_layers && levelCount == imageDesc.m_levels)
+					{
+						barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+						discardTransitionBarriers.push_back(barrierDx);
+					}
+					else
+					{
+						for (uint32_t layer = 0; layer < layerCount; ++layer)
+						{
+							for (uint32_t level = 0; level < levelCount; ++level)
+							{
+								const uint32_t index = (layer + baseLayer) * imageDesc.m_levels + (level + baseLevel);
+								barrierDx.Transition.Subresource = index;
+
+								discardTransitionBarriers.push_back(barrierDx);
+							}
+						}
+					}
+
+					// the discard is done after the first batch of transitions, because we might have this situation:
+					// COMMON -> RTV -> Discard -> some other state that the barrier wants to transition to
+					discardBarrierIndicesBefore.push_back((uint32_t)i);
+
+					// update beforeState
+					beforeState = newAfterState;
 				}
 				else
 				{
-					for (uint32_t layer = 0; layer < layerCount; ++layer)
+					// the discard is done after the second batch of transitions, because the barrier wants to transition to the required state anyways
+					discardBarrierIndicesAfter.push_back((uint32_t)i);
+				}
+			}
+
+			D3D12_RESOURCE_BARRIER barrierDx{};
+			barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrierDx.Transition.pResource = resouceDx;
+			barrierDx.Transition.StateBefore = beforeState;
+			barrierDx.Transition.StateAfter = afterState;
+
+			if (beforeState != afterState)
+			{
+				if (barrier.m_image)
+				{
+					const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
+					const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
+					const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
+					const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
+
+					// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
+					if (baseLayer == 0 && baseLevel == 0 && layerCount == imageDesc.m_layers && levelCount == imageDesc.m_levels)
 					{
-						for (uint32_t level = 0; level < levelCount; ++level)
+						barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+						barriersDx.push_back(barrierDx);
+					}
+					else
+					{
+						for (uint32_t layer = 0; layer < layerCount; ++layer)
 						{
-							const uint32_t index = (layer + baseLayer) * resDesc.m_levels + (level + baseLevel);
-							barrierDx.Transition.Subresource = index;
-							barriersDx.push_back(barrierDx);
+							for (uint32_t level = 0; level < levelCount; ++level)
+							{
+								const uint32_t index = (layer + baseLayer) * imageDesc.m_levels + (level + baseLevel);
+								barrierDx.Transition.Subresource = index;
+								barriersDx.push_back(barrierDx);
+							}
 						}
 					}
 				}
-			}
-			else
-			{
-				barrierDx.Transition.Subresource = 0;
-				barriersDx.push_back(barrierDx);
+				else
+				{
+					barrierDx.Transition.Subresource = 0;
+					barriersDx.push_back(barrierDx);
+				}
 			}
 		}
 	}
 
+	// 1.) transition for discards
+	if (!discardTransitionBarriers.empty())
+	{
+		m_commandList->ResourceBarrier(static_cast<UINT>(discardTransitionBarriers.size()), discardTransitionBarriers.data());
+	}
+
+	// 2.) first batch of discards
+	for (auto i : discardBarrierIndicesBefore)
+	{
+		discardResource(m_commandList, barriers[i]);
+	}
+
+	// 3.) barriers
 	if (!barriersDx.empty())
 	{
 		m_commandList->ResourceBarrier(static_cast<UINT>(barriersDx.size()), barriersDx.data());
+	}
+
+	// 4.) second batch of discards
+	for (auto i : discardBarrierIndicesAfter)
+	{
+		discardResource(m_commandList, barriers[i]);
 	}
 }
 

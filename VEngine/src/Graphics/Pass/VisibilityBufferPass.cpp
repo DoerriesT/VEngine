@@ -54,6 +54,13 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 			for (int i = 0; i < 2; ++i)
 			{
 				const bool alphaMasked = i == 1;
+				const uint32_t instanceDataCount = alphaMasked ? data.m_maskedInstanceDataCount : data.m_opaqueInstanceDataCount;
+				const uint32_t instanceDataOffset = alphaMasked ? data.m_maskedInstanceDataOffset : data.m_opaqueInstanceDataOffset;
+
+				if (instanceDataCount == 0)
+				{
+					continue;
+				}
 
 				// create pipeline description
 				GraphicsPipelineCreateInfo pipelineCreateInfo;
@@ -106,9 +113,6 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 				cmdList->bindIndexBuffer(data.m_passRecordContext->m_renderResources->m_indexBuffer, 0, IndexType::UINT16);
 
 				
-				const uint32_t instanceDataCount = alphaMasked ? data.m_maskedInstanceDataCount : data.m_opaqueInstanceDataCount;
-				const uint32_t instanceDataOffset = alphaMasked ? data.m_maskedInstanceDataOffset : data.m_opaqueInstanceDataOffset;
-
 				for (uint32_t j = 0; j < instanceDataCount; ++j)
 				{
 					const auto &instanceData = data.m_instanceData[j + instanceDataOffset];

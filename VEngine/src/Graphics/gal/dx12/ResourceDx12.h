@@ -27,12 +27,13 @@ namespace VEngine
 		class ImageDx12 : public Image
 		{
 		public:
-			explicit ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap);
+			explicit ImageDx12(ID3D12Resource *image, void *allocHandle, const ImageCreateInfo &createInfo, bool uploadHeap, bool readbackHeap, bool committedResource);
 			void *getNativeHandle() const override;
 			const ImageCreateInfo &getDescription() const override;
 			void *getAllocationHandle();
 			bool isUploadHeapResource() const;
 			bool isReadbackHeapResource() const;
+			bool isCommittedResource() const;
 
 		private:
 			ID3D12Resource *m_image;
@@ -40,6 +41,7 @@ namespace VEngine
 			ImageCreateInfo m_description;
 			bool m_uploadHeap;
 			bool m_readbackHeap;
+			bool m_committedResource;
 		};
 
 		class BufferDx12 : public Buffer

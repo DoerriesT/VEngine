@@ -132,7 +132,7 @@ void VEngine::gal::SwapChainDx12::create(uint32_t width, uint32_t height)
         auto *memory = m_imageMemoryPool.alloc();
         assert(memory);
 
-        m_images[i] = new(memory) ImageDx12(imageDx, nullptr, imageCreateInfo, false, false);
+        m_images[i] = new(memory) ImageDx12(imageDx, nullptr, imageCreateInfo, false, false, true);
     }
 }
 

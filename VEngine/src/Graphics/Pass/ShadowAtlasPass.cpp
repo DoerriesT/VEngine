@@ -89,6 +89,13 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 				for (size_t j = 0; j < 2; ++j)
 				{
 					const bool alphaMasked = j == 1;
+					const uint32_t instanceDataCount = alphaMasked ? renderList.m_maskedCount : renderList.m_opaqueCount;
+					const uint32_t instanceDataOffset = alphaMasked ? renderList.m_maskedOffset : renderList.m_opaqueOffset;
+
+					if (instanceDataCount == 0)
+					{
+						continue;
+					}
 
 					cmdList->bindPipeline(pipelines[j]);
 
@@ -99,10 +106,6 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 					cmdList->setViewport(0, 1, &viewport);
 					cmdList->setScissor(0, 1, &renderArea);
-
-					
-					const uint32_t instanceDataCount = alphaMasked ? renderList.m_maskedCount : renderList.m_opaqueCount;
-					const uint32_t instanceDataOffset = alphaMasked ? renderList.m_maskedOffset : renderList.m_opaqueOffset;
 
 					for (uint32_t k = 0; k < instanceDataCount; ++k)
 					{
@@ -126,8 +129,6 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 
 							cmdList->pushConstants(pipelines[j], ShaderStageFlagBits::VERTEX_BIT, 0, sizeof(pushConsts), &pushConsts);
 						}
-
-						
 
 						cmdList->drawIndexed(subMeshInfo.m_indexCount, 1, subMeshInfo.m_firstIndex, 0, 0);
 					}
