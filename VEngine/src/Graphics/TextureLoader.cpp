@@ -52,6 +52,7 @@ void VEngine::TextureLoader::load(const char *filepath, gal::Image *&image, gal:
 		imageCreateInfo.m_format = static_cast<Format>(gliTex.format());
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, (uint32_t)MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &image);
 

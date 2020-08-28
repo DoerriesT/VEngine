@@ -1002,6 +1002,7 @@ namespace VEngine
 			Format m_format = Format::UNDEFINED;
 			ImageCreateFlags m_createFlags = 0;
 			ImageUsageFlags m_usageFlags = 0;
+			ClearValue m_optimizedClearValue;
 		};
 
 		struct BufferCreateInfo

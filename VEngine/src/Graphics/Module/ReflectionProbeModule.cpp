@@ -43,6 +43,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		{
 			imageCreateInfo.m_format = Format::D16_UNORM;
 			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+			imageCreateInfo.m_optimizedClearValue.m_depthStencil = {1.0f, 0};
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeDepthArrayImage);
 
@@ -80,6 +81,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		{
 			imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+			imageCreateInfo.m_optimizedClearValue.m_color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeAlbedoRoughnessArrayImage);
 
@@ -117,6 +119,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		{
 			imageCreateInfo.m_format = Format::R16G16_SFLOAT;
 			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+			imageCreateInfo.m_optimizedClearValue.m_color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeNormalArrayImage);
 
@@ -227,6 +230,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		createInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
 		createInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
+		createInfo.m_optimizedClearValue.m_color = {};
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeArrayImage);
 
@@ -297,6 +301,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 		createInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		createInfo.m_createFlags = ImageCreateFlagBits::CUBE_COMPATIBLE_BIT;
 		createInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
+		createInfo.m_optimizedClearValue.m_color = {};
 
 		m_graphicsDevice->createImage(createInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeTmpImage);
 
@@ -331,6 +336,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 			imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 			imageCreateInfo.m_createFlags = 0;
 			imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+			imageCreateInfo.m_optimizedClearValue.m_color = {};
 	
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_probeFilterCoeffsImage);
 	
@@ -448,7 +454,7 @@ void VEngine::ReflectionProbeModule::addShadowRenderingToGraph(rg::RenderGraph &
 	rg::ImageDescription desc = {};
 	desc.m_name = "Probe Shadow Image";
 	desc.m_clear = false;
-	desc.m_clearValue.m_imageClearValue = {};
+	desc.m_clearValue.m_imageClearValue.m_depthStencil = { 1.0f, 0 };
 	desc.m_width = 2048;
 	desc.m_height = 2048;
 	desc.m_layers = glm::max(data.m_renderData->m_probeShadowViewRenderListCount, 1u);

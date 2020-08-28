@@ -64,7 +64,7 @@ using namespace VEngine::gal;
 extern bool g_raymarchedFog;
 
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
-	:m_graphicsDevice(GraphicsDevice::create(windowHandle, true, GraphicsBackendType::VULKAN)),
+	:m_graphicsDevice(GraphicsDevice::create(windowHandle, false, GraphicsBackendType::D3D12)),
 	m_framesSinceLastResize()
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);
@@ -282,7 +282,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		rg::ImageDescription desc = {};
 		desc.m_name = "Triangle Image";
 		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_clearValue.m_imageClearValue.m_color.m_uint32[0] = 0xFFFFFFFF;
+		desc.m_clearValue.m_imageClearValue.m_color.m_uint32[1] = 0xFFFFFFFF;
+		desc.m_clearValue.m_imageClearValue.m_color.m_uint32[2] = 0xFFFFFFFF;
+		desc.m_clearValue.m_imageClearValue.m_color.m_uint32[3] = 0xFFFFFFFF;
 		desc.m_width = m_width;
 		desc.m_height = m_height;
 		desc.m_layers = 1;
@@ -298,7 +301,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		rg::ImageDescription desc = {};
 		desc.m_name = "Triangle Depth Image";
 		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_clearValue.m_imageClearValue.m_depthStencil = { 0.0f, 0 };
 		desc.m_width = m_width;
 		desc.m_height = m_height;
 		desc.m_layers = 1;
@@ -768,7 +771,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		rg::ImageDescription desc = {};
 		desc.m_name = "Shadow Cascades Image";
 		desc.m_clear = false;
-		desc.m_clearValue.m_imageClearValue = {};
+		desc.m_clearValue.m_imageClearValue.m_depthStencil = { 1.0f, 0 };
 		desc.m_width = 2048;
 		desc.m_height = 2048;
 		desc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u);
@@ -825,7 +828,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		rg::ImageDescription depthDesc = {};
 		depthDesc.m_name = "FOM Depth Cascades Image";
 		depthDesc.m_clear = false;
-		depthDesc.m_clearValue.m_imageClearValue = {};
+		// every other layer is cleared with 0.0, so we cant really set an optimal clear value for the whole image
+		depthDesc.m_clearValue.m_imageClearValue.m_depthStencil = { 1.0f, 0 };
 		depthDesc.m_width = 256;
 		depthDesc.m_height = 256;
 		depthDesc.m_layers = glm::max(renderData.m_shadowCascadeViewRenderListCount, 1u) * 2;

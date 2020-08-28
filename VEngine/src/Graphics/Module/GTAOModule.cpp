@@ -116,6 +116,7 @@ void VEngine::GTAOModule::resize(uint32_t width, uint32_t height)
 	imageCreateInfo.m_format = Format::R16G16_SFLOAT;
 	imageCreateInfo.m_createFlags = 0;
 	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+	imageCreateInfo.m_optimizedClearValue = {};
 
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)

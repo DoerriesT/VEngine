@@ -237,6 +237,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_transmittanceImage);
 	}
@@ -254,6 +255,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_scatteringImage);
 	}
@@ -271,6 +273,7 @@ VEngine::AtmosphericScatteringModule::AtmosphericScatteringModule(gal::GraphicsD
 		imageCreateInfo.m_format = Format::R32G32B32A32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_irradianceImage);
 	}

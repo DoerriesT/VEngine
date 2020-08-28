@@ -872,6 +872,7 @@ void VEngine::rg::RenderGraph::createResources()
 			imageCreateInfo.m_format = resDesc.m_format;
 			imageCreateInfo.m_createFlags = resDesc.m_imageFlags;
 			imageCreateInfo.m_usageFlags = usageFlags;
+			imageCreateInfo.m_optimizedClearValue = resDesc.m_clearValue.m_imageClearValue;
 
 			m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_imageBuffers[resourceIndex].image);
 		}

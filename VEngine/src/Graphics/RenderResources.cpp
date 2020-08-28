@@ -40,13 +40,13 @@ VEngine::RenderResources::~RenderResources()
 		m_graphicsDevice->destroyImage(m_depthImages[i]);
 		m_graphicsDevice->destroyImage(m_lightImages[i]);
 		m_graphicsDevice->destroyImage(m_taaHistoryTextures[i]);
-		
+
 		m_graphicsDevice->destroyBuffer(m_luminanceHistogramReadBackBuffers[i]);
 		m_graphicsDevice->destroyBuffer(m_occlusionCullStatsReadBackBuffers[i]);
 		m_graphicsDevice->destroyBuffer(m_uboBuffers[i]);
 		m_graphicsDevice->destroyBuffer(m_ssboBuffers[i]);
 	}
-	
+
 	// images
 	m_graphicsDevice->destroyImage(m_shadowAtlasImage);
 	m_graphicsDevice->destroyImage(m_imGuiFontsTexture);
@@ -62,7 +62,7 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyBuffer(m_lightProxyIndexBuffer);
 	m_graphicsDevice->destroyBuffer(m_avgLuminanceBuffer);
 	m_graphicsDevice->destroyBuffer(m_exposureDataBuffer);
-	
+
 	m_graphicsDevice->destroyBuffer(m_stagingBuffer);
 	m_graphicsDevice->destroyBuffer(m_materialBuffer);
 	m_graphicsDevice->destroyBuffer(m_vertexBuffer);
@@ -86,7 +86,7 @@ VEngine::RenderResources::~RenderResources()
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeTexture3DDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeSamplerDescriptorSetPool);
 	m_graphicsDevice->destroyDescriptorSetPool(m_computeShadowSamplerDescriptorSetPool);
-	
+
 	m_graphicsDevice->destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_texture3DDescriptorSetLayout);
 	m_graphicsDevice->destroyDescriptorSetLayout(m_samplerDescriptorSetLayout);
@@ -112,6 +112,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::R16G16_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::RW_TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_brdfLUT);
 	}
@@ -129,6 +130,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::D32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT;
+		imageCreateInfo.m_optimizedClearValue.m_depthStencil = { 1.0f, 0 };
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, true, &m_shadowAtlasImage);
 	}
@@ -156,7 +158,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 			BufferCreateInfo bufferCreateInfo{};
 			bufferCreateInfo.m_size = RendererConsts::MAPPABLE_SSBO_BLOCK_SIZE;
 			bufferCreateInfo.m_createFlags = 0;
-			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TYPED_BUFFER_BIT | BufferUsageFlagBits::BYTE_BUFFER_BIT  | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
+			bufferCreateInfo.m_usageFlags = BufferUsageFlagBits::TYPED_BUFFER_BIT | BufferUsageFlagBits::BYTE_BUFFER_BIT | BufferUsageFlagBits::STRUCTURED_BUFFER_BIT;
 
 			for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 			{
@@ -389,7 +391,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		{
 			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::FRAGMENT_BIT},
 		};
-		
+
 		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_textureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_textureDescriptorSetLayout, "Texture DSet Layout");
 		m_graphicsDevice->createDescriptorSetPool(1, m_textureDescriptorSetLayout, &m_textureDescriptorSetPool);
@@ -459,7 +461,7 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		{
 			{0, DescriptorType2::TEXTURE, RendererConsts::TEXTURE_ARRAY_SIZE, ShaderStageFlagBits::COMPUTE_BIT},
 		};
-		
+
 		m_graphicsDevice->createDescriptorSetLayout(1, bindings, &m_computeTextureDescriptorSetLayout);
 		m_graphicsDevice->setDebugObjectName(ObjectType::DESCRIPTOR_SET_LAYOUT, m_computeTextureDescriptorSetLayout, "Texture DSet Layout (Compute)");
 		m_graphicsDevice->createDescriptorSetPool(1, m_computeTextureDescriptorSetLayout, &m_computeTextureDescriptorSetPool);
@@ -627,6 +629,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::D32_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue.m_depthStencil = { 0.0f, 0 };
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -653,6 +656,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::B10G11R11_UFLOAT_PACK32;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::TRANSFER_SRC_BIT | ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+		imageCreateInfo.m_optimizedClearValue.m_color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -677,6 +681,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue = {};
 
 		for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 		{
@@ -701,6 +706,7 @@ void VEngine::RenderResources::resize(uint32_t width, uint32_t height)
 		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT | ImageUsageFlagBits::COLOR_ATTACHMENT_BIT;
+		imageCreateInfo.m_optimizedClearValue.m_color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 		if (m_editorSceneTexture)
 		{
@@ -779,6 +785,7 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 		imageCreateInfo.m_format = Format::R8G8B8A8_UNORM;
 		imageCreateInfo.m_createFlags = 0;
 		imageCreateInfo.m_usageFlags = ImageUsageFlagBits::TRANSFER_DST_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+		imageCreateInfo.m_optimizedClearValue.m_color = {};
 
 		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_imGuiFontsTexture);
 
@@ -829,7 +836,7 @@ void VEngine::RenderResources::createImGuiFontsTexture()
 			bufferCopyRegion.m_bufferImageHeight = height;
 
 			m_commandList->copyBufferToImage(m_stagingBuffer, m_imGuiFontsTexture, 1, &bufferCopyRegion);
-			
+
 			// transition from TRANSFER_DST to TEXTURE
 			Barrier b1 = Initializers::imageBarrier(m_imGuiFontsTexture, PipelineStageFlagBits::TRANSFER_BIT, PipelineStageFlagBits::FRAGMENT_SHADER_BIT, ResourceState::WRITE_IMAGE_TRANSFER, ResourceState::READ_TEXTURE);
 			m_commandList->barrier(1, &b1);

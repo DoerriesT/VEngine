@@ -509,10 +509,23 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 		}
 	}
 
-	// TODO: add this to gal::ImageCreateInfo?
+	bool useClearValue = false;
 	D3D12_CLEAR_VALUE optimizedClearValue{};
 	optimizedClearValue.Format = resourceDesc.Format;
-	bool useClearValue = (resourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
+	if ((resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0)
+	{
+		optimizedClearValue.Color[0] = imageCreateInfo.m_optimizedClearValue.m_color.m_float32[0];
+		optimizedClearValue.Color[1] = imageCreateInfo.m_optimizedClearValue.m_color.m_float32[1];
+		optimizedClearValue.Color[2] = imageCreateInfo.m_optimizedClearValue.m_color.m_float32[2];
+		optimizedClearValue.Color[3] = imageCreateInfo.m_optimizedClearValue.m_color.m_float32[3];
+		useClearValue = true;
+	}
+	else if ((resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) != 0)
+	{
+		optimizedClearValue.DepthStencil.Depth = imageCreateInfo.m_optimizedClearValue.m_depthStencil.m_depth;
+		optimizedClearValue.DepthStencil.Stencil = imageCreateInfo.m_optimizedClearValue.m_depthStencil.m_stencil;
+		useClearValue = true;
+	}
 
 	D3D12MA::ALLOCATION_DESC allocationDesc{};
 	allocationDesc.Flags = dedicated ? D3D12MA::ALLOCATION_FLAG_COMMITTED : D3D12MA::ALLOCATION_FLAG_NONE;
