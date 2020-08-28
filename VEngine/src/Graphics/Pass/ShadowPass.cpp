@@ -36,7 +36,7 @@ void VEngine::ShadowPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 			// begin renderpass
 			DepthStencilAttachmentDescription depthAttachDesc =
 			{ registry.getImageView(data.m_shadowImageHandle), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::DONT_CARE, { 1.0f, 0 } };
-			cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, { {}, {width, height} });
+			cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, { {}, {width, height} }, false);
 
 			for (int i = 0; i < 2; ++i)
 			{

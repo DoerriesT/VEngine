@@ -94,7 +94,7 @@ void VEngine::DebugDrawPass::addToGraph(rg::RenderGraph &graph, const Data &data
 				bool depthTestHidden = (i == 2 || i == 5);
 
 				// begin renderpass
-				cmdList->beginRenderPass(1, colorAttachDescs, depthTestEnabled ? &depthAttachDesc : nullptr, { {}, {width, height} });
+				cmdList->beginRenderPass(1, colorAttachDescs, depthTestEnabled ? &depthAttachDesc : nullptr, { {}, {width, height} }, false);
 				{
 					// create pipeline description
 					GraphicsPipelineCreateInfo pipelineCreateInfo;

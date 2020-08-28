@@ -42,7 +42,7 @@ void VEngine::BillboardPass::addToGraph(rg::RenderGraph &graph, const Data &data
 			{
 				{registry.getImageView(data.m_resultImageViewHandle), AttachmentLoadOp::LOAD, AttachmentStoreOp::STORE, {} },
 			};
-			cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, &depthAttachDesc, { {}, {width, height} });
+			cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, &depthAttachDesc, { {}, {width, height} }, false);
 
 			PipelineColorBlendAttachmentState blendState{};
 			blendState.m_blendEnable = true;

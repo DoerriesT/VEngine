@@ -93,7 +93,7 @@ void VEngine::ImGuiPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 
 		// begin renderpass
 		ColorAttachmentDescription colorAttachDesc{ registry.getImageView(data.m_resultImageViewHandle), data.m_clear ? AttachmentLoadOp::CLEAR : AttachmentLoadOp::LOAD, AttachmentStoreOp::STORE, {} };
-		cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {(uint32_t)fb_width, (uint32_t)fb_height} });
+		cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {(uint32_t)fb_width, (uint32_t)fb_height} }, false);
 
 		auto setupRenderState = [&]()
 		{

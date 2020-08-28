@@ -49,7 +49,7 @@ void VEngine::VisibilityBufferPass::addToGraph(rg::RenderGraph &graph, const Dat
 			{ registry.getImageView(data.m_depthImageHandle), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::DONT_CARE, {} };
 			ColorAttachmentDescription colorAttachDesc = { registry.getImageView(data.m_triangleImageHandle), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, { {1.0f, 1.0f, 1.0f, 1.0f} } };
 
-			cmdList->beginRenderPass(1, &colorAttachDesc, &depthAttachDesc, { {}, {width, height} });
+			cmdList->beginRenderPass(1, &colorAttachDesc, &depthAttachDesc, { {}, {width, height} }, false);
 
 			for (int i = 0; i < 2; ++i)
 			{

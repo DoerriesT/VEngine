@@ -560,7 +560,7 @@ void VEngine::gal::CommandListVk::pushConstants(const ComputePipeline *pipeline,
 	vkCmdPushConstants(m_commandBuffer, pipelineVk->getLayout(), UtilityVk::translateShaderStageFlags(stageFlags), offset, size, values);
 }
 
-void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea)
+void VEngine::gal::CommandListVk::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea, bool rwTextureBufferAccess)
 {
 	assert(colorAttachmentCount <= 8);
 

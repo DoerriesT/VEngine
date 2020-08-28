@@ -1012,6 +1012,7 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 				barrier.m_imageSubresourceRange = { relativeSubresIdx % resDesc.m_levels, 1, relativeSubresIdx / resDesc.m_levels, 1 };
 				barrier.m_queueOwnershipAcquireBarrier = barrier.m_srcQueue != barrier.m_dstQueue && !resDesc.m_concurrent;
 				barrier.m_queueOwnershipReleaseBarrier = false;
+				barrier.m_firstAccessInSubmission = usageIdx == 0;
 
 				passRecordInfo.m_beforeBarriers.push_back(barrier);
 

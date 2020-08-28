@@ -38,7 +38,7 @@ void VEngine::DepthPrepassPass::addToGraph(rg::RenderGraph &graph, const Data &d
 			depthAttachmentDesc.m_clearValue = { 0.0f, 0 };
 			depthAttachmentDesc.m_readOnly = false;
 
-			cmdList->beginRenderPass(0, nullptr, &depthAttachmentDesc, { {}, {width, height} });
+			cmdList->beginRenderPass(0, nullptr, &depthAttachmentDesc, { {}, {width, height} }, false);
 
 			for (int i = 0; i < 2; ++i)
 			{

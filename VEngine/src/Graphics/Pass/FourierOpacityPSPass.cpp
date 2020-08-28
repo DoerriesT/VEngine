@@ -190,7 +190,7 @@ void VEngine::FourierOpacityPSPass::addToGraph(rg::RenderGraph &graph, const Dat
 					{registry.getImageView(data.m_fom0ImageViewHandle), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {} },
 					{registry.getImageView(data.m_fom1ImageViewHandle), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {} },
 				};
-				cmdList->beginRenderPass(2, colorAttachDescs, nullptr, renderArea);
+				cmdList->beginRenderPass(2, colorAttachDescs, nullptr, renderArea, false);
 				{
 					// render global media
 					{

@@ -201,7 +201,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 						{registry.getImageView(fomViewHandles[currentLayerOffset]), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {} },
 						{registry.getImageView(fomViewHandles[currentLayerOffset + 1]), AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, {} },
 					};
-					cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, nullptr, { {}, {w, h} });
+					cmdList->beginRenderPass(sizeof(colorAttachDescs) / sizeof(colorAttachDescs[0]), colorAttachDescs, nullptr, { {}, {w, h} }, false);
 					{
 						Viewport viewport{ 0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h), 0.0f, 1.0f };
 						Rect scissor{ { 0, 0 }, { w, h } };

@@ -666,6 +666,12 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 		auto beforeState = getResourceStateDx12(barrier.m_stateBefore, barrier.m_stagesBefore, imageDesc.m_format);
 		auto afterState = getResourceStateDx12(barrier.m_stateAfter, barrier.m_stagesAfter, imageDesc.m_format);
 
+		if (barrier.m_buffer && barrier.m_firstAccessInSubmission)
+		{
+			// automatic resource state decay
+			beforeState = D3D12_RESOURCE_STATE_COMMON;
+		}
+
 		bool uploadHeapResource = false;
 		bool readbackHeapResource = false;
 		bool isCommittedImageResource = false;
@@ -724,10 +730,16 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 			}
 		}
 		// transition barrier
-		else
+		else if (!uploadHeapResource && !readbackHeapResource)
 		{
+			if (barrier.m_buffer && barrier.m_firstAccessInSubmission)
+			{
+				// resource is automatically promoted to the correct state
+				continue;
+			}
+
 			// transitions on placed render targets / depth-stencil textures from UNDEFINED require us to discard the resource
-			if (!uploadHeapResource && !readbackHeapResource && barrier.m_image && !isCommittedImageResource && barrier.m_stateBefore == ResourceState::UNDEFINED)
+			if (barrier.m_image && !isCommittedImageResource && barrier.m_stateBefore == ResourceState::UNDEFINED && barrier.m_firstAccessInSubmission)
 			{
 				bool dsvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
 				bool rtvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0;
@@ -936,7 +948,7 @@ void VEngine::gal::CommandListDx12::pushConstants(const ComputePipeline *pipelin
 	m_commandList->SetComputeRoot32BitConstants(0, size / 4, values, offset / 4);
 }
 
-void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea)
+void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCount, ColorAttachmentDescription *colorAttachments, DepthStencilAttachmentDescription *depthStencilAttachment, const Rect &renderArea, bool rwTextureBufferAccess)
 {
 	auto translateLoadOp = [](AttachmentLoadOp loadOp)
 	{
@@ -1061,7 +1073,7 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		}
 	}
 
-	m_commandList->BeginRenderPass(colorAttachmentCount, renderTargetDescs, depthStencilAttachment ? &depthStencilDesc : nullptr, D3D12_RENDER_PASS_FLAG_NONE);
+	m_commandList->BeginRenderPass(colorAttachmentCount, renderTargetDescs, depthStencilAttachment ? &depthStencilDesc : nullptr, rwTextureBufferAccess ? D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES : D3D12_RENDER_PASS_FLAG_NONE);
 }
 
 void VEngine::gal::CommandListDx12::endRenderPass()

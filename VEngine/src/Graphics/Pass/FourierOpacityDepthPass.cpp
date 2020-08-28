@@ -134,7 +134,7 @@ void VEngine::FourierOpacityDepthPass::addToGraph(rg::RenderGraph &graph, const 
 						depthAttachmentDesc.m_clearValue = { pipelineIdx == 0 ? 1.0f : 0.0f, 0 };
 						depthAttachmentDesc.m_readOnly = false;
 
-						cmdList->beginRenderPass(0, nullptr, &depthAttachmentDesc, { {}, {w, h} });
+						cmdList->beginRenderPass(0, nullptr, &depthAttachmentDesc, { {}, {w, h} }, false);
 						{
 
 							cmdList->bindPipeline(pipelines[pipelineIdx]);

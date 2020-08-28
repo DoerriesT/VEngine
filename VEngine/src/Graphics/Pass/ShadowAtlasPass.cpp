@@ -84,7 +84,7 @@ void VEngine::ShadowAtlasPass::addToGraph(rg::RenderGraph &graph, const Data &da
 				// begin renderpass
 				DepthStencilAttachmentDescription depthAttachDesc =
 				{ shadowAtlasImageView, AttachmentLoadOp::CLEAR, AttachmentStoreOp::STORE, AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::DONT_CARE, { 1.0f, 0 } };
-				cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, renderArea);
+				cmdList->beginRenderPass(0, nullptr, &depthAttachDesc, renderArea, false);
 
 				for (size_t j = 0; j < 2; ++j)
 				{

@@ -87,7 +87,7 @@ void VEngine::ProbeGBufferPass::addToGraph(rg::RenderGraph &graph, const Data &d
 				ColorAttachmentDescription albedoRoughAttachmentDesc{ data.m_albedoRoughnessImageViews[face], AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
 				ColorAttachmentDescription normalAttachmentDesc{ data.m_normalImageViews[face], AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
 				ColorAttachmentDescription colorAttachmentDescs[] = { albedoRoughAttachmentDesc, normalAttachmentDesc };
-				cmdList->beginRenderPass(2, colorAttachmentDescs, &depthAttachmentDesc, { {}, {width, height} });
+				cmdList->beginRenderPass(2, colorAttachmentDescs, &depthAttachmentDesc, { {}, {width, height} }, false);
 
 				for (int i = 0; i < 2; ++i)
 				{

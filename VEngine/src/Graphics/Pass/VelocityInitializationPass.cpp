@@ -40,7 +40,7 @@ void VEngine::VelocityInitializationPass::addToGraph(rg::RenderGraph &graph, con
 
 		// begin renderpass
 		ColorAttachmentDescription colorAttachDesc{ registry.getImageView(data.m_velocityImageHandle), AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::STORE, {} };
-		cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {width, height} });
+		cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {width, height} }, false);
 
 		cmdList->bindPipeline(pipeline);
 

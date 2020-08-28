@@ -46,7 +46,7 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
 		// begin renderpass
-		cmdList->beginRenderPass(0, nullptr, nullptr, { {}, {width / 2, height / 2} });
+		cmdList->beginRenderPass(0, nullptr, nullptr, { {}, {width / 2, height / 2} }, true);
 
 		cmdList->bindPipeline(pipeline);
 

@@ -64,7 +64,7 @@ void VEngine::ApplyIndirectLightingPass::addToGraph(rg::RenderGraph &graph, cons
 			DepthStencilAttachmentDescription depthAttachDesc =
 			{ registry.getImageView(data.m_depthImageViewHandle), AttachmentLoadOp::LOAD, AttachmentStoreOp::STORE, AttachmentLoadOp::DONT_CARE, AttachmentStoreOp::DONT_CARE, {}, true };
 			ColorAttachmentDescription colorAttachDesc{ registry.getImageView(data.m_resultImageHandle), AttachmentLoadOp::LOAD, AttachmentStoreOp::STORE, {} };
-			cmdList->beginRenderPass(1, &colorAttachDesc, &depthAttachDesc, { {}, {width, height} });
+			cmdList->beginRenderPass(1, &colorAttachDesc, &depthAttachDesc, { {}, {width, height} }, false);
 
 			cmdList->bindPipeline(pipeline);
 

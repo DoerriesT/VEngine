@@ -60,7 +60,7 @@ void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const 
 
 			// begin renderpass
 			ColorAttachmentDescription colorAttachDesc{ registry.getImageView(data.m_resultImageHandle), AttachmentLoadOp::LOAD, AttachmentStoreOp::STORE, {} };
-			cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {width, height} });
+			cmdList->beginRenderPass(1, &colorAttachDesc, nullptr, { {}, {width, height} }, false);
 
 			cmdList->bindPipeline(pipeline);
 
