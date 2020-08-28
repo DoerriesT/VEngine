@@ -985,6 +985,23 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		desc.BeginningAccess.Clear.ClearValue.Color[3] = attachment.m_clearValue.m_float32[3];
 		desc.EndingAccess.Type = translateStoreOp(attachment.m_storeOp);
 		desc.EndingAccess.Resolve = {};
+
+		// if the caller wants to clear a sub-region of the resource, do the clear manually
+		if (desc.BeginningAccess.Type == D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR)
+		{
+			const auto &imageDesc = imageViewDx->getImage()->getDescription();
+			if (renderArea.m_offset.m_x != 0 || renderArea.m_offset.m_y != 0 || imageDesc.m_width != renderArea.m_extent.m_width || imageDesc.m_height != renderArea.m_extent.m_height)
+			{
+				D3D12_RECT clearRect{};
+				clearRect.left = renderArea.m_offset.m_x;
+				clearRect.top = renderArea.m_offset.m_y;
+				clearRect.right = renderArea.m_offset.m_x + renderArea.m_extent.m_width;
+				clearRect.bottom = renderArea.m_offset.m_y + renderArea.m_extent.m_height;
+				m_commandList->ClearRenderTargetView(desc.cpuDescriptor, attachment.m_clearValue.m_float32, 1, &clearRect);
+
+				desc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+			}
+		}
 	}
 
 	D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthStencilDesc{};
@@ -1012,6 +1029,35 @@ void VEngine::gal::CommandListDx12::beginRenderPass(uint32_t colorAttachmentCoun
 		{
 			depthStencilDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
 			depthStencilDesc.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+		}
+
+		// if the caller wants to clear a sub-region of the resource, do the clear manually
+		bool depthClear = depthStencilDesc.DepthBeginningAccess.Type == D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+		bool stencilClear = depthStencilDesc.StencilBeginningAccess.Type == D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+		if (depthClear || stencilClear)
+		{
+			const auto &imageDesc = imageViewDx->getImage()->getDescription();
+			if (renderArea.m_offset.m_x != 0 || renderArea.m_offset.m_y != 0 || imageDesc.m_width != renderArea.m_extent.m_width || imageDesc.m_height != renderArea.m_extent.m_height)
+			{
+				D3D12_RECT clearRect{};
+				clearRect.left = renderArea.m_offset.m_x;
+				clearRect.top = renderArea.m_offset.m_y;
+				clearRect.right = renderArea.m_offset.m_x + renderArea.m_extent.m_width;
+				clearRect.bottom = renderArea.m_offset.m_y + renderArea.m_extent.m_height;
+
+				D3D12_CLEAR_FLAGS clearFlags = (depthClear && stencilClear) ? (D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL) : depthClear ? D3D12_CLEAR_FLAG_DEPTH : D3D12_CLEAR_FLAG_STENCIL;
+
+				m_commandList->ClearDepthStencilView(depthStencilDesc.cpuDescriptor, clearFlags, attachment.m_clearValue.m_depth, static_cast<UINT8>(attachment.m_clearValue.m_stencil), 1, &clearRect);
+
+				if (depthClear)
+				{
+					depthStencilDesc.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+				}
+				if (stencilClear)
+				{
+					depthStencilDesc.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+				}
+			}
 		}
 	}
 
