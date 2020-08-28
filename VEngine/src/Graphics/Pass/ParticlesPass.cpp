@@ -42,8 +42,8 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 		Constants consts;
-		consts.viewMatrix = commonData->m_viewMatrix;
 		consts.viewProjectionMatrix = commonData->m_jitteredViewProjectionMatrix;
+		consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
 		consts.cameraPosition = commonData->m_cameraPosition;
 		consts.cameraUp = glm::vec3(commonData->m_viewMatrix[0][1], commonData->m_viewMatrix[1][1], commonData->m_viewMatrix[2][1]);
 		consts.width = commonData->m_width;

@@ -11,9 +11,7 @@
 
 struct Constants
 {
-	float4x4 probeFaceToViewSpace[6];
-	float4x4 viewMatrix;
-	float4x4 invViewMatrix;
+	float4x4 probeFaceToWorldSpace[6];
 	float texelSize;
 	uint width;
 	uint directionalLightCount;

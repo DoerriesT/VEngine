@@ -29,6 +29,7 @@ void VEngine::GTAO2Pass::addToGraph(rg::RenderGraph &graph, const Data &data)
 	const auto &invProjMatrix = data.m_passRecordContext->m_commonRenderData->m_invJitteredProjectionMatrix;
 
 	Constants consts;
+	consts.viewMatrix = commonData->m_viewMatrix;
 	consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 	consts.width = data.m_passRecordContext->m_commonRenderData->m_width;
 	consts.height = data.m_passRecordContext->m_commonRenderData->m_height;

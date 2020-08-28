@@ -22,7 +22,7 @@
 
 struct Constants
 {
-	float4x4 viewMatrix;
+	float4 viewMatrixDepthRow;
 	float4 volumeResResultRes;
 	float3 frustumCornerTL;
 	float jitterX;

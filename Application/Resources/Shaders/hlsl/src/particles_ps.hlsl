@@ -17,7 +17,6 @@ struct PSInput
 	float2 texCoord : TEXCOORD;
 	float opacity : OPACITY;
 	float3 worldSpacePos : WORLD_SPACE_POS;
-	float3 viewSpacePos : VIEW_SPACE_POS;
 	nointerpolation uint textureIndex : TEXTURE_INDEX;
 };
 
@@ -101,7 +100,7 @@ PSOutput main(PSInput input)
 	float opacity = albedoOpacity.a;
 	
 	float3 worldSpacePos = input.worldSpacePos;
-	float3 viewSpacePos = input.viewSpacePos;
+	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
 	
 	float3 result = 0.0;
 	
@@ -135,7 +134,7 @@ PSOutput main(PSInput input)
 	if (punctualLightCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(input.position.xy, g_Constants.width, wordCount);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -150,7 +149,7 @@ PSOutput main(PSInput input)
 				
 				PunctualLight light = g_PunctualLights[index];
 				
-				const float3 unnormalizedLightVector = light.position - viewSpacePos;
+				const float3 unnormalizedLightVector = light.position - worldSpacePos;
 				const float3 L = normalize(unnormalizedLightVector);
 				float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
 				
@@ -168,7 +167,7 @@ PSOutput main(PSInput input)
 	if (punctualLightShadowedCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(input.position.xy, g_Constants.width, wordCount);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -199,7 +198,7 @@ PSOutput main(PSInput input)
 				// point light
 				else
 				{
-					float3 lightToPoint = worldSpacePos - lightShadowed.positionWS;
+					float3 lightToPoint = worldSpacePos - lightShadowed.light.position;
 					int faceIdx = 0;
 					shadowPos.xy = sampleCube(lightToPoint, faceIdx);
 					// scale down the coord to account for the border area required for filtering
@@ -216,7 +215,7 @@ PSOutput main(PSInput input)
 				
 				float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 				
-				const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos;
+				const float3 unnormalizedLightVector = lightShadowed.light.position - worldSpacePos;
 				const float3 L = normalize(unnormalizedLightVector);
 				float att = getDistanceAtt(unnormalizedLightVector, lightShadowed.light.invSqrAttRadius);
 				
@@ -239,7 +238,7 @@ PSOutput main(PSInput input)
 					// point light
 					else
 					{
-						uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos));
+						uv = encodeOctahedron(normalize(lightShadowed.light.position - worldSpacePos));
 					}
 					
 					uv = uv * 0.5 + 0.5;
@@ -248,7 +247,7 @@ PSOutput main(PSInput input)
 					float4 fom0 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
 					float4 fom1 = g_fomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 					
-					float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
+					float depth = distance(worldSpacePos, lightShadowed.light.position) * rcp(lightShadowed.radius);
 					//depth = saturate(depth);
 					
 					shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
@@ -266,8 +265,7 @@ PSOutput main(PSInput input)
 	
 	// volumetric fog
 	{
-		float z = /*length(viewSpacePos);//*/-viewSpacePos.z;
-		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
+		float d = (log2(max(0, linearDepth * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
 		
 		// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
 		// of the current texel but instead need to scale the uv with respect to the fog image resolution

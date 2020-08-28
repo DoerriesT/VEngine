@@ -41,8 +41,7 @@ void VEngine::ShadeVisibilityBufferPassPS::addToGraph(rg::RenderGraph &graph, co
 
 	Constants consts;
 	consts.jitteredViewProjectionMatrix = commonData->m_jitteredViewProjectionMatrix;
-	consts.invViewMatrix = commonData->m_invViewMatrix;
-	consts.viewMatrix = commonData->m_viewMatrix;
+	consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
 	consts.frustumDirTL = glm::vec3(frustumDirTL);
 	consts.frustumDirDeltaX = (glm::vec3(frustumDirTR) - glm::vec3(frustumDirTL)) / (float)commonData->m_width;
 	consts.frustumDirDeltaY = (glm::vec3(frustumDirBL) - glm::vec3(frustumDirTL)) / (float)commonData->m_height;

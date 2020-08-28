@@ -31,7 +31,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
-	consts.viewMatrix = commonData->m_viewMatrix;
+	consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
 	consts.volumeResResultRes = glm::vec4(160.0f, 90.0f, commonData->m_width, commonData->m_height);
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;

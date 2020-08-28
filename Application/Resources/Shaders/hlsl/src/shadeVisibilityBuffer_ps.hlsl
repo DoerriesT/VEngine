@@ -194,9 +194,7 @@ SurfaceData computeSurfaceData(uint triangleData, int2 pixelCoord)
 	SurfaceData result = (SurfaceData)0;
 	result.position = mad(p0.xyz, H.x, mad(p1.xyz, H.y, (p2.xyz * H.z)));
 	result.normal = mad(v0.normal, H.x, mad(v1.normal, H.y, (v2.normal * H.z)));
-	result.normal = mul((float3x3)g_Constants.viewMatrix, result.normal);
 	result.tangent = mad(v0.tangent, H.x, mad(v1.tangent, H.y, (v2.tangent * H.z)));
-	result.tangent.xyz = mul((float3x3)g_Constants.viewMatrix, result.tangent.xyz);
 	result.texCoord = mad(v0.texCoord,  H.x, mad(v1.texCoord,  H.y, (v2.texCoord  * H.z)));
 
 	// derivatives
@@ -237,8 +235,8 @@ PSOutput main(PSInput input)
 	const MaterialData materialData = g_MaterialData[surfaceData.materialIndex];
 	
 	LightingParams lightingParams;
-	lightingParams.viewSpacePosition = mul(g_Constants.viewMatrix, float4(surfaceData.position, 1.0)).xyz;
-	lightingParams.V = -normalize(lightingParams.viewSpacePosition);
+	lightingParams.position = surfaceData.position;
+	lightingParams.V = normalize(float3(g_Constants.cameraPosWSX, g_Constants.cameraPosWSY, g_Constants.cameraPosWSZ) - lightingParams.position);
 	float4 derivatives = float4(surfaceData.texCoordDdx, surfaceData.texCoordDdy);
 	
 	// albedo
@@ -253,7 +251,7 @@ PSOutput main(PSInput input)
 	}
 	
 	float3 normal = normalize(surfaceData.normal);
-	float3 normalWS =  mul(g_Constants.invViewMatrix, float4(normal, 0.0)).xyz;
+	float3 vertexNormal = normal;
 	// normal
 	{
 		
@@ -297,8 +295,7 @@ PSOutput main(PSInput input)
 		lightingParams.roughness = roughness;
 	}
 	
-	float3 worldSpacePos = mul(g_Constants.invViewMatrix, float4(lightingParams.viewSpacePosition, 1.0)).xyz;
-	
+	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(lightingParams.position, 1.0));
 	
 	float3 result = 0.0;
 	//float ao = 1.0;
@@ -330,7 +327,7 @@ PSOutput main(PSInput input)
 	if (punctualLightCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(input.position.xy, g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -352,7 +349,7 @@ PSOutput main(PSInput input)
 	if (punctualLightShadowedCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -lightingParams.viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(input.position.xy, g_Constants.width, wordCount);
 
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -369,7 +366,7 @@ PSOutput main(PSInput input)
 				bool isSpotLight = lightShadowed.light.angleScale != -1.0;
 				
 				// evaluate shadow
-				float4 shadowPosWS = float4(worldSpacePos + normalWS * 0.05, 1.0);
+				float4 shadowPosWS = float4(lightingParams.position + vertexNormal * 0.05, 1.0);
 				float4 shadowPos;
 				
 				// spot light
@@ -386,7 +383,7 @@ PSOutput main(PSInput input)
 				// point light
 				else
 				{
-					float3 lightToPoint = shadowPosWS.xyz - lightShadowed.positionWS;
+					float3 lightToPoint = shadowPosWS.xyz - lightShadowed.light.position;
 					int faceIdx = 0;
 					shadowPos.xy = sampleCube(lightToPoint, faceIdx);
 					// scale down the coord to account for the border area required for filtering
@@ -405,25 +402,20 @@ PSOutput main(PSInput input)
 				
 				if (shadow > 0.0 && g_Constants.volumetricShadow && lightShadowed.fomShadowAtlasParams.w != 0.0)
 				{
-					//if (g_Constants.volumetricShadow == 2)
-					//{
-					//	shadow *= raymarch(worldSpacePos, lightShadowed.positionWS);
-					//}
-					//else
 					{
 						float2 uv;
 						// spot light
 						if (isSpotLight)
 						{
-							uv.x = dot(lightShadowed.shadowMatrix0, float4(worldSpacePos, 1.0));
-							uv.y = dot(lightShadowed.shadowMatrix1, float4(worldSpacePos, 1.0));
-							uv /= dot(lightShadowed.shadowMatrix3, float4(worldSpacePos, 1.0));
+							uv.x = dot(lightShadowed.shadowMatrix0, float4(lightingParams.position, 1.0));
+							uv.y = dot(lightShadowed.shadowMatrix1, float4(lightingParams.position, 1.0));
+							uv /= dot(lightShadowed.shadowMatrix3, float4(lightingParams.position, 1.0));
 							uv = uv * float2(0.5, -0.5) + 0.5;
 						}
 						// point light
 						else
 						{
-							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos)) * 0.5 + 0.5;
+							uv = encodeOctahedron(normalize(lightShadowed.light.position - lightingParams.position)) * 0.5 + 0.5;
 						}
 						
 						uv = uv * lightShadowed.fomShadowAtlasParams.x + lightShadowed.fomShadowAtlasParams.yz;
@@ -431,7 +423,7 @@ PSOutput main(PSInput input)
 						float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
 						float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
-						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
+						float depth = distance(lightingParams.position, lightShadowed.light.position) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
 						
 						shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);

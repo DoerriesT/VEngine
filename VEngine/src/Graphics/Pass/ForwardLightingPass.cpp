@@ -29,17 +29,15 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
 	Constants consts;
-	consts.jitteredViewProjectionMatrix = data.m_passRecordContext->m_commonRenderData->m_jitteredViewProjectionMatrix;
-	consts.invViewMatrix = commonData->m_invViewMatrix;
-	consts.viewMatrix = data.m_passRecordContext->m_commonRenderData->m_viewMatrix;
+	consts.jitteredViewProjectionMatrix = commonData->m_jitteredViewProjectionMatrix;
+	consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
+	consts.cameraPos = commonData->m_cameraPosition;
 	consts.directionalLightCount = commonData->m_directionalLightCount;
 	consts.directionalLightShadowedCount = commonData->m_directionalLightShadowedCount;
 	consts.punctualLightCount = commonData->m_punctualLightCount;
 	consts.punctualLightShadowedCount = commonData->m_punctualLightShadowedCount;
+	consts.ambientOcclusion = 0;
 	consts.width = commonData->m_width;
-	consts.coordScale = 4.0f;
-	consts.coordBias = (glm::vec3(64.0f) * 0.5f + 0.5f);// *4.0f;
-	consts.extinctionVolumeTexelSize = 1.0f / 64.0f;
 	consts.volumetricShadow = g_volumetricShadow;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));

@@ -39,7 +39,7 @@ void VEngine::DeferredShadowsPass::addToGraph(rg::RenderGraph &graph, const Data
 		Constants consts;
 		consts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 		consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-		consts.direction = glm::vec3(lightData.m_direction);
+		consts.direction = glm::vec3(data.m_passRecordContext->m_commonRenderData->m_viewMatrix * glm::vec4(lightData.m_direction, 0.0f));
 		consts.cascadeDataOffset = static_cast<int32_t>(lightData.m_shadowOffset);
 		consts.cascadeCount = static_cast<int32_t>(lightData.m_shadowCount);
 		consts.width = commonData->m_width;

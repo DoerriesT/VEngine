@@ -55,18 +55,16 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	{
 		const auto &light = data.m_lightData->m_directionalLightsShadowed[i];
 
-		glm::vec3 worldSpaceDir = glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(light.m_direction, 0.0f)));
-
 		glm::vec3 upDir(0.0f, 1.0f, 0.0f);
 
 		// choose different up vector if light direction would be linearly dependent otherwise
-		if (abs(worldSpaceDir.x) < 0.001f && abs(worldSpaceDir.z) < 0.001f)
+		if (abs(light.m_direction.x) < 0.001f && abs(light.m_direction.z) < 0.001f)
 		{
 			upDir = glm::vec3(1.0f, 1.0f, 0.0f);
 		}
 
-		((glm::vec4 *)dirDataPtr)[i * 2] = glm::vec4(worldSpaceDir, 0.0f);
-		((glm::vec4 *)dirDataPtr)[i * 2 + 1] = glm::vec4(glm::normalize(glm::cross(worldSpaceDir, glm::normalize(upDir))), 0.0f);
+		((glm::vec4 *)dirDataPtr)[i * 2] = glm::vec4(light.m_direction, 0.0f);
+		((glm::vec4 *)dirDataPtr)[i * 2 + 1] = glm::vec4(glm::normalize(glm::cross(light.m_direction, glm::normalize(upDir))), 0.0f);
 	}
 
 	// transform buffer info

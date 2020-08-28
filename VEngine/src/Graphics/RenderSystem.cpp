@@ -133,6 +133,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 		uint32_t shadowCascadeRenderListOffset = 0;
 		uint32_t shadowCascadeRenderListCount = 0;
 
+		const glm::vec4 viewMatDepthRow = glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]);
+
 
 		// get list of reflection probes
 		uint32_t probeDrawListOffset = static_cast<uint32_t>(renderLists.size());
@@ -165,7 +167,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						DirectionalLight directionalLight{};
 						directionalLight.m_color = directionalLightComponent.m_color * directionalLightComponent.m_intensity;
 						directionalLight.m_shadowOffset = static_cast<uint32_t>(m_shadowMatrices.size());
-						directionalLight.m_direction = m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f);
+						directionalLight.m_direction = direction;
 						directionalLight.m_shadowCount = directionalLightComponent.m_shadows ? directionalLightComponent.m_cascadeCount : 0;
 
 						if (directionalLightComponent.m_shadows)
@@ -233,7 +235,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 								DirectionalLight directionalLight{};
 								directionalLight.m_color = directionalLightComponent.m_color * directionalLightComponent.m_intensity;
 								directionalLight.m_shadowOffset = static_cast<uint32_t>(m_shadowMatrices.size());
-								directionalLight.m_direction = m_commonRenderData.m_viewMatrix * glm::vec4(direction, 0.0f);
+								directionalLight.m_direction = direction;
 								directionalLight.m_shadowCount = directionalLightComponent.m_shadows ? 1 : 0;
 
 
@@ -288,7 +290,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						PunctualLight punctualLight{};
 						punctualLight.m_color = pointLightComponent.m_color * intensity;
 						punctualLight.m_invSqrAttRadius = 1.0f / (pointLightComponent.m_radius * pointLightComponent.m_radius);
-						punctualLight.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
+						punctualLight.m_position = transformationComponent.m_position;
 						punctualLight.m_angleScale = -1.0f; // special value to mark this as a point light
 
 						// frustum cull
@@ -357,7 +359,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 							viewMatrices[5] = glm::lookAt(transformationComponent.m_position, transformationComponent.m_position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 							PunctualLightShadowed punctualLightShadowed{ punctualLight };
-							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = pointLightComponent.m_radius;
 
 							// volumetric shadows
@@ -437,14 +438,13 @@ void VEngine::RenderSystem::update(float timeDelta)
 						const float angleScale = 1.0f / glm::max(0.001f, glm::cos(spotLightComponent.m_innerAngle * 0.5f) - glm::cos(spotLightComponent.m_outerAngle * 0.5f));
 						const float angleOffset = -glm::cos(spotLightComponent.m_outerAngle * 0.5f) * angleScale;
 						const glm::vec3 directionWS = transformationComponent.m_orientation * glm::vec3(0.0f, 0.0f, -1.0f);
-						const glm::vec3 direction = glm::normalize(glm::vec3(m_commonRenderData.m_viewMatrix * glm::vec4(directionWS, 0.0f)));
 
 						PunctualLight punctualLight{};
 						punctualLight.m_color = spotLightComponent.m_color * intensity;
 						punctualLight.m_invSqrAttRadius = 1.0f / (spotLightComponent.m_radius * spotLightComponent.m_radius);
-						punctualLight.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
+						punctualLight.m_position = transformationComponent.m_position;
 						punctualLight.m_angleScale = angleScale;
-						punctualLight.m_direction = direction;
+						punctualLight.m_direction = directionWS;
 						punctualLight.m_angleOffset = angleOffset;
 
 						// construct bounding sphere
@@ -530,7 +530,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 							punctualLightShadowed.m_shadowAtlasParams[0].x = tileSize * (1.0f / 8192.0f);
 							punctualLightShadowed.m_shadowAtlasParams[0].y = tileOffsetX / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
 							punctualLightShadowed.m_shadowAtlasParams[0].z = tileOffsetY / tileSize * punctualLightShadowed.m_shadowAtlasParams[0].x;
-							punctualLightShadowed.m_positionWS = transformationComponent.m_position;
 							punctualLightShadowed.m_radius = spotLightComponent.m_radius;
 
 							// volumetric shadows
@@ -604,14 +603,14 @@ void VEngine::RenderSystem::update(float timeDelta)
 				{
 					std::sort(lightOrder.begin(), lightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
 						{
-							return -m_lightData.m_punctualLights[lhs].m_position.z < -m_lightData.m_punctualLights[rhs].m_position.z;
+							return -glm::dot(glm::vec4(m_lightData.m_punctualLights[lhs].m_position, 1.0f), viewMatDepthRow) < -glm::dot(glm::vec4(m_lightData.m_punctualLights[rhs].m_position, 1.0f), viewMatDepthRow);
 						});
 				}
 				else
 				{
 					std::sort(lightOrder.begin(), lightOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
 						{
-							return -m_lightData.m_punctualLightsShadowed[lhs].m_light.m_position.z < -m_lightData.m_punctualLightsShadowed[rhs].m_light.m_position.z;
+							return -glm::dot(glm::vec4(m_lightData.m_punctualLightsShadowed[lhs].m_light.m_position, 1.0f), viewMatDepthRow) < -glm::dot(glm::vec4(m_lightData.m_punctualLightsShadowed[rhs].m_light.m_position, 1.0f), viewMatDepthRow);
 						});
 				}
 
@@ -631,22 +630,26 @@ void VEngine::RenderSystem::update(float timeDelta)
 					float nearestPoint = 0.0f;
 					float furthestPoint = 0.0f;
 
+					float lightDepthVS = glm::dot(glm::vec4(light.m_position, 1.0f), viewMatDepthRow);
+
 					// spot light
 					if (light.m_angleScale != -1.0f)
 					{
 						float cosAngle = -light.m_angleOffset / light.m_angleScale;
 						float sinAngle = glm::sqrt(1.0f - cosAngle * cosAngle);
 
-						//const glm::vec3 v1 = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), light.m_direction);
-						//const glm::vec3 v2 = glm::cross(v1, light.m_direction);
+						glm::vec3 lightDirVS = m_commonRenderData.m_viewMatrix * glm::vec4(light.m_direction, 0.0f);
+
+						//const glm::vec3 v1 = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), lightDirVS);
+						//const glm::vec3 v2 = glm::cross(v1, lightDirVS);
 						// optimized the obove lines into the following expression:
-						const float v2 = light.m_direction.x * light.m_direction.x + light.m_direction.y * light.m_direction.y;
+						const float v2 = lightDirVS.x * lightDirVS.x + lightDirVS.y * lightDirVS.y;
 						// cone vertex
-						const float p0 = light.m_position.z;
+						const float p0 = -lightDepthVS;
 						// first point on cone cap rim
-						const float p1 = light.m_position.z + radius * (cosAngle * light.m_direction.z + sinAngle * v2);
+						const float p1 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * v2);
 						// second point on cone cap rim
-						const float p2 = light.m_position.z + radius * (cosAngle * light.m_direction.z + sinAngle * -v2);
+						const float p2 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * -v2);
 
 						nearestPoint = -glm::max(p0, p1, p2);
 						furthestPoint = -glm::min(p0, p1, p2);
@@ -654,8 +657,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 					// point light
 					else
 					{
-						nearestPoint = -light.m_position.z - radius;
-						furthestPoint = -light.m_position.z + radius;
+						nearestPoint = -lightDepthVS - radius;
+						furthestPoint = -lightDepthVS + radius;
 					}
 
 					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
@@ -714,7 +717,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 						medium.m_worldToLocal0 = worldToLocalTransposed[0];
 						medium.m_worldToLocal1 = worldToLocalTransposed[1];
 						medium.m_worldToLocal2 = worldToLocalTransposed[2];
-						medium.m_position = m_commonRenderData.m_viewMatrix * glm::vec4(transformationComponent.m_position, 1.0f);
+						medium.m_position = transformationComponent.m_position;
 						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
 						medium.m_extinction = mediumComponent.m_extinction;
 						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
@@ -736,7 +739,7 @@ void VEngine::RenderSystem::update(float timeDelta)
 				// sort by distance to camera
 				std::sort(m_lightData.m_localMediaOrder.begin(), m_lightData.m_localMediaOrder.end(), [&](const uint32_t &lhs, const uint32_t &rhs)
 					{
-						return -m_lightData.m_localParticipatingMedia[lhs].m_position.z < -m_lightData.m_localParticipatingMedia[rhs].m_position.z;
+						return -glm::dot(glm::vec4(m_lightData.m_localParticipatingMedia[lhs].m_position, 1.0f), viewMatDepthRow) < -glm::dot(glm::vec4(m_lightData.m_localParticipatingMedia[rhs].m_position, 1.0f), viewMatDepthRow);
 					});
 
 				// clear bins
@@ -751,8 +754,9 @@ void VEngine::RenderSystem::update(float timeDelta)
 				{
 					const auto &media = m_lightData.m_localParticipatingMedia[m_lightData.m_localMediaOrder[i]];
 					const float radius = mediumRadii[m_lightData.m_localMediaOrder[i]];
-					float nearestPoint = -media.m_position.z - radius;
-					float furthestPoint = -media.m_position.z + radius;
+					float lightDepthVS = glm::dot(glm::vec4(media.m_position, 1.0f), viewMatDepthRow);
+					float nearestPoint = -lightDepthVS - radius;
+					float furthestPoint = -lightDepthVS + radius;
 
 					size_t minBin = glm::min(static_cast<size_t>(glm::max(nearestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
 					size_t maxBin = glm::min(static_cast<size_t>(glm::max(furthestPoint / RendererConsts::Z_BIN_DEPTH, 0.0f)), size_t(RendererConsts::Z_BINS - 1));
@@ -936,7 +940,6 @@ void VEngine::RenderSystem::update(float timeDelta)
 					billboardDrawData.push_back(drawData);
 				});
 
-			glm::vec4 viewMatDepthRow = glm::vec4(m_commonRenderData.m_viewMatrix[0][2], m_commonRenderData.m_viewMatrix[1][2], m_commonRenderData.m_viewMatrix[2][2], m_commonRenderData.m_viewMatrix[3][2]);
 			std::sort(billboardDrawData.begin(), billboardDrawData.end(), [&](const BillboardDrawData &lhs, const BillboardDrawData &rhs)
 				{
 					return -glm::dot(glm::vec4(lhs.m_position, 1.0f), viewMatDepthRow) < -glm::dot(glm::vec4(rhs.m_position, 1.0f), viewMatDepthRow);

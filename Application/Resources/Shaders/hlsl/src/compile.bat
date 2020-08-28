@@ -68,7 +68,6 @@ dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ps.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_ps.spv
-dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main shadeVisibilityBuffer_cs.hlsl -Fo ./../shadeVisibilityBuffer_cs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main shadeVisibilityBuffer_ps.hlsl -Fo ./../shadeVisibilityBuffer_ps.spv
 
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main fourierOpacityVolume_vs.hlsl -Fo ./../fourierOpacityVolume_vs.spv

@@ -20,8 +20,8 @@
 
 struct Constants
 {
-	float4x4 viewMatrix;
 	float4x4 viewProjectionMatrix;
+	float4 viewMatrixDepthRow;
 	float3 cameraPosition;
 	uint width;
 	float3 cameraUp;

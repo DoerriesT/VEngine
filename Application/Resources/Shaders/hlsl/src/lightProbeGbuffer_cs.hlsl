@@ -38,12 +38,12 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		return;
 	}
 	
-	float4 viewSpacePos4 = mul(g_Constants.probeFaceToViewSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * float2(2.0, -2.0) - float2(1.0, -1.0), depth, 1.0));
-	float3 viewSpacePos = viewSpacePos4.xyz / viewSpacePos4.w;
+	float4 worldSpacePos4 = mul(g_Constants.probeFaceToWorldSpace[groupID.z], float4((threadID.xy + 0.5) * g_Constants.texelSize * float2(2.0, -2.0) - float2(1.0, -1.0), depth, 1.0));
+	float3 worldSpacePos = worldSpacePos4.xyz / worldSpacePos4.w;
 	float4 albedoRoughness = accurateSRGBToLinear(g_AlbedoRoughnessImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)));
 	float3 albedo = albedoRoughness.rgb;
 	float roughness = albedoRoughness.a;
-	float3 N = mul(g_Constants.viewMatrix, float4(decodeOctahedron(g_NormalImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)).xy), 0.0)).xyz;
+	float3 N = decodeOctahedron(g_NormalImage.Load(int4(threadID.x, threadID.y, threadID.z + g_Constants.arrayTextureOffset, 0)).xy);
 	
 	float3 result = 0.0;
 	
@@ -58,7 +58,6 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID)
 		}
 	}
 	
-	const float3 worldSpacePos = mul(g_Constants.invViewMatrix, float4(viewSpacePos, 1.0)).xyz;
 	// shadowed directional lights
 	{
 		

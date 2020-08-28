@@ -5,6 +5,7 @@
 
 struct Constants
 {
+	float4x4 viewMatrix;
 	float4 unprojectParams;
 	float2 texelSize;
 	uint width;

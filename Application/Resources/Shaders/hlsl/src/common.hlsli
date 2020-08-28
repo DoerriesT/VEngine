@@ -61,8 +61,10 @@ struct PunctualLightShadowed
 	float4 shadowMatrix3;
 	float4 shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: point light border correction scale
 	float4 fomShadowAtlasParams; // x: scale, y: biasX, z: biasY, w: volumetric shadows enabled
-	float3 positionWS;
 	float radius;
+	float pad0;
+	float pad1;
+	float pad2;
 };
 
 struct MaterialData

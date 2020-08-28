@@ -34,8 +34,10 @@ namespace VEngine
 		glm::vec4 m_shadowMatrix3;
 		glm::vec4 m_shadowAtlasParams[6]; // x: scale, y: biasX, z: biasY, w: point light border correction scale
 		glm::vec4 m_fomShadowAtlasParams; // x: scale, y: biasX, z: biasY, w: volumetric shadows enabled
-		glm::vec3 m_positionWS;
 		float m_radius;
+		float m_pad0;
+		float m_pad1;
+		float m_pad2;
 	};
 
 	struct ShadowAtlasDrawInfo

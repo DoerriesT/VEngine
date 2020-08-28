@@ -68,7 +68,6 @@ dxc.exe -T vs_6_2 -E main visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_vs.
 dxc.exe -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.dxil -Zi -Fd ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.pdb
 dxc.exe -T ps_6_2 -E main visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ps.dxil -Zi -Fd ./../visibilityBuffer_ps.pdb
 dxc.exe -T ps_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_ps.dxil -Zi -Fd ./../visibilityBuffer_ALPHA_MASK_ENABLED_ps.pdb
-dxc.exe -T cs_6_2 -E main shadeVisibilityBuffer_cs.hlsl -Fo ./../shadeVisibilityBuffer_cs.dxil -Zi -Fd ./../shadeVisibilityBuffer_cs.pdb
 dxc.exe -T ps_6_2 -E main shadeVisibilityBuffer_ps.hlsl -Fo ./../shadeVisibilityBuffer_ps.dxil -Zi -Fd ./../shadeVisibilityBuffer_ps.pdb
 
 dxc.exe -T vs_6_2 -E main fourierOpacityVolume_vs.hlsl -Fo ./../fourierOpacityVolume_vs.dxil -Zi -Fd ./../fourierOpacityVolume_vs.pdb

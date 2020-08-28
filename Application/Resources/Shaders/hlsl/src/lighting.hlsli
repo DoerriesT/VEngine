@@ -13,7 +13,7 @@ struct LightingParams
 	float3 albedo;
 	float3 N;
 	float3 V;
-	float3 viewSpacePosition;
+	float3 position;
 	float metalness;
 	float roughness;
 };
@@ -45,7 +45,7 @@ float getAngleAtt(float3 L, float3 lightDir, float lightAngleScale, float lightA
 
 float3 evaluatePunctualLight(const LightingParams params, const PunctualLight light)
 {
-	const float3 unnormalizedLightVector = light.position - params.viewSpacePosition;
+	const float3 unnormalizedLightVector = light.position - params.position;
 	const float3 L = normalize(unnormalizedLightVector);
 	float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
 	

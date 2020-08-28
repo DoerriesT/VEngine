@@ -8,7 +8,6 @@ struct VSOutput
 	float2 texCoord : TEXCOORD;
 	float opacity : OPACITY;
 	float3 worldSpacePos : WORLD_SPACE_POS;
-	float3 viewSpacePos : VIEW_SPACE_POS;
 	nointerpolation uint textureIndex : TEXTURE_INDEX;
 };
 
@@ -58,7 +57,6 @@ VSOutput main(uint vertexID : SV_VertexID)
 	output.opacity = particle.opacity;
 	output.textureIndex = particle.textureIndex;
 	output.worldSpacePos = pos + particle.position;
-	output.viewSpacePos = mul(g_Constants.viewMatrix, float4(pos + particle.position, 1.0)).xyz;
 	
 	return output;
 }

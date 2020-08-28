@@ -37,7 +37,6 @@
 #include "Pass/ApplyIndirectLightingPass.h"
 #include "Pass/VolumetricFogApplyPass2.h"
 #include "Pass/VisibilityBufferPass.h"
-#include "Pass/ShadeVisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Pass/FourierOpacityDirectionalLightPass.h"
 #include "Pass/FourierOpacityDepthPass.h"
@@ -978,34 +977,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
 
-	//// shade visibility buffer
-	//ShadeVisibilityBufferPass::Data shadeVisBufferPassData;
-	//shadeVisBufferPassData.m_passRecordContext = &passRecordContext;
-	//shadeVisBufferPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
-	//shadeVisBufferPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
-	//shadeVisBufferPassData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
-	//shadeVisBufferPassData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
-	//shadeVisBufferPassData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
-	//shadeVisBufferPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
-	//shadeVisBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
-	//shadeVisBufferPassData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	//shadeVisBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//shadeVisBufferPassData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshInfo) };
-	//shadeVisBufferPassData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size, 4 };
-	//shadeVisBufferPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	//shadeVisBufferPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
-	//shadeVisBufferPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	//shadeVisBufferPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	//shadeVisBufferPassData.m_resultImageViewHandle = lightImageViewHandle;
-	//shadeVisBufferPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	//shadeVisBufferPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
-	//shadeVisBufferPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
-	//shadeVisBufferPassData.m_fomImageViewHandle = fomImageViewHandle;
-	//shadeVisBufferPassData.m_triangleImageViewHandle = triangleImageViewHandle;
-	//
-	//ShadeVisibilityBufferPass::addToGraph(graph, shadeVisBufferPassData);
-
-
 	//// shade visibility buffer PS
 	//ShadeVisibilityBufferPassPS::Data shadeVisBufferPassPSData;
 	//shadeVisBufferPassPSData.m_passRecordContext = &passRecordContext;
@@ -1018,7 +989,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//shadeVisBufferPassPSData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	//shadeVisBufferPassPSData.m_instanceDataBufferInfo = instanceDataBufferInfo;
 	//shadeVisBufferPassPSData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshData) };
+	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshInfo) };
 	//shadeVisBufferPassPSData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size, 4 };
 	//shadeVisBufferPassPSData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
 	//shadeVisBufferPassPSData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;

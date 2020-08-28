@@ -115,7 +115,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
 	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
 	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
-	const float3 viewSpacePos = mul(g_Constants.viewMatrix, float4(worldSpacePos, 1.0)).xyz;
+	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
 
 	uint3 imageDims;
 	g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
@@ -146,7 +146,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	if (localMediaCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -183,7 +183,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float4 scatteringExtinction = float4(scattering, extinction);
 	const float4 emissivePhase = float4(emissive, phase);
 	
-	const float3 viewSpaceV = normalize(-viewSpacePos);
+	const float3 V = normalize(g_Constants.cameraPos - worldSpacePos);
 	
 	// integrate inscattered lighting
 	float3 lighting = emissivePhase.rgb;
@@ -199,7 +199,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLights[i];
-				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w);
+				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, emissivePhase.w);
 			}
 		}
 		
@@ -209,7 +209,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			{
 				DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
 				float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos);
-				lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w) * shadow;
+				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, emissivePhase.w) * shadow;
 			}
 		}
 		
@@ -218,7 +218,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		if (punctualLightCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -233,7 +233,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					PunctualLight light = g_PunctualLights[index];
 					
-					const float3 unnormalizedLightVector = light.position - viewSpacePos;
+					const float3 unnormalizedLightVector = light.position - worldSpacePos;
 					const float3 L = normalize(unnormalizedLightVector);
 					float att = getDistanceAtt(unnormalizedLightVector, light.invSqrAttRadius);
 					
@@ -244,7 +244,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					const float3 radiance = light.color * att;
 					
-					lighting += radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
+					lighting += radiance * henyeyGreenstein(V, L, emissivePhase.w);
 				}
 			}
 		}
@@ -254,7 +254,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		if (punctualLightShadowedCount > 0)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, -viewSpacePos.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
@@ -286,7 +286,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					// point light
 					else
 					{
-						float3 lightToPoint = worldSpacePos - lightShadowed.positionWS;
+						float3 lightToPoint = worldSpacePos - lightShadowed.light.position;
 						int faceIdx = 0;
 						shadowPos.xy = sampleCube(lightToPoint, faceIdx);
 						// scale down the coord to account for the border area required for filtering
@@ -303,7 +303,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					float shadow = g_ShadowAtlasImage.SampleCmpLevelZero(g_ShadowSampler, shadowPos.xy, shadowPos.z).x;
 					
-					const float3 unnormalizedLightVector = lightShadowed.light.position - viewSpacePos;
+					const float3 unnormalizedLightVector = lightShadowed.light.position - worldSpacePos;
 					const float3 L = normalize(unnormalizedLightVector);
 					float att = getDistanceAtt(unnormalizedLightVector, lightShadowed.light.invSqrAttRadius);
 					
@@ -326,7 +326,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						// point light
 						else
 						{
-							uv = encodeOctahedron(normalize(lightShadowed.positionWS - worldSpacePos));
+							uv = encodeOctahedron(normalize(lightShadowed.light.position - worldSpacePos));
 						}
 						
 						uv = uv * 0.5 + 0.5;
@@ -335,7 +335,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 0.0), 0.0);
 						float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
-						float depth = distance(worldSpacePos, lightShadowed.positionWS) * rcp(lightShadowed.radius);
+						float depth = distance(worldSpacePos, lightShadowed.light.position) * rcp(lightShadowed.radius);
 						//depth = saturate(depth);
 						
 						shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
@@ -343,7 +343,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					const float3 radiance = lightShadowed.light.color * att;
 					
-					lighting += shadow * radiance * henyeyGreenstein(viewSpaceV, L, emissivePhase.w);
+					lighting += shadow * radiance * henyeyGreenstein(V, L, emissivePhase.w);
 				}
 			}
 		}

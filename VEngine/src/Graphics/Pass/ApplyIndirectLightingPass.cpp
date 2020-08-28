@@ -113,6 +113,7 @@ void VEngine::ApplyIndirectLightingPass::addToGraph(rg::RenderGraph &graph, cons
 			PushConsts pushConsts;
 			pushConsts.invViewMatrix = data.m_passRecordContext->m_commonRenderData->m_invViewMatrix;
 			pushConsts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
+			pushConsts.cameraPos = data.m_passRecordContext->m_commonRenderData->m_cameraPosition;
 			pushConsts.width = width;
 			pushConsts.texelWidth = 1.0f / width;
 			pushConsts.texelHeight = 1.0f / height;

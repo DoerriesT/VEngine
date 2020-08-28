@@ -80,7 +80,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 centerPos = getViewSpacePos(texCoord);
 	float3 V = normalize(-centerPos);
 	
-	const float3 N = decodeOctahedron24(g_NormalImage.Load(int3(threadID.xy, 0)).xyz);
+	const float3 N = mul((float3x3)g_Constants.viewMatrix, decodeOctahedron24(g_NormalImage.Load(int3(threadID.xy, 0)).xyz));
 	
 	//// Sample neighboring pixels
 	//const float3 Pr = getViewSpacePos((float2(threadID.xy + 0.5) + float2(1.0, 0.0)) * g_Constants.texelSize);

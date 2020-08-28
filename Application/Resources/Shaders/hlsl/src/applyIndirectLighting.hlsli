@@ -14,6 +14,7 @@ struct PushConsts
 {
 	float4x4 invViewMatrix;
 	float4 unprojectParams;
+	float3 cameraPos;
 	uint width;
 	float texelWidth;
 	float texelHeight;

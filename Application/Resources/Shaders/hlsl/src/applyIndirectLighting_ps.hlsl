@@ -67,6 +67,8 @@ float4 main(PSInput input) : SV_Target0
 	const float2 clipSpacePosition = input.position.xy * float2(g_PushConsts.texelWidth, g_PushConsts.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
 	float3 viewSpacePosition = float3(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0);
 	viewSpacePosition /= g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w;
+	const float3 worldSpacePos = mul(g_PushConsts.invViewMatrix, float4(viewSpacePosition, 1.0)).xyz;
+	const float linearDepth = -viewSpacePosition.z;
 	
 	float4 normalRoughness = g_NormalRoughnessImage.Load(int3(input.position.xy, 0));
 	float4 albedoMetalness = approximateSRGBToLinear(g_AlbedoMetalnessImage.Load(int3(input.position.xy, 0)));
@@ -74,7 +76,7 @@ float4 main(PSInput input) : SV_Target0
 	const float roughness = max(normalRoughness.w, 0.04); // avoid precision problems
 	float metalness = albedoMetalness.w;
 	float3 albedo = albedoMetalness.rgb;
-	const float3 V = -normalize(viewSpacePosition.xyz);
+	const float3 V = normalize(g_PushConsts.cameraPos - worldSpacePos);
 	
 	const float3 N = decodeOctahedron24(normalRoughness.xyz);
 	
@@ -82,11 +84,8 @@ float4 main(PSInput input) : SV_Target0
 	// apply indirect specular
 	float4 indirectSpecular = 0.0;//depth == 50.0 ? g_IndirectSpecularLightImage.Load(int3(input.position.xy, 0)) : 0.0;
 	
-	float3 worldSpacePos = mul(g_PushConsts.invViewMatrix, float4(viewSpacePosition, 1.0)).xyz;
-	float3 worldSpaceNormal = mul(g_PushConsts.invViewMatrix, float4(N, 0.0)).xyz;
-	float3 worldSpaceViewDir = mul(g_PushConsts.invViewMatrix, float4(V, 0.0)).xyz;
-	float3 R = reflect(-worldSpaceViewDir, worldSpaceNormal);
-	float3 dominantR = getSpecularDominantDir(worldSpaceNormal, R, roughness);
+	float3 R = reflect(-V, N);
+	float3 dominantR = getSpecularDominantDir(N, R, roughness);
 	
 	float weightSum = 0.0;
 	float3 reflectionProbeSpecular = 0.0;
@@ -97,7 +96,7 @@ float4 main(PSInput input) : SV_Target0
 	if (probeCount > 0)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
-		getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, -viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
+		getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
 		const uint address = getTileAddress(int2(input.position.xy), g_PushConsts.width, wordCount);
 	
 		const float mipCount = 7.0;

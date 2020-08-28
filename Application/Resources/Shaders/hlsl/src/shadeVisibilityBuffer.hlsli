@@ -39,8 +39,7 @@ struct PushConsts
 struct Constants
 {
 	float4x4 jitteredViewProjectionMatrix;
-	float4x4 invViewMatrix;
-	float4x4 viewMatrix;
+	float4 viewMatrixDepthRow;
 	float3 frustumDirTL;
 	float cameraPosWSX;
 	float3 frustumDirDeltaX;

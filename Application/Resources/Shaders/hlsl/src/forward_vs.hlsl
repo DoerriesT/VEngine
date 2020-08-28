@@ -10,7 +10,7 @@ struct VSOutput
 	float2 texCoord : TEXCOORD;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
-	float4 worldPos : WORLD_POSITION;
+	float3 worldPos : WORLD_POSITION;
 	nointerpolation uint materialIndex : MATERIAL_INDEX;
 };
 
@@ -36,7 +36,7 @@ VSOutput main(uint vertexID : SV_VertexID)
 	worldPos.z = dot(g_TransformData[g_PushConsts.transformIndex * 4 + 2], float4(pos, 1.0));
 	
 	output.position = mul(g_Constants.jitteredViewProjectionMatrix, float4(worldPos, 1.0));
-	output.worldPos = mul(g_Constants.viewMatrix, float4(worldPos, 1.0));
+	output.worldPos = worldPos;
 	
 	output.texCoord = getTexCoord(vertexID, g_TexCoords) * g_PushConsts.texCoordScale + g_PushConsts.texCoordBias;
 	
@@ -51,8 +51,8 @@ VSOutput main(uint vertexID : SV_VertexID)
 	float3 tangent;
 	quaternionToNormalTangent(qtangent, normal, tangent);
 	
-	output.normal = mul((float3x3)g_Constants.viewMatrix, normal);
-	output.tangent.xyz = mul((float3x3)g_Constants.viewMatrix, tangent);
+	output.normal = normal;
+	output.tangent.xyz = tangent;
 	
 	output.materialIndex = g_PushConsts.materialIndex;
 	
