@@ -33,7 +33,7 @@ VEngine::gal::SamplerDx12::SamplerDx12(ID3D12Device *device, const SamplerCreate
 	const size_t borderColorIdx = static_cast<size_t>(createInfo.m_borderColor);
 
 	D3D12_SAMPLER_DESC samplerDesc{};
-	samplerDesc.Filter = UtilityDx12::translate(createInfo.m_magFilter, createInfo.m_minFilter, createInfo.m_mipmapMode, createInfo.m_compareEnable);
+	samplerDesc.Filter = UtilityDx12::translate(createInfo.m_magFilter, createInfo.m_minFilter, createInfo.m_mipmapMode, createInfo.m_compareEnable, createInfo.m_anisotropyEnable);
 	samplerDesc.AddressU = UtilityDx12::translate(createInfo.m_addressModeU);
 	samplerDesc.AddressV = UtilityDx12::translate(createInfo.m_addressModeV);
 	samplerDesc.AddressW = UtilityDx12::translate(createInfo.m_addressModeW);

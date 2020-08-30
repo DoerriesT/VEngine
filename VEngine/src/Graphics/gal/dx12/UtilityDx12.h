@@ -11,7 +11,7 @@ namespace VEngine
 			HRESULT checkResult(HRESULT result, const char *errorMsg = nullptr, bool exitOnError = true);
 			D3D12_COMPARISON_FUNC translate(CompareOp compareOp);
 			D3D12_TEXTURE_ADDRESS_MODE translate(SamplerAddressMode addressMode);
-			D3D12_FILTER translate(Filter magFilter, Filter minFilter, SamplerMipmapMode mipmapMode, bool compareEnable);
+			D3D12_FILTER translate(Filter magFilter, Filter minFilter, SamplerMipmapMode mipmapMode, bool compareEnable, bool anisotropyEnable);
 			UINT translate(ComponentMapping mapping);
 			D3D12_BLEND translate(BlendFactor factor);
 			D3D12_BLEND_OP translate(BlendOp blendOp);

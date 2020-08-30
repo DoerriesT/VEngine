@@ -252,11 +252,15 @@ D3D12_TEXTURE_ADDRESS_MODE VEngine::gal::UtilityDx12::translate(SamplerAddressMo
 	}
 }
 
-D3D12_FILTER VEngine::gal::UtilityDx12::translate(Filter magFilter, Filter minFilter, SamplerMipmapMode mipmapMode, bool compareEnable)
+D3D12_FILTER VEngine::gal::UtilityDx12::translate(Filter magFilter, Filter minFilter, SamplerMipmapMode mipmapMode, bool compareEnable, bool anisotropyEnable)
 {
 	if (!compareEnable)
 	{
-		if (minFilter == Filter::NEAREST && magFilter == Filter::NEAREST && mipmapMode == SamplerMipmapMode::NEAREST)
+		if (anisotropyEnable)
+		{
+			return D3D12_FILTER_ANISOTROPIC;
+		}
+		else if (minFilter == Filter::NEAREST && magFilter == Filter::NEAREST && mipmapMode == SamplerMipmapMode::NEAREST)
 		{
 			return D3D12_FILTER_MIN_MAG_MIP_POINT;
 		}
@@ -291,7 +295,11 @@ D3D12_FILTER VEngine::gal::UtilityDx12::translate(Filter magFilter, Filter minFi
 	}
 	else
 	{
-		if (minFilter == Filter::NEAREST && magFilter == Filter::NEAREST && mipmapMode == SamplerMipmapMode::NEAREST)
+		if (anisotropyEnable)
+		{
+			return D3D12_FILTER_COMPARISON_ANISOTROPIC;
+		}
+		else if (minFilter == Filter::NEAREST && magFilter == Filter::NEAREST && mipmapMode == SamplerMipmapMode::NEAREST)
 		{
 			return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
 		}

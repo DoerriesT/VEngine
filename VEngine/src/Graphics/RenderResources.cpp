@@ -361,8 +361,8 @@ void VEngine::RenderResources::init(uint32_t width, uint32_t height)
 		samplerCreateInfo.m_minFilter = Filter::NEAREST;
 		samplerCreateInfo.m_mipmapMode = SamplerMipmapMode::NEAREST;
 		samplerCreateInfo.m_mipLodBias = 0.0f;
-		samplerCreateInfo.m_anisotropyEnable = true;
-		samplerCreateInfo.m_maxAnisotropy = m_graphicsDevice->getMaxSamplerAnisotropy();
+		samplerCreateInfo.m_anisotropyEnable = false;
+		samplerCreateInfo.m_maxAnisotropy = 1.0f;
 		samplerCreateInfo.m_compareEnable = false;
 		samplerCreateInfo.m_compareOp = CompareOp::NEVER;
 		samplerCreateInfo.m_minLod = 0.0f;
