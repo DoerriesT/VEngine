@@ -744,63 +744,66 @@ void VEngine::gal::CommandListDx12::barrier(uint32_t count, const Barrier *barri
 				bool dsvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
 				bool rtvImage = (imageDesc.m_usageFlags & ImageUsageFlagBits::COLOR_ATTACHMENT_BIT) != 0;
 
-				D3D12_RESOURCE_STATES newAfterState = D3D12_RESOURCE_STATE_COMMON;
-				if (dsvImage && afterState != D3D12_RESOURCE_STATE_DEPTH_WRITE)
+				if (dsvImage || rtvImage)
 				{
-					newAfterState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-				}
-				else if (rtvImage && afterState != D3D12_RESOURCE_STATE_RENDER_TARGET)
-				{
-					newAfterState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-				}
-
-				// add discard transition barriers to list
-				if (newAfterState != D3D12_RESOURCE_STATE_COMMON)
-				{
-					const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
-					const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
-					const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
-					const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
-
-					D3D12_RESOURCE_BARRIER barrierDx{};
-					barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-					barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-					barrierDx.Transition.pResource = resouceDx;
-					barrierDx.Transition.StateBefore = beforeState;
-					barrierDx.Transition.StateAfter = newAfterState;
-
-					// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
-					if (baseLayer == 0 && baseLevel == 0 && layerCount == imageDesc.m_layers && levelCount == imageDesc.m_levels)
+					D3D12_RESOURCE_STATES newAfterState = D3D12_RESOURCE_STATE_COMMON;
+					if (dsvImage && afterState != D3D12_RESOURCE_STATE_DEPTH_WRITE)
 					{
-						barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+						newAfterState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+					}
+					else if (rtvImage && afterState != D3D12_RESOURCE_STATE_RENDER_TARGET)
+					{
+						newAfterState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+					}
 
-						discardTransitionBarriers.push_back(barrierDx);
+					// add discard transition barriers to list
+					if (newAfterState != D3D12_RESOURCE_STATE_COMMON)
+					{
+						const uint32_t baseLayer = barrier.m_imageSubresourceRange.m_baseArrayLayer;
+						const uint32_t layerCount = barrier.m_imageSubresourceRange.m_layerCount;
+						const uint32_t baseLevel = barrier.m_imageSubresourceRange.m_baseMipLevel;
+						const uint32_t levelCount = barrier.m_imageSubresourceRange.m_levelCount;
+
+						D3D12_RESOURCE_BARRIER barrierDx{};
+						barrierDx.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+						barrierDx.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+						barrierDx.Transition.pResource = resouceDx;
+						barrierDx.Transition.StateBefore = beforeState;
+						barrierDx.Transition.StateAfter = newAfterState;
+
+						// collapse individual barriers for each subresource into a single barrier if all subresources are transitioned
+						if (baseLayer == 0 && baseLevel == 0 && layerCount == imageDesc.m_layers && levelCount == imageDesc.m_levels)
+						{
+							barrierDx.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+							discardTransitionBarriers.push_back(barrierDx);
+						}
+						else
+						{
+							for (uint32_t layer = 0; layer < layerCount; ++layer)
+							{
+								for (uint32_t level = 0; level < levelCount; ++level)
+								{
+									const uint32_t index = (layer + baseLayer) * imageDesc.m_levels + (level + baseLevel);
+									barrierDx.Transition.Subresource = index;
+
+									discardTransitionBarriers.push_back(barrierDx);
+								}
+							}
+						}
+
+						// the discard is done after the first batch of transitions, because we might have this situation:
+						// COMMON -> RTV -> Discard -> some other state that the barrier wants to transition to
+						discardBarrierIndicesBefore.push_back((uint32_t)i);
+
+						// update beforeState
+						beforeState = newAfterState;
 					}
 					else
 					{
-						for (uint32_t layer = 0; layer < layerCount; ++layer)
-						{
-							for (uint32_t level = 0; level < levelCount; ++level)
-							{
-								const uint32_t index = (layer + baseLayer) * imageDesc.m_levels + (level + baseLevel);
-								barrierDx.Transition.Subresource = index;
-
-								discardTransitionBarriers.push_back(barrierDx);
-							}
-						}
+						// the discard is done after the second batch of transitions, because the barrier wants to transition to the required state anyways
+						discardBarrierIndicesAfter.push_back((uint32_t)i);
 					}
-
-					// the discard is done after the first batch of transitions, because we might have this situation:
-					// COMMON -> RTV -> Discard -> some other state that the barrier wants to transition to
-					discardBarrierIndicesBefore.push_back((uint32_t)i);
-
-					// update beforeState
-					beforeState = newAfterState;
-				}
-				else
-				{
-					// the discard is done after the second batch of transitions, because the barrier wants to transition to the required state anyways
-					discardBarrierIndicesAfter.push_back((uint32_t)i);
 				}
 			}
 
