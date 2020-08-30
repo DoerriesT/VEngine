@@ -16,7 +16,7 @@ void main(PSInput input)
 {
 	if (input.textureIndex != 0)
 	{
-		Texture2D<float4> tex = g_Textures[NonUniformResourceIndex(input.textureIndex - 1)];
+		Texture2D<float4> tex = g_Textures[(input.textureIndex - 1)];
 		SamplerState sampler = g_Samplers[SAMPLER_LINEAR_REPEAT];
 		float alpha = tex.Sample(sampler, input.texCoord).a;
 		

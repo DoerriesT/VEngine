@@ -9,6 +9,7 @@ struct PushConsts
 	uint transformIndex;
 	uint materialIndex;
 	uint vertexOffset;
+	uint pad;
 	float2 texCoordScale;
 	float2 texCoordBias;
 };
