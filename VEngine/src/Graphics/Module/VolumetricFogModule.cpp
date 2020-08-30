@@ -143,6 +143,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_fomImageViewHandle = data.m_fomImageViewHandle;
 	volumetricFogMergedPassData.m_directionalLightFOMImageViewHandle = data.m_directionalLightFOMImageViewHandle;
 	volumetricFogMergedPassData.m_directionalLightFOMDepthRangeImageViewHandle = data.m_directionalLightFOMDepthRangeImageViewHandle;
+	volumetricFogMergedPassData.m_depthImageViewHandle = data.m_depthImageViewHandle;
 	volumetricFogMergedPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
 	volumetricFogMergedPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
 	volumetricFogMergedPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;

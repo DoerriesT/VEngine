@@ -20,6 +20,7 @@ ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0)
 Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
 Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
+Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 
@@ -114,6 +115,13 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	texelCoord.z *= 2.0;
 	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
 	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
+	
+	float furthestDepth = g_DepthImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], (threadID.xy + 0.5) / g_Constants.volumeResResultRes.xy, 0.0).x;
+	float linearFurthestDepth = rcp(g_Constants.unprojectParams.z * furthestDepth + g_Constants.unprojectParams.w);
+	float furthestTexelCoord = (log2(max(0, linearFurthestDepth * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR))) * VOLUME_DEPTH;
+	
+	texelCoord.z = min(texelCoord.z, furthestTexelCoord);
+	
 	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
 	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
 

@@ -19,10 +19,12 @@
 #define FOM_IMAGE_BINDING 18
 #define FOM_DIRECTIONAL_IMAGE_BINDING 19
 #define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 20
+#define DEPTH_IMAGE_BINDING 21
 
 struct Constants
 {
 	float4 viewMatrixDepthRow;
+	float4 unprojectParams;
 	float4 volumeResResultRes;
 	float3 frustumCornerTL;
 	float jitterX;
