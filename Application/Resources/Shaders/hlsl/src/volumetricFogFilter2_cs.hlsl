@@ -39,9 +39,9 @@ float3 calcWorldSpacePos(float3 texelCoord)
 void main(uint3 threadID : SV_DispatchThreadID)
 {
 	float4 result = 0.0;
-	bool noCurrentData = (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition);
-	noCurrentData = (threadID.z & 1) ? !noCurrentData : noCurrentData;
-	if (!noCurrentData)
+	bool checkerboardHole = (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition);
+	checkerboardHole = (threadID.z & 1) ? !checkerboardHole : checkerboardHole;
+	if (!checkerboardHole)
 	{
 		result = g_InputImage.Load(uint4(threadID.xy, threadID.z / 2, 0));
 	}
@@ -65,11 +65,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			
 			// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
 			prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
+			
+			result = checkerboardHole ? prevResult : lerp(prevResult, result, g_Constants.alpha);
 		}
 		
-		result = noCurrentData ? prevResult : result;
-		result = lerp(prevResult, result, validCoord ? g_Constants.alpha : 1.0);
-		if (!validCoord)
+		if (!validCoord && checkerboardHole)
 		{
 			result = 0.0;
 			result += g_InputImage.Load(uint4((int2)threadID.xy + int2(0, 1), threadID.z / 2, 0));
