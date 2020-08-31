@@ -260,8 +260,8 @@ void VEngine::gal::CommandListDx12::copyBufferToImage(const Buffer *srcBuffer, c
 
 		D3D12_SUBRESOURCE_FOOTPRINT srcFootprint{};
 		srcFootprint.Format = formatDx;
-		srcFootprint.Width = compressedFormat ? max(regions[i].m_extent.m_width, 4) : regions[i].m_extent.m_width;
-		srcFootprint.Height = compressedFormat ? max(regions[i].m_extent.m_height, 4) : regions[i].m_extent.m_height;
+		srcFootprint.Width = compressedFormat ? Utility::alignUp(regions[i].m_extent.m_width, 4u) : regions[i].m_extent.m_width;
+		srcFootprint.Height = compressedFormat ? Utility::alignUp(regions[i].m_extent.m_height, 4u) : regions[i].m_extent.m_height;
 		srcFootprint.Depth = regions[i].m_extent.m_depth;
 		srcFootprint.RowPitch = regions[i].m_bufferRowLength / texelsPerBlock * texelSize;
 

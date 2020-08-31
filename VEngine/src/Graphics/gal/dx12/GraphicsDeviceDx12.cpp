@@ -492,8 +492,8 @@ void VEngine::gal::GraphicsDeviceDx12::createImage(const ImageCreateInfo &imageC
 		bool compressedFormat = Initializers::getFormatInfo(imageCreateInfo.m_format).m_compressed;
 
 		resourceDesc.Alignment = 0;
-		resourceDesc.Width = compressedFormat ? max(4, imageCreateInfo.m_width) : imageCreateInfo.m_width;
-		resourceDesc.Height = compressedFormat ? max(4, imageCreateInfo.m_height) : imageCreateInfo.m_height;
+		resourceDesc.Width = compressedFormat ? Utility::alignUp(imageCreateInfo.m_width, 4u) : imageCreateInfo.m_width;
+		resourceDesc.Height = compressedFormat ? Utility::alignUp(imageCreateInfo.m_height, 4u) : imageCreateInfo.m_height;
 		resourceDesc.DepthOrArraySize = (imageCreateInfo.m_imageType == ImageType::_3D) ? imageCreateInfo.m_depth : imageCreateInfo.m_layers;
 		resourceDesc.MipLevels = imageCreateInfo.m_levels;
 		resourceDesc.Format = UtilityDx12::translate(imageCreateInfo.m_format);

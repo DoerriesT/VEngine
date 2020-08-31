@@ -47,7 +47,7 @@ namespace VEngine
 		glm::vec2 m_minTexCoord;
 		glm::vec2 m_maxTexCoord;
 		uint32_t m_vertexCount;
-		uint16_t m_indexCount;
+		uint32_t m_indexCount;
 		uint8_t *m_positions;
 		uint8_t *m_qtangents;
 		uint8_t *m_texCoords;

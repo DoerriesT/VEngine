@@ -254,6 +254,14 @@ int main()
 		size_t fileOffset = 0;
 		size_t subMeshIndex = 0;
 
+		uint64_t totalFaceCount = 0;
+		for (auto &mesh : model.m_meshes)
+		{
+			totalFaceCount += mesh.m_positions.size() / 3;
+		}
+
+		uint64_t actualFaceCount = 0;
+
 		for (auto &mesh : model.m_meshes)
 		{
 			// generate tangents
@@ -284,6 +292,7 @@ int main()
 				// keep track of the number of unique vertices -> we are targeting 16bit indices, so we need to stay below 2^16 - 1 vertices
 				std::unordered_set<Vertex, VertexHash> vertexSet;
 
+				size_t processedIndexCount = 0;
 				for (size_t i = 0; i < indexedMesh32.indices.size(); i += 3)
 				{
 					// process face
@@ -311,8 +320,10 @@ int main()
 						uvAabbMax = glm::max(uvAabbMax, v.texCoord);
 					}
 
+					const size_t localIndexOffset = i - processedIndexCount;
+
 					// we reached 64k faces or 64k unique vertices or we processed the whole mesh
-					if ((i / 3 + 1) > UINT16_MAX || (vertexSet.size() + 3) > UINT16_MAX || (i + 3) == indexedMesh32.indices.size())
+					if ((localIndexOffset / 3 + 1) > UINT16_MAX || (vertexSet.size() + 3) > UINT16_MAX || (i + 3) == indexedMesh32.indices.size())
 					{
 						auto indexedMesh16 = generateOptimizedMesh<uint16_t>(positions.size() / 3, positions.data(), normals.data(), tangents.data(), texCoords.data(), true);
 
@@ -419,6 +430,9 @@ int main()
 						fileOffset += quantizedTexCoords.size() * sizeof(uint16_t);
 						fileOffset += indexedMesh16.indices.size() * sizeof(uint16_t);
 
+						assert(indexedMesh16.indices.size() % 3 == 0);
+						actualFaceCount += indexedMesh16.indices.size() / 3;
+
 						aabbMin = glm::vec3(std::numeric_limits<float>::max());
 						aabbMax = glm::vec3(std::numeric_limits<float>::lowest());
 						uvAabbMin = glm::vec2(std::numeric_limits<float>::max());
@@ -428,6 +442,8 @@ int main()
 						tangents.clear();
 						texCoords.clear();
 						vertexSet.clear();
+
+						processedIndexCount = i;
 
 						std::cout << "Processed SubMesh # " << subMeshIndex++ << std::endl;
 					}
@@ -443,5 +459,7 @@ int main()
 		std::ofstream infoFile(dstFileName + ".info", std::ios::out | std::ios::trunc);
 		infoFile << std::setw(4) << j << std::endl;
 		infoFile.close();
+
+		assert(totalFaceCount == actualFaceCount);
 	}
 }
