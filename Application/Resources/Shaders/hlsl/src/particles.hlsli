@@ -17,11 +17,13 @@
 #define BLUE_NOISE_IMAGE_BINDING 17
 #define FOM_DIRECTIONAL_IMAGE_BINDING 18
 #define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 19
+#define DEPTH_IMAGE_BINDING 20
 
 struct Constants
 {
 	float4x4 viewProjectionMatrix;
 	float4 viewMatrixDepthRow;
+	float4 unprojectParams;
 	float3 cameraPosition;
 	uint width;
 	float3 cameraUp;

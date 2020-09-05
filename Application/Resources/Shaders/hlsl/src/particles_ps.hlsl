@@ -35,6 +35,7 @@ Texture3D<float4> g_VolumetricFogImage : REGISTER_SRV(VOLUMETRIC_FOG_IMAGE_BINDI
 Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
 Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
+Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 
 // directional lights
 StructuredBuffer<DirectionalLight> g_DirectionalLights : REGISTER_SRV(DIRECTIONAL_LIGHTS_BINDING, 0);
@@ -88,20 +89,39 @@ float getDirectionalLightShadow(const DirectionalLight directionalLight, float3 
 [earlydepthstencil]
 PSOutput main(PSInput input)
 {
-	float4 albedoOpacity = 1.0;
-	if (input.textureIndex != 0)
-	{
-		albedoOpacity = g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord);
-		albedoOpacity.rgb = accurateSRGBToLinear(albedoOpacity.rgb);
-	}
-	albedoOpacity.a *= input.opacity;
-	
-	float3 albedo = albedoOpacity.rgb;
-	float opacity = albedoOpacity.a;
-	
 	float3 worldSpacePos = input.worldSpacePos;
 	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
 	
+	
+	float opacity = input.opacity;
+	
+	// soft particles: fade out particle as it gets closer to scene
+	{
+		float sceneDepth = g_DepthImage.Load(uint3(input.position.xy, 0)).x;
+		float linearSceneDepth = rcp(g_Constants.unprojectParams.z * sceneDepth + g_Constants.unprojectParams.w);
+		
+		float distToScene = abs(linearSceneDepth - linearDepth);
+		
+		// distance over which to fade out the particle
+		const float fadeDistance = 1.0;
+		
+		// map to 0..1 range
+		distToScene = saturate(distToScene / fadeDistance);
+
+		// apply a smooth curve to the opacity falloff
+		opacity *= smoothstep(0.0, 1.0, distToScene);
+	}
+	
+	float3 albedo = 1.0;
+	if (input.textureIndex != 0)
+	{
+		float4 albedoOpacity = 1.0;
+		albedoOpacity = g_Textures[input.textureIndex - 1].Sample(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord);
+		albedoOpacity.rgb = accurateSRGBToLinear(albedoOpacity.rgb);
+		albedo = albedoOpacity.rgb;
+		opacity *= albedoOpacity.a;
+	}
+
 	float3 result = 0.0;
 	
 	// ambient

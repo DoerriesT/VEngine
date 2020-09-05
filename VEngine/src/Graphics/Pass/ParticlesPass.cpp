@@ -41,9 +41,12 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		uint8_t *uboDataPtr = nullptr;
 		uboBuffer->allocate(alignment, uboBufferInfo.m_range, uboBufferInfo.m_offset, uboBufferInfo.m_buffer, uboDataPtr);
 
+		const auto &invProjMatrix = commonData->m_invJitteredProjectionMatrix;
+
 		Constants consts;
 		consts.viewProjectionMatrix = commonData->m_jitteredViewProjectionMatrix;
 		consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
+		consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
 		consts.cameraPosition = commonData->m_cameraPosition;
 		consts.cameraUp = glm::vec3(commonData->m_viewMatrix[0][1], commonData->m_viewMatrix[1][1], commonData->m_viewMatrix[2][1]);
 		consts.width = commonData->m_width;
@@ -69,7 +72,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_DEPTH_STENCIL, PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT}},
+		{rg::ResourceViewHandle(data.m_depthImageViewHandle), {gal::ResourceState::READ_DEPTH_STENCIL_SHADER, PipelineStageFlagBits::EARLY_FRAGMENT_TESTS_BIT | PipelineStageFlagBits::LATE_FRAGMENT_TESTS_BIT| PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), {gal::ResourceState::WRITE_ATTACHMENT, PipelineStageFlagBits::COLOR_ATTACHMENT_OUTPUT_BIT }},
 	};
 
@@ -129,6 +132,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 				ImageView *fomDirectionalImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
 				ImageView *fomDirectionalDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
 				ImageView *volumetricFogImageView = registry.getImageView(data.m_volumetricFogImageViewHandle);
+				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
 				DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
 				DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
@@ -154,6 +158,7 @@ void VEngine::ParticlesPass::addToGraph(rg::RenderGraph &graph, const Data &data
 					Initializers::byteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
 					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
 					Initializers::texture(&data.m_blueNoiseImageView, BLUE_NOISE_IMAGE_BINDING),
+					Initializers::depthStencilTexture(&depthImageView, DEPTH_IMAGE_BINDING),
 				};
 
 				descriptorSet->update((uint32_t)std::size(updates), updates);
