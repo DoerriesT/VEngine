@@ -106,6 +106,12 @@ namespace VEngine
 		glm::vec4 m_worldToLocal2;
 		glm::vec3 m_capturePosition;
 		float m_arraySlot;
+		float m_boxInvFadeDist0;
+		float m_boxInvFadeDist1;
+		float m_boxInvFadeDist2;
+		float m_boxInvFadeDist3;
+		float m_boxInvFadeDist4;
+		float m_boxInvFadeDist5;
 	};
 
 	struct ReflectionProbeRelightData

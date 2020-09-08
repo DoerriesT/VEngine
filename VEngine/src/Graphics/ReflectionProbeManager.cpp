@@ -238,6 +238,12 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 					probe.m_worldToLocal2 = worldToLocalTransposed[2];
 					probe.m_capturePosition = probePosition;
 					probe.m_arraySlot = internalComponent.m_cacheSlot;
+					probe.m_boxInvFadeDist0 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[0], 1e-5f, transformationComponent.m_scale.x) / transformationComponent.m_scale.x);
+					probe.m_boxInvFadeDist1 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[1], 1e-5f, transformationComponent.m_scale.x) / transformationComponent.m_scale.x);
+					probe.m_boxInvFadeDist2 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[2], 1e-5f, transformationComponent.m_scale.y) / transformationComponent.m_scale.y);
+					probe.m_boxInvFadeDist3 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[3], 1e-5f, transformationComponent.m_scale.y) / transformationComponent.m_scale.y);
+					probe.m_boxInvFadeDist4 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[4], 1e-5f, transformationComponent.m_scale.z) / transformationComponent.m_scale.z);
+					probe.m_boxInvFadeDist5 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[5], 1e-5f, transformationComponent.m_scale.z) / transformationComponent.m_scale.z);
 
 					ProbeDepthSortData probeSortData{};
 					probeSortData.m_zDist = glm::dot(glm::vec4(commonData.m_viewMatrix[0][2], commonData.m_viewMatrix[1][2], commonData.m_viewMatrix[2][2], commonData.m_viewMatrix[3][2]), glm::vec4(transformationComponent.m_position, 1.0f));

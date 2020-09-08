@@ -125,6 +125,12 @@ struct LocalReflectionProbe
 	float4 worldToLocal2;
 	float3 capturePosition;
 	float arraySlot;
+	float boxInvFadeDist0;
+	float boxInvFadeDist1;
+	float boxInvFadeDist2;
+	float boxInvFadeDist3;
+	float boxInvFadeDist4;
+	float boxInvFadeDist5;
 };
 
 struct ParticleData

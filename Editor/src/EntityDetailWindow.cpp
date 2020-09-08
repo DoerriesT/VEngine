@@ -259,13 +259,13 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				{
 					tc->m_mobility = static_cast<TransformationComponent::Mobility>(currentMobility);
 				}
-				ImGui::DragFloat3("Position", &tc->m_position[0]);
+				ImGui::DragFloat3("Position", &tc->m_position[0], 0.05f);
 				glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(tc->m_orientation));
-				if (ImGui::DragFloat3("Orientation", &eulerAngles[0]))
+				if (ImGui::DragFloat3("Orientation", &eulerAngles[0], 0.05f))
 				{
 					tc->m_orientation = glm::quat(glm::radians(eulerAngles));
 				}
-				ImGui::DragFloat3("Scale", &tc->m_scale[0]);
+				ImGui::DragFloat3("Scale", &tc->m_scale[0], 0.05f);
 
 				ImGui::RadioButton("Translate", &m_translateRotateScaleMode, 0); ImGui::SameLine();
 				ImGui::RadioButton("Rotate", &m_translateRotateScaleMode, 1); ImGui::SameLine();
@@ -611,7 +611,67 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			if (LocalReflectionProbeComponent *lrpc = nullptr; beginComponent(entityRegistry, entity, "Local Reflection Probe", lrpc))
 			{
 				ImGui::DragFloat3("Capture Offset", &lrpc->m_captureOffset[0], 0.1f);
-				ImGui::DragFloat("Transition Distance", &lrpc->m_transitionDistance, 0.05f);
+				if (ImGui::DragFloat("Box Fade Distance  X", &lrpc->m_boxFadeDistances[0], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[0];
+					lrpc->m_boxFadeDistances[2] = lrpc->m_boxFadeDistances[0];
+					lrpc->m_boxFadeDistances[3] = lrpc->m_boxFadeDistances[0];
+					lrpc->m_boxFadeDistances[4] = lrpc->m_boxFadeDistances[0];
+					lrpc->m_boxFadeDistances[5] = lrpc->m_boxFadeDistances[0];
+				}
+				if (ImGui::DragFloat("Box Fade Distance -X", &lrpc->m_boxFadeDistances[1], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[0] = lrpc->m_boxFadeDistances[1];
+					lrpc->m_boxFadeDistances[2] = lrpc->m_boxFadeDistances[1];
+					lrpc->m_boxFadeDistances[3] = lrpc->m_boxFadeDistances[1];
+					lrpc->m_boxFadeDistances[4] = lrpc->m_boxFadeDistances[1];
+					lrpc->m_boxFadeDistances[5] = lrpc->m_boxFadeDistances[1];
+				}
+				if (ImGui::DragFloat("Box Fade Distance  Y", &lrpc->m_boxFadeDistances[2], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[0] = lrpc->m_boxFadeDistances[2];
+					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[2];
+					lrpc->m_boxFadeDistances[3] = lrpc->m_boxFadeDistances[2];
+					lrpc->m_boxFadeDistances[4] = lrpc->m_boxFadeDistances[2];
+					lrpc->m_boxFadeDistances[5] = lrpc->m_boxFadeDistances[2];
+				}
+				if (ImGui::DragFloat("Box Fade Distance -Y", &lrpc->m_boxFadeDistances[3], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[0] = lrpc->m_boxFadeDistances[3];
+					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[3];
+					lrpc->m_boxFadeDistances[2] = lrpc->m_boxFadeDistances[3];
+					lrpc->m_boxFadeDistances[4] = lrpc->m_boxFadeDistances[3];
+					lrpc->m_boxFadeDistances[5] = lrpc->m_boxFadeDistances[3];
+				}
+				if (ImGui::DragFloat("Box Fade Distance  Z", &lrpc->m_boxFadeDistances[4], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[0] = lrpc->m_boxFadeDistances[4];
+					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[4];
+					lrpc->m_boxFadeDistances[2] = lrpc->m_boxFadeDistances[4];
+					lrpc->m_boxFadeDistances[3] = lrpc->m_boxFadeDistances[4];
+					lrpc->m_boxFadeDistances[5] = lrpc->m_boxFadeDistances[4];
+				}
+				if (ImGui::DragFloat("Box Fade Distance -Z", &lrpc->m_boxFadeDistances[5], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
+				{
+					lrpc->m_boxFadeDistances[0] = lrpc->m_boxFadeDistances[5];
+					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[5];
+					lrpc->m_boxFadeDistances[2] = lrpc->m_boxFadeDistances[5];
+					lrpc->m_boxFadeDistances[3] = lrpc->m_boxFadeDistances[5];
+					lrpc->m_boxFadeDistances[4] = lrpc->m_boxFadeDistances[5];
+				}
+
+				if (tc)
+				{
+					lrpc->m_boxFadeDistances[0]	= glm::clamp(lrpc->m_boxFadeDistances[0], 0.0f, tc->m_scale.x);
+					lrpc->m_boxFadeDistances[1]	= glm::clamp(lrpc->m_boxFadeDistances[1], 0.0f, tc->m_scale.x);
+					lrpc->m_boxFadeDistances[2]	= glm::clamp(lrpc->m_boxFadeDistances[2], 0.0f, tc->m_scale.y);
+					lrpc->m_boxFadeDistances[3]	= glm::clamp(lrpc->m_boxFadeDistances[3], 0.0f, tc->m_scale.y);
+					lrpc->m_boxFadeDistances[4]	= glm::clamp(lrpc->m_boxFadeDistances[4], 0.0f, tc->m_scale.z);
+					lrpc->m_boxFadeDistances[5]	= glm::clamp(lrpc->m_boxFadeDistances[5], 0.0f, tc->m_scale.z);
+				}
+
+				ImGui::Checkbox("Locked Fade Distance", &lrpc->m_lockedFadeDistance);
+
 				if (ImGui::Button("Refresh"))
 				{
 					lrpc->m_recapture = true;
@@ -622,6 +682,17 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 				{
 					auto &renderSystem = m_engine->getRenderSystem();
 					glm::mat4 transform = glm::translate(tc->m_position) * glm::mat4_cast(tc->m_orientation) * glm::scale(tc->m_scale);
+					drawBoxGeometry(renderSystem, transform, visibleLightDebugColor, visibleLightDebugColor, true);
+
+					glm::vec3 fadeMinCorner = -tc->m_scale + glm::vec3(lrpc->m_boxFadeDistances[1], lrpc->m_boxFadeDistances[3], lrpc->m_boxFadeDistances[5]);
+					glm::vec3 fadeMaxCorner = tc->m_scale - glm::vec3(lrpc->m_boxFadeDistances[0], lrpc->m_boxFadeDistances[2], lrpc->m_boxFadeDistances[4]);
+
+					glm::vec3 fadeDistCenter = (fadeMinCorner + fadeMaxCorner) * 0.5f;
+					glm::vec3 fadeDistExtent = fadeMaxCorner - fadeDistCenter;
+
+					fadeDistCenter += tc->m_position;
+
+					transform = glm::translate(fadeDistCenter) * glm::mat4_cast(tc->m_orientation) * glm::scale(fadeDistExtent);
 					drawBoxGeometry(renderSystem, transform, visibleLightDebugColor, visibleLightDebugColor, true);
 				}
 			}

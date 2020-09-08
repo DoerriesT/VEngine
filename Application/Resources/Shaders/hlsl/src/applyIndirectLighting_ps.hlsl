@@ -31,17 +31,24 @@ SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
-float3 parallaxCorrectReflectionDir(const LocalReflectionProbe probeData, float3 position, float3 reflectedDir)
+float3 parallaxCorrectReflectionDir(const LocalReflectionProbe probeData, float3 position, float3 reflectedDir, out float alpha)
 {
 	// Intersection with OBB convert to unit box space
 	// Transform in local unit parallax cube space (scaled and rotated)
-	const float3 rayLS = float3(dot(probeData.worldToLocal0.xyz, reflectedDir), 
-								dot(probeData.worldToLocal1.xyz, reflectedDir), 
-								dot(probeData.worldToLocal2.xyz, reflectedDir));
-	const float3 invRayLS = 1.0 / rayLS;
-	const float3 positionLS = float3(dot(probeData.worldToLocal0, float4(position, 1.0)), 
-									dot(probeData.worldToLocal1, float4(position, 1.0)), 
+	const float3 positionLS = float3(dot(probeData.worldToLocal0, float4(position, 1.0)),
+									dot(probeData.worldToLocal1, float4(position, 1.0)),
 									dot(probeData.worldToLocal2, float4(position, 1.0)));
+
+	if (any(abs(positionLS) > 1.0))
+	{
+		alpha = 0.0;
+		return reflectedDir;
+	}
+
+	const float3 rayLS = float3(dot(probeData.worldToLocal0.xyz, reflectedDir), 
+							dot(probeData.worldToLocal1.xyz, reflectedDir), 
+							dot(probeData.worldToLocal2.xyz, reflectedDir));
+	const float3 invRayLS = rcp(rayLS);
 	
 	float3 firstPlaneIntersect  = (1.0 - positionLS) * invRayLS;
 	float3 secondPlaneIntersect = (-1.0 - positionLS) * invRayLS;
@@ -50,6 +57,21 @@ float3 parallaxCorrectReflectionDir(const LocalReflectionProbe probeData, float3
 	
 	// Use Distance in WS directly to recover intersection
 	float3 intersectPositionWS = position + reflectedDir * distance;
+	
+	alpha = 1.0;
+	
+	// (1.0 + positionLS.x) * probeData.boxInvFadeDist1
+	// = positionLS.x * probeData.boxInvFadeDist1 + probeData.boxInvFadeDist1
+	
+	alpha *= smoothstep(0.0, 1.0, saturate(positionLS.x > 0.0 ? 
+									mad(-positionLS.x, probeData.boxInvFadeDist0, probeData.boxInvFadeDist0) : 
+									mad(positionLS.x, probeData.boxInvFadeDist1, probeData.boxInvFadeDist1)));
+	alpha *= smoothstep(0.0, 1.0, saturate(positionLS.y > 0.0 ? 
+									mad(-positionLS.y, probeData.boxInvFadeDist2, probeData.boxInvFadeDist2) : 
+									mad(positionLS.y, probeData.boxInvFadeDist3, probeData.boxInvFadeDist3)));
+	alpha *= smoothstep(0.0, 1.0, saturate(positionLS.z > 0.0 ? 
+									mad(-positionLS.z, probeData.boxInvFadeDist4, probeData.boxInvFadeDist4) : 
+									mad(positionLS.z, probeData.boxInvFadeDist5, probeData.boxInvFadeDist5)));
 	
 	return intersectPositionWS - probeData.capturePosition;
 }
@@ -115,24 +137,20 @@ float4 main(PSInput input) : SV_Target0
 				mask ^= (1 << bitIndex);
 				
 				LocalReflectionProbe probeData = g_ReflectionProbeData[index];
-				
-				const float3 localPos = float3(dot(probeData.worldToLocal0, float4(worldSpacePos, 1.0)), 
-								dot(probeData.worldToLocal1, float4(worldSpacePos, 1.0)), 
-								dot(probeData.worldToLocal2, float4(worldSpacePos, 1.0)));
-								
-				if (all(abs(localPos) <= 1.0))
+				float alpha = 1.0;
+				float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, dominantR, alpha);
+				if (alpha > 0.0)
 				{
-					float3 lookupDir = parallaxCorrectReflectionDir(probeData, worldSpacePos, dominantR);
 					lookupDir = lerp(lookupDir, dominantR, roughness);
 	
-					reflectionProbeSpecular += g_ReflectionProbeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
-					weightSum += 1.0;
+					reflectionProbeSpecular += alpha * g_ReflectionProbeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float4(lookupDir, probeData.arraySlot), mipLevel).rgb * preExposureFactor;
+					weightSum += alpha;
 				}
 			}
 		}
 	}
 	
-	reflectionProbeSpecular = weightSum > 0.0 ? reflectionProbeSpecular * (1.0 / weightSum) : reflectionProbeSpecular;
+	reflectionProbeSpecular = weightSum > 0.0 ? reflectionProbeSpecular * rcp(weightSum) : reflectionProbeSpecular;
 
 	indirectSpecular.rgb = lerp(reflectionProbeSpecular, indirectSpecular.rgb, indirectSpecular.a);
 	
