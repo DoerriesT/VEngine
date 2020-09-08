@@ -71,6 +71,12 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 				probeSortData.m_capturePosition = transformationComponent.m_position + probeComponent.m_captureOffset;
 				probeSortData.m_internalData = &internalComponent;
 
+				if (probeComponent.m_recapture)
+				{
+					internalComponent.m_rendered = false;
+					probeComponent.m_recapture = false;
+				}
+
 				sortData.push_back(probeSortData);
 			});
 

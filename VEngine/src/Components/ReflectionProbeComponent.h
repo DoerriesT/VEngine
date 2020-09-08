@@ -7,5 +7,6 @@ namespace VEngine
 	{
 		glm::vec3 m_captureOffset = glm::vec3(0.0f);
 		float m_transitionDistance = 0.0f;
+		bool m_recapture;
 	};
 }

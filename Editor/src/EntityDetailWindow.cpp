@@ -612,6 +612,10 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			{
 				ImGui::DragFloat3("Capture Offset", &lrpc->m_captureOffset[0], 0.1f);
 				ImGui::DragFloat("Transition Distance", &lrpc->m_transitionDistance, 0.05f);
+				if (ImGui::Button("Refresh"))
+				{
+					lrpc->m_recapture = true;
+				}
 
 				// draw probe debug geometry
 				if (tc && entityRegistry.has<RenderableComponent>(entity))
