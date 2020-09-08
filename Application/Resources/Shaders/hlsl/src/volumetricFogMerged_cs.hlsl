@@ -26,7 +26,8 @@ StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_
 
 // local media
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
-ByteAddressBuffer g_LocalMediaBitMask : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
+Texture2DArray<uint> g_LocalMediaBitMaskImage : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
+//ByteAddressBuffer g_LocalMediaBitMask : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_LocalMediaDepthBins : REGISTER_SRV(LOCAL_MEDIA_Z_BINS_BINDING, 0);
 
 // directional lights
@@ -35,12 +36,14 @@ StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DI
 
 // punctual lights
 StructuredBuffer<PunctualLight> g_PunctualLights : REGISTER_SRV(PUNCTUAL_LIGHTS_BINDING, 0);
-ByteAddressBuffer g_PunctualLightsBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
+Texture2DArray<uint> g_PunctualLightsBitMaskImage : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
+//ByteAddressBuffer g_PunctualLightsBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_PunctualLightsDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_Z_BINS_BINDING, 0);
 
 // punctual lights shadowed
 StructuredBuffer<PunctualLightShadowed> g_PunctualLightsShadowed : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BINDING, 0);
-ByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
+Texture2DArray<uint> g_PunctualLightsShadowedBitMaskImage : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
+//ByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING, 0);
 
 
@@ -155,11 +158,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+		//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+		const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = getLightingBitMask(g_LocalMediaBitMask, address, wordIndex, minIndex, maxIndex);
+			uint mask = getLightingBitMask(g_LocalMediaBitMaskImage, tile, wordIndex, minIndex, maxIndex);
 			
 			while (mask != 0)
 			{
@@ -227,11 +231,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+			//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+			const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
-				uint mask = getLightingBitMask(g_PunctualLightsBitMask, address, wordIndex, minIndex, maxIndex);
+				uint mask = getLightingBitMask(g_PunctualLightsBitMaskImage, tile, wordIndex, minIndex, maxIndex);
 				
 				while (mask != 0)
 				{
@@ -263,11 +268,12 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+			//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
+			const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
-				uint mask = getLightingBitMask(g_PunctualLightsShadowedBitMask, address, wordIndex, minIndex, maxIndex);
+				uint mask = getLightingBitMask(g_PunctualLightsShadowedBitMaskImage, tile, wordIndex, minIndex, maxIndex);
 				
 				while (mask != 0)
 				{

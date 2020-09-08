@@ -25,9 +25,9 @@ namespace VEngine
 			rg::ImageViewHandle m_directionalLightFOMImageViewHandle;
 			rg::ImageViewHandle m_directionalLightFOMDepthRangeImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
-			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
-			rg::BufferViewHandle m_localMediaBitMaskBufferHandle;
+			rg::ImageViewHandle m_punctualLightsBitMaskImageViewHandle;
+			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageViewHandle;
+			rg::ImageViewHandle m_localMediaBitMaskImageViewHandle;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_shadowMatricesBufferInfo;

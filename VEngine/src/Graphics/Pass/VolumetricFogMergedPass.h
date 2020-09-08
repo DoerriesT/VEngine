@@ -22,9 +22,9 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_localMediaBufferInfo;
 			gal::DescriptorBufferInfo m_localMediaZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_globalMediaBufferInfo;
-			rg::BufferViewHandle m_localMediaBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
+			rg::ImageViewHandle m_localMediaBitMaskImageViewHandle;
+			rg::ImageViewHandle m_punctualLightsBitMaskImageViewHandle;
+			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;

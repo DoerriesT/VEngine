@@ -20,7 +20,8 @@ Texture2D<float4> g_NormalRoughnessImage : REGISTER_SRV(NORMAL_ROUGHNESS_IMAGE_B
 TextureCubeArray<float4> g_ReflectionProbeImage : REGISTER_SRV(REFLECTION_PROBE_IMAGE_BINDING, 0);
 
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, 0);
-ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+Texture2DArray<uint> g_ReflectionProbeBitMaskImage : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+//ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, 0);
 
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
@@ -97,14 +98,15 @@ float4 main(PSInput input) : SV_Target0
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		const uint address = getTileAddress(int2(input.position.xy), g_PushConsts.width, wordCount);
+		//const uint address = getTileAddress(int2(input.position.xy), g_PushConsts.width, wordCount);
+		const uint2 tile = getTile(int2(input.position.xy));
 	
 		const float mipCount = 7.0;
 		float mipLevel = sqrt(roughness) * mipCount;
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
-			uint mask = getLightingBitMask(g_ReflectionProbeBitMask, address, wordIndex, minIndex, maxIndex);
+			uint mask = getLightingBitMask(g_ReflectionProbeBitMaskImage, tile, wordIndex, minIndex, maxIndex);
 			
 			while (mask != 0)
 			{

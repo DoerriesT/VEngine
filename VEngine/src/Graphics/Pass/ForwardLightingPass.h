@@ -27,8 +27,8 @@ namespace VEngine
 			//gal::DescriptorBufferInfo m_instanceDataBufferInfo;
 			gal::DescriptorBufferInfo m_transformDataBufferInfo;
 			//gal::DescriptorBufferInfo m_subMeshInfoBufferInfo;
-			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
+			rg::ImageViewHandle m_punctualLightsBitMaskImageViewHandle;
+			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			//rg::BufferViewHandle m_indicesBufferHandle;
 			//rg::BufferViewHandle m_indirectBufferHandle;

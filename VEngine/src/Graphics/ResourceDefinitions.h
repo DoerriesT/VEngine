@@ -198,6 +198,23 @@ namespace VEngine
 			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 } });
 		}
 
+		inline rg::ImageViewHandle createTiledLightingBitMaskImageViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height, uint32_t itemCount)
+		{
+			rg::ImageDescription desc = {};
+			desc.m_name = "Tiled Lighting Bit Mask Image";
+
+			desc.m_clear = true;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = (width + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
+			desc.m_height = (height + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;
+			desc.m_layers = itemCount == 0 ? 1 : ((itemCount + 31) / 32);
+			desc.m_levels = 1;
+			desc.m_samples = gal::SampleCount::_1;
+			desc.m_format = gal::Format::R32_UINT;
+
+			return graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, desc.m_layers }, gal::ImageViewType::_2D_ARRAY });
+		}
+
 		inline rg::BufferViewHandle createTiledLightingBitMaskBufferViewHandle(rg::RenderGraph &graph, uint32_t width, uint32_t height, uint32_t itemCount)
 		{
 			uint32_t w = (width + RendererConsts::LIGHTING_TILE_SIZE - 1) / RendererConsts::LIGHTING_TILE_SIZE;

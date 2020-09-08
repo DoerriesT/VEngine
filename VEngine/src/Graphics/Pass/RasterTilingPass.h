@@ -12,10 +12,10 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			const LightData *m_lightData;
-			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
-			rg::BufferViewHandle m_participatingMediaBitMaskBufferHandle;
-			rg::BufferViewHandle m_reflectionProbeBitMaskBufferHandle;
+			rg::ImageViewHandle m_punctualLightsBitMaskImageHandle;
+			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageHandle;
+			rg::ImageViewHandle m_participatingMediaBitMaskImageHandle;
+			rg::ImageViewHandle m_reflectionProbeBitMaskImageHandle;
 		};
 
 		void addToGraph(rg::RenderGraph &graph, const Data &data);

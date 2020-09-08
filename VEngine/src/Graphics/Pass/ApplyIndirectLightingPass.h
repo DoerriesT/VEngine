@@ -15,7 +15,7 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_reflectionProbeZBinsBufferInfo;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			gal::ImageView *m_reflectionProbeImageView;
-			rg::BufferViewHandle m_reflectionProbeBitMaskBufferHandle;
+			rg::ImageViewHandle m_reflectionProbeBitMaskImageViewHandle;
 			rg::ImageViewHandle m_depthImageViewHandle;
 			rg::ImageViewHandle m_depthImageViewHandle2;
 			//rg::ImageViewHandle m_indirectSpecularLightImageViewHandle;

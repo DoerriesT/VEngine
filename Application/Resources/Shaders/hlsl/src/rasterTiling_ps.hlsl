@@ -10,10 +10,15 @@ struct PSInput
 #endif // VULKAN
 };
 
-RWByteAddressBuffer g_PunctualLightsBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
-RWByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
-RWByteAddressBuffer g_ParticipatingMediaBitMask : REGISTER_UAV(PARTICIPATING_MEDIA_BIT_MASK_BINDING, 0);
-RWByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_UAV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+//RWByteAddressBuffer g_PunctualLightsBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
+//RWByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_UAV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
+//RWByteAddressBuffer g_ParticipatingMediaBitMask : REGISTER_UAV(PARTICIPATING_MEDIA_BIT_MASK_BINDING, 0);
+//RWByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_UAV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+
+RWTexture2DArray<uint> g_PunctualLightsBitMaskImage : REGISTER_UAV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
+RWTexture2DArray<uint> g_PunctualLightsShadowedBitMaskImage : REGISTER_UAV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
+RWTexture2DArray<uint> g_ParticipatingMediaBitMaskImage : REGISTER_UAV(PARTICIPATING_MEDIA_BIT_MASK_BINDING, 0);
+RWTexture2DArray<uint> g_ReflectionProbeBitMaskImage : REGISTER_UAV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
 
@@ -58,22 +63,26 @@ void main(PSInput input)
 	// branch only for first occurrence of unique key within subgroup
 	if (idx == 0)
 	{
-		wordIndex <<= 2;
+		//wordIndex <<= 2;
 		if (g_PushConsts.targetBuffer == 0)
 		{
-			g_PunctualLightsBitMask.InterlockedOr(wordIndex, lightBit);
+			InterlockedOr(g_PunctualLightsBitMaskImage[uint3(tile, word)], lightBit);
+			//g_PunctualLightsBitMask.InterlockedOr(wordIndex, lightBit);
 		}
 		else if (g_PushConsts.targetBuffer == 1)
 		{
-			g_PunctualLightsShadowedBitMask.InterlockedOr(wordIndex, lightBit);
+			InterlockedOr(g_PunctualLightsShadowedBitMaskImage[uint3(tile, word)], lightBit);
+			//g_PunctualLightsShadowedBitMask.InterlockedOr(wordIndex, lightBit);
 		}
 		else if (g_PushConsts.targetBuffer == 2)
 		{
-			g_ParticipatingMediaBitMask.InterlockedOr(wordIndex, lightBit);
+			InterlockedOr(g_ParticipatingMediaBitMaskImage[uint3(tile, word)], lightBit);
+			//g_ParticipatingMediaBitMask.InterlockedOr(wordIndex, lightBit);
 		}
 		else if (g_PushConsts.targetBuffer == 3)
 		{
-			g_ReflectionProbeBitMask.InterlockedOr(wordIndex, lightBit);
+			InterlockedOr(g_ReflectionProbeBitMaskImage[uint3(tile, word)], lightBit);
+			//g_ReflectionProbeBitMask.InterlockedOr(wordIndex, lightBit);
 		}
 	}
 }

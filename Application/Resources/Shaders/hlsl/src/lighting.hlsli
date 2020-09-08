@@ -73,6 +73,11 @@ uint getTileAddress(uint2 pixelCoord, uint width, uint wordCount)
 	return address * wordCount;
 }
 
+uint2 getTile(uint2 pixelCoord)
+{
+	return pixelCoord / TILE_SIZE;
+}
+
 void getLightingMinMaxIndices(ByteAddressBuffer zBinBuffer, uint itemCount, float linearDepth, out uint minIdx, out uint maxIdx, out uint wordMin, out uint wordMax, out uint wordCount)
 {
 	wordMin = 0;
@@ -115,9 +120,9 @@ void getLightingMinMaxIndicesRange(ByteAddressBuffer zBinBuffer, uint itemCount,
 	maxIdx = maxIndex;
 }
 
-uint getLightingBitMask(ByteAddressBuffer bitMaskBuffer, uint tileAddress, uint wordIndex, uint minIndex, uint maxIndex)
+uint getLightingBitMask(Texture2DArray<uint> bitMaskTexture, uint2 tile, uint wordIndex, uint minIndex, uint maxIndex)
 {
-	uint mask = bitMaskBuffer.Load((tileAddress + wordIndex) * 4);
+	uint mask = bitMaskTexture.Load(uint4(tile, wordIndex, 0));
 	
 	// mask by zbin mask
 	const int localBaseIndex = int(wordIndex * 32);

@@ -22,8 +22,8 @@ namespace VEngine
 			gal::DescriptorBufferInfo m_punctualLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsShadowedZBinsBufferInfo;
 			gal::DescriptorBufferInfo m_particleBufferInfo;
-			rg::BufferViewHandle m_punctualLightsBitMaskBufferHandle;
-			rg::BufferViewHandle m_punctualLightsShadowedBitMaskBufferHandle;
+			rg::ImageViewHandle m_punctualLightsBitMaskImageViewHandle;
+			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;

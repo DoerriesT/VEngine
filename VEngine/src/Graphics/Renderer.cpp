@@ -394,10 +394,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	//ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
 	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
-	rg::BufferViewHandle punctualLightBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
-	rg::BufferViewHandle punctualLightShadowedBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
-	rg::BufferViewHandle localMediaBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localParticipatingMedia.size()));
-	rg::BufferViewHandle reflProbeBitMaskBufferViewHandle = ResourceDefinitions::createTiledLightingBitMaskBufferViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localReflectionProbes.size()));
+	rg::ImageViewHandle punctualLightBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
+	rg::ImageViewHandle punctualLightShadowedBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
+	rg::ImageViewHandle localMediaBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localParticipatingMedia.size()));
+	rg::ImageViewHandle reflProbeBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localReflectionProbes.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
 	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
 	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
@@ -734,10 +734,10 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	RasterTilingPass::Data rasterTilingPassData;
 	rasterTilingPassData.m_passRecordContext = &passRecordContext;
 	rasterTilingPassData.m_lightData = &lightData;
-	rasterTilingPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	rasterTilingPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
-	rasterTilingPassData.m_participatingMediaBitMaskBufferHandle = localMediaBitMaskBufferViewHandle;
-	rasterTilingPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
+	rasterTilingPassData.m_punctualLightsBitMaskImageHandle = punctualLightBitMaskImageViewHandle;
+	rasterTilingPassData.m_punctualLightsShadowedBitMaskImageHandle = punctualLightShadowedBitMaskImageViewHandle;
+	rasterTilingPassData.m_participatingMediaBitMaskImageHandle = localMediaBitMaskImageViewHandle;
+	rasterTilingPassData.m_reflectionProbeBitMaskImageHandle = reflProbeBitMaskImageViewHandle;
 
 	if (!lightData.m_punctualLights.empty() || !lightData.m_punctualLightsShadowed.empty() || !lightData.m_localParticipatingMedia.empty() || !lightData.m_localReflectionProbes.empty())
 	{
@@ -927,9 +927,9 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	volumetricFogModuleData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 	volumetricFogModuleData.m_depthImageViewHandle = depthImageViewHandle;
 	volumetricFogModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	volumetricFogModuleData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	volumetricFogModuleData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
-	volumetricFogModuleData.m_localMediaBitMaskBufferHandle = localMediaBitMaskBufferViewHandle;
+	volumetricFogModuleData.m_punctualLightsBitMaskImageViewHandle = punctualLightBitMaskImageViewHandle;
+	volumetricFogModuleData.m_punctualLightsShadowedBitMaskImageViewHandle = punctualLightShadowedBitMaskImageViewHandle;
+	volumetricFogModuleData.m_localMediaBitMaskImageViewHandle = localMediaBitMaskImageViewHandle;
 	volumetricFogModuleData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	volumetricFogModuleData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
 	volumetricFogModuleData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
@@ -961,8 +961,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
 	forwardPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
 	forwardPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	forwardPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	forwardPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	forwardPassData.m_punctualLightsBitMaskImageViewHandle = punctualLightBitMaskImageViewHandle;
+	forwardPassData.m_punctualLightsShadowedBitMaskImageViewHandle = punctualLightShadowedBitMaskImageViewHandle;
 	forwardPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	forwardPassData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
 	forwardPassData.m_depthImageViewHandle = depthImageViewHandle;
@@ -1060,7 +1060,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	indirectLightingApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
 	indirectLightingApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
 	indirectLightingApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
-	indirectLightingApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
+	indirectLightingApplyPassData.m_reflectionProbeBitMaskImageViewHandle = reflProbeBitMaskImageViewHandle;
 	indirectLightingApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
 	indirectLightingApplyPassData.m_depthImageViewHandle2 = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
 	//indirectLightingApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
@@ -1123,8 +1123,8 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	particlesPassData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
 	particlesPassData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
 	particlesPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	particlesPassData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	particlesPassData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
+	particlesPassData.m_punctualLightsBitMaskImageViewHandle = punctualLightBitMaskImageViewHandle;
+	particlesPassData.m_punctualLightsShadowedBitMaskImageViewHandle = punctualLightShadowedBitMaskImageViewHandle;
 	particlesPassData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
 	particlesPassData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
 	particlesPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;

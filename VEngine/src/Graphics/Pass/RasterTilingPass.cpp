@@ -21,10 +21,10 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 {
 	rg::ResourceUsageDescription passUsages[]
 	{
-		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskBufferHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskBufferHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_participatingMediaBitMaskBufferHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_reflectionProbeBitMaskBufferHandle), {gal::ResourceState::WRITE_RW_BUFFER, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskImageHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskImageHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_participatingMediaBitMaskImageHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_reflectionProbeBitMaskImageHandle), {gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::FRAGMENT_SHADER_BIT}},
 	};
 
 	graph.addPass("Raster Tiling", rg::QueueType::GRAPHICS, sizeof(passUsages) / sizeof(passUsages[0]), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -54,17 +54,17 @@ void VEngine::RasterTilingPass::addToGraph(rg::RenderGraph &graph, const Data &d
 		{
 			DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
-			DescriptorBufferInfo punctualLightsMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsBitMaskBufferHandle);
-			DescriptorBufferInfo punctualLightsShadowedMaskBufferInfo = registry.getBufferInfo(data.m_punctualLightsShadowedBitMaskBufferHandle);
-			DescriptorBufferInfo participatingMediaMaskBufferInfo = registry.getBufferInfo(data.m_participatingMediaBitMaskBufferHandle);
-			DescriptorBufferInfo reflectionProbeMaskBufferInfo = registry.getBufferInfo(data.m_reflectionProbeBitMaskBufferHandle);
+			ImageView *punctualLightsMaskImageView = registry.getImageView(data.m_punctualLightsBitMaskImageHandle);
+			ImageView *punctualLightsShadowedMaskImageView = registry.getImageView(data.m_punctualLightsShadowedBitMaskImageHandle);
+			ImageView *participatingMediaMaskImageView = registry.getImageView(data.m_participatingMediaBitMaskImageHandle);
+			ImageView *reflectionProbeMaskImageView = registry.getImageView(data.m_reflectionProbeBitMaskImageHandle);
 
 			DescriptorSetUpdate2 updates[] =
 			{
-				Initializers::rwByteBuffer(&punctualLightsMaskBufferInfo, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
-				Initializers::rwByteBuffer(&punctualLightsShadowedMaskBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
-				Initializers::rwByteBuffer(&participatingMediaMaskBufferInfo, PARTICIPATING_MEDIA_BIT_MASK_BINDING),
-				Initializers::rwByteBuffer(&reflectionProbeMaskBufferInfo, REFLECTION_PROBE_BIT_MASK_BINDING),
+				Initializers::rwTexture(&punctualLightsMaskImageView, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
+				Initializers::rwTexture(&punctualLightsShadowedMaskImageView, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+				Initializers::rwTexture(&participatingMediaMaskImageView, PARTICIPATING_MEDIA_BIT_MASK_BINDING),
+				Initializers::rwTexture(&reflectionProbeMaskImageView, REFLECTION_PROBE_BIT_MASK_BINDING),
 			};
 
 			descriptorSet->update((uint32_t)std::size(updates), updates);

@@ -133,8 +133,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_punctualLightsZBinsBufferInfo = data.m_punctualLightsZBinsBufferInfo;
 	volumetricFogMergedPassData.m_punctualLightsShadowedBufferInfo = data.m_punctualLightsShadowedBufferInfo;
 	volumetricFogMergedPassData.m_punctualLightsShadowedZBinsBufferInfo = data.m_punctualLightsShadowedZBinsBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsBitMaskBufferHandle = data.m_punctualLightsBitMaskBufferHandle;
-	volumetricFogMergedPassData.m_punctualLightsShadowedBitMaskBufferHandle = data.m_punctualLightsShadowedBitMaskBufferHandle;
+	volumetricFogMergedPassData.m_punctualLightsBitMaskImageViewHandle = data.m_punctualLightsBitMaskImageViewHandle;
+	volumetricFogMergedPassData.m_punctualLightsShadowedBitMaskImageViewHandle = data.m_punctualLightsShadowedBitMaskImageViewHandle;
 	volumetricFogMergedPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
 	volumetricFogMergedPassData.m_resultImageViewHandle = checkerboardImageViewHandle;
 	volumetricFogMergedPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
@@ -147,7 +147,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
 	volumetricFogMergedPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
 	volumetricFogMergedPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
-	volumetricFogMergedPassData.m_localMediaBitMaskBufferHandle = data.m_localMediaBitMaskBufferHandle;
+	volumetricFogMergedPassData.m_localMediaBitMaskImageViewHandle = data.m_localMediaBitMaskImageViewHandle;
 
 	VolumetricFogMergedPass::addToGraph(graph, volumetricFogMergedPassData);
 

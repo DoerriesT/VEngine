@@ -23,7 +23,8 @@ Texture2DArray<float4> g_BlueNoiseImage : REGISTER_SRV(BLUE_NOISE_IMAGE_BINDING,
 Texture2D<float4> g_RaymarchedVolumetricsImage : REGISTER_SRV(RAYMARCHED_VOLUMETRICS_IMAGE_BINDING, 0);
 
 StructuredBuffer<LocalReflectionProbe> g_ReflectionProbeData : REGISTER_SRV(REFLECTION_PROBE_DATA_BINDING, 0);
-ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+Texture2DArray<uint> g_ReflectionProbeBitMaskImage : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
+//ByteAddressBuffer g_ReflectionProbeBitMask : REGISTER_SRV(REFLECTION_PROBE_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_ReflectionProbeDepthBins : REGISTER_SRV(REFLECTION_PROBE_Z_BINS_BINDING, 0);
 
 ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0);
@@ -108,14 +109,15 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_ReflectionProbeDepthBins, probeCount, -viewSpacePosition.z, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			const uint address = getTileAddress(threadID.xy, g_PushConsts.width, wordCount);
+			//const uint address = getTileAddress(threadID.xy, g_PushConsts.width, wordCount);
+			const uint2 tile = getTile(threadID.xy);
 		
 			const float mipCount = 7.0;
 			float mipLevel = roughness * mipCount;
 		
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
-				uint mask = getLightingBitMask(g_ReflectionProbeBitMask, address, wordIndex, minIndex, maxIndex);
+				uint mask = getLightingBitMask(g_ReflectionProbeBitMaskImage, tile, wordIndex, minIndex, maxIndex);
 				
 				while (mask != 0)
 				{
