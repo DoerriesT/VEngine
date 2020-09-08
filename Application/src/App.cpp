@@ -135,7 +135,7 @@ void App::initialize(VEngine::Engine *engine)
 
 		auto reflectionProbeEntity = entityRegistry.create();
 		entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), bboxMax - probeCenter);
-		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset, 0.0f);
+		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset);
 		entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
 		scene.m_entities.push_back({ "Reflection Probe", reflectionProbeEntity });
 		return reflectionProbeEntity;

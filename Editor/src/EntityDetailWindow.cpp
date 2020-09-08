@@ -611,6 +611,14 @@ void VEditor::EntityDetailWindow::draw(entt::entity entity, entt::entity editorC
 			if (LocalReflectionProbeComponent *lrpc = nullptr; beginComponent(entityRegistry, entity, "Local Reflection Probe", lrpc))
 			{
 				ImGui::DragFloat3("Capture Offset", &lrpc->m_captureOffset[0], 0.1f);
+				if (ImGui::DragFloat("Near Plane##LRP", &lrpc->m_nearPlane, 0.05f))
+				{
+					lrpc->m_nearPlane = glm::clamp(lrpc->m_nearPlane, 1e-6f, lrpc->m_farPlane);
+				}
+				if (ImGui::DragFloat("Far Plane##LRP", &lrpc->m_farPlane, 0.25f))
+				{
+					lrpc->m_farPlane = glm::max(lrpc->m_farPlane, lrpc->m_nearPlane);
+				}
 				if (ImGui::DragFloat("Box Fade Distance  X", &lrpc->m_boxFadeDistances[0], 0.05f, 0.0f, 100.0f) && lrpc->m_lockedFadeDistance)
 				{
 					lrpc->m_boxFadeDistances[1] = lrpc->m_boxFadeDistances[0];

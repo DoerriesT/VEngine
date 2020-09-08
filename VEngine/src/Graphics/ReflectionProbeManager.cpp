@@ -57,6 +57,8 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 		{
 			float m_cameraDistance2;
 			glm::vec3 m_capturePosition;
+			float m_nearPlane;
+			float m_farPlane;
 			ReflectionProbeInternalDataComponent *m_internalData;
 		};
 
@@ -69,6 +71,8 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 				ProbeSortData probeSortData{};
 				probeSortData.m_cameraDistance2 = glm::length2(glm::vec3(commonData.m_cameraPosition) - transformationComponent.m_position);
 				probeSortData.m_capturePosition = transformationComponent.m_position + probeComponent.m_captureOffset;
+				probeSortData.m_nearPlane = probeComponent.m_nearPlane;
+				probeSortData.m_farPlane = probeComponent.m_farPlane;
 				probeSortData.m_internalData = &internalComponent;
 
 				if (probeComponent.m_recapture)
@@ -120,7 +124,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 				assert(!m_freeCacheSlots.empty());
 				const uint32_t slot = m_freeCacheSlots.back();
 				data.m_internalData->m_cacheSlot = slot;
-				m_probeRelightData[slot] = { data.m_capturePosition, 0.1f, 20.0f }; // TODO: compute proper near/far planes
+				m_probeRelightData[slot] = { data.m_capturePosition, data.m_nearPlane, data.m_farPlane };
 				m_freeCacheSlots.pop_back();
 			}
 
@@ -168,14 +172,14 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 
 			m_probeMatrices.reserve(m_probeMatrices.size() + 6);
 
-			glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, 0.1f, 20.0f);
+			glm::mat4 projection = glm::perspectiveLH(glm::radians(90.0f), 1.0f, data.m_nearPlane, data.m_farPlane);
 			for (size_t i = 0; i < 6; ++i)
 			{
 				glm::mat4 shadowMatrix = projection * viewMatrices[i];
 				// extract view frustum plane equations from matrix
 				{
 					uint32_t contentTypeFlags = FrustumCullData::STATIC_OPAQUE_CONTENT_TYPE_BIT | FrustumCullData::STATIC_ALPHA_TESTED_CONTENT_TYPE_BIT;
-					FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(viewMatrices[i][0][2], viewMatrices[i][1][2], viewMatrices[i][2][2], viewMatrices[i][3][2]), 20.0f);
+					FrustumCullData cullData(shadowMatrix, 5, static_cast<uint32_t>(renderLists.size()), contentTypeFlags, glm::vec4(viewMatrices[i][0][2], viewMatrices[i][1][2], viewMatrices[i][2][2], viewMatrices[i][3][2]), data.m_farPlane);
 
 					frustumCullData.push_back(cullData);
 					renderLists.push_back({});
@@ -185,7 +189,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 		}
 
 		probeShadowMapCenter = sortData.empty() ? glm::vec3(0.0f) : sortData[relightProbeIndex].m_capturePosition;
-		probeShadowMapRadius = 50.0f; // TODO
+		probeShadowMapRadius = sortData[relightProbeIndex].m_farPlane;
 
 		m_renderProbeIndex = renderProbeIndex;
 		m_relightProbeIndex = relightProbeIndex;
