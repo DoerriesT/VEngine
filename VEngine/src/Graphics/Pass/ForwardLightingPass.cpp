@@ -6,6 +6,7 @@
 #include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/gal/Initializers.h"
+#include "GlobalVar.h"
 
 using namespace VEngine::gal;
 
@@ -39,6 +40,7 @@ void VEngine::ForwardLightingPass::addToGraph(rg::RenderGraph &graph, const Data
 	consts.ambientOcclusion = 0;
 	consts.width = commonData->m_width;
 	consts.volumetricShadow = g_volumetricShadow;
+	consts.lodBias = g_TAAMipBias;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 

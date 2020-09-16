@@ -43,4 +43,5 @@ struct Constants
 	uint ambientOcclusion;
 	uint width;
 	int volumetricShadow;
+	float lodBias;
 };

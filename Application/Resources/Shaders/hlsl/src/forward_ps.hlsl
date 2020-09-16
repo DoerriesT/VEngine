@@ -69,7 +69,6 @@ PSOutput main(PSInput input)
 	LightingParams lightingParams;
 	lightingParams.position = input.worldPos.xyz;
 	lightingParams.V = normalize(g_Constants.cameraPos - lightingParams.position);
-	float4 derivatives = float4(ddx(input.texCoord), ddy(input.texCoord));
 	
 	// albedo
 	{
@@ -77,7 +76,7 @@ PSOutput main(PSInput input)
 		uint albedoTextureIndex = (materialData.albedoNormalTexture & 0xFFFF0000) >> 16;
 		if (albedoTextureIndex != 0)
 		{
-			albedo = g_Textures[NonUniformResourceIndex(albedoTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).rgb;
+			albedo = g_Textures[(albedoTextureIndex - 1)].SampleBias(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, g_Constants.lodBias).rgb;
 		}
 		lightingParams.albedo = accurateSRGBToLinear(albedo);
 	}
@@ -91,7 +90,7 @@ PSOutput main(PSInput input)
 		if (normalTextureIndex != 0)
 		{
 			float3 tangentSpaceNormal;
-			tangentSpaceNormal.xy = g_Textures[NonUniformResourceIndex(normalTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).xy * 2.0 - 1.0;
+			tangentSpaceNormal.xy = g_Textures[(normalTextureIndex - 1)].SampleBias(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, g_Constants.lodBias).xy * 2.0 - 1.0;
 			tangentSpaceNormal.z = sqrt(1.0 - tangentSpaceNormal.x * tangentSpaceNormal.x + tangentSpaceNormal.y * tangentSpaceNormal.y);
 
 			float3 bitangent = cross(input.normal, input.tangent.xyz) * input.tangent.w;
@@ -109,7 +108,7 @@ PSOutput main(PSInput input)
 		uint metalnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF0000) >> 16;
 		if (metalnessTextureIndex != 0)
 		{
-			metalness = g_Textures[NonUniformResourceIndex(metalnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).z;
+			metalness = g_Textures[(metalnessTextureIndex - 1)].SampleBias(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, g_Constants.lodBias).z;
 			metalness = accurateSRGBToLinear(metalness.xxx).x;
 		}
 		lightingParams.metalness = metalness;
@@ -121,7 +120,7 @@ PSOutput main(PSInput input)
 		uint roughnessTextureIndex = (materialData.metalnessRoughnessTexture & 0xFFFF);
 		if (roughnessTextureIndex != 0)
 		{
-			roughness = g_Textures[NonUniformResourceIndex(roughnessTextureIndex - 1)].SampleGrad(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, derivatives.xy, derivatives.zw).y;
+			roughness = g_Textures[(roughnessTextureIndex - 1)].SampleBias(g_Samplers[SAMPLER_LINEAR_REPEAT], input.texCoord, g_Constants.lodBias).y;
 			roughness = accurateSRGBToLinear(roughness.xxx).x;
 		}
 		lightingParams.roughness = roughness;
