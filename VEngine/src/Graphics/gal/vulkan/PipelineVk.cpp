@@ -188,6 +188,10 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 		inputAssemblyState.primitiveRestartEnable = createInfo.m_inputAssemblyState.m_primitiveRestartEnable;
 	}
 
+	VkPipelineTessellationStateCreateInfo tesselatationState = { VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO };
+	{
+		tesselatationState.patchControlPoints = createInfo.m_tesselationState.m_patchControlPoints;
+	}
 
 	VkPipelineViewportStateCreateInfo viewportState = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 	{
@@ -284,10 +288,12 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 
 	
 	VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+	pipelineInfo.flags = 0;
 	pipelineInfo.stageCount = stageCount;
 	pipelineInfo.pStages = shaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputState;
 	pipelineInfo.pInputAssemblyState = &inputAssemblyState;
+	pipelineInfo.pTessellationState = &tesselatationState;
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizationState;
 	pipelineInfo.pMultisampleState = &multisamplingState;
@@ -298,6 +304,7 @@ VEngine::gal::GraphicsPipelineVk::GraphicsPipelineVk(GraphicsDeviceVk &device, c
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.basePipelineIndex = 0;
 
 	UtilityVk::checkResult(vkCreateGraphicsPipelines(deviceVk, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline), "Failed to create pipeline!");
 

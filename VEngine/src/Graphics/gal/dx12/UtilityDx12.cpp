@@ -510,7 +510,7 @@ D3D12_STENCIL_OP VEngine::gal::UtilityDx12::translate(StencilOp stencilOp)
 	return D3D12_STENCIL_OP();
 }
 
-D3D12_PRIMITIVE_TOPOLOGY VEngine::gal::UtilityDx12::translate(PrimitiveTopology topology)
+D3D12_PRIMITIVE_TOPOLOGY VEngine::gal::UtilityDx12::translate(PrimitiveTopology topology, uint32_t patchControlPoints)
 {
 	switch (topology)
 	{
@@ -535,7 +535,8 @@ D3D12_PRIMITIVE_TOPOLOGY VEngine::gal::UtilityDx12::translate(PrimitiveTopology 
 	case PrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY:
 		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ;
 	case PrimitiveTopology::PATCH_LIST:
-		return D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+		assert(patchControlPoints >= 1 && patchControlPoints <= 32);
+		return static_cast<D3D_PRIMITIVE_TOPOLOGY>(D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (patchControlPoints - 1));
 	default:
 		assert(false);
 		break;

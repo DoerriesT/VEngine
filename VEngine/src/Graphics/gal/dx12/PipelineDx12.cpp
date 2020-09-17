@@ -235,7 +235,7 @@ VEngine::gal::GraphicsPipelineDx12::GraphicsPipelineDx12(ID3D12Device *device, c
 
 	stateDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // TODO
 	stateDesc.PrimitiveTopologyType = UtilityDx12::getTopologyType(createInfo.m_inputAssemblyState.m_primitiveTopology);
-	m_primitiveTopology = UtilityDx12::translate(createInfo.m_inputAssemblyState.m_primitiveTopology);
+	m_primitiveTopology = UtilityDx12::translate(createInfo.m_inputAssemblyState.m_primitiveTopology, createInfo.m_tesselationState.m_patchControlPoints);
 
 
 	stateDesc.NumRenderTargets = createInfo.m_attachmentFormats.m_colorAttachmentCount;

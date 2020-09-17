@@ -17,7 +17,7 @@ namespace VEngine
 			D3D12_BLEND_OP translate(BlendOp blendOp);
 			D3D12_LOGIC_OP translate(LogicOp logicOp);
 			D3D12_STENCIL_OP translate(StencilOp stencilOp);
-			D3D12_PRIMITIVE_TOPOLOGY translate(PrimitiveTopology topology);
+			D3D12_PRIMITIVE_TOPOLOGY translate(PrimitiveTopology topology, uint32_t patchControlPoints);
 			D3D12_QUERY_HEAP_TYPE translate(QueryType queryType);
 			DXGI_FORMAT translate(Format format);
 			D3D12_RESOURCE_FLAGS translateImageUsageFlags(ImageUsageFlags flags);

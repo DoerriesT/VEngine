@@ -12,7 +12,7 @@ namespace VEngine
 	GlobalVar<float> g_FXAAQualityEdgeThreshold = 0.166f;
 	GlobalVar<float> g_FXAAQualityEdgeThresholdMin = 0.0833f;
 	GlobalVar<bool> g_CASEnabled = true;
-	GlobalVar<float> g_CASSharpness = 0.8f;
+	GlobalVar<float> g_CASSharpness = 0.0f;
 	GlobalVar<bool> g_bloomEnabled = true;
 	GlobalVar<float> g_bloomStrength = 0.04f;
 	GlobalVar<unsigned int> g_ssaoEnabled = 1;
