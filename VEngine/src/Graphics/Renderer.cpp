@@ -67,7 +67,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	:m_graphicsDevice(GraphicsDevice::create(windowHandle, false, GraphicsBackendType::D3D12)),
 	m_framesSinceLastResize()
 {
-	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, &m_swapChain);
+	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, false, g_VSyncEnabled ? PresentMode::V_SYNC : PresentMode::IMMEDIATE, &m_swapChain);
 
 	m_graphicsDevice->createSemaphore(0, &m_semaphores[0]);
 	m_graphicsDevice->createSemaphore(0, &m_semaphores[1]);
@@ -77,6 +77,7 @@ VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
 	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[1], "Compute Queue Semaphore");
 	m_graphicsDevice->setDebugObjectName(ObjectType::SEMAPHORE, m_semaphores[2], "Transfer Queue Semaphore");
 
+	m_vsync = g_VSyncEnabled;
 	m_swapChainWidth = m_swapChain->getExtent().m_width;
 	m_swapChainHeight = m_swapChain->getExtent().m_height;
 	m_width = m_swapChainWidth;
@@ -1452,19 +1453,19 @@ void VEngine::Renderer::setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_
 	m_renderResources->setBVH(nodeCount, nodes, triangleCount, triangles);
 }
 
-void VEngine::Renderer::resize(uint32_t width, uint32_t height)
+void VEngine::Renderer::resize(uint32_t width, uint32_t height, bool fullscreen, bool vsync)
 {
-	resize(width, height, width, height);
+	resize(width, height, width, height, fullscreen, vsync);
 }
 
-void VEngine::Renderer::resize(uint32_t width, uint32_t height, uint32_t swapChainWidth, uint32_t swapChainHeight)
+void VEngine::Renderer::resize(uint32_t width, uint32_t height, uint32_t swapChainWidth, uint32_t swapChainHeight, bool fullscreen, bool vsync)
 {
 	if (!m_editorMode)
 	{
 		width = swapChainWidth;
 		height = swapChainHeight;
 	}
-	if (width != m_width || height != m_height || swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight)
+	if (width != m_width || height != m_height || swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight || fullscreen != m_fullscreen || vsync != m_vsync)
 	{
 		m_graphicsDevice->waitIdle();
 		if (width > 0 && height > 0 && swapChainWidth > 0 && swapChainHeight > 0)
@@ -1473,9 +1474,9 @@ void VEngine::Renderer::resize(uint32_t width, uint32_t height, uint32_t swapCha
 			{
 				m_frameGraphs[i]->reset();
 			}
-			if (swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight)
+			//if (swapChainWidth != m_swapChainWidth || swapChainHeight != m_swapChainHeight)
 			{
-				m_swapChain->resize(swapChainWidth, swapChainHeight);
+				m_swapChain->resize(swapChainWidth, swapChainHeight, fullscreen, vsync ? PresentMode::V_SYNC : PresentMode::IMMEDIATE);
 			}
 			if (width != m_width || height != m_height)
 			{
@@ -1493,6 +1494,8 @@ void VEngine::Renderer::resize(uint32_t width, uint32_t height, uint32_t swapCha
 		m_height = height;
 		m_swapChainWidth = swapChainWidth;
 		m_swapChainHeight = swapChainHeight;
+		m_fullscreen = fullscreen;
+		m_vsync = vsync;
 	}
 }
 

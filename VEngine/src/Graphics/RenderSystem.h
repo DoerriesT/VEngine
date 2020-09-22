@@ -44,8 +44,8 @@ namespace VEngine
 		//std::vector<VKMemoryBlockDebugInfo> getMemoryAllocatorDebugInfo() const;
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
-		void resize(uint32_t width, uint32_t height);
-		void resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight);
+		void resize(uint32_t width, uint32_t height, bool fullscreen, bool vsync);
+		void resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight, bool fullscreen, bool vsync);
 		void setEditorMode(bool editorMode);
 		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
 		Texture2DHandle getEditorSceneTextureHandle();

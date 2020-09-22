@@ -600,7 +600,7 @@ void VEngine::gal::GraphicsDeviceDx12::destroyImage(Image *image)
 
 		((D3D12MA::Allocation *)imageDx->getAllocationHandle())->Release();
 		((ID3D12Resource *)imageDx->getNativeHandle())->Release();
-		
+
 		// call destructor and free backing memory
 		imageDx->~ImageDx12();
 		m_imageMemoryPool.free(reinterpret_cast<ByteArray<sizeof(ImageDx12)> *>(imageDx));
@@ -613,7 +613,7 @@ void VEngine::gal::GraphicsDeviceDx12::destroyBuffer(Buffer *buffer)
 	{
 		auto *bufferDx = dynamic_cast<BufferDx12 *>(buffer);
 		assert(bufferDx);
-		
+
 		((D3D12MA::Allocation *)bufferDx->getAllocationHandle())->Release();
 		((ID3D12Resource *)bufferDx->getNativeHandle())->Release();
 
@@ -628,7 +628,7 @@ void VEngine::gal::GraphicsDeviceDx12::createImageView(const ImageViewCreateInfo
 	auto *memory = m_imageViewMemoryPool.alloc();
 	assert(memory);
 
-	*imageView = new(memory) ImageViewDx12(m_device, imageViewCreateInfo, 
+	*imageView = new(memory) ImageViewDx12(m_device, imageViewCreateInfo,
 		m_cpuDescriptorAllocator, m_cpuDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[0],
 		m_cpuRTVDescriptorAllocator, m_cpuRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[2],
 		m_cpuDSVDescriptorAllocator, m_cpuDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_descriptorIncrementSizes[3]);
@@ -795,7 +795,7 @@ void VEngine::gal::GraphicsDeviceDx12::destroyDescriptorSetLayout(DescriptorSetL
 	}
 }
 
-void VEngine::gal::GraphicsDeviceDx12::createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain)
+void VEngine::gal::GraphicsDeviceDx12::createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode, SwapChain **swapChain)
 {
 	assert(!m_swapChain);
 	assert(width && height);
@@ -803,7 +803,7 @@ void VEngine::gal::GraphicsDeviceDx12::createSwapChain(const Queue *presentQueue
 	queue = presentQueue == &m_graphicsQueue ? &m_graphicsQueue : queue;
 	queue = presentQueue == &m_computeQueue ? &m_computeQueue : queue;
 	assert(queue);
-	*swapChain = m_swapChain = new SwapChainDx12(this, m_device, m_windowHandle, queue, width, height);
+	*swapChain = m_swapChain = new SwapChainDx12(this, m_device, m_windowHandle, queue, width, height, fullscreen, presentMode);
 }
 
 void VEngine::gal::GraphicsDeviceDx12::destroySwapChain()

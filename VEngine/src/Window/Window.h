@@ -38,7 +38,12 @@ namespace VEngine
 			NORMAL, HIDDEN, DISABLED
 		};
 
-		explicit Window(unsigned int width, unsigned int height, const std::string &title);
+		enum class WindowMode
+		{
+			WINDOWED, FULL_SCREEN
+		};
+
+		explicit Window(unsigned int width, unsigned int height, WindowMode windowMode, const std::string &title);
 		~Window();
 		void pollEvents();
 		void *getWindowHandle() const;
@@ -51,6 +56,8 @@ namespace VEngine
 		bool configurationChanged() const;
 		void setMouseCursorMode(MouseCursorMode mode);
 		MouseCursorMode getMouseCursorMode() const;
+		void setWindowMode(WindowMode windowMode);
+		WindowMode getWindowMode() const;
 		void setTitle(const std::string &title);
 		void addInputListener(IInputListener *listener);
 		void removeInputListener(IInputListener *listener);
@@ -64,10 +71,14 @@ namespace VEngine
 	private:
 		GLFWwindow *m_windowHandle;
 		GLFWcursor *m_cursors[9];
+		WindowMode m_windowMode;
+		WindowMode m_newWindowMode;
 		unsigned int m_windowWidth;
 		unsigned int m_windowHeight;
 		unsigned int m_width;
 		unsigned int m_height;
+		unsigned int m_windowedWidth;
+		unsigned int m_windowedHeight;
 		std::string m_title;
 		std::vector<IInputListener*> m_inputListeners;
 		bool m_configurationChanged;

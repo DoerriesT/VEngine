@@ -26,6 +26,7 @@
 #include <glm/ext.hpp>
 #include <Graphics/imgui/imgui.h>
 #include <Utility/Utility.h>
+#include <Window/Window.h>
 
 
 bool g_fogJittering = true;
@@ -272,6 +273,17 @@ void App::update(float timeDelta)
 
 	ImGui::Begin("Volumetric Fog");
 	{
+		VEngine::Window *window = m_engine->getWindow();
+		bool fullscreen = window->getWindowMode() == VEngine::Window::WindowMode::FULL_SCREEN;
+		if (ImGui::Checkbox("Fullscreen", &fullscreen))
+		{
+			window->setWindowMode(fullscreen ? VEngine::Window::WindowMode::FULL_SCREEN : VEngine::Window::WindowMode::WINDOWED);
+		}
+
+		bool vsync = VEngine::g_VSyncEnabled;
+		ImGui::Checkbox("VSync", &vsync);
+		VEngine::g_VSyncEnabled.set(vsync);
+
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
 		ImGui::DragFloat("Fog History Alpha", &g_fogHistoryAlpha, 0.01f, 0.0f, 1.0f, "%.7f");

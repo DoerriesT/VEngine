@@ -14,6 +14,12 @@ namespace VEngine
 			D3D12
 		};
 
+		enum class PresentMode
+		{
+			IMMEDIATE,
+			V_SYNC,
+		};
+
 		enum class QueueType
 		{
 			GRAPHICS,
@@ -1298,7 +1304,7 @@ namespace VEngine
 		public:
 			virtual ~SwapChain() = default;
 			virtual void *getNativeHandle() const = 0;
-			virtual void resize(uint32_t width, uint32_t height) = 0;
+			virtual void resize(uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode) = 0;
 			virtual uint32_t getCurrentImageIndex() = 0;
 			virtual void present(Semaphore *waitSemaphore, uint64_t semaphoreWaitValue, Semaphore *signalSemaphore, uint64_t semaphoreSignalValue) = 0;
 			virtual Extent2D getExtent() const = 0;
@@ -1339,7 +1345,7 @@ namespace VEngine
 			virtual void destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool) = 0;
 			virtual void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) = 0;
 			virtual void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) = 0;
-			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) = 0;
+			virtual void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode, SwapChain **swapChain) = 0;
 			virtual void destroySwapChain() = 0;
 			virtual void waitIdle() = 0;
 			virtual void setDebugObjectName(ObjectType objectType, void *object, const char *name) = 0;

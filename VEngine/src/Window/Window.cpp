@@ -16,12 +16,17 @@ void VEngine::keyCallback(GLFWwindow *window, int key, int scancode, int action,
 void VEngine::charCallback(GLFWwindow *window, unsigned int codepoint);
 void VEngine::joystickCallback(int joystickId, int event);
 
-VEngine::Window::Window(unsigned int width, unsigned int height, const std::string &title)
+VEngine::Window::Window(unsigned int width, unsigned int height, WindowMode windowMode, const std::string &title)
 	:m_windowHandle(),
+	m_cursors(),
+	m_windowMode(windowMode),
+	m_newWindowMode(windowMode),
 	m_windowWidth(width),
 	m_windowHeight(height),
 	m_width(width),
 	m_height(height),
+	m_windowedWidth(width),
+	m_windowedHeight(height),
 	m_title(title),
 	m_configurationChanged()
 {
@@ -30,7 +35,25 @@ VEngine::Window::Window(unsigned int width, unsigned int height, const std::stri
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-	m_windowHandle = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+	switch (m_windowMode)
+	{
+	case WindowMode::WINDOWED:
+	{
+		m_windowHandle = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+		break;
+	}
+	case WindowMode::FULL_SCREEN:
+	{
+		GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+
+		m_windowHandle = glfwCreateWindow(mode->width, mode->height, m_title.c_str(), glfwGetPrimaryMonitor(), nullptr);
+		break;
+	}
+	default:
+		assert(false);
+		break;
+	}
 
 	if (!m_windowHandle)
 	{
@@ -92,6 +115,39 @@ void VEngine::Window::pollEvents()
 {
 	m_configurationChanged = false;
 	glfwPollEvents();
+
+	if (m_newWindowMode != m_windowMode)
+	{
+		switch (m_newWindowMode)
+		{
+		case VEngine::Window::WindowMode::WINDOWED:
+		{
+			const GLFWvidmode *vidMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			int x = vidMode->width / 2 - m_windowedWidth / 2;
+			int y = vidMode->height / 2 - m_windowedHeight / 2;
+			if (y < 32)
+			{
+				y = 32;
+			}
+			glfwSetWindowMonitor(m_windowHandle, nullptr, x, y, m_windowedWidth, m_windowedHeight, GLFW_DONT_CARE);
+			break;
+		}
+		case VEngine::Window::WindowMode::FULL_SCREEN:
+		{
+			m_windowedWidth = m_windowWidth;
+			m_windowedHeight = m_windowHeight;
+			const GLFWvidmode *vidMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			glfwSetWindowMonitor(m_windowHandle, glfwGetPrimaryMonitor(), 0, 0, vidMode->width, vidMode->height, GLFW_DONT_CARE);
+			break;
+		}
+		default:
+			assert(false);
+			break;
+		}
+
+		m_configurationChanged = true;
+		m_windowMode = m_newWindowMode;
+	}
 }
 
 void *VEngine::Window::getWindowHandle() const
@@ -162,6 +218,16 @@ void VEngine::Window::setMouseCursorMode(MouseCursorMode mode)
 VEngine::Window::MouseCursorMode VEngine::Window::getMouseCursorMode() const
 {
 	return m_mouseCursorMode;
+}
+
+void VEngine::Window::setWindowMode(WindowMode windowMode)
+{
+	m_newWindowMode = windowMode;
+}
+
+VEngine::Window::WindowMode VEngine::Window::getWindowMode() const
+{
+	return m_windowMode;
 }
 
 void VEngine::Window::setTitle(const std::string &title)

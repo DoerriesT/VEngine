@@ -13,6 +13,7 @@ namespace VEngine
 		void set(const Type &value);
 		void addListener(std::function<void(const Type &)> listener);
 		operator Type() const;
+		bool operator=(const Type &value);
 
 	private:
 		Type m_value;
@@ -57,6 +58,13 @@ namespace VEngine
 	}
 
 	template<typename Type>
+	inline bool GlobalVar<Type>::operator=(const Type &value)
+	{
+		set(value);
+		return value;
+	}
+
+	template<typename Type>
 	class GlobalConst
 	{
 	public:
@@ -88,6 +96,7 @@ namespace VEngine
 
 	//extern GlobalVar<unsigned int> g_windowWidth;
 	//extern GlobalVar<unsigned int> g_windowHeight;
+	extern GlobalVar<bool> g_VSyncEnabled;
 	extern GlobalVar<bool> g_TAAEnabled;
 	extern GlobalVar<float> g_TAABicubicSharpness;
 	extern GlobalVar<float> g_TAAMipBias;

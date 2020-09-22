@@ -54,7 +54,7 @@ namespace VEngine
 			void destroyDescriptorSetPool(DescriptorSetPool *descriptorSetPool)  override;
 			void createDescriptorSetLayout(uint32_t bindingCount, const DescriptorSetLayoutBinding *bindings, DescriptorSetLayout **descriptorSetLayout) override;
 			void destroyDescriptorSetLayout(DescriptorSetLayout *descriptorSetLayout) override;
-			void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain) override;
+			void createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode, SwapChain **swapChain) override;
 			void destroySwapChain() override;
 			void waitIdle() override;
 			void setDebugObjectName(ObjectType objectType, void *object, const char *name) override;

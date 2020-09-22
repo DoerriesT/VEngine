@@ -28,7 +28,7 @@ VEngine::Engine::~Engine()
 void VEngine::Engine::start()
 {
 	m_entityRegistry = std::make_unique<entt::registry>();
-	m_window = std::make_unique<Window>(1600, 900, m_windowTitle);
+	m_window = std::make_unique<Window>(1600, 900, Window::WindowMode::WINDOWED, m_windowTitle);
 	uint32_t width = m_window->getWidth();
 	uint32_t height = m_window->getHeight();
 	m_userInput = std::make_unique<UserInput>(*m_window.get());
@@ -62,6 +62,12 @@ void VEngine::Engine::start()
 	m_renderSystem = std::make_unique<RenderSystem>(*m_entityRegistry, m_window->getWindowHandle(), width, height);
 
 	m_gameLogic.initialize(this);
+
+	bool vsyncChanged = false;
+	g_VSyncEnabled.addListener([&](bool value)
+		{
+			vsyncChanged = true;
+		});
 	
 	Timer timer;
 	uint64_t previousTickCount = timer.getElapsedTicks();
@@ -75,7 +81,7 @@ void VEngine::Engine::start()
 		float timeDelta = static_cast<float>(timer.getTimeDelta());
 
 		m_window->pollEvents();
-		if (m_window->configurationChanged() || m_viewportParamsDirty)
+		if (m_window->configurationChanged() || m_viewportParamsDirty || vsyncChanged)
 		{
 			width = m_window->getWidth();
 			height = m_window->getHeight();
@@ -84,7 +90,7 @@ void VEngine::Engine::start()
 			int32_t offsetX = 0;
 			int32_t offsetY = 0;
 
-			if (m_editorMode && m_viewportParamsDirty)
+			if (m_editorMode)
 			{
 				width = m_editorViewportWidth;
 				height = m_editorViewportHeight;
@@ -98,7 +104,9 @@ void VEngine::Engine::start()
 
 			imguiInputAdapter.resize(width, height, windowWidth, windowHeight);
 			m_userInput->resize(offsetX, offsetY, windowWidth, windowHeight);
-			m_renderSystem->resize(width, height, m_window->getWidth(), m_window->getHeight());
+			m_renderSystem->resize(width, height, m_window->getWidth(), m_window->getHeight(), m_window->getWindowMode() == Window::WindowMode::FULL_SCREEN, g_VSyncEnabled);
+			
+			vsyncChanged = false;
 		}
 
 		m_userInput->input();

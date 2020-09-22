@@ -54,8 +54,8 @@ namespace VEngine
 		void getTimingInfo(size_t *count, const PassTimingInfo **data) const;
 		void getOcclusionCullingStats(uint32_t &draws, uint32_t &totalDraws) const;
 		void setBVH(uint32_t nodeCount, const BVHNode *nodes, uint32_t triangleCount, const Triangle *triangles);
-		void resize(uint32_t width, uint32_t height);
-		void resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight);
+		void resize(uint32_t width, uint32_t height, bool fullscreen, bool vsync);
+		void resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight, bool fullscreen, bool vsync);
 		void setEditorMode(bool editorMode);
 		void initEditorImGuiCtx(ImGuiContext *editorImGuiCtx);
 		Texture2DHandle getEditorSceneTextureHandle();
@@ -88,6 +88,8 @@ namespace VEngine
 		uint32_t m_height;
 		uint32_t m_swapChainWidth;
 		uint32_t m_swapChainHeight;
+		bool m_fullscreen = false;
+		bool m_vsync = false;
 		Texture2DHandle m_blueNoiseTextureIndex;
 		Texture2DHandle m_editorSceneTextureHandle;
 		size_t m_passTimingCount;

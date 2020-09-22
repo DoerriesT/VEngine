@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-VEngine::gal::SwapChainVk::SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height)
+VEngine::gal::SwapChainVk::SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, Queue *presentQueue, uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode)
 	:m_physicalDevice(physicalDevice),
 	m_device(device),
 	m_surface(surface),
@@ -21,7 +21,9 @@ VEngine::gal::SwapChainVk::SwapChainVk(VkPhysicalDevice physicalDevice, VkDevice
 	m_currentImageIndex(-1),
 	m_acquireSemaphores(),
 	m_presentSemaphores(),
-	m_frameIndex(0)
+	m_frameIndex(0),
+	m_fullscreen(fullscreen),
+	m_presentMode(presentMode)
 {
 	create(width, height);
 }
@@ -36,8 +38,10 @@ void *VEngine::gal::SwapChainVk::getNativeHandle() const
 	return m_swapChain;
 }
 
-void VEngine::gal::SwapChainVk::resize(uint32_t width, uint32_t height)
+void VEngine::gal::SwapChainVk::resize(uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode)
 {
+	m_fullscreen = fullscreen;
+	m_presentMode = presentMode;
 	resize(width, height, true);
 }
 
@@ -190,14 +194,14 @@ void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
 	{
 		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 		{
-			surfaceFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+			surfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 		}
 		else
 		{
 			bool foundOptimal = false;
 			for (const auto &format : formats)
 			{
-				if (format.format == VK_FORMAT_R8G8B8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				{
 					surfaceFormat = format;
 					foundOptimal = true;
@@ -212,27 +216,21 @@ void VEngine::gal::SwapChainVk::create(uint32_t width, uint32_t height)
 	}
 
 	// find present mode
-	VkPresentModeKHR presentMode;
+	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR; // VK_PRESENT_MODE_FIFO_KHR is always supported
 	{
-		VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
-
-		bool foundOptimal = false;
 		for (const auto &mode : presentModes)
 		{
-			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+			// prefer VK_PRESENT_MODE_MAILBOX_KHR to VK_PRESENT_MODE_FIFO_KHR for vsync
+			if (m_presentMode == PresentMode::V_SYNC && mode == VK_PRESENT_MODE_MAILBOX_KHR)
 			{
 				presentMode = mode;
-				foundOptimal = true;
 				break;
 			}
-			else if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+			else if (m_presentMode == PresentMode::IMMEDIATE && mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 			{
-				bestMode = mode;
+				presentMode = mode;
+				break;
 			}
-		}
-		if (!foundOptimal)
-		{
-			presentMode = bestMode;
 		}
 	}
 

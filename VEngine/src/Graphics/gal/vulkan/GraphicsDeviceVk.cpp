@@ -943,7 +943,7 @@ void VEngine::gal::GraphicsDeviceVk::destroyDescriptorSetLayout(DescriptorSetLay
 	}
 }
 
-void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, SwapChain **swapChain)
+void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, uint32_t width, uint32_t height, bool fullscreen, PresentMode presentMode, SwapChain **swapChain)
 {
 	assert(!m_swapChain);
 	assert(width && height);
@@ -951,7 +951,7 @@ void VEngine::gal::GraphicsDeviceVk::createSwapChain(const Queue *presentQueue, 
 	queue = presentQueue == &m_graphicsQueue ? &m_graphicsQueue : queue;
 	queue = presentQueue == &m_computeQueue ? &m_computeQueue : queue;
 	assert(queue);
-	*swapChain = m_swapChain = new SwapChainVk(m_physicalDevice, m_device, m_surface, queue, width, height);
+	*swapChain = m_swapChain = new SwapChainVk(m_physicalDevice, m_device, m_surface, queue, width, height, fullscreen, presentMode);
 }
 
 void VEngine::gal::GraphicsDeviceVk::destroySwapChain()

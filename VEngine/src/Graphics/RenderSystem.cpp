@@ -1129,20 +1129,20 @@ void VEngine::RenderSystem::getOcclusionCullingStats(uint32_t &draws, uint32_t &
 	m_renderer->getOcclusionCullingStats(draws, totalDraws);
 }
 
-void VEngine::RenderSystem::resize(uint32_t width, uint32_t height)
+void VEngine::RenderSystem::resize(uint32_t width, uint32_t height, bool fullscreen, bool vsync)
 {
 	m_width = width;
 	m_height = height;
-	m_renderer->resize(width, height);
+	m_renderer->resize(width, height, fullscreen, vsync);
 }
 
-void VEngine::RenderSystem::resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight)
+void VEngine::RenderSystem::resize(uint32_t editorViewportWidth, uint32_t editorViewportHeight, uint32_t swapChainWidth, uint32_t swapChainHeight, bool fullscreen, bool vsync)
 {
 	m_width = editorViewportWidth;
 	m_height = editorViewportHeight;
 	m_swapChainWidth = swapChainWidth;
 	m_swapChainHeight = swapChainHeight;
-	m_renderer->resize(m_width, m_height, m_swapChainWidth, m_swapChainHeight);
+	m_renderer->resize(m_width, m_height, m_swapChainWidth, m_swapChainHeight, fullscreen, vsync);
 }
 
 void VEngine::RenderSystem::setEditorMode(bool editorMode)
