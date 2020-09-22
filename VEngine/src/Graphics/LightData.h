@@ -112,6 +112,8 @@ namespace VEngine
 		float m_boxInvFadeDist3;
 		float m_boxInvFadeDist4;
 		float m_boxInvFadeDist5;
+		float m_pad0;
+		float m_pad1;
 	};
 
 	struct ReflectionProbeRelightData

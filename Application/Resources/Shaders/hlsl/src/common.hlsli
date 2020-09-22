@@ -131,6 +131,8 @@ struct LocalReflectionProbe
 	float boxInvFadeDist3;
 	float boxInvFadeDist4;
 	float boxInvFadeDist5;
+	float pad0;
+	float pad1;
 };
 
 struct ParticleData
