@@ -29,7 +29,6 @@
 #include "Pass/TemporalAAPass.h"
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
-#include "Pass/VolumetricFogApplyPass.h"
 #include "Pass/GaussianDownsamplePass.h"
 #include "Pass/FourierOpacityPass.h"
 #include "Pass/ParticlesPass.h"
@@ -64,7 +63,7 @@ using namespace VEngine::gal;
 extern bool g_raymarchedFog;
 
 VEngine::Renderer::Renderer(uint32_t width, uint32_t height, void *windowHandle)
-	:m_graphicsDevice(GraphicsDevice::create(windowHandle, false, GraphicsBackendType::D3D12)),
+	:m_graphicsDevice(GraphicsDevice::create(windowHandle, false, GraphicsBackendType::VULKAN)),
 	m_framesSinceLastResize()
 {
 	m_graphicsDevice->createSwapChain(m_graphicsDevice->getGraphicsQueue(), width, height, false, g_VSyncEnabled ? PresentMode::V_SYNC : PresentMode::IMMEDIATE, &m_swapChain);

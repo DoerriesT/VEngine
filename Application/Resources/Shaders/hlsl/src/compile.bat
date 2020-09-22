@@ -13,7 +13,7 @@ dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main deferred
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricFogMerged_cs.hlsl -Fo ./../volumetricFogMerged_cs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricFogFilter2_cs.hlsl -Fo ./../volumetricFogFilter2_cs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricFogIntegrate_cs.hlsl -Fo ./../volumetricFogIntegrate_cs.spv
-dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricFogApply_cs.hlsl -Fo ./../volumetricFogApply_cs.spv
+dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main volumetricFogApply_ps.hlsl -Fo ./../volumetricFogApply_ps.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main sky_vs.hlsl -Fo ./../sky_vs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main sky_ps.hlsl -Fo ./../sky_ps.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main temporalAA_cs.hlsl -Fo ./../temporalAA_cs.spv
@@ -62,7 +62,6 @@ dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main swapChai
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main volumetricRaymarch_cs.hlsl -Fo ./../volumetricRaymarch_cs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T cs_6_2 -E main depthDownsampleCBMinMax_cs.hlsl -Fo ./../depthDownsampleCBMinMax_cs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main applyIndirectLighting_ps.hlsl -Fo ./../applyIndirectLighting_ps.spv
-dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -T ps_6_2 -E main volumetricFogApply_ps.hlsl -Fo ./../volumetricFogApply_ps.spv
 
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_vs.spv
 dxc.exe -D VULKAN=1 -spirv -fspv-target-env=vulkan1.1 -fvk-invert-y -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.spv

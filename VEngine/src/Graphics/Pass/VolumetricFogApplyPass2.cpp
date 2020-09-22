@@ -6,6 +6,7 @@
 #include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/gal/Initializers.h"
+#include <GlobalVar.h>
 
 extern bool g_fogLookupDithering;
 extern uint32_t g_fogLookupDitherType;
@@ -96,6 +97,9 @@ void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const 
 			pushConsts.texelWidth = 1.0f / width;
 			pushConsts.texelHeight = 1.0f / height;
 			pushConsts.raymarchedFog = g_raymarchedFog;
+			pushConsts.volumeDepth = g_VolumetricFogVolumeDepth;
+			pushConsts.volumeNear = g_VolumetricFogVolumeNear;
+			pushConsts.volumeFar = g_VolumetricFogVolumeFar;
 
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::FRAGMENT_BIT, 0, sizeof(pushConsts), &pushConsts);
 

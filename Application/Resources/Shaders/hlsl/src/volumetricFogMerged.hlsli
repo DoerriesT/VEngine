@@ -19,7 +19,6 @@
 #define FOM_IMAGE_BINDING 18
 #define FOM_DIRECTIONAL_IMAGE_BINDING 19
 #define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 20
-#define DEPTH_IMAGE_BINDING 21
 
 struct Constants
 {
@@ -43,4 +42,7 @@ struct Constants
 	uint globalMediaCount;
 	uint localMediaCount;
 	uint checkerBoardCondition;
+	uint volumeDepth;
+	float volumeNear;
+	float volumeFar;
 };

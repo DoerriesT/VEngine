@@ -5,9 +5,6 @@
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
 
-#define VOLUME_DEPTH (64)
-#define VOLUME_NEAR (0.5)
-#define VOLUME_FAR (64.0)
 
 struct PSInput
 {
@@ -34,12 +31,12 @@ float4 main(PSInput input) : SV_Target0
 	float4 noise = g_BlueNoiseImage.Load(int4((int2(input.position.xy) + 32 * (g_PushConsts.frame & 1)) & 63, g_PushConsts.frame & 63, 0));
 	noise = (noise * 2.0 - 1.0) * 1.5;
 	
+	const float centerDepth = rcp(g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
+	
 	float4 result = float4(0.0, 0.0, 0.0, 1.0);
 	
 	if (g_PushConsts.raymarchedFog != 0)
 	{
-		const float centerDepth = 1.0 / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
-		
 		float2 texelSize;
 		g_RaymarchedVolumetricsImage.GetDimensions(texelSize.x, texelSize.y);
 		texelSize = 1.0 / texelSize;
@@ -71,43 +68,21 @@ float4 main(PSInput input) : SV_Target0
 		result = raymarchedVolumetrics * rcp(totalWeight);
 	}
 	
-	const float2 clipSpacePosition = input.position.xy * float2(g_PushConsts.texelWidth, g_PushConsts.texelHeight) * float2(2.0, -2.0) - float2(1.0, -1.0);
-	float3 viewSpacePosition = float3(g_PushConsts.unprojectParams.xy * clipSpacePosition, -1.0) / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
+	float d = (log2(max(0, centerDepth * rcp(g_PushConsts.volumeNear))) * rcp(log2(g_PushConsts.volumeFar / g_PushConsts.volumeNear)));
 	
-	//const float depth = g_DepthImage.Load(int3(input.position.xy, 0)).x;
-	float z = -viewSpacePosition.z;///*length(viewSpacePosition);//*/1.0 / (g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);
-	float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
-	
-	// the fog image can extend further to the right/downwards than the lighting image, so we cant just use the uv
-	// of the current texel but instead need to scale the uv with respect to the fog image resolution
 	float3 imageDims;
 	g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
-	float2 scaledFogImageTexelSize = 1.0 / (imageDims.xy * 8.0);
-	
-	float3 volumetricFogTexCoord = float3(input.texCoord/*input.position.xy * scaledFogImageTexelSize*/, d);
-	
-	float4 fog = 0.0;
-	
-	
 	float3 texelSize = 1.0 / imageDims;
 	
-	float3 tc;
-	
-	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
-	noise = noise.yzwx;
-	
-	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
-	noise = noise.yzwx;
-	
-	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
-	noise = noise.yzwx;
-	
-	tc = volumetricFogTexCoord + noise.xyz * texelSize;
-	fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
-	noise = noise.yzwx;
+	float4 fog = 0.0;
+	{
+		for (int i = 0; i < 4; ++i)
+		{
+			float3 tc = float3(input.texCoord, d) + noise.xyz * texelSize;
+			fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
+			noise = noise.yzwx;
+		}
+	}
 	
 	fog.rgb = inverseSimpleTonemap(fog.rgb);
 	

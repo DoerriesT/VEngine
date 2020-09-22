@@ -12,6 +12,7 @@
 #include "Graphics/PipelineCache.h"
 #include "Graphics/DescriptorSetCache.h"
 #include "Graphics/gal/Initializers.h"
+#include <GlobalVar.h>
 
 using namespace VEngine::gal;
 
@@ -30,6 +31,20 @@ VEngine::VolumetricFogModule::VolumetricFogModule(gal::GraphicsDevice *graphicsD
 	}
 
 	resize(width, height);
+	resizeVolumes();
+
+	g_VolumetricFogVolumeWidth.addListener([&](const uint32_t &value)
+		{
+			m_resizeVolumes = true;
+		});
+	g_VolumetricFogVolumeHeight.addListener([&](const uint32_t &value)
+		{
+			m_resizeVolumes = true;
+		});
+	g_VolumetricFogVolumeDepth.addListener([&](const uint32_t &value)
+		{
+			m_resizeVolumes = true;
+		});
 }
 
 VEngine::VolumetricFogModule::~VolumetricFogModule()
@@ -45,11 +60,21 @@ VEngine::VolumetricFogModule::~VolumetricFogModule()
 
 void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	bool ignoreHistory = data.m_ignoreHistory;
+
+	if (m_resizeVolumes)
+	{
+		m_graphicsDevice->waitIdle();
+		resizeVolumes();
+		m_resizeVolumes = false;
+		ignoreHistory = true;
+	}
+
 	auto &commonData = *data.m_commonData;
 
-	const uint32_t imageWidth = 160;// (m_width + 7) / 8;
-	const uint32_t imageHeight = 90;// (m_height + 7) / 8;
-	const uint32_t imageDepth = 64;
+	const uint32_t imageWidth = g_VolumetricFogVolumeWidth;
+	const uint32_t imageHeight = g_VolumetricFogVolumeHeight;
+	const uint32_t imageDepth = g_VolumetricFogVolumeDepth;
 
 	rg::ImageViewHandle scatteringImageViewHandle;
 	rg::ImageViewHandle prevScatteringImageViewHandle;
@@ -143,7 +168,6 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogMergedPassData.m_fomImageViewHandle = data.m_fomImageViewHandle;
 	volumetricFogMergedPassData.m_directionalLightFOMImageViewHandle = data.m_directionalLightFOMImageViewHandle;
 	volumetricFogMergedPassData.m_directionalLightFOMDepthRangeImageViewHandle = data.m_directionalLightFOMDepthRangeImageViewHandle;
-	volumetricFogMergedPassData.m_depthImageViewHandle = data.m_depthImageViewHandle;
 	volumetricFogMergedPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
 	volumetricFogMergedPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
 	volumetricFogMergedPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
@@ -155,7 +179,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	// volumetric fog temporal filter
 	VolumetricFogFilterPass2::Data volumetricFogFilterPass2Data;
 	volumetricFogFilterPass2Data.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogFilterPass2Data.m_ignoreHistory = data.m_ignoreHistory;
+	volumetricFogFilterPass2Data.m_ignoreHistory = ignoreHistory;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPass2Data.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
 	volumetricFogFilterPass2Data.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
 	volumetricFogFilterPass2Data.m_resultImageViewHandle = scatteringImageViewHandle;
@@ -259,10 +283,6 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		if (m_scatteringImages[i])
-		{
-			m_graphicsDevice->destroyImage(m_scatteringImages[i]);
-		}
 		if (m_raymarchedScatteringImages[i])
 		{
 			m_graphicsDevice->destroyImage(m_raymarchedScatteringImages[i]);
@@ -272,23 +292,6 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 			m_graphicsDevice->destroyImage(m_downsampledDepthImages[i]);
 		}
 	}
-
-	const uint32_t imageWidth = 160;// (m_width + 7) / 8;
-	const uint32_t imageHeight = 90;// (m_height + 7) / 8;
-	const uint32_t imageDepth = 64;
-
-	ImageCreateInfo imageCreateInfo{};
-	imageCreateInfo.m_width = imageWidth;
-	imageCreateInfo.m_height = imageHeight;
-	imageCreateInfo.m_depth = imageDepth;
-	imageCreateInfo.m_levels = 1;
-	imageCreateInfo.m_layers = 1;
-	imageCreateInfo.m_samples = SampleCount::_1;
-	imageCreateInfo.m_imageType = ImageType::_3D;
-	imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
-	imageCreateInfo.m_createFlags = 0;
-	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
-
 
 	ImageCreateInfo raymarchedImageCreateInfo{};
 	raymarchedImageCreateInfo.m_width = m_width / 2;
@@ -318,11 +321,9 @@ void VEngine::VolumetricFogModule::resize(uint32_t width, uint32_t height)
 
 	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
 	{
-		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_scatteringImages[i]);
 		m_graphicsDevice->createImage(raymarchedImageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_raymarchedScatteringImages[i]);
 		m_graphicsDevice->createImage(downsampledDepthImageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_downsampledDepthImages[i]);
 
-		m_scatteringImageState[i] = {};
 		m_raymarchedScatteringImageState[i] = {};
 		m_downsampledDepthImageState[i] = {};
 	}
@@ -341,4 +342,34 @@ VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getRaymarchedScatteri
 VEngine::rg::ImageViewHandle VEngine::VolumetricFogModule::getDownsampledDepthImageViewHandle()
 {
 	return m_downsampledDepthImageViewHandle;
+}
+
+void VEngine::VolumetricFogModule::resizeVolumes()
+{
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+	{
+		if (m_scatteringImages[i])
+		{
+			m_graphicsDevice->destroyImage(m_scatteringImages[i]);
+		}
+	}
+
+	ImageCreateInfo imageCreateInfo{};
+	imageCreateInfo.m_width = g_VolumetricFogVolumeWidth;
+	imageCreateInfo.m_height = g_VolumetricFogVolumeHeight;
+	imageCreateInfo.m_depth = g_VolumetricFogVolumeDepth;
+	imageCreateInfo.m_levels = 1;
+	imageCreateInfo.m_layers = 1;
+	imageCreateInfo.m_samples = SampleCount::_1;
+	imageCreateInfo.m_imageType = ImageType::_3D;
+	imageCreateInfo.m_format = Format::R16G16B16A16_SFLOAT;
+	imageCreateInfo.m_createFlags = 0;
+	imageCreateInfo.m_usageFlags = ImageUsageFlagBits::RW_TEXTURE_BIT | ImageUsageFlagBits::TEXTURE_BIT;
+
+	for (size_t i = 0; i < RendererConsts::FRAMES_IN_FLIGHT; ++i)
+	{
+		m_graphicsDevice->createImage(imageCreateInfo, MemoryPropertyFlagBits::DEVICE_LOCAL_BIT, 0, false, &m_scatteringImages[i]);
+
+		m_scatteringImageState[i] = {};
+	}
 }

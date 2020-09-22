@@ -5,11 +5,10 @@
 #include "Graphics/PassRecordContext.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/gal/Initializers.h"
+#include <GlobalVar.h>
 
 using namespace VEngine::gal;
 
-extern bool g_fogDithering;
-extern bool g_fogDoubleSample;
 extern bool g_fogJittering;
 extern int g_volumetricShadow;
 extern float g_fogHistoryAlpha;
@@ -35,7 +34,7 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	Constants consts;
 	consts.viewMatrixDepthRow = glm::vec4(commonData->m_viewMatrix[0][2], commonData->m_viewMatrix[1][2], commonData->m_viewMatrix[2][2], commonData->m_viewMatrix[3][2]);
 	consts.unprojectParams = glm::vec4(invProjMatrix[0][0], invProjMatrix[1][1], invProjMatrix[2][3], invProjMatrix[3][3]);
-	consts.volumeResResultRes = glm::vec4(160.0f, 90.0f, commonData->m_width, commonData->m_height);
+	consts.volumeResResultRes = glm::vec4(g_VolumetricFogVolumeWidth, g_VolumetricFogVolumeHeight, commonData->m_width, commonData->m_height);
 	consts.frustumCornerTL = { data.m_frustumCorners[0][0], data.m_frustumCorners[0][1], data.m_frustumCorners[0][2] };
 	consts.jitterX = g_fogJittering ? data.m_jitter[0] : 0.5f;
 	consts.frustumCornerTR = { data.m_frustumCorners[1][0], data.m_frustumCorners[1][1], data.m_frustumCorners[1][2] };
@@ -53,6 +52,9 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
 	consts.checkerBoardCondition = commonData->m_frame & 1;
+	consts.volumeDepth = g_VolumetricFogVolumeDepth;
+	consts.volumeNear = g_VolumetricFogVolumeNear;
+	consts.volumeFar = g_VolumetricFogVolumeFar;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
@@ -68,7 +70,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_localMediaBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
-		{rg::ResourceViewHandle(data.m_depthImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 
 	graph.addPass("Volumetric Fog Merged", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
@@ -92,7 +93,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
 				ImageView *fomDirectionalImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
 				ImageView *fomDirectionalDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
-				ImageView *depthImageView = registry.getImageView(data.m_depthImageViewHandle);
 				ImageView *punctualLightsMaskImageView = registry.getImageView(data.m_punctualLightsBitMaskImageViewHandle);
 				ImageView *punctualLightsShadowedMaskImageView = registry.getImageView(data.m_punctualLightsShadowedBitMaskImageViewHandle);
 				ImageView *participatingMediaMaskImageView = registry.getImageView(data.m_localMediaBitMaskImageViewHandle);
@@ -106,7 +106,6 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
 					Initializers::texture(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
-					Initializers::texture(&depthImageView, DEPTH_IMAGE_BINDING),
 					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
 					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
 					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),

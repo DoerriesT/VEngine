@@ -3,10 +3,6 @@
 #include "common.hlsli"
 
 
-#define VOLUME_DEPTH (64)
-#define VOLUME_NEAR (0.5)
-#define VOLUME_FAR (64.0)
-
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture3D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
 Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
@@ -24,11 +20,9 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
 	
-	//pos = normalize(pos);
-	
-	float d = texelCoord.z * (1.0 / VOLUME_DEPTH);
-	float z = VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
-	pos *= z / VOLUME_FAR;
+	float d = texelCoord.z * rcp(g_Constants.volumeDepth);
+	float z = g_Constants.volumeNear * exp2(d * (log2(g_Constants.volumeFar / g_Constants.volumeNear)));
+	pos *= z / g_Constants.volumeFar;
 	
 	pos += g_Constants.cameraPos;
 	
@@ -52,7 +46,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
 		
 		float z = -prevViewSpacePos.z;//length(prevViewSpacePos.xyz);
-		float d = (log2(max(0, z * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR)));
+		float d = log2(max(0, z * rcp(g_Constants.volumeNear))) * rcp(log2(g_Constants.volumeFar / g_Constants.volumeNear));
 
 		float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
 		float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);

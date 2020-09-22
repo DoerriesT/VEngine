@@ -72,7 +72,7 @@ void App::initialize(VEngine::Engine *engine)
 	//entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
 	//entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
 	//scene.m_entities.push_back({ "Quad", quadEntity });
-	
+
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 	entt::entity sponzaEntity = entityRegistry.create();
 	entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
@@ -283,6 +283,18 @@ void App::update(float timeDelta)
 		bool vsync = VEngine::g_VSyncEnabled;
 		ImGui::Checkbox("VSync", &vsync);
 		VEngine::g_VSyncEnabled.set(vsync);
+
+		int volumeWidth = VEngine::g_VolumetricFogVolumeWidth;
+		ImGui::DragInt("Volume Width", &volumeWidth, 1.0f, 32, 256);
+		VEngine::g_VolumetricFogVolumeWidth = std::min(std::max((uint32_t)volumeWidth, 32u), 256u);
+
+		int volumeHeight = VEngine::g_VolumetricFogVolumeHeight;
+		ImGui::DragInt("Volume Height", &volumeHeight, 1.0f, 32, 256);
+		VEngine::g_VolumetricFogVolumeHeight = std::min(std::max((uint32_t)volumeHeight, 32u), 256u);
+
+		int volumeDepth = VEngine::g_VolumetricFogVolumeDepth;
+		ImGui::DragInt("Volume Depth", &volumeDepth, 1.0f, 32, 256);
+		VEngine::g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 32u), 256u);
 
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);

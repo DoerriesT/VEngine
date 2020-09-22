@@ -126,4 +126,9 @@ namespace VEngine
 	extern GlobalVar<bool> g_ExposureFixed;
 	extern GlobalVar<float> g_ExposureFixedValue;
 	extern GlobalConst<bool> g_vulkanDebugCallBackEnabled;
+	extern GlobalVar<uint32_t> g_VolumetricFogVolumeWidth;
+	extern GlobalVar<uint32_t> g_VolumetricFogVolumeHeight;
+	extern GlobalVar<uint32_t> g_VolumetricFogVolumeDepth;
+	extern GlobalVar<float> g_VolumetricFogVolumeNear;
+	extern GlobalVar<float> g_VolumetricFogVolumeFar;
 }

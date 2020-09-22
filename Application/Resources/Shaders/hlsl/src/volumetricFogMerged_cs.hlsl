@@ -7,10 +7,6 @@
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
 
-#define VOLUME_DEPTH (64)
-#define VOLUME_NEAR (0.5)
-#define VOLUME_FAR (64.0)
-
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
@@ -20,7 +16,6 @@ ByteAddressBuffer g_ExposureData : REGISTER_SRV(EXPOSURE_DATA_BUFFER_BINDING, 0)
 Texture2DArray<float4> g_FomImage : REGISTER_SRV(FOM_IMAGE_BINDING, 0);
 Texture2DArray<float4> g_FomDirectionalImage : REGISTER_SRV(FOM_DIRECTIONAL_IMAGE_BINDING, 0);
 Texture2DArray<float> g_FomDirectionalDepthRangeImage : REGISTER_SRV(FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING, 0);
-Texture2D<float> g_DepthImage : REGISTER_SRV(DEPTH_IMAGE_BINDING, 0);
 
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 
@@ -63,9 +58,9 @@ float3 calcWorldSpacePos(float3 texelCoord)
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
 	
-	float d = texelCoord.z * (1.0 / VOLUME_DEPTH);
-	float z = VOLUME_NEAR * exp2(d * (log2(VOLUME_FAR / VOLUME_NEAR)));
-	pos *= z / VOLUME_FAR;
+	float d = texelCoord.z * rcp(g_Constants.volumeDepth);
+	float z = g_Constants.volumeNear * exp2(d * (log2(g_Constants.volumeFar / g_Constants.volumeNear)));
+	pos *= z / g_Constants.volumeFar;
 	
 	pos += g_Constants.cameraPos;
 	
@@ -118,12 +113,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	texelCoord.z *= 2.0;
 	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
 	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
-	
-	float furthestDepth = g_DepthImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], (threadID.xy + 0.5) / g_Constants.volumeResResultRes.xy, 0.0).x;
-	float linearFurthestDepth = rcp(g_Constants.unprojectParams.z * furthestDepth + g_Constants.unprojectParams.w);
-	float furthestTexelCoord = (log2(max(0, linearFurthestDepth * (1.0 / VOLUME_NEAR))) * (1.0 / log2(VOLUME_FAR / VOLUME_NEAR))) * VOLUME_DEPTH;
-	
-	texelCoord.z = min(texelCoord.z, furthestTexelCoord);
 	
 	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
 	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));

@@ -70,5 +70,9 @@ namespace VEngine
 		rg::ResourceStateData m_scatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		rg::ResourceStateData m_raymarchedScatteringImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
 		rg::ResourceStateData m_downsampledDepthImageState[RendererConsts::FRAMES_IN_FLIGHT] = {};
+
+		bool m_resizeVolumes = true;
+
+		void resizeVolumes();
 	};
 }

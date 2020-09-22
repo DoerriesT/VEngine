@@ -11,4 +11,7 @@ struct PushConsts
 	float texelWidth;
 	float texelHeight;
 	uint raymarchedFog;
+	uint volumeDepth;
+	float volumeNear;
+	float volumeFar;
 };

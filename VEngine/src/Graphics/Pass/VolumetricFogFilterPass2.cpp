@@ -7,12 +7,10 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/gal/Initializers.h"
 #include "Graphics/MappableBufferBlock.h"
+#include <GlobalVar.h>
 
 using namespace VEngine::gal;
 
-extern bool g_fogClamping;
-extern bool g_fogPrevFrameCombine;
-extern bool g_fogHistoryCombine;
 extern float g_fogHistoryAlpha;
 
 namespace
@@ -42,7 +40,9 @@ void VEngine::VolumetricFogFilterPass2::addToGraph(rg::RenderGraph &graph, const
 	consts.ignoreHistory = data.m_ignoreHistory;
 	consts.checkerBoardCondition = commonData->m_frame & 1;
 	consts.alpha = g_fogHistoryAlpha;
-
+	consts.volumeDepth = g_VolumetricFogVolumeDepth;
+	consts.volumeNear = g_VolumetricFogVolumeNear;
+	consts.volumeFar = g_VolumetricFogVolumeFar;
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 

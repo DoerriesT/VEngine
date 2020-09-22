@@ -19,5 +19,7 @@ struct Constants
 	float3 frustumCornerBR;
 	uint pad0;
 	float3 cameraPos;
-	uint pad1;
+	uint volumeDepth;
+	float volumeNear;
+	float volumeFar;
 };

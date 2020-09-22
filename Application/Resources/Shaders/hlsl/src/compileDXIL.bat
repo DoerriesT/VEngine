@@ -13,7 +13,7 @@ dxc.exe -T cs_6_2 -E main deferredShadows_cs.hlsl -Fo ./../deferredShadows_cs.dx
 dxc.exe -T cs_6_2 -E main volumetricFogMerged_cs.hlsl -Fo ./../volumetricFogMerged_cs.dxil -Zi -Fd ./../volumetricFogMerged_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricFogFilter2_cs.hlsl -Fo ./../volumetricFogFilter2_cs.dxil -Zi -Fd ./../volumetricFogFilter2_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricFogIntegrate_cs.hlsl -Fo ./../volumetricFogIntegrate_cs.dxil -Zi -Fd ./../volumetricFogIntegrate_cs.pdb
-dxc.exe -T cs_6_2 -E main volumetricFogApply_cs.hlsl -Fo ./../volumetricFogApply_cs.dxil -Zi -Fd ./../volumetricFogApply_cs.pdb
+dxc.exe -T ps_6_2 -E main volumetricFogApply_ps.hlsl -Fo ./../volumetricFogApply_ps.dxil -Zi -Fd ./../volumetricFogApply_ps.pdb
 dxc.exe -T vs_6_2 -E main sky_vs.hlsl -Fo ./../sky_vs.dxil -Zi -Fd ./../sky_vs.pdb
 dxc.exe -T ps_6_2 -E main sky_ps.hlsl -Fo ./../sky_ps.dxil -Zi -Fd ./../sky_ps.pdb
 dxc.exe -T cs_6_2 -E main temporalAA_cs.hlsl -Fo ./../temporalAA_cs.dxil -Zi -Fd ./../temporalAA_cs.pdb
@@ -62,7 +62,6 @@ dxc.exe -T cs_6_2 -E main swapChainCopy_cs.hlsl -Fo ./../swapChainCopy_cs.dxil -
 dxc.exe -T cs_6_2 -E main volumetricRaymarch_cs.hlsl -Fo ./../volumetricRaymarch_cs.dxil -Zi -Fd ./../volumetricRaymarch_cs.pdb
 dxc.exe -T cs_6_2 -E main depthDownsampleCBMinMax_cs.hlsl -Fo ./../depthDownsampleCBMinMax_cs.dxil -Zi -Fd ./../depthDownsampleCBMinMax_cs.pdb
 dxc.exe -T ps_6_2 -E main applyIndirectLighting_ps.hlsl -Fo ./../applyIndirectLighting_ps.dxil -Zi -Fd ./../applyIndirectLighting_ps.pdb
-dxc.exe -T ps_6_2 -E main volumetricFogApply_ps.hlsl -Fo ./../volumetricFogApply_ps.dxil -Zi -Fd ./../volumetricFogApply_ps.pdb
 
 dxc.exe -T vs_6_2 -E main visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_vs.dxil -Zi -Fd ./../visibilityBuffer_vs.pdb
 dxc.exe -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_vs.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.dxil -Zi -Fd ./../visibilityBuffer_ALPHA_MASK_ENABLED_vs.pdb

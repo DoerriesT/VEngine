@@ -33,4 +33,9 @@ namespace VEngine
 	GlobalVar<bool> g_ExposureFixed = false;
 	GlobalVar<float> g_ExposureFixedValue = 2.0f;
 	GlobalConst<bool> g_vulkanDebugCallBackEnabled = true;
+	GlobalVar<uint32_t> g_VolumetricFogVolumeWidth = 160u;
+	GlobalVar<uint32_t> g_VolumetricFogVolumeHeight = 90u;
+	GlobalVar<uint32_t> g_VolumetricFogVolumeDepth = 64u;
+	GlobalVar<float> g_VolumetricFogVolumeNear = 0.5f;
+	GlobalVar<float> g_VolumetricFogVolumeFar = 64.0f;
 }

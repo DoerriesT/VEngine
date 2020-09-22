@@ -5,12 +5,12 @@
 struct Constants
 {
 	float3 frustumCornerTL;
-	float pad0;
+	uint volumeDepth;
 	float3 frustumCornerTR;
-	float pad1;
+	float volumeNear;
 	float3 frustumCornerBL;
-	float pad3;
+	float volumeFar;
 	float3 frustumCornerBR;
-	float pad4;
+	float pad0;
 	float3 cameraPos;
 };
