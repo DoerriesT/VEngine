@@ -16,6 +16,8 @@
 
 using namespace VEngine::gal;
 
+bool g_volumetricFogCheckerBoard = true;
+
 VEngine::VolumetricFogModule::VolumetricFogModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
 	:m_graphicsDevice(graphicsDevice),
 	m_width(width),
@@ -76,9 +78,9 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	const uint32_t imageHeight = g_VolumetricFogVolumeHeight;
 	const uint32_t imageDepth = g_VolumetricFogVolumeDepth;
 
-	rg::ImageViewHandle scatteringImageViewHandle;
-	rg::ImageViewHandle prevScatteringImageViewHandle;
-	rg::ImageViewHandle checkerboardImageViewHandle;
+	rg::ImageViewHandle scatteringImageViewHandle{};
+	rg::ImageViewHandle prevScatteringImageViewHandle{};
+	rg::ImageViewHandle checkerboardImageViewHandle{};
 	{
 		rg::ImageDescription desc = {};
 		desc.m_clear = false;
@@ -95,9 +97,12 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		desc.m_name = "Volumetric Fog Integrated Scattering Image";
 		m_volumetricScatteringImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
 
-		desc.m_name = "Volumetric Fog Checkerboard Scattering Image";
-		desc.m_depth /= 2;
-		checkerboardImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+		if (g_volumetricFogCheckerBoard)
+		{
+			desc.m_name = "Volumetric Fog Checkerboard Scattering Image";
+			desc.m_depth /= 2;
+			checkerboardImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+		}
 
 		rg::ImageHandle scatteringImageHandle = graph.importImage(m_scatteringImages[commonData.m_curResIdx], "Volumetric Fog Scattering Image", false, {}, &m_scatteringImageState[commonData.m_curResIdx]);
 		scatteringImageViewHandle = graph.createImageView({ "Volumetric Fog Scattering Image", scatteringImageHandle, { 0, 1, 0, 1 }, ImageViewType::_3D });
@@ -142,8 +147,9 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 		c -= commonData.m_cameraPosition;
 	}
 
-	// volumetric fog merged pass
+	// volumetric fog scatter pass
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
+	volumetricFogScatterPassData.m_checkerboard = g_volumetricFogCheckerBoard;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
 	volumetricFogScatterPassData.m_jitter[0] = jitterX0;
@@ -152,6 +158,7 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_jitter[3] = jitterX1;
 	volumetricFogScatterPassData.m_jitter[4] = jitterY1;
 	volumetricFogScatterPassData.m_jitter[5] = jitterZ1;
+	volumetricFogScatterPassData.m_ignoreHistory = ignoreHistory;
 	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
 	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
 	volumetricFogScatterPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
@@ -161,7 +168,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_punctualLightsBitMaskImageViewHandle = data.m_punctualLightsBitMaskImageViewHandle;
 	volumetricFogScatterPassData.m_punctualLightsShadowedBitMaskImageViewHandle = data.m_punctualLightsShadowedBitMaskImageViewHandle;
 	volumetricFogScatterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
-	volumetricFogScatterPassData.m_resultImageViewHandle = checkerboardImageViewHandle;
+	volumetricFogScatterPassData.m_resultImageViewHandle = g_volumetricFogCheckerBoard ? checkerboardImageViewHandle : scatteringImageViewHandle;
+	volumetricFogScatterPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
 	volumetricFogScatterPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
 	volumetricFogScatterPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
 	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
@@ -176,17 +184,20 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 
 
-	// volumetric fog temporal filter
-	VolumetricFogFilterPass::Data volumetricFogFilterPassData;
-	volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogFilterPassData.m_ignoreHistory = ignoreHistory;
-	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogFilterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
-	volumetricFogFilterPassData.m_resultImageViewHandle = scatteringImageViewHandle;
-	volumetricFogFilterPassData.m_inputImageViewHandle = checkerboardImageViewHandle;
-	volumetricFogFilterPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
+	if (g_volumetricFogCheckerBoard)
+	{
+		// volumetric fog temporal filter
+		VolumetricFogFilterPass::Data volumetricFogFilterPassData;
+		volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
+		volumetricFogFilterPassData.m_ignoreHistory = ignoreHistory;
+		for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+		volumetricFogFilterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
+		volumetricFogFilterPassData.m_resultImageViewHandle = scatteringImageViewHandle;
+		volumetricFogFilterPassData.m_inputImageViewHandle = checkerboardImageViewHandle;
+		volumetricFogFilterPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
 
-	VolumetricFogFilterPass::addToGraph(graph, volumetricFogFilterPassData);
+		VolumetricFogFilterPass::addToGraph(graph, volumetricFogFilterPassData);
+	}
 
 
 	// volumetric fog integrate

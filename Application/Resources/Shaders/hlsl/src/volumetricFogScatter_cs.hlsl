@@ -7,7 +7,20 @@
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
 
+#ifndef CHECKER_BOARD
+#define CHECKER_BOARD 0
+#endif // CHECKER_BOARD
+
+#ifndef VBUFFER_ONLY
+#define VBUFFER_ONLY 0
+#endif // VBUFFER_ONLY
+
+#ifndef IN_SCATTER_ONLY
+#define IN_SCATTER_ONLY 0
+#endif // IN_SCATTER_ONLY
+
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
+Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
 Texture2DArray<float4> g_ShadowImage : REGISTER_SRV(SHADOW_IMAGE_BINDING, 0);
 Texture2D<float> g_ShadowAtlasImage : REGISTER_SRV(SHADOW_ATLAS_IMAGE_BINDING, 0);
@@ -22,7 +35,6 @@ StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_
 // local media
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
 Texture2DArray<uint> g_LocalMediaBitMaskImage : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
-//ByteAddressBuffer g_LocalMediaBitMask : REGISTER_SRV(LOCAL_MEDIA_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_LocalMediaDepthBins : REGISTER_SRV(LOCAL_MEDIA_Z_BINS_BINDING, 0);
 
 // directional lights
@@ -32,13 +44,11 @@ StructuredBuffer<DirectionalLight> g_DirectionalLightsShadowed : REGISTER_SRV(DI
 // punctual lights
 StructuredBuffer<PunctualLight> g_PunctualLights : REGISTER_SRV(PUNCTUAL_LIGHTS_BINDING, 0);
 Texture2DArray<uint> g_PunctualLightsBitMaskImage : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
-//ByteAddressBuffer g_PunctualLightsBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_PunctualLightsDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_Z_BINS_BINDING, 0);
 
 // punctual lights shadowed
 StructuredBuffer<PunctualLightShadowed> g_PunctualLightsShadowed : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BINDING, 0);
 Texture2DArray<uint> g_PunctualLightsShadowedBitMaskImage : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
-//ByteAddressBuffer g_PunctualLightsShadowedBitMask : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING, 0);
 
 
@@ -106,25 +116,12 @@ float henyeyGreenstein(float3 V, float3 L, float g)
 	return num / denom;
 }
 
-[numthreads(4, 4, 4)]
-void main(uint3 threadID : SV_DispatchThreadID)
+void vbuffer(uint2 coord, float3 worldSpacePos, float linearDepth, out float3 scattering, out float extinction, out float3 emissive, out float phase)
 {
-	float3 texelCoord = threadID;
-	texelCoord.z *= 2.0;
-	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
-	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
-	
-	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
-	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
-
-	uint3 imageDims;
-	g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
-	uint targetImageWidth = imageDims.x * 8;
-	
-	float3 scattering = 0.0;
-	float extinction = 0.0;
-	float3 emissive = 0.0;
-	float phase = 0.0;
+	scattering = 0.0;
+	extinction = 0.0;
+	emissive = 0.0;
+	phase = 0.0;
 	uint accumulatedMediaCount = 0;
 	
 	// iterate over all global participating media
@@ -147,8 +144,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	{
 		uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 		getLightingMinMaxIndices(g_LocalMediaDepthBins, localMediaCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-		//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
-		const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
+		const uint2 tile = getTile(coord / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
@@ -180,19 +176,17 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	}
 	
 	phase = accumulatedMediaCount > 0 ? phase * rcp((float)accumulatedMediaCount) : 0.0;
-	
-	const float4 scatteringExtinction = float4(scattering, extinction);
-	const float4 emissivePhase = float4(emissive, phase);
-	
-	const float3 V = normalize(g_Constants.cameraPos - worldSpacePos);
-	
+}
+
+float4 inscattering(uint2 coord, float3 V, float3 worldSpacePos, float linearDepth, float3 scattering, float extinction, float3 emissive, float phase)
+{
 	// integrate inscattered lighting
-	float3 lighting = emissivePhase.rgb;
+	float3 lighting = emissive;
 	{
 		// ambient
 		{
 			float3 ambientLight = (1.0 / PI);
-			lighting += ambientLight * (1.0 / (4.0 * PI));
+			lighting += ambientLight / (4.0 * PI);
 		}
 		
 		// directional lights
@@ -200,7 +194,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 			{
 				DirectionalLight directionalLight = g_DirectionalLights[i];
-				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, emissivePhase.w);
+				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, phase);
 			}
 		}
 		
@@ -210,7 +204,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 			{
 				DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
 				float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos);
-				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, emissivePhase.w) * shadow;
+				lighting += directionalLight.color * henyeyGreenstein(V, directionalLight.direction, phase) * shadow;
 			}
 		}
 		
@@ -220,8 +214,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsDepthBins, punctualLightCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
-			const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
+			const uint2 tile = getTile(coord / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
@@ -246,7 +239,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 					
 					const float3 radiance = light.color * att;
 					
-					lighting += radiance * henyeyGreenstein(V, L, emissivePhase.w);
+					lighting += radiance * henyeyGreenstein(V, L, phase);
 				}
 			}
 		}
@@ -257,8 +250,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		{
 			uint wordMin, wordMax, minIndex, maxIndex, wordCount;
 			getLightingMinMaxIndices(g_PunctualLightsShadowedDepthBins, punctualLightShadowedCount, linearDepth, minIndex, maxIndex, wordMin, wordMax, wordCount);
-			//const uint address = getTileAddress(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw, g_Constants.volumeResResultRes.z, wordCount);
-			const uint2 tile = getTile(threadID.xy / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
+			const uint2 tile = getTile(coord / g_Constants.volumeResResultRes.xy * g_Constants.volumeResResultRes.zw);
 	
 			for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 			{
@@ -339,23 +331,81 @@ void main(uint3 threadID : SV_DispatchThreadID)
 						float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(uv, 1.0), 0.0);
 						
 						float depth = distance(worldSpacePos, lightShadowed.light.position) * rcp(lightShadowed.radius);
-						//depth = saturate(depth);
 						
-						shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
+						shadow *= fourierOpacityGetTransmittance(depth, fom0, fom1);
 					}
 					
 					const float3 radiance = lightShadowed.light.color * att;
 					
-					lighting += shadow * radiance * henyeyGreenstein(V, L, emissivePhase.w);
+					lighting += shadow * radiance * henyeyGreenstein(V, L, phase);
 				}
 			}
 		}
 	}
 	
-	float4 result = float4(lighting * scatteringExtinction.rgb, scatteringExtinction.w);
+	float4 result = float4(lighting * scattering, extinction);
 	
 	// apply pre-exposure
 	result.rgb *= asfloat(g_ExposureData.Load(0));
+	
+	return result;
+}
+
+float4 temporalFilter(uint3 threadID, float4 result)
+{
+	float4 prevViewSpacePos = mul(g_Constants.prevViewMatrix, float4(calcWorldSpacePos(threadID + 0.5), 1.0));
+	
+	float z = -prevViewSpacePos.z;
+	float d = log2(max(0, z * rcp(g_Constants.volumeNear))) * rcp(log2(g_Constants.volumeFar / g_Constants.volumeNear));
+
+	float4 prevClipSpacePos = mul(g_Constants.prevProjMatrix, prevViewSpacePos);
+	float3 prevTexCoord = float3((prevClipSpacePos.xy / prevClipSpacePos.w) * float2(0.5, -0.5) + 0.5, d);
+	
+	bool validCoord = all(prevTexCoord >= 0.0 && prevTexCoord <= 1.0);
+	float4 prevResult = 0.0;
+	if (validCoord)
+	{
+		prevResult = g_HistoryImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], prevTexCoord, 0.0);
+		
+		// prevResult.rgb is pre-exposed -> convert from previous frame exposure to current frame exposure
+		prevResult.rgb *= asfloat(g_ExposureData.Load(1 << 2)); // 0 = current frame exposure | 1 = previous frame to current frame exposure
+		
+		result = lerp(prevResult, result, g_Constants.alpha);
+	}
+	
+	return result;
+}
+
+[numthreads(4, 4, 4)]
+void main(uint3 threadID : SV_DispatchThreadID)
+{
+	float3 texelCoord = threadID;
+#if CHECKER_BOARD
+	texelCoord.z *= 2.0;
+	texelCoord.z += (((threadID.x + threadID.y) & 1) == g_Constants.checkerBoardCondition) ? 1.0 : 0.0;
+#endif // CHECKER_BOARD
+	texelCoord += float3(g_Constants.jitterX, g_Constants.jitterY, frac(g_Constants.jitterZ));
+	
+	const float3 worldSpacePos = calcWorldSpacePos(texelCoord);
+	const float linearDepth = -dot(g_Constants.viewMatrixDepthRow, float4(worldSpacePos, 1.0));
+
+	float3 scattering = 0.0;
+	float extinction = 0.0;
+	float3 emissive = 0.0;
+	float phase = 0.0;
+	
+	vbuffer(threadID.xy, worldSpacePos, linearDepth, scattering, extinction, emissive, phase);
+	
+	const float3 V = normalize(g_Constants.cameraPos - worldSpacePos);
+	float4 result = inscattering(threadID.xy, V, worldSpacePos, linearDepth, scattering, extinction, emissive, phase);
+	
+#if !CHECKER_BOARD
+	// reproject and combine with previous result from previous frame
+	if (g_Constants.ignoreHistory == 0)
+	{
+		result = temporalFilter(threadID, result);
+	}
+#endif // !CHECKER_BOARD
 	
 	g_ResultImage[threadID] = result;
 }

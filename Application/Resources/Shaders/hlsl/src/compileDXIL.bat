@@ -11,6 +11,7 @@ dxc.exe -T cs_6_2 -E main exposure_cs.hlsl -Fo ./../exposure_cs.dxil -Zi -Fd ./.
 dxc.exe -T cs_6_2 -E main tonemap_cs.hlsl -Fo ./../tonemap_cs.dxil -Zi -Fd ./../tonemap_cs.pdb
 dxc.exe -T cs_6_2 -E main deferredShadows_cs.hlsl -Fo ./../deferredShadows_cs.dxil -Zi -Fd ./../deferredShadows_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricFogScatter_cs.hlsl -Fo ./../volumetricFogScatter_cs.dxil -Zi -Fd ./../volumetricFogScatter_cs.pdb
+dxc.exe -T cs_6_2 -E main -D CHECKER_BOARD=1 volumetricFogScatter_cs.hlsl -Fo ./../volumetricFogScatter_CHECKER_BOARD_cs.dxil -Zi -Fd ./../volumetricFogScatter_CHECKER_BOARD_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricFogFilter_cs.hlsl -Fo ./../volumetricFogFilter_cs.dxil -Zi -Fd ./../volumetricFogFilter_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricFogIntegrate_cs.hlsl -Fo ./../volumetricFogIntegrate_cs.dxil -Zi -Fd ./../volumetricFogIntegrate_cs.pdb
 dxc.exe -T ps_6_2 -E main volumetricFogApply_ps.hlsl -Fo ./../volumetricFogApply_ps.dxil -Zi -Fd ./../volumetricFogApply_ps.pdb

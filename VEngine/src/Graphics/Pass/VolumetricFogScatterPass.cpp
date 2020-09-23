@@ -56,6 +56,12 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.volumeNear = g_VolumetricFogVolumeNear;
 	consts.volumeFar = g_VolumetricFogVolumeFar;
 
+	// temporal filter params
+	consts.prevViewMatrix = commonData->m_prevViewMatrix;
+	consts.prevProjMatrix = commonData->m_prevProjectionMatrix;
+	consts.ignoreHistory = data.m_ignoreHistory;
+	consts.alpha = g_fogHistoryAlpha;
+
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
 	rg::ResourceUsageDescription passUsages[]
@@ -70,14 +76,18 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 		{rg::ResourceViewHandle(data.m_localMediaBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+
+		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 
-	graph.addPass("Volumetric Fog Scatter", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	const uint32_t usageCount = data.m_checkerboard ? (uint32_t)std::size(passUsages) - 1 : (uint32_t)std::size(passUsages);
+
+	graph.addPass("Volumetric Fog Scatter", rg::QueueType::GRAPHICS, usageCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogScatter_cs");
+			builder.setComputeShader(data.m_checkerboard ? "Resources/Shaders/hlsl/volumetricFogScatter_CHECKER_BOARD_cs" : "Resources/Shaders/hlsl/volumetricFogScatter_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -97,6 +107,12 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 				ImageView *punctualLightsShadowedMaskImageView = registry.getImageView(data.m_punctualLightsShadowedBitMaskImageViewHandle);
 				ImageView *participatingMediaMaskImageView = registry.getImageView(data.m_localMediaBitMaskImageViewHandle);
 				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
+
+				ImageView *historyImageView = nullptr;
+				if (!data.m_checkerboard)
+				{
+					historyImageView = registry.getImageView(data.m_historyImageViewHandle);
+				}
 
 				DescriptorSetUpdate2 updates[] =
 				{
@@ -121,16 +137,17 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
 					Initializers::byteBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
 					Initializers::texture(&participatingMediaMaskImageView, LOCAL_MEDIA_BIT_MASK_BINDING),
+					Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
 				};
 
-				descriptorSet->update((uint32_t)std::size(updates), updates);
+				descriptorSet->update(data.m_checkerboard ? (uint32_t)std::size(updates) - 1 : (uint32_t)std::size(updates), updates);
 
 				DescriptorSet *sets[]
-				{ 
+				{
 					descriptorSet,
-					data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet, 
-					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet, 
-					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet 
+					data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet
 				};
 				cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
 			}

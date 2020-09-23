@@ -13,6 +13,8 @@ namespace VEngine
 			PassRecordContext *m_passRecordContext;
 			float m_frustumCorners[4][3];
 			float m_jitter[6];
+			bool m_checkerboard;
+			bool m_ignoreHistory;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
 			gal::DescriptorBufferInfo m_punctualLightsBufferInfo;
@@ -27,6 +29,7 @@ namespace VEngine
 			rg::ImageViewHandle m_punctualLightsShadowedBitMaskImageViewHandle;
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
+			rg::ImageViewHandle m_historyImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;
