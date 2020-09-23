@@ -19,6 +19,22 @@
 #define IN_SCATTER_ONLY 0
 #endif // IN_SCATTER_ONLY
 
+#if VBUFFER_ONLY && IN_SCATTER_ONLY
+#error Can't set both both *_ONLY macros to 1
+#endif // VBUFFER_ONLY && IN_SCATTER_ONLY
+
+#define MERGED (!VBUFFER_ONLY && !IN_SCATTER_ONLY)
+
+#if VBUFFER_ONLY
+RWTexture3D<float4> g_ScatteringExtinctionImage : REGISTER_UAV(SCATTERING_EXTINCTION_IMAGE_BINDING, 0);
+RWTexture3D<float4> g_EmissivePhaseImage : REGISTER_UAV(EMISSIVE_PHASE_IMAGE_BINDING, 0);
+#endif // VBUFFER_ONLY
+
+#if IN_SCATTER_ONLY
+Texture3D<float4> g_ScatteringExtinctionImage : REGISTER_SRV(SCATTERING_EXTINCTION_IMAGE_BINDING, 0);
+Texture3D<float4> g_EmissivePhaseImage : REGISTER_SRV(EMISSIVE_PHASE_IMAGE_BINDING, 0);
+#endif // IN_SCATTER_ONLY
+
 RWTexture3D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture3D<float4> g_HistoryImage : REGISTER_SRV(HISTORY_IMAGE_BINDING, 0);
 ConstantBuffer<Constants> g_Constants : REGISTER_CBV(CONSTANT_BUFFER_BINDING, 0);
@@ -51,19 +67,23 @@ StructuredBuffer<PunctualLightShadowed> g_PunctualLightsShadowed : REGISTER_SRV(
 Texture2DArray<uint> g_PunctualLightsShadowedBitMaskImage : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING, 0);
 ByteAddressBuffer g_PunctualLightsShadowedDepthBins : REGISTER_SRV(PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING, 0);
 
-
+#if MERGED || VBUFFER_ONLY
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
-
 SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
 SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 3);
+#endif // MERGED || VBUFFER_ONLY
+
+#if IN_SCATTER_ONLY
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 1);
+SamplerComparisonState g_ShadowSampler : REGISTER_SAMPLER(0, 2);
+Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 3);
+#endif // IN_SCATTER_ONLY
 
 //PUSH_CONSTS(PushConsts, g_PushConsts);
 
 float3 calcWorldSpacePos(float3 texelCoord)
 {
-	uint3 imageDims;
-	g_ResultImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
-	float2 uv = texelCoord.xy / float2(imageDims.xy);
+	float2 uv = texelCoord.xy * g_Constants.volumeTexelSize;
 	
 	float3 pos = lerp(g_Constants.frustumCornerTL, g_Constants.frustumCornerTR, uv.x);
 	pos = lerp(pos, lerp(g_Constants.frustumCornerBL, g_Constants.frustumCornerBR, uv.x), uv.y);
@@ -394,8 +414,29 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	float3 emissive = 0.0;
 	float phase = 0.0;
 	
+#if MERGED || VBUFFER_ONLY
 	vbuffer(threadID.xy, worldSpacePos, linearDepth, scattering, extinction, emissive, phase);
+
+#if VBUFFER_ONLY
+	// vbuffer only shader: write vbuffer params to textures
+	g_ScatteringExtinctionImage[threadID] = float4(scattering, extinction);
+	g_EmissivePhaseImage[threadID] = float4(emissive, phase);
+#endif // VBUFFER_ONLY
 	
+#endif // MERGED || VBUFFER_ONLY
+	
+#if MERGED || IN_SCATTER_ONLY
+	
+#if IN_SCATTER_ONLY
+	// in-scatter only shader: load vbuffer params from textures
+	float4 scatteringExtinction = g_ScatteringExtinctionImage.Load(uint4(threadID, 0));
+	scattering = scatteringExtinction.xyz;
+	extinction = scatteringExtinction.w;
+	float4 emissivePhase = g_EmissivePhaseImage.Load(uint4(threadID, 0));
+	emissive = emissivePhase.xyz;
+	phase = emissivePhase.w;
+#endif // IN_SCATTER_ONLY
+
 	const float3 V = normalize(g_Constants.cameraPos - worldSpacePos);
 	float4 result = inscattering(threadID.xy, V, worldSpacePos, linearDepth, scattering, extinction, emissive, phase);
 	
@@ -408,4 +449,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 #endif // !CHECKER_BOARD
 	
 	g_ResultImage[threadID] = result;
+	
+#endif // MERGED || IN_SCATTER_ONLY
 }

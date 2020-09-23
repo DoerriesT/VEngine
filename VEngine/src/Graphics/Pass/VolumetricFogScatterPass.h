@@ -14,6 +14,9 @@ namespace VEngine
 			float m_frustumCorners[4][3];
 			float m_jitter[6];
 			bool m_checkerboard;
+			bool m_merged;
+			bool m_vbufferOnly;
+			bool m_scatterOnly;
 			bool m_ignoreHistory;
 			gal::DescriptorBufferInfo m_directionalLightsBufferInfo;
 			gal::DescriptorBufferInfo m_directionalLightsShadowedBufferInfo;
@@ -30,6 +33,8 @@ namespace VEngine
 			rg::BufferViewHandle m_exposureDataBufferHandle;
 			rg::ImageViewHandle m_resultImageViewHandle;
 			rg::ImageViewHandle m_historyImageViewHandle;
+			rg::ImageViewHandle m_scatteringExtinctionImageViewHandle;
+			rg::ImageViewHandle m_emissivePhaseImageViewHandle;
 			rg::ImageViewHandle m_shadowImageViewHandle;
 			rg::ImageViewHandle m_shadowAtlasImageViewHandle;
 			rg::ImageViewHandle m_fomImageViewHandle;

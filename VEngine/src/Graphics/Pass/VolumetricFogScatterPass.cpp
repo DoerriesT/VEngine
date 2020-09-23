@@ -21,6 +21,8 @@ namespace
 
 void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
+	assert((data.m_merged && (!data.m_vbufferOnly && !data.m_scatterOnly)) || (!data.m_merged && (data.m_vbufferOnly != data.m_scatterOnly)));
+
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
 
@@ -52,6 +54,7 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 	consts.globalMediaCount = commonData->m_globalParticipatingMediaCount;
 	consts.localMediaCount = commonData->m_localParticipatingMediaCount;
 	consts.checkerBoardCondition = commonData->m_frame & 1;
+	consts.volumeTexelSize = 1.0f / glm::vec2(g_VolumetricFogVolumeWidth, g_VolumetricFogVolumeHeight);
 	consts.volumeDepth = g_VolumetricFogVolumeDepth;
 	consts.volumeNear = g_VolumetricFogVolumeNear;
 	consts.volumeFar = g_VolumetricFogVolumeFar;
@@ -64,7 +67,31 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 
 	memcpy(uboDataPtr, &consts, sizeof(consts));
 
-	rg::ResourceUsageDescription passUsages[]
+	rg::ResourceUsageDescription vbufferPassUsages[]
+	{
+		{rg::ResourceViewHandle(data.m_scatteringExtinctionImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_emissivePhaseImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_localMediaBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+	};
+
+	rg::ResourceUsageDescription scatterPassUsages[]
+	{
+		{rg::ResourceViewHandle(data.m_scatteringExtinctionImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_emissivePhaseImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_shadowAtlasImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_fomImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_directionalLightFOMDepthRangeImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+		{rg::ResourceViewHandle(data.m_punctualLightsBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_punctualLightsShadowedBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+		{rg::ResourceViewHandle(data.m_exposureDataBufferHandle), {gal::ResourceState::READ_BUFFER, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
+
+		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
+	};
+
+	rg::ResourceUsageDescription mergedPassUsages[]
 	{
 		{rg::ResourceViewHandle(data.m_resultImageViewHandle), { gal::ResourceState::WRITE_RW_IMAGE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 		{rg::ResourceViewHandle(data.m_shadowImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
@@ -80,14 +107,40 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 		{rg::ResourceViewHandle(data.m_historyImageViewHandle), { gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT }},
 	};
 
-	const uint32_t usageCount = data.m_checkerboard ? (uint32_t)std::size(passUsages) - 1 : (uint32_t)std::size(passUsages);
+	rg::ResourceUsageDescription *passUsages = data.m_merged ? mergedPassUsages : data.m_vbufferOnly ? vbufferPassUsages : scatterPassUsages;
+	uint32_t usageCount = 0;
+	if (data.m_merged)
+	{
+		usageCount = data.m_checkerboard ? (uint32_t)std::size(mergedPassUsages) - 1 : (uint32_t)std::size(mergedPassUsages);
+	}
+	else if (data.m_vbufferOnly)
+	{
+		usageCount = (uint32_t)std::size(vbufferPassUsages);
+	}
+	else
+	{
+		usageCount = data.m_checkerboard ? (uint32_t)std::size(scatterPassUsages) - 1 : (uint32_t)std::size(scatterPassUsages);
+	}
 
-	graph.addPass("Volumetric Fog Scatter", rg::QueueType::GRAPHICS, usageCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+
+	graph.addPass(data.m_merged ? "Volumetric Fog Scatter" : data.m_scatterOnly ? "Volumetric Fog Scatter Only" : "Volumetric Fog VBuffer Only", rg::QueueType::GRAPHICS, usageCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader(data.m_checkerboard ? "Resources/Shaders/hlsl/volumetricFogScatter_CHECKER_BOARD_cs" : "Resources/Shaders/hlsl/volumetricFogScatter_cs");
+			if (data.m_merged)
+			{
+				builder.setComputeShader(data.m_checkerboard ? "Resources/Shaders/hlsl/volumetricFogScatter_CHECKER_BOARD_cs" : "Resources/Shaders/hlsl/volumetricFogScatter_cs");
+			}
+			else if (data.m_vbufferOnly)
+			{
+				builder.setComputeShader(data.m_checkerboard ? "Resources/Shaders/hlsl/volumetricFogScatter_CHECKER_BOARD_VBUFFER_ONLY_cs" : "Resources/Shaders/hlsl/volumetricFogScatter_VBUFFER_ONLY_cs");
+			}
+			else
+			{
+				builder.setComputeShader(data.m_checkerboard ? "Resources/Shaders/hlsl/volumetricFogScatter_CHECKER_BOARD_IN_SCATTER_ONLY_cs" : "Resources/Shaders/hlsl/volumetricFogScatter_IN_SCATTER_ONLY_cs");
+			}
+
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 
@@ -97,24 +150,57 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 			{
 				DescriptorSet *descriptorSet = data.m_passRecordContext->m_descriptorSetCache->getDescriptorSet(pipeline->getDescriptorSetLayout(0));
 
-				ImageView *resultImageView = registry.getImageView(data.m_resultImageViewHandle);
-				ImageView *shadowImageView = registry.getImageView(data.m_shadowImageViewHandle);
-				ImageView *shadowAtlasImageViewHandle = registry.getImageView(data.m_shadowAtlasImageViewHandle);
-				ImageView *fomImageViewHandle = registry.getImageView(data.m_fomImageViewHandle);
-				ImageView *fomDirectionalImageView = registry.getImageView(data.m_directionalLightFOMImageViewHandle);
-				ImageView *fomDirectionalDepthRangeImageView = registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle);
-				ImageView *punctualLightsMaskImageView = registry.getImageView(data.m_punctualLightsBitMaskImageViewHandle);
-				ImageView *punctualLightsShadowedMaskImageView = registry.getImageView(data.m_punctualLightsShadowedBitMaskImageViewHandle);
-				ImageView *participatingMediaMaskImageView = registry.getImageView(data.m_localMediaBitMaskImageViewHandle);
-				DescriptorBufferInfo exposureDataBufferInfo = registry.getBufferInfo(data.m_exposureDataBufferHandle);
+				ImageView *resultImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_resultImageViewHandle) : nullptr;
+				ImageView *scatterExtImageView = data.m_vbufferOnly || data.m_scatterOnly ? registry.getImageView(data.m_scatteringExtinctionImageViewHandle) : nullptr;
+				ImageView *emissivePhaseImageView = data.m_vbufferOnly || data.m_scatterOnly ? registry.getImageView(data.m_emissivePhaseImageViewHandle) : nullptr;
+				ImageView *shadowImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_shadowImageViewHandle) : nullptr;
+				ImageView *shadowAtlasImageViewHandle = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_shadowAtlasImageViewHandle) : nullptr;
+				ImageView *fomImageViewHandle = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_fomImageViewHandle) : nullptr;
+				ImageView *fomDirectionalImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_directionalLightFOMImageViewHandle) : nullptr;
+				ImageView *fomDirectionalDepthRangeImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_directionalLightFOMDepthRangeImageViewHandle) : nullptr;
+				ImageView *punctualLightsMaskImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_punctualLightsBitMaskImageViewHandle) : nullptr;
+				ImageView *punctualLightsShadowedMaskImageView = data.m_merged || data.m_scatterOnly ? registry.getImageView(data.m_punctualLightsShadowedBitMaskImageViewHandle) : nullptr;
+				ImageView *participatingMediaMaskImageView = data.m_merged || data.m_vbufferOnly ? registry.getImageView(data.m_localMediaBitMaskImageViewHandle) : nullptr;
+				DescriptorBufferInfo exposureDataBufferInfo = data.m_merged || data.m_scatterOnly ? registry.getBufferInfo(data.m_exposureDataBufferHandle) : DescriptorBufferInfo{};
 
-				ImageView *historyImageView = nullptr;
-				if (!data.m_checkerboard)
+				ImageView *historyImageView = !data.m_checkerboard && (data.m_merged || data.m_scatterOnly) ? registry.getImageView(data.m_historyImageViewHandle) : nullptr;
+
+				DescriptorSetUpdate2 scatterUpdates[] =
 				{
-					historyImageView = registry.getImageView(data.m_historyImageViewHandle);
-				}
+					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
+					Initializers::texture(&shadowImageView, SHADOW_IMAGE_BINDING),
+					Initializers::texture(&shadowAtlasImageViewHandle, SHADOW_ATLAS_IMAGE_BINDING),
+					Initializers::texture(&fomImageViewHandle, FOM_IMAGE_BINDING),
+					Initializers::texture(&fomDirectionalImageView, FOM_DIRECTIONAL_IMAGE_BINDING),
+					Initializers::texture(&fomDirectionalDepthRangeImageView, FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_shadowMatricesBufferInfo, SHADOW_MATRICES_BINDING),
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsBufferInfo, DIRECTIONAL_LIGHTS_BINDING),
+					Initializers::structuredBuffer(&data.m_directionalLightsShadowedBufferInfo, DIRECTIONAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::structuredBuffer(&data.m_punctualLightsBufferInfo, PUNCTUAL_LIGHTS_BINDING),
+					Initializers::byteBuffer(&data.m_punctualLightsZBinsBufferInfo, PUNCTUAL_LIGHTS_Z_BINS_BINDING),
+					Initializers::texture(&punctualLightsMaskImageView, PUNCTUAL_LIGHTS_BIT_MASK_BINDING),
+					Initializers::structuredBuffer(&data.m_punctualLightsShadowedBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_BINDING),
+					Initializers::byteBuffer(&data.m_punctualLightsShadowedZBinsBufferInfo, PUNCTUAL_LIGHTS_SHADOWED_Z_BINS_BINDING),
+					Initializers::texture(&punctualLightsShadowedMaskImageView, PUNCTUAL_LIGHTS_SHADOWED_BIT_MASK_BINDING),
+					Initializers::byteBuffer(&exposureDataBufferInfo, EXPOSURE_DATA_BUFFER_BINDING),
+					Initializers::texture(&scatterExtImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
+					Initializers::texture(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
+					Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
+				};
 
-				DescriptorSetUpdate2 updates[] =
+				DescriptorSetUpdate2 vbufferUpdates[] =
+				{
+					Initializers::constantBuffer(&uboBufferInfo, CONSTANT_BUFFER_BINDING),
+					Initializers::rwTexture(&scatterExtImageView, SCATTERING_EXTINCTION_IMAGE_BINDING),
+					Initializers::rwTexture(&emissivePhaseImageView, EMISSIVE_PHASE_IMAGE_BINDING),
+					Initializers::structuredBuffer(&data.m_globalMediaBufferInfo, GLOBAL_MEDIA_BINDING),
+					Initializers::structuredBuffer(&data.m_localMediaBufferInfo, LOCAL_MEDIA_BINDING),
+					Initializers::byteBuffer(&data.m_localMediaZBinsBufferInfo, LOCAL_MEDIA_Z_BINS_BINDING),
+					Initializers::texture(&participatingMediaMaskImageView, LOCAL_MEDIA_BIT_MASK_BINDING),
+				};
+
+				DescriptorSetUpdate2 mergedUpdates[] =
 				{
 					Initializers::rwTexture(&resultImageView, RESULT_IMAGE_BINDING),
 					Initializers::texture(&shadowImageView, SHADOW_IMAGE_BINDING),
@@ -140,16 +226,43 @@ void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const
 					Initializers::texture(&historyImageView, HISTORY_IMAGE_BINDING),
 				};
 
-				descriptorSet->update(data.m_checkerboard ? (uint32_t)std::size(updates) - 1 : (uint32_t)std::size(updates), updates);
-
-				DescriptorSet *sets[]
+				if (data.m_merged)
 				{
-					descriptorSet,
-					data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet,
-					data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
-					data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet
-				};
-				cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
+					descriptorSet->update(data.m_checkerboard ? (uint32_t)std::size(mergedUpdates) - 1 : (uint32_t)std::size(mergedUpdates), mergedUpdates);
+
+					DescriptorSet *sets[]
+					{
+						descriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet
+					};
+					cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
+				}
+				else if (data.m_vbufferOnly)
+				{
+					descriptorSet->update((uint32_t)std::size(vbufferUpdates), vbufferUpdates);
+
+					DescriptorSet *sets[]
+					{
+						descriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeTexture3DDescriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+					};
+					cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
+				}
+				else
+				{
+					descriptorSet->update(data.m_checkerboard ? (uint32_t)std::size(scatterUpdates) - 1 : (uint32_t)std::size(scatterUpdates), scatterUpdates);
+
+					DescriptorSet *sets[]
+					{
+						descriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeSamplerDescriptorSet,
+						data.m_passRecordContext->m_renderResources->m_computeShadowSamplerDescriptorSet
+					};
+					cmdList->bindDescriptorSets(pipeline, 0, (uint32_t)std::size(sets), sets);
+				}
 			}
 
 

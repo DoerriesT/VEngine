@@ -20,6 +20,8 @@
 #define FOM_DIRECTIONAL_IMAGE_BINDING 19
 #define FOM_DIRECTIONAL_DEPTH_RANGE_IMAGE_BINDING 20
 #define HISTORY_IMAGE_BINDING 21
+#define SCATTERING_EXTINCTION_IMAGE_BINDING 22
+#define EMISSIVE_PHASE_IMAGE_BINDING 23
 
 struct Constants
 {
@@ -46,6 +48,7 @@ struct Constants
 	uint localMediaCount;
 	uint checkerBoardCondition;
 	uint volumeDepth;
+	float2 volumeTexelSize;
 	float volumeNear;
 	float volumeFar;
 	uint ignoreHistory;

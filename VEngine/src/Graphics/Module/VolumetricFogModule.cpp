@@ -17,6 +17,7 @@
 using namespace VEngine::gal;
 
 bool g_volumetricFogCheckerBoard = true;
+bool g_volumetricFogMergedPasses = true;
 
 VEngine::VolumetricFogModule::VolumetricFogModule(gal::GraphicsDevice *graphicsDevice, uint32_t width, uint32_t height)
 	:m_graphicsDevice(graphicsDevice),
@@ -149,7 +150,6 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 
 	// volumetric fog scatter pass
 	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
-	volumetricFogScatterPassData.m_checkerboard = g_volumetricFogCheckerBoard;
 	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
 	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
 	volumetricFogScatterPassData.m_jitter[0] = jitterX0;
@@ -158,6 +158,10 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_jitter[3] = jitterX1;
 	volumetricFogScatterPassData.m_jitter[4] = jitterY1;
 	volumetricFogScatterPassData.m_jitter[5] = jitterZ1;
+	volumetricFogScatterPassData.m_checkerboard = g_volumetricFogCheckerBoard;
+	volumetricFogScatterPassData.m_merged = true;
+	volumetricFogScatterPassData.m_vbufferOnly = false;
+	volumetricFogScatterPassData.m_scatterOnly = false;
 	volumetricFogScatterPassData.m_ignoreHistory = ignoreHistory;
 	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
 	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
@@ -170,6 +174,8 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
 	volumetricFogScatterPassData.m_resultImageViewHandle = g_volumetricFogCheckerBoard ? checkerboardImageViewHandle : scatteringImageViewHandle;
 	volumetricFogScatterPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
+	volumetricFogScatterPassData.m_scatteringExtinctionImageViewHandle = 0;
+	volumetricFogScatterPassData.m_emissivePhaseImageViewHandle = 0;
 	volumetricFogScatterPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
 	volumetricFogScatterPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
 	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
@@ -181,7 +187,60 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	volumetricFogScatterPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
 	volumetricFogScatterPassData.m_localMediaBitMaskImageViewHandle = data.m_localMediaBitMaskImageViewHandle;
 
-	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
+	if (g_volumetricFogMergedPasses)
+	{
+		VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
+	}
+	else
+	{
+		rg::ImageViewHandle scatteringExtinctionImageViewHandle{};
+		rg::ImageViewHandle emissivePhaseImageViewHandle{};
+		{
+			rg::ImageDescription desc = {};
+			desc.m_clear = false;
+			desc.m_clearValue.m_imageClearValue = {};
+			desc.m_width = imageWidth;
+			desc.m_height = imageHeight;
+			desc.m_depth = imageDepth;
+			desc.m_layers = 1;
+			desc.m_levels = 1;
+			desc.m_samples = SampleCount::_1;
+			desc.m_imageType = ImageType::_3D;
+			desc.m_format = Format::R16G16B16A16_SFLOAT;
+
+			if (g_volumetricFogCheckerBoard)
+			{
+				desc.m_depth /= 2;
+			}
+
+			desc.m_name = "Volumetric Fog Scattering/Extinction Image";
+			scatteringExtinctionImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+
+			desc.m_name = "Volumetric Fog Emissive/Phase Image";
+			emissivePhaseImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 1 }, ImageViewType::_3D });
+		}
+
+		// VBuffer
+		VolumetricFogScatterPass::Data volumetricFogVBufferOnlyPassData = volumetricFogScatterPassData;
+		volumetricFogVBufferOnlyPassData.m_merged = false;
+		volumetricFogVBufferOnlyPassData.m_vbufferOnly = true;
+		volumetricFogVBufferOnlyPassData.m_scatterOnly = false;
+		volumetricFogVBufferOnlyPassData.m_scatteringExtinctionImageViewHandle = scatteringExtinctionImageViewHandle;
+		volumetricFogVBufferOnlyPassData.m_emissivePhaseImageViewHandle = emissivePhaseImageViewHandle;
+
+		VolumetricFogScatterPass::addToGraph(graph, volumetricFogVBufferOnlyPassData);
+
+
+		// in-scatter
+		VolumetricFogScatterPass::Data volumetricFogInScatterOnlyPassData = volumetricFogScatterPassData;
+		volumetricFogInScatterOnlyPassData.m_merged = false;
+		volumetricFogInScatterOnlyPassData.m_vbufferOnly = false;
+		volumetricFogInScatterOnlyPassData.m_scatterOnly = true;
+		volumetricFogInScatterOnlyPassData.m_scatteringExtinctionImageViewHandle = scatteringExtinctionImageViewHandle;
+		volumetricFogInScatterOnlyPassData.m_emissivePhaseImageViewHandle = emissivePhaseImageViewHandle;
+
+		VolumetricFogScatterPass::addToGraph(graph, volumetricFogInScatterOnlyPassData);
+	}
 
 
 	if (g_volumetricFogCheckerBoard)

@@ -46,6 +46,7 @@ entt::entity g_emitterEntity = 0;
 entt::entity g_localLightEntity = 0;
 
 extern bool g_volumetricFogCheckerBoard;
+extern bool g_volumetricFogMergedPasses;
 
 void App::initialize(VEngine::Engine *engine)
 {
@@ -299,6 +300,7 @@ void App::update(float timeDelta)
 		VEngine::g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 32u), 256u);
 
 		ImGui::Checkbox("Checker Board", &g_volumetricFogCheckerBoard);
+		ImGui::Checkbox("Merged Passes", &g_volumetricFogMergedPasses);
 
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);

@@ -681,10 +681,12 @@ static void createPipelineLayout(VkDevice device, const ReflectionInfo &reflecti
 			auto *memory = descriptorSetLayouts.m_descriptorSetLayoutMemoryPool.alloc();
 			assert(memory);
 
-			descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount++] = 
+			descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount] = 
 				new(memory) VEngine::gal::DescriptorSetLayoutVk(device, static_cast<uint32_t>(bindings.size()), bindings.data());
 		
-			layoutsVk[i] = (VkDescriptorSetLayout)descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount - 1]->getNativeHandle();
+			layoutsVk[descriptorSetLayouts.m_layoutCount] = (VkDescriptorSetLayout)descriptorSetLayouts.m_descriptorSetLayouts[descriptorSetLayouts.m_layoutCount]->getNativeHandle();
+			
+			++descriptorSetLayouts.m_layoutCount;
 		}
 	}
 
