@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace VolumetricFogApplyPass2
+	namespace VolumetricFogApplyPass
 	{
 		struct Data
 		{

@@ -34,7 +34,7 @@
 #include "Pass/ParticlesPass.h"
 #include "Pass/SwapChainCopyPass.h"
 #include "Pass/ApplyIndirectLightingPass.h"
-#include "Pass/VolumetricFogApplyPass2.h"
+#include "Pass/VolumetricFogApplyPass.h"
 #include "Pass/VisibilityBufferPass.h"
 #include "Pass/ShadeVisibilityBufferPassPS.h"
 #include "Pass/FourierOpacityDirectionalLightPass.h"
@@ -1074,16 +1074,16 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 
 	// apply volumetric fog
-	VolumetricFogApplyPass2::Data volumetricFogApplyPass2Data;
-	volumetricFogApplyPass2Data.m_passRecordContext = &passRecordContext;
-	volumetricFogApplyPass2Data.m_blueNoiseImageView = m_blueNoiseArrayImageView;
-	volumetricFogApplyPass2Data.m_depthImageViewHandle = depthImageViewHandle;
-	volumetricFogApplyPass2Data.m_downsampledDepthImageViewHandle = m_volumetricFogModule->getDownsampledDepthImageViewHandle();
-	volumetricFogApplyPass2Data.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	volumetricFogApplyPass2Data.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
-	volumetricFogApplyPass2Data.m_resultImageHandle = lightImageViewHandle;
+	VolumetricFogApplyPass::Data volumetricFogApplyPassData;
+	volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
+	volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
+	volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
+	volumetricFogApplyPassData.m_downsampledDepthImageViewHandle = m_volumetricFogModule->getDownsampledDepthImageViewHandle();
+	volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
+	volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
+	volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
 
-	VolumetricFogApplyPass2::addToGraph(graph, volumetricFogApplyPass2Data);
+	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
 
 

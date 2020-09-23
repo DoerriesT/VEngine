@@ -1,4 +1,4 @@
-#include "VolumetricFogMergedPass.h"
+#include "VolumetricFogScatterPass.h"
 #include "Graphics/RenderResources.h"
 #include "Graphics/PipelineCache.h"
 #include "Graphics/DescriptorSetCache.h"
@@ -16,10 +16,10 @@ extern float g_fogHistoryAlpha;
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
-#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogMerged.hlsli"
+#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogScatter.hlsli"
 }
 
-void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const Data &data)
+void VEngine::VolumetricFogScatterPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	const auto *commonData = data.m_passRecordContext->m_commonRenderData;
 	auto *uboBuffer = data.m_passRecordContext->m_renderResources->m_mappableUBOBlock[commonData->m_curResIdx].get();
@@ -72,12 +72,12 @@ void VEngine::VolumetricFogMergedPass::addToGraph(rg::RenderGraph &graph, const 
 		{rg::ResourceViewHandle(data.m_localMediaBitMaskImageViewHandle), {gal::ResourceState::READ_TEXTURE, PipelineStageFlagBits::COMPUTE_SHADER_BIT}},
 	};
 
-	graph.addPass("Volumetric Fog Merged", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	graph.addPass("Volumetric Fog Scatter", rg::QueueType::GRAPHICS, (uint32_t)std::size(passUsages), passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			// create pipeline description
 			ComputePipelineCreateInfo pipelineCreateInfo;
 			ComputePipelineBuilder builder(pipelineCreateInfo);
-			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogMerged_cs");
+			builder.setComputeShader("Resources/Shaders/hlsl/volumetricFogScatter_cs");
 
 			auto pipeline = data.m_passRecordContext->m_pipelineCache->getPipeline(pipelineCreateInfo);
 

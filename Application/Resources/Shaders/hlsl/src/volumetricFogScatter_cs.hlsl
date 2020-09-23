@@ -1,5 +1,5 @@
 #include "bindingHelper.hlsli"
-#include "volumetricFogMerged.hlsli"
+#include "volumetricFogScatter.hlsli"
 #include "packing.hlsli"
 #include "common.hlsli"
 #include "lighting.hlsli"

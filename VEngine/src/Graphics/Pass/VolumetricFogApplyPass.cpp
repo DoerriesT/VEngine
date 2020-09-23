@@ -1,4 +1,4 @@
-#include "VolumetricFogApplyPass2.h"
+#include "VolumetricFogApplyPass.h"
 #include <glm/vec4.hpp>
 #include "Graphics/RenderResources.h"
 #include "Graphics/PipelineCache.h"
@@ -17,10 +17,10 @@ using namespace VEngine::gal;
 namespace
 {
 #include "../../../../Application/Resources/Shaders/hlsl/src/hlslToGlm.h"
-#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogApply2.hlsli"
+#include "../../../../Application/Resources/Shaders/hlsl/src/volumetricFogApply.hlsli"
 }
 
-void VEngine::VolumetricFogApplyPass2::addToGraph(rg::RenderGraph &graph, const Data &data)
+void VEngine::VolumetricFogApplyPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 {
 	rg::ResourceUsageDescription passUsages[]
 	{

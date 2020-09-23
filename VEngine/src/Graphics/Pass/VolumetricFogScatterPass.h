@@ -6,7 +6,7 @@ namespace VEngine
 	struct PassRecordContext;
 	struct DirectionalLight;
 
-	namespace VolumetricFogMergedPass
+	namespace VolumetricFogScatterPass
 	{
 		struct Data
 		{

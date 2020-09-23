@@ -5,7 +5,7 @@ namespace VEngine
 {
 	struct PassRecordContext;
 
-	namespace VolumetricFogFilterPass2
+	namespace VolumetricFogFilterPass
 	{
 		struct Data
 		{

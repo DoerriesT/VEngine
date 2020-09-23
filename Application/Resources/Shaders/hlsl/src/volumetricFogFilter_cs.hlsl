@@ -1,5 +1,5 @@
 #include "bindingHelper.hlsli"
-#include "volumetricFogFilter2.hlsli"
+#include "volumetricFogFilter.hlsli"
 #include "common.hlsli"
 
 

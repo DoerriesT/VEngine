@@ -1,6 +1,6 @@
 #include "VolumetricFogModule.h"
-#include "Graphics/Pass/VolumetricFogMergedPass.h"
-#include "Graphics/Pass/VolumetricFogFilterPass2.h"
+#include "Graphics/Pass/VolumetricFogScatterPass.h"
+#include "Graphics/Pass/VolumetricFogFilterPass.h"
 #include "Graphics/Pass/VolumetricFogIntegratePass.h"
 #include "Graphics/Pass/VolumetricRaymarchPass.h"
 #include "Graphics/RenderData.h"
@@ -143,50 +143,50 @@ void VEngine::VolumetricFogModule::addToGraph(rg::RenderGraph &graph, const Data
 	}
 
 	// volumetric fog merged pass
-	VolumetricFogMergedPass::Data volumetricFogMergedPassData;
-	volumetricFogMergedPassData.m_passRecordContext = data.m_passRecordContext;
-	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogMergedPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogMergedPassData.m_jitter[0] = jitterX0;
-	volumetricFogMergedPassData.m_jitter[1] = jitterY0;
-	volumetricFogMergedPassData.m_jitter[2] = jitterZ0;
-	volumetricFogMergedPassData.m_jitter[3] = jitterX1;
-	volumetricFogMergedPassData.m_jitter[4] = jitterY1;
-	volumetricFogMergedPassData.m_jitter[5] = jitterZ1;
-	volumetricFogMergedPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
-	volumetricFogMergedPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsZBinsBufferInfo = data.m_punctualLightsZBinsBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsShadowedBufferInfo = data.m_punctualLightsShadowedBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsShadowedZBinsBufferInfo = data.m_punctualLightsShadowedZBinsBufferInfo;
-	volumetricFogMergedPassData.m_punctualLightsBitMaskImageViewHandle = data.m_punctualLightsBitMaskImageViewHandle;
-	volumetricFogMergedPassData.m_punctualLightsShadowedBitMaskImageViewHandle = data.m_punctualLightsShadowedBitMaskImageViewHandle;
-	volumetricFogMergedPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
-	volumetricFogMergedPassData.m_resultImageViewHandle = checkerboardImageViewHandle;
-	volumetricFogMergedPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
-	volumetricFogMergedPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
-	volumetricFogMergedPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
-	volumetricFogMergedPassData.m_fomImageViewHandle = data.m_fomImageViewHandle;
-	volumetricFogMergedPassData.m_directionalLightFOMImageViewHandle = data.m_directionalLightFOMImageViewHandle;
-	volumetricFogMergedPassData.m_directionalLightFOMDepthRangeImageViewHandle = data.m_directionalLightFOMDepthRangeImageViewHandle;
-	volumetricFogMergedPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
-	volumetricFogMergedPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
-	volumetricFogMergedPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
-	volumetricFogMergedPassData.m_localMediaBitMaskImageViewHandle = data.m_localMediaBitMaskImageViewHandle;
+	VolumetricFogScatterPass::Data volumetricFogScatterPassData;
+	volumetricFogScatterPassData.m_passRecordContext = data.m_passRecordContext;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogScatterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	volumetricFogScatterPassData.m_jitter[0] = jitterX0;
+	volumetricFogScatterPassData.m_jitter[1] = jitterY0;
+	volumetricFogScatterPassData.m_jitter[2] = jitterZ0;
+	volumetricFogScatterPassData.m_jitter[3] = jitterX1;
+	volumetricFogScatterPassData.m_jitter[4] = jitterY1;
+	volumetricFogScatterPassData.m_jitter[5] = jitterZ1;
+	volumetricFogScatterPassData.m_directionalLightsBufferInfo = data.m_directionalLightsBufferInfo;
+	volumetricFogScatterPassData.m_directionalLightsShadowedBufferInfo = data.m_directionalLightsShadowedBufferInfo;
+	volumetricFogScatterPassData.m_punctualLightsBufferInfo = data.m_punctualLightsBufferInfo;
+	volumetricFogScatterPassData.m_punctualLightsZBinsBufferInfo = data.m_punctualLightsZBinsBufferInfo;
+	volumetricFogScatterPassData.m_punctualLightsShadowedBufferInfo = data.m_punctualLightsShadowedBufferInfo;
+	volumetricFogScatterPassData.m_punctualLightsShadowedZBinsBufferInfo = data.m_punctualLightsShadowedZBinsBufferInfo;
+	volumetricFogScatterPassData.m_punctualLightsBitMaskImageViewHandle = data.m_punctualLightsBitMaskImageViewHandle;
+	volumetricFogScatterPassData.m_punctualLightsShadowedBitMaskImageViewHandle = data.m_punctualLightsShadowedBitMaskImageViewHandle;
+	volumetricFogScatterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
+	volumetricFogScatterPassData.m_resultImageViewHandle = checkerboardImageViewHandle;
+	volumetricFogScatterPassData.m_shadowImageViewHandle = data.m_shadowImageViewHandle;
+	volumetricFogScatterPassData.m_shadowAtlasImageViewHandle = data.m_shadowAtlasImageViewHandle;
+	volumetricFogScatterPassData.m_shadowMatricesBufferInfo = data.m_shadowMatricesBufferInfo;
+	volumetricFogScatterPassData.m_fomImageViewHandle = data.m_fomImageViewHandle;
+	volumetricFogScatterPassData.m_directionalLightFOMImageViewHandle = data.m_directionalLightFOMImageViewHandle;
+	volumetricFogScatterPassData.m_directionalLightFOMDepthRangeImageViewHandle = data.m_directionalLightFOMDepthRangeImageViewHandle;
+	volumetricFogScatterPassData.m_localMediaBufferInfo = data.m_localMediaBufferInfo;
+	volumetricFogScatterPassData.m_localMediaZBinsBufferInfo = data.m_localMediaZBinsBufferInfo;
+	volumetricFogScatterPassData.m_globalMediaBufferInfo = data.m_globalMediaBufferInfo;
+	volumetricFogScatterPassData.m_localMediaBitMaskImageViewHandle = data.m_localMediaBitMaskImageViewHandle;
 
-	VolumetricFogMergedPass::addToGraph(graph, volumetricFogMergedPassData);
+	VolumetricFogScatterPass::addToGraph(graph, volumetricFogScatterPassData);
 
 
 	// volumetric fog temporal filter
-	VolumetricFogFilterPass2::Data volumetricFogFilterPass2Data;
-	volumetricFogFilterPass2Data.m_passRecordContext = data.m_passRecordContext;
-	volumetricFogFilterPass2Data.m_ignoreHistory = ignoreHistory;
-	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPass2Data.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
-	volumetricFogFilterPass2Data.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
-	volumetricFogFilterPass2Data.m_resultImageViewHandle = scatteringImageViewHandle;
-	volumetricFogFilterPass2Data.m_inputImageViewHandle = checkerboardImageViewHandle;
-	volumetricFogFilterPass2Data.m_historyImageViewHandle = prevScatteringImageViewHandle;
+	VolumetricFogFilterPass::Data volumetricFogFilterPassData;
+	volumetricFogFilterPassData.m_passRecordContext = data.m_passRecordContext;
+	volumetricFogFilterPassData.m_ignoreHistory = ignoreHistory;
+	for (size_t i = 0; i < 4; ++i) memcpy(volumetricFogFilterPassData.m_frustumCorners[i], &frustumCorners[i], sizeof(float) * 3);
+	volumetricFogFilterPassData.m_exposureDataBufferHandle = data.m_exposureDataBufferHandle;
+	volumetricFogFilterPassData.m_resultImageViewHandle = scatteringImageViewHandle;
+	volumetricFogFilterPassData.m_inputImageViewHandle = checkerboardImageViewHandle;
+	volumetricFogFilterPassData.m_historyImageViewHandle = prevScatteringImageViewHandle;
 
-	VolumetricFogFilterPass2::addToGraph(graph, volumetricFogFilterPass2Data);
+	VolumetricFogFilterPass::addToGraph(graph, volumetricFogFilterPassData);
 
 
 	// volumetric fog integrate

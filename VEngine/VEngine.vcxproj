@@ -264,10 +264,10 @@
     <ClInclude Include="src\Graphics\Pass\TonemapPass.h" />
     <ClInclude Include="src\Graphics\Pass\VelocityInitializationPass.h" />
     <ClInclude Include="src\Graphics\Pass\VisibilityBufferPass.h" />
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass2.h" />
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass2.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogApplyPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricFogIntegratePass.h" />
-    <ClInclude Include="src\Graphics\Pass\VolumetricFogMergedPass.h" />
+    <ClInclude Include="src\Graphics\Pass\VolumetricFogScatterPass.h" />
     <ClInclude Include="src\Graphics\Pass\VolumetricRaymarchPass.h" />
     <ClInclude Include="src\Graphics\PipelineCache.h" />
     <ClInclude Include="src\Graphics\ProxyMeshes.h" />
@@ -402,10 +402,10 @@
     <ClCompile Include="src\Graphics\Pass\TonemapPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VelocityInitializationPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VisibilityBufferPass.cpp" />
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass2.cpp" />
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass2.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogApplyPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricFogIntegratePass.cpp" />
-    <ClCompile Include="src\Graphics\Pass\VolumetricFogMergedPass.cpp" />
+    <ClCompile Include="src\Graphics\Pass\VolumetricFogScatterPass.cpp" />
     <ClCompile Include="src\Graphics\Pass\VolumetricRaymarchPass.cpp" />
     <ClCompile Include="src\Graphics\PipelineCache.cpp" />
     <ClCompile Include="src\Graphics\ReflectionProbeManager.cpp" />
