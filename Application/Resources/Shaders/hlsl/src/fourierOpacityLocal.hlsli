@@ -1,9 +1,13 @@
 #define RESULT_IMAGE_BINDING 0
 #define LIGHT_INFO_BINDING 1
 #define GLOBAL_MEDIA_BINDING 2
+#define LOCAL_MEDIA_BINDING 3
+#define VOLUME_TRANSFORMS_BINDING 4
+#define PARTICLE_DATA_BINDING 5
 
 struct LightInfo
 {
+	float4x4 viewProjection;
 	float4x4 invViewProjection;
 	float3 position;
 	float radius;
@@ -17,8 +21,11 @@ struct LightInfo
 	float pad3;
 };
 
+
 struct PushConsts
 {
 	uint lightIndex;
 	uint globalMediaCount;
+	uint localVolumeCount;
+	uint particleCount;
 };

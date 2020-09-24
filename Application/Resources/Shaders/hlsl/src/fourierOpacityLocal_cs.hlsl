@@ -1,5 +1,5 @@
 #include "bindingHelper.hlsli"
-#include "fourierOpacityVolume.hlsli"
+#include "fourierOpacityLocal.hlsli"
 #include "common.hlsli"
 #include "commonEncoding.hlsli"
 #include "commonFourierOpacity.hlsli"
@@ -9,15 +9,13 @@ RWTexture2DArray<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 StructuredBuffer<LightInfo> g_LightInfo : REGISTER_SRV(LIGHT_INFO_BINDING, 0);
 StructuredBuffer<GlobalParticipatingMedium> g_GlobalMedia : REGISTER_SRV(GLOBAL_MEDIA_BINDING, 0);
 StructuredBuffer<LocalParticipatingMedium> g_LocalMedia : REGISTER_SRV(LOCAL_MEDIA_BINDING, 0);
+StructuredBuffer<ParticleData> g_Particles : REGISTER_SRV(PARTICLE_DATA_BINDING, 0);
 
 Texture3D<float4> g_Textures3D[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 1);
-
-SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 2);
+Texture2D<float4> g_Textures[TEXTURE_ARRAY_SIZE] : REGISTER_SRV(0, 2);
+SamplerState g_Samplers[SAMPLER_COUNT] : REGISTER_SAMPLER(0, 3);
 
 PUSH_CONSTS(PushConsts, g_PushConsts);
-
-groupshared float4 s_result0[64];
-groupshared float4 s_result1[64];
 
 void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahedronMap, float4 result0, float4 result1)
 {
@@ -58,29 +56,20 @@ void writeResult(uint2 dstCoord, uint2 localOffset, uint resolution, bool octahe
 	}
 }
 
-[numthreads(64, 1, 1)]
+[numthreads(8, 8, 1)]
 void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint groupThreadIndex : SV_GroupIndex, uint3 groupThreadID : SV_GroupThreadID)
 {
-	uint rayID = groupThreadID.x / 4;
-	uint3 localCoord;
-	localCoord.y = groupThreadID.x / 16;
-	localCoord.z = groupThreadID.x - rayID * 4;
-	localCoord.x = rayID - localCoord.y * 4;
-	
-	uint2 globalCoord = groupID.xy * 4 + localCoord.xy;
-	
+	uint2 globalCoord = threadID.xy;
 	
 	const LightInfo lightInfo = g_LightInfo[g_PushConsts.lightIndex];
 	if (globalCoord.x >= lightInfo.resolution || globalCoord.y >= lightInfo.resolution)
 	{
-		s_result0[groupThreadID.x] = 0.0;
-		s_result1[groupThreadID.x] = 0.0;
 		return;
 	}
 	
 	uint2 dstCoord = globalCoord.xy + uint2(lightInfo.offsetX, lightInfo.offsetY);
 	const float2 texCoord = (globalCoord.xy + 0.5) * lightInfo.texelSize;
-	const uint depthCoord = localCoord.z;
+	const uint depthCoord = 0;
 	
 	// compute ray from light source passing through the current pixel
 	float3 ray = 0.0;
@@ -120,59 +109,111 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	
 	rayStart += dither + stepSize * 0.5;
 	
-	for (int i = 0; i < stepCount; ++i)
+	// raymarch volumes
 	{
-		float t = i * stepSize + rayStart;
-		float3 rayPos = lightInfo.position + ray * t;
-		
-		float extinction = 0.0;
-		
-		// add extinction of all global volumes
+		for (int i = 0; i < stepCount; ++i)
 		{
-			for (int j = 0; j < g_PushConsts.globalMediaCount; ++j)
-			{
-				GlobalParticipatingMedium medium = g_GlobalMedia[j];
-				const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
-				extinction += medium.extinction * density;
-			}
-		}
-		
-		// add extinction of all local volumes
-		for (int j = 0; j < g_PushConsts.localVolumeCount; ++j)
-		{
-			LocalParticipatingMedium medium = g_LocalMedia[j];
+			float t = i * stepSize + rayStart;
+			float3 rayPos = lightInfo.position + ray * t;
 			
-			const float3 localPos = float3(dot(medium.worldToLocal0, float4(rayPos, 1.0)), 
-									dot(medium.worldToLocal1, float4(rayPos, 1.0)), 
-									dot(medium.worldToLocal2, float4(rayPos, 1.0)));
-									
-			if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
+			float extinction = 0.0;
+			
+			// add extinction of all global volumes
 			{
-				float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
-				extinction += medium.extinction * density;
+				for (int j = 0; j < g_PushConsts.globalMediaCount; ++j)
+				{
+					GlobalParticipatingMedium medium = g_GlobalMedia[j];
+					const float density = volumetricFogGetDensity(medium, rayPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
+					extinction += medium.extinction * density;
+				}
+			}
+			
+			// add extinction of all local volumes
+			for (int j = 0; j < g_PushConsts.localVolumeCount; ++j)
+			{
+				LocalParticipatingMedium medium = g_LocalMedia[j];
+				
+				const float3 localPos = float3(dot(medium.worldToLocal0, float4(rayPos, 1.0)), 
+										dot(medium.worldToLocal1, float4(rayPos, 1.0)), 
+										dot(medium.worldToLocal2, float4(rayPos, 1.0)));
+										
+				if (all(abs(localPos) <= 1.0) && (medium.spherical == 0 || dot(localPos, localPos) <= 1.0))
+				{
+					float density = volumetricFogGetDensity(medium, localPos, g_Textures3D, g_Samplers[SAMPLER_LINEAR_CLAMP]);
+					extinction += medium.extinction * density;
+				}
+			}
+			
+			float transmittance = exp(-extinction * stepSize);
+			float depth = t * invRadius;
+			fourierOpacityAccumulate(depth, transmittance, result0, result1);
+		}
+	}
+	
+	
+	// rasterize particles
+	{
+		for (int i = 0; i < g_PushConsts.particleCount; ++i)
+		{
+			ParticleData particle = g_Particles[i];
+			
+			// compute particle normal (faces light position)
+			float3 particleNormal = particle.position - lightInfo.position;
+			float distToParticle = length(particleNormal);
+			particleNormal *= rcp(distToParticle);
+			
+			// intersect ray with plane formed by particle normal and distance
+			float t = dot((particle.position - lightInfo.position), particleNormal) / dot(ray, particleNormal);
+			float3 intersectionPos = lightInfo.position + t * ray;
+			
+			float distToParticleCenter = distance(particle.position, intersectionPos);
+			
+			// compute orthonormal tangent frame
+			float3 bitangent;
+			if (abs(particleNormal.x) <= abs(particleNormal.y) && abs(particleNormal.x) <= abs(particleNormal.z))
+			{
+				bitangent = float3(0.0, -particleNormal.z, particleNormal.y);
+			}
+			else if (abs(particleNormal.y) <= abs(particleNormal.z) && abs(particleNormal.y) <= abs(particleNormal.x))
+			{
+				bitangent = float3(-particleNormal.z, 0.0, particleNormal.x);
+			}
+			else
+			{
+				bitangent = float3(-particleNormal.y, particleNormal.x, 0.0);
+			}
+			bitangent = normalize(bitangent);
+			
+			float3 tangent = cross(bitangent, particleNormal);
+			
+			// transform intersection position to tangent space and normalize extent by particle size
+			float3x3 rotation = float3x3(tangent, bitangent, particleNormal);
+			float2 localPos = mul(rotation, intersectionPos - particle.position).xy / particle.size;
+			
+			// is the ray intersection inside the particle area?
+			if (t > 0.0 && all(abs(localPos) < 1.0))
+			{
+				// apply particle rotation
+				float cosRot;
+				float sinRot;
+				sincos(particle.rotation, sinRot, cosRot);
+				float2x2 particleRot = float2x2(cosRot, -sinRot, sinRot, cosRot);
+				localPos = mul(localPos, particleRot);
+				
+				// get particle opacity
+				float opacity = particle.opacity * particle.fomOpacityMult;
+				if (particle.textureIndex != 0)
+				{
+					opacity *= g_Textures[particle.textureIndex - 1].SampleLevel(g_Samplers[SAMPLER_LINEAR_REPEAT], localPos * 0.5 + 0.5, 0.0).a;
+				}
+				
+				// accumulate
+				float transmittance = 1.0 - opacity;
+				float depth = distToParticle * invRadius;
+				fourierOpacityAccumulate(depth, transmittance, result0, result1);
 			}
 		}
-		
-		float transmittance = exp(-extinction * stepSize);
-		float depth = t * invRadius;
-		fourierOpacityAccumulate(depth, transmittance, result0, result1);
 	}
 	
-	if (localCoord.z != 0)
-	{
-		s_result0[groupThreadID.x] = result0;
-		s_result1[groupThreadID.x] = result1;
-	}
-	
-	GroupMemoryBarrierWithGroupSync();
-	
-	if (localCoord.z == 0)
-	{
-		for (int i = 1; i < 4; ++i)
-		{
-			result0 += s_result0[groupThreadID.x + i];
-			result1 += s_result1[groupThreadID.x + i];
-		}
-		writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
-	}
+	writeResult(dstCoord, uint2(lightInfo.offsetX, lightInfo.offsetY), lightInfo.resolution, (bool)lightInfo.isPointLight, result0, result1);
 }

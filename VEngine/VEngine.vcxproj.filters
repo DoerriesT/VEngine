@@ -408,12 +408,6 @@
     <ClInclude Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Graphics\Pass\FourierOpacityPSPass.h">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClInclude>
     <ClInclude Include="src\Graphics\Pass\FXAAPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
@@ -523,6 +517,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\Pass\VolumetricFogFilterPass.h">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Graphics\Pass\FourierOpacityLocalLightPass.h">
       <Filter>src\Graphics\Pass</Filter>
     </ClInclude>
   </ItemGroup>
@@ -779,12 +776,6 @@
     <ClCompile Include="src\Graphics\Pass\FourierOpacityDirectionalLightPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Graphics\Pass\FourierOpacityPSPass.cpp">
-      <Filter>src\Graphics\Pass</Filter>
-    </ClCompile>
     <ClCompile Include="src\Graphics\Pass\FXAAPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
@@ -894,6 +885,9 @@
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\Pass\VolumetricFogFilterPass.cpp">
+      <Filter>src\Graphics\Pass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\Pass\FourierOpacityLocalLightPass.cpp">
       <Filter>src\Graphics\Pass</Filter>
     </ClCompile>
   </ItemGroup>

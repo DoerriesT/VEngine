@@ -57,12 +57,15 @@ dxc.exe -T cs_6_2 -E main atmosphereComputeSingleScattering_cs.hlsl -Fo ./../atm
 dxc.exe -T cs_6_2 -E main atmosphereComputeScatteringDensity_cs.hlsl -Fo ./../atmosphereComputeScatteringDensity_cs.dxil -Zi -Fd ./../atmosphereComputeScatteringDensity_cs.pdb
 dxc.exe -T cs_6_2 -E main atmosphereComputeIndirectIrradiance_cs.hlsl -Fo ./../atmosphereComputeIndirectIrradiance_cs.dxil -Zi -Fd ./../atmosphereComputeIndirectIrradiance_cs.pdb
 dxc.exe -T cs_6_2 -E main atmosphereComputeMultipleScattering_cs.hlsl -Fo ./../atmosphereComputeMultipleScattering_cs.dxil -Zi -Fd ./../atmosphereComputeMultipleScattering_cs.pdb
-dxc.exe -T cs_6_2 -E main fourierOpacityVolume_cs.hlsl -Fo ./../fourierOpacityVolume_cs.dxil -Zi -Fd ./../fourierOpacityVolume_cs.pdb
-dxc.exe -T cs_6_2 -E main fourierOpacityBlur_cs.hlsl -Fo ./../fourierOpacityBlur_cs.dxil -Zi -Fd ./../fourierOpacityBlur_cs.pdb
+dxc.exe -T cs_6_2 -E main fourierOpacityLocal_cs.hlsl -Fo ./../fourierOpacityLocal_cs.dxil -Zi -Fd ./../fourierOpacityLocal_cs.pdb
+dxc.exe -T vs_6_2 -E main fourierOpacityDepthDirectional_vs.hlsl -Fo ./../fourierOpacityDepthDirectional_vs.dxil -Zi -Fd ./../fourierOpacityDepthDirectional_vs.pdb
+dxc.exe -T vs_6_2 -E main fourierOpacityParticleDirectional_vs.hlsl -Fo ./../fourierOpacityParticleDirectional_vs.dxil -Zi -Fd ./../fourierOpacityParticleDirectional_vs.pdb
+dxc.exe -T ps_6_2 -E main fourierOpacityParticleDirectional_ps.hlsl -Fo ./../fourierOpacityParticleDirectional_ps.dxil -Zi -Fd ./../fourierOpacityParticleDirectional_ps.pdb
+dxc.exe -T vs_6_2 -E main fourierOpacityVolumeDirectional_vs.hlsl -Fo ./../fourierOpacityVolumeDirectional_vs.dxil -Zi -Fd ./../fourierOpacityVolumeDirectional_vs.pdb
+dxc.exe -T ps_6_2 -E main fourierOpacityVolumeDirectional_ps.hlsl -Fo ./../fourierOpacityVolumeDirectional_ps.dxil -Zi -Fd ./../fourierOpacityVolumeDirectional_ps.pdb
 dxc.exe -T cs_6_2 -E main gtao2_cs.hlsl -Fo ./../gtao2_cs.dxil -Zi -Fd ./../gtao2_cs.pdb
 dxc.exe -T vs_6_2 -E main particles_vs.hlsl -Fo ./../particles_vs.dxil -Zi -Fd ./../particles_vs.pdb
 dxc.exe -T ps_6_2 -E main particles_ps.hlsl -Fo ./../particles_ps.dxil -Zi -Fd ./../particles_ps.pdb
-dxc.exe -T cs_6_2 -E main fourierOpacityParticle_cs.hlsl -Fo ./../fourierOpacityParticle_cs.dxil -Zi -Fd ./../fourierOpacityParticle_cs.pdb
 dxc.exe -T cs_6_2 -E main swapChainCopy_cs.hlsl -Fo ./../swapChainCopy_cs.dxil -Zi -Fd ./../swapChainCopy_cs.pdb
 dxc.exe -T cs_6_2 -E main volumetricRaymarch_cs.hlsl -Fo ./../volumetricRaymarch_cs.dxil -Zi -Fd ./../volumetricRaymarch_cs.pdb
 dxc.exe -T cs_6_2 -E main depthDownsampleCBMinMax_cs.hlsl -Fo ./../depthDownsampleCBMinMax_cs.dxil -Zi -Fd ./../depthDownsampleCBMinMax_cs.pdb
@@ -73,17 +76,6 @@ dxc.exe -T vs_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_vs.hlsl -Fo .
 dxc.exe -T ps_6_2 -E main visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ps.dxil -Zi -Fd ./../visibilityBuffer_ps.pdb
 dxc.exe -T ps_6_2 -E main -D ALPHA_MASK_ENABLED=1 visibilityBuffer_ps.hlsl -Fo ./../visibilityBuffer_ALPHA_MASK_ENABLED_ps.dxil -Zi -Fd ./../visibilityBuffer_ALPHA_MASK_ENABLED_ps.pdb
 dxc.exe -T ps_6_2 -E main shadeVisibilityBuffer_ps.hlsl -Fo ./../shadeVisibilityBuffer_ps.dxil -Zi -Fd ./../shadeVisibilityBuffer_ps.pdb
-
-dxc.exe -T vs_6_2 -E main fourierOpacityVolume_vs.hlsl -Fo ./../fourierOpacityVolume_vs.dxil -Zi -Fd ./../fourierOpacityVolume_vs.pdb
-dxc.exe -T ps_6_2 -E main fourierOpacityVolume_ps.hlsl -Fo ./../fourierOpacityVolume_ps.dxil -Zi -Fd ./../fourierOpacityVolume_ps.pdb
-dxc.exe -T ps_6_2 -E main fourierOpacityGlobal_ps.hlsl -Fo ./../fourierOpacityGlobal_ps.dxil -Zi -Fd ./../fourierOpacityGlobal_ps.pdb
-
-dxc.exe -T vs_6_2 -E main fourierOpacityParticleDirectional_vs.hlsl -Fo ./../fourierOpacityParticleDirectional_vs.dxil -Zi -Fd ./../fourierOpacityParticleDirectional_vs.pdb
-dxc.exe -T ps_6_2 -E main fourierOpacityParticleDirectional_ps.hlsl -Fo ./../fourierOpacityParticleDirectional_ps.dxil -Zi -Fd ./../fourierOpacityParticleDirectional_ps.pdb
-dxc.exe -T vs_6_2 -E main fourierOpacityVolumeDirectional_vs.hlsl -Fo ./../fourierOpacityVolumeDirectional_vs.dxil -Zi -Fd ./../fourierOpacityVolumeDirectional_vs.pdb
-dxc.exe -T ps_6_2 -E main fourierOpacityVolumeDirectional_ps.hlsl -Fo ./../fourierOpacityVolumeDirectional_ps.dxil -Zi -Fd ./../fourierOpacityVolumeDirectional_ps.pdb
-
-dxc.exe -T vs_6_2 -E main fourierOpacityDepth_vs.hlsl -Fo ./../fourierOpacityDepth_vs.dxil -Zi -Fd ./../fourierOpacityDepth_vs.pdb
 
 dxc.exe -T vs_6_2 -E main debugDraw_vs.hlsl -Fo ./../debugDraw_vs.dxil -Zi -Fd ./../debugDraw_vs.pdb
 dxc.exe -T ps_6_2 -E main debugDraw_ps.hlsl -Fo ./../debugDraw_ps.dxil -Zi -Fd ./../debugDraw_ps.pdb

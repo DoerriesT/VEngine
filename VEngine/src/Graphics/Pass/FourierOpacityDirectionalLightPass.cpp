@@ -82,7 +82,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 	}
 
 
-	graph.addPass("Fourier Opacity Directional Light", rg::QueueType::GRAPHICS, viewHandleCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
+	graph.addPass("FOM Directional Lights", rg::QueueType::GRAPHICS, viewHandleCount, passUsages, [=](CommandList *cmdList, const rg::Registry &registry)
 		{
 			GraphicsPipeline *particlePipeline;
 			DescriptorSet *particleDescriptorSet;

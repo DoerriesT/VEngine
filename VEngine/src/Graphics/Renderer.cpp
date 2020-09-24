@@ -30,7 +30,7 @@
 #include "Pass/DepthPrepassPass.h"
 #include "Pass/ForwardLightingPass.h"
 #include "Pass/GaussianDownsamplePass.h"
-#include "Pass/FourierOpacityPass.h"
+#include "Pass/FourierOpacityLocalLightPass.h"
 #include "Pass/ParticlesPass.h"
 #include "Pass/SwapChainCopyPass.h"
 #include "Pass/ApplyIndirectLightingPass.h"
@@ -878,7 +878,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// fourier opacity
 	if (!lightData.m_fomAtlasDrawInfos.empty())
 	{
-		FourierOpacityPass::Data fourierOpacityPassData;
+		FourierOpacityLocalLightPass::Data fourierOpacityPassData;
 		fourierOpacityPassData.m_passRecordContext = &passRecordContext;
 		fourierOpacityPassData.m_drawCount = static_cast<uint32_t>(lightData.m_fomAtlasDrawInfos.size());
 		fourierOpacityPassData.m_particleCount = totalParticleCount;
@@ -888,7 +888,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		fourierOpacityPassData.m_particleBufferInfo = particleBufferInfo;
 		fourierOpacityPassData.m_fomImageViewHandle = fomImageViewHandle;
 
-		FourierOpacityPass::addToGraph(graph, fourierOpacityPassData);
+		FourierOpacityLocalLightPass::addToGraph(graph, fourierOpacityPassData);
 	}
 
 

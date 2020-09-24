@@ -6,7 +6,7 @@ namespace VEngine
 	struct PassRecordContext;
 	struct FOMAtlasDrawInfo;
 
-	namespace FourierOpacityPass
+	namespace FourierOpacityLocalLightPass
 	{
 		struct Data
 		{
