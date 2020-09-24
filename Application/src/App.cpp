@@ -27,6 +27,8 @@
 #include <Graphics/imgui/imgui.h>
 #include <Utility/Utility.h>
 #include <Window/Window.h>
+#include <Graphics/RenderSystem.h>
+#include <fstream>
 
 using namespace VEngine;
 
@@ -219,6 +221,11 @@ void App::update(float timeDelta)
 
 	ImGui::Begin("Volumetric Fog");
 	{
+		if (m_currentlyProfiling || ImGui::Button("Profile"))
+		{
+			profile();
+		}
+
 		Window *window = m_engine->getWindow();
 		bool fullscreen = window->getWindowMode() == Window::WindowMode::FULL_SCREEN;
 		if (ImGui::Checkbox("Fullscreen", &fullscreen))
@@ -276,4 +283,306 @@ void App::update(float timeDelta)
 
 void App::shutdown()
 {
+}
+
+void App::profile()
+{
+	constexpr uint32_t framesToProfile = 256;
+	constexpr uint32_t framesToSkip = 5;
+
+	if (!m_currentlyProfiling)
+	{
+		m_engine->getWindow()->setWindowMode(Window::WindowMode::FULL_SCREEN);
+		m_currentlyProfiling = true;
+		m_profiledFrames = 0;
+		m_currentScene = 0;
+		m_currentProfilingStage = ProfilingStage::DEFAULT;
+		memset(&m_profilingData, 0, sizeof(m_profilingData));
+
+		g_volumetricFogMergedPasses = false;
+		g_volumetricFogCheckerBoard = false;
+		g_volumetricShadow = 0;
+
+		auto &entityRegistry = m_engine->getEntityRegistry();
+		auto &camTransC = entityRegistry.get<TransformationComponent>(m_cameraEntity);
+
+		camTransC.m_position = glm::vec3(-12.0f, 1.8f, 0.0f);
+		camTransC.m_orientation = glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f));
+
+		return;
+	}
+
+	ImGui::Text("Scene %d / 3...", (int)m_currentScene + 1);
+	ImGui::Text("Configuration %d / 8...", (int)m_currentProfilingStage + 1);
+	ImGui::Text("Frame %d / 256...", std::max((int)((m_profiledFrames % (framesToProfile + framesToSkip)) - framesToSkip) + 1, 0));
+
+	// skip first two frames
+	if ((m_profiledFrames % (framesToProfile + framesToSkip)) < framesToSkip)
+	{
+		++m_profiledFrames;
+		return;
+	}
+
+
+	// add timings
+	{
+		size_t timingInfoCount;
+		const PassTimingInfo *timingInfo;
+		m_engine->getRenderSystem().getTimingInfo(&timingInfoCount, &timingInfo);
+
+		ProfilingData &tmpData = m_profilingData[m_currentScene][(size_t)m_currentProfilingStage];
+
+		bool cbMode = m_currentProfilingStage == ProfilingStage::CHECKER_BOARD
+			|| m_currentProfilingStage == ProfilingStage::CHECKER_BOARD_MERGED
+			|| m_currentProfilingStage == ProfilingStage::CHECKER_BOARD_SHADOWS
+			|| m_currentProfilingStage == ProfilingStage::CHECKER_BOARD_MERGED_SHADOWS;
+
+		for (size_t i = 0; i < timingInfoCount; ++i)
+		{
+			if (strcmp(timingInfo[i].m_passName, "FOM Depth Directional Light") == 0)
+			{
+				tmpData.fomDirDepth += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "FOM Directional Lights") == 0)
+			{
+				tmpData.fomDir += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "FOM Local Lights") == 0)
+			{
+				tmpData.fomLocal += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Fog Scatter") == 0)
+			{
+				if (cbMode)
+				{
+					tmpData.scatterCB += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+				else
+				{
+					tmpData.scatter += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Fog VBuffer Only") == 0)
+			{
+				if (cbMode)
+				{
+					tmpData.vbufferOnlyCB += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+				else
+				{
+					tmpData.vbufferOnly += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Fog Scatter Only") == 0)
+			{
+				if (cbMode)
+				{
+					tmpData.scatterOnlyCB += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+				else
+				{
+					tmpData.scatterOnly += timingInfo[i].m_passTimeWithSync / framesToProfile;
+				}
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Fog Filter") == 0)
+			{
+				tmpData.filter += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Fog Integrate") == 0)
+			{
+				tmpData.integrate += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "CB-Min/Max Downsample Depth") == 0)
+			{
+				tmpData.depthDownsample += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Volumetric Raymarch") == 0)
+			{
+				tmpData.raymarch += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+			else if (strcmp(timingInfo[i].m_passName, "Apply Volumetric Fog") == 0)
+			{
+				tmpData.apply += timingInfo[i].m_passTimeWithSync / framesToProfile;
+			}
+		}
+	}
+
+	// update m_currentProfilingStage and m_currentScene and write out results to file if done
+	{
+		++m_profiledFrames;
+		m_currentProfilingStage = (ProfilingStage)(m_profiledFrames / (framesToProfile + framesToSkip));
+
+		// framesToProfile frames of data, but since the timings have framesToSkip frames latency, we ignore the first two frames
+		if (m_profiledFrames >= ((framesToProfile + framesToSkip) * 8))
+		{
+			++m_currentScene;
+			m_profiledFrames = 0;
+			m_currentProfilingStage = ProfilingStage::DEFAULT;
+
+			// we are done
+			if (m_currentScene > 2)
+			{
+				m_currentlyProfiling = false;
+
+				std::ofstream resultFile("profileData.txt", std::ofstream::trunc);
+
+				if (resultFile.is_open())
+				{
+					for (size_t scene = 0; scene < 3; ++scene)
+					{
+						resultFile << "Scene: " << scene << std::endl;
+						for (size_t config = 0; config < 8; ++config)
+						{
+							resultFile << "\n" << std::endl;
+
+							switch ((ProfilingStage)config)
+							{
+							case ProfilingStage::DEFAULT:
+								resultFile << "merged: false" << std::endl;
+								resultFile << "checker board: false" << std::endl;
+								resultFile << "volumetric shadow: false" << std::endl;
+								break;
+							case ProfilingStage::MERGED:
+								resultFile << "merged: true" << std::endl;
+								resultFile << "checker board: false" << std::endl;
+								resultFile << "volumetric shadow: false" << std::endl;
+								break;
+							case ProfilingStage::CHECKER_BOARD:
+								resultFile << "merged: false" << std::endl;
+								resultFile << "checker board: true" << std::endl;
+								resultFile << "volumetric shadow: false" << std::endl;
+								break;
+							case ProfilingStage::CHECKER_BOARD_MERGED:
+								resultFile << "merged: true" << std::endl;
+								resultFile << "checker board: true" << std::endl;
+								resultFile << "volumetric shadow: false" << std::endl;
+								break;
+							case ProfilingStage::DEFAULT_SHADOWS:
+								resultFile << "merged: false" << std::endl;
+								resultFile << "checker board: false" << std::endl;
+								resultFile << "volumetric shadow: true" << std::endl;
+								break;
+							case ProfilingStage::MERGED_SHADOWS:
+								resultFile << "merged: true" << std::endl;
+								resultFile << "checker board: false" << std::endl;
+								resultFile << "volumetric shadow: true" << std::endl;
+								break;
+							case ProfilingStage::CHECKER_BOARD_SHADOWS:
+								resultFile << "merged: false" << std::endl;
+								resultFile << "checker board: true" << std::endl;
+								resultFile << "volumetric shadow: true" << std::endl;
+								break;
+							case ProfilingStage::CHECKER_BOARD_MERGED_SHADOWS:
+								resultFile << "merged: true" << std::endl;
+								resultFile << "checker board: true" << std::endl;
+								resultFile << "volumetric shadow: true" << std::endl;
+								break;
+							default:
+								assert(false);
+								break;
+							}
+							resultFile << "\n" << std::endl;
+
+							resultFile << "FOM Directional Light Depth: " << m_profilingData[scene][config].fomDirDepth << std::endl;
+							resultFile << "FOM Directional Light: " << m_profilingData[scene][config].fomDir << std::endl;
+							resultFile << "FOM Local Light: " << m_profilingData[scene][config].fomLocal << std::endl;
+							resultFile << "Volumetric Fog Scatter: " << m_profilingData[scene][config].scatter << std::endl;
+							resultFile << "Volumetric Fog V-Buffer Only: " << m_profilingData[scene][config].vbufferOnly << std::endl;
+							resultFile << "Volumetric Fog In-Scatter Only: " << m_profilingData[scene][config].scatterOnly << std::endl;
+							resultFile << "Volumetric Fog Scatter CB: " << m_profilingData[scene][config].scatterCB << std::endl;
+							resultFile << "Volumetric Fog V-Buffer Only CB: " << m_profilingData[scene][config].vbufferOnlyCB << std::endl;
+							resultFile << "Volumetric Fog In-Scatter Only CB: " << m_profilingData[scene][config].scatterOnlyCB << std::endl;
+							resultFile << "Volumetric Fog Filter CB: " << m_profilingData[scene][config].filter << std::endl;
+							resultFile << "Volumetric Fog Integrate: " << m_profilingData[scene][config].integrate << std::endl;
+							resultFile << "Volumetric Lighting Depth Downsample: " << m_profilingData[scene][config].depthDownsample << std::endl;
+							resultFile << "Volumetric Lighting Raymarch: " << m_profilingData[scene][config].raymarch << std::endl;
+							resultFile << "Volumetric Lighting Apply: " << m_profilingData[scene][config].apply << std::endl;
+
+							resultFile << "\n" << std::endl;
+
+						}
+						resultFile << "\n" << std::endl;
+					}
+				}
+				else
+				{
+					puts("Failed to write profiling results to file!\n");
+				}
+
+				return;
+			}
+		}
+	}
+
+	// set configuration for upcoming frame
+	{
+		auto &entityRegistry = m_engine->getEntityRegistry();
+		auto &camTransC = entityRegistry.get<TransformationComponent>(m_cameraEntity);
+
+		switch (m_currentScene)
+		{
+		case 0:
+			camTransC.m_position = glm::vec3(-12.0f, 1.8f, 0.0f);
+			camTransC.m_orientation = glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f));
+			break;
+		case 1:
+			camTransC.m_position = glm::vec3(-9.036f, 4.706f, -1.700f);
+			camTransC.m_orientation = glm::quat(glm::radians(glm::vec3(155.989f, -59.480f, -180.000f)));
+			break;
+		case 2:
+			camTransC.m_position = glm::vec3(16.309f, 8.601f, -21.194);
+			camTransC.m_orientation = glm::quat(glm::radians(glm::vec3(175.038f, -74.856f, 180.000f)));
+			break;
+		default:
+			assert(false);
+			break;
+		}
+
+		switch (m_currentProfilingStage)
+		{
+		case ProfilingStage::DEFAULT:
+			g_volumetricFogMergedPasses = false;
+			g_volumetricFogCheckerBoard = false;
+			g_volumetricShadow = 0;
+			break;
+		case ProfilingStage::MERGED:
+			g_volumetricFogMergedPasses = true;
+			g_volumetricFogCheckerBoard = false;
+			g_volumetricShadow = 0;
+			break;
+		case ProfilingStage::CHECKER_BOARD:
+			g_volumetricFogMergedPasses = false;
+			g_volumetricFogCheckerBoard = true;
+			g_volumetricShadow = 0;
+			break;
+		case ProfilingStage::CHECKER_BOARD_MERGED:
+			g_volumetricFogMergedPasses = true;
+			g_volumetricFogCheckerBoard = true;
+			g_volumetricShadow = 0;
+			break;
+		case ProfilingStage::DEFAULT_SHADOWS:
+			g_volumetricFogMergedPasses = false;
+			g_volumetricFogCheckerBoard = false;
+			g_volumetricShadow = 1;
+			break;
+		case ProfilingStage::MERGED_SHADOWS:
+			g_volumetricFogMergedPasses = true;
+			g_volumetricFogCheckerBoard = false;
+			g_volumetricShadow = 1;
+			break;
+		case ProfilingStage::CHECKER_BOARD_SHADOWS:
+			g_volumetricFogMergedPasses = false;
+			g_volumetricFogCheckerBoard = true;
+			g_volumetricShadow = 1;
+			break;
+		case ProfilingStage::CHECKER_BOARD_MERGED_SHADOWS:
+			g_volumetricFogMergedPasses = true;
+			g_volumetricFogCheckerBoard = true;
+			g_volumetricShadow = 1;
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
 }
