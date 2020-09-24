@@ -2,6 +2,7 @@
 #include "tonemap.hlsli"
 #include "srgb.hlsli"
 #include "common.hlsli"
+#include "dither.hlsli"
 
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
@@ -221,5 +222,10 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		color = accurateLinearToSRGB(color);
 	}
 	
-	g_ResultImage[threadID.xy] = float4(color, dot(color.rgb, float3(0.299, 0.587, 0.114)));
+	if (g_PushConsts.applyDither != 0)
+	{
+		color = ditherTriangleNoise(color, texCoord, g_PushConsts.time);
+	}
+
+	g_ResultImage[threadID.xy] = float4(color, dot(color, float3(0.299, 0.587, 0.114)));
 }

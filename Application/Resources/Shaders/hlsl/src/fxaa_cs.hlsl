@@ -1,6 +1,7 @@
 #include "bindingHelper.hlsli"
 #include "fxaa.hlsli"
 #include "common.hlsli"
+#include "dither.hlsli"
 
 #define FXAA_PC 1
 #define FXAA_HLSL_5 1
@@ -176,6 +177,11 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		// Immedates will result in compiler un-optimizing.
 		// {xyzw} = float4(1.0, -1.0, 0.25, -0.25)
 		0.0);
+	
+	if (g_PushConsts.applyDither != 0)
+	{
+		result.rgb = ditherTriangleNoise(result.rgb, (float2(threadID.xy) + 0.5) * g_PushConsts.invScreenSizeInPixels, g_PushConsts.time);
+	}
 	
 	g_ResultImage[threadID.xy] = float4(result.rgb, 1.0);
 }

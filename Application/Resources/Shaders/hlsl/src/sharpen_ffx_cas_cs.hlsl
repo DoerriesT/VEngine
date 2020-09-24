@@ -1,6 +1,7 @@
 #include "bindingHelper.hlsli"
 #include "sharpen_ffx_cas.hlsli"
 #include "srgb.hlsli"
+#include "dither.hlsli"
 
 RWTexture2D<float4> g_ResultImage : REGISTER_UAV(RESULT_IMAGE_BINDING, 0);
 Texture2D<float4> g_InputImage : REGISTER_SRV(INPUT_IMAGE_BINDING, 0);
@@ -30,6 +31,15 @@ void CasInput(inout AF1 r, inout AF1 g, inout AF1 b)
 
 #include "ffx_cas.h"
 
+
+float4 gammaCorrectAndDither(float3 c, uint2 coord)
+{
+	c = accurateLinearToSRGB(c);
+	c = ditherTriangleNoise(c, (coord + 0.5) * g_PushConsts.texelSize, g_PushConsts.time);
+	
+	return float4(c, 1.0);
+}
+
 [numthreads(64, 1, 1)]
 void main(uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
 {
@@ -40,17 +50,17 @@ void main(uint3 groupThreadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
 	
 	AF3 c;
 	CasFilter(c.r, c.g, c.b, gxy, const0, const1, true);
-	g_ResultImage[gxy] = float4(accurateLinearToSRGB(c), 1.0);
+	g_ResultImage[gxy] = gammaCorrectAndDither(c, gxy);
 	gxy.x += 8u;
 	
 	CasFilter(c.r, c.g, c.b, gxy, const0, const1, true);
-	g_ResultImage[gxy] = float4(accurateLinearToSRGB(c), 1.0);
+	g_ResultImage[gxy] = gammaCorrectAndDither(c, gxy);
 	gxy.y += 8u;
 	
 	CasFilter(c.r, c.g, c.b, gxy, const0, const1, true);
-	g_ResultImage[gxy] = float4(accurateLinearToSRGB(c), 1.0);
+	g_ResultImage[gxy] = gammaCorrectAndDither(c, gxy);
 	gxy.x -= 8u;
 	
 	CasFilter(c.r, c.g, c.b, gxy, const0, const1, true);
-	g_ResultImage[gxy] = float4(accurateLinearToSRGB(c), 1.0);
+	g_ResultImage[gxy] = gammaCorrectAndDither(c, gxy);
 }

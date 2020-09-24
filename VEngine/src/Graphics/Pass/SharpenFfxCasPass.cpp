@@ -67,6 +67,9 @@ void VEngine::SharpenFfxCasPass::addToGraph(rg::RenderGraph &graph, const Data &
 			pushConsts.const0 = const0;
 			pushConsts.const1 = const1;
 			pushConsts.gammaSpaceInput = data.m_gammaSpaceInput;
+			pushConsts.texelSize = 1.0f / glm::vec2(width, height);
+			pushConsts.time = data.m_passRecordContext->m_commonRenderData->m_time;
+
 			cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 
 			cmdList->dispatch((width + 15) / 16, (height + 15) / 16, 1);

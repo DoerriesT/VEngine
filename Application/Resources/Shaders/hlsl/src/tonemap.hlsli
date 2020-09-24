@@ -9,4 +9,6 @@ struct PushConsts
 	uint applyLinearToGamma;
 	uint bloomEnabled;
 	float bloomStrength;
+	uint applyDither;
+	float time;
 };

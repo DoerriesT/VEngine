@@ -7,4 +7,6 @@ struct PushConsts
 	float fxaaQualitySubpix;
 	float fxaaQualityEdgeThreshold;
 	float fxaaQualityEdgeThresholdMin;
+	float time;
+	uint applyDither;
 };

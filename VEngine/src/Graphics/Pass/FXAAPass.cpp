@@ -63,6 +63,8 @@ void VEngine::FXAAPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		pushConsts.fxaaQualitySubpix = g_FXAAQualitySubpix;
 		pushConsts.fxaaQualityEdgeThreshold = g_FXAAQualityEdgeThreshold;
 		pushConsts.fxaaQualityEdgeThresholdMin = g_FXAAQualityEdgeThresholdMin;
+		pushConsts.applyDither = data.m_applyDither;
+		pushConsts.time = data.m_passRecordContext->m_commonRenderData->m_time;
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

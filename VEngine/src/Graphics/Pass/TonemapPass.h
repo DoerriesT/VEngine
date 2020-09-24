@@ -11,6 +11,7 @@ namespace VEngine
 		{
 			PassRecordContext *m_passRecordContext;
 			bool m_applyLinearToGamma;
+			bool m_applyDither;
 			bool m_bloomEnabled;
 			float m_bloomStrength;
 			rg::ImageViewHandle m_srcImageHandle;

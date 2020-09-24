@@ -379,37 +379,20 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 		fomImageViewHandle = graph.createImageView({ desc.m_name, graph.createImage(desc), { 0, 1, 0, 2 }, ImageViewType::_2D_ARRAY });
 	}
 
-	rg::ImageViewHandle finalImageViewHandle = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
-	rg::ImageViewHandle finalImageViewHandle2 = ResourceDefinitions::createFinalImageViewHandle(graph, m_width, m_height);
-	//rg::ImageViewHandle uvImageViewHandle = ResourceDefinitions::createUVImageViewHandle(graph, m_width, m_height);
-	//rg::ImageViewHandle ddxyLengthImageViewHandle = ResourceDefinitions::createDerivativesLengthImageViewHandle(graph, m_width, m_height);
-	//rg::ImageViewHandle ddxyRotMaterialIdImageViewHandle = ResourceDefinitions::createDerivativesRotMaterialIdImageViewHandle(graph, m_width, m_height);
-	//rg::ImageViewHandle tangentSpaceImageViewHandle = ResourceDefinitions::createTangentSpaceImageViewHandle(graph, m_width, m_height);
+	rg::ImageViewHandle finalImageViewHandle = ResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
+	rg::ImageViewHandle finalImageViewHandle2 = ResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle velocityImageViewHandle = ResourceDefinitions::createVelocityImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle lightImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle transparencyAccumImageViewHandle = VKResourceDefinitions::createTransparencyAccumImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle transparencyTransmittanceImageViewHandle = VKResourceDefinitions::createTransparencyTransmittanceImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle transparencyDeltaImageViewHandle = VKResourceDefinitions::createTransparencyDeltaImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle transparencyResultImageViewHandle = VKResourceDefinitions::createLightImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle deferredShadowsImageViewHandle = VKResourceDefinitions::createDeferredShadowsImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle reprojectedDepthUintImageViewHandle = VKResourceDefinitions::createReprojectedDepthUintImageViewHandle(graph, m_width, m_height);
-	//ImageViewHandle reprojectedDepthImageViewHandle = VKResourceDefinitions::createReprojectedDepthImageViewHandle(graph, m_width, m_height);
 	rg::ImageViewHandle punctualLightBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLights.size()));
 	rg::ImageViewHandle punctualLightShadowedBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_punctualLightsShadowed.size()));
 	rg::ImageViewHandle localMediaBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localParticipatingMedia.size()));
 	rg::ImageViewHandle reflProbeBitMaskImageViewHandle = ResourceDefinitions::createTiledLightingBitMaskImageViewHandle(graph, m_width, m_height, static_cast<uint32_t>(lightData.m_localReflectionProbes.size()));
 	rg::BufferViewHandle luminanceHistogramBufferViewHandle = ResourceDefinitions::createLuminanceHistogramBufferViewHandle(graph);
-	//BufferViewHandle indirectBufferViewHandle = VKResourceDefinitions::createIndirectBufferViewHandle(graph, renderData.m_subMeshInstanceDataCount);
-	//BufferViewHandle visibilityBufferViewHandle = VKResourceDefinitions::createOcclusionCullingVisibilityBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
-	//BufferViewHandle drawCountsBufferViewHandle = VKResourceDefinitions::createIndirectDrawCountsBufferViewHandle(graph, renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount);
-
+	
 	PassRecordContext passRecordContext{};
 	passRecordContext.m_renderResources = m_renderResources;
 	passRecordContext.m_pipelineCache = m_pipelineCache;
 	passRecordContext.m_descriptorSetCache = m_descriptorSetCache;
 	passRecordContext.m_commonRenderData = &commonData;
-
-#if 1
 
 	// transform data write
 	DescriptorBufferInfo transformDataBufferInfo{ nullptr, 0, std::max(renderData.m_transformDataCount * sizeof(glm::vec4), sizeof(glm::vec4)), sizeof(glm::vec4) };
@@ -670,39 +653,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	}
 
 
-	// Hi-Z furthest depth pyramid
-	HiZPyramidPass::OutData hiZMinPyramidPassOutData;
-	HiZPyramidPass::Data hiZMinPyramidPassData;
-	hiZMinPyramidPassData.m_passRecordContext = &passRecordContext;
-	hiZMinPyramidPassData.m_inputImageViewHandle = prevDepthImageViewHandle;
-	hiZMinPyramidPassData.m_maxReduction = false;
-	hiZMinPyramidPassData.m_copyFirstLevel = false;
-	hiZMinPyramidPassData.m_forceExecution = true;
-
-	HiZPyramidPass::addToGraph(graph, hiZMinPyramidPassData, hiZMinPyramidPassOutData);
-
-	rg::ImageViewHandle depthPyramidImageViewHandle = hiZMinPyramidPassOutData.m_resultImageViewHandle;
-
-
-
-	//// visibility buffer
-	//VisibilityBufferPass::Data visibilityBufferPassData;
-	//visibilityBufferPassData.m_passRecordContext = &passRecordContext;
-	//visibilityBufferPassData.m_opaqueInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueCount;
-	//visibilityBufferPassData.m_opaqueInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_opaqueOffset;
-	//visibilityBufferPassData.m_maskedInstanceDataCount = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedCount;
-	//visibilityBufferPassData.m_maskedInstanceDataOffset = renderData.m_renderLists[renderData.m_mainViewRenderListIndex].m_maskedOffset;
-	//visibilityBufferPassData.m_instanceData = sortedInstanceData.data();
-	//visibilityBufferPassData.m_subMeshInfo = m_meshManager->getSubMeshInfo();
-	//visibilityBufferPassData.m_texCoordScaleBias = &renderData.m_texCoordScaleBias[0].x;
-	//visibilityBufferPassData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size };
-	//visibilityBufferPassData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//visibilityBufferPassData.m_triangleImageHandle = triangleImageViewHandle;
-	//visibilityBufferPassData.m_depthImageHandle = triangleDepthBufferImageViewHandle;
-	//
-	//VisibilityBufferPass::addToGraph(graph, visibilityBufferPassData);
-
-
 	// depth prepass
 	DepthPrepassPass::Data depthPrePassData;
 	depthPrePassData.m_passRecordContext = &passRecordContext;
@@ -902,15 +852,11 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	deferredShadowsPassData.m_depthImageViewHandle = depthImageViewHandle;
 	deferredShadowsPassData.m_directionalLightFOMImageViewHandle = fomDirShadowImageViewHandle;
 	deferredShadowsPassData.m_directionalLightFOMDepthRangeImageViewHandle = fomDepthDirShadowImageViewHandle;
-	//deferredShadowsPassData.m_tangentSpaceImageViewHandle = tangentSpaceImageViewHandle;
 	deferredShadowsPassData.m_shadowImageViewHandle = shadowImageViewHandle;
 	deferredShadowsPassData.m_shadowMatricesBufferInfo = shadowMatricesBufferInfo;
 	deferredShadowsPassData.m_cascadeParamsBufferInfo = shadowCascadeParamsBufferInfo;
 
 	DeferredShadowsPass::addToGraph(graph, deferredShadowsPassData);
-
-
-
 
 
 
@@ -969,8 +915,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	forwardPassData.m_resultImageViewHandle = lightImageViewHandle;
 	forwardPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
 	forwardPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
-	//forwardPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	//forwardPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
 	forwardPassData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
 	forwardPassData.m_probeImageView = m_reflectionProbeModule->getCubeArrayView();
 	forwardPassData.m_atmosphereConstantBufferInfo = m_atmosphericScatteringModule->getConstantBufferInfo();
@@ -980,34 +924,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	ForwardLightingPass::addToGraph(graph, forwardPassData);
 
-
-	//// shade visibility buffer PS
-	//ShadeVisibilityBufferPassPS::Data shadeVisBufferPassPSData;
-	//shadeVisBufferPassPSData.m_passRecordContext = &passRecordContext;
-	//shadeVisBufferPassPSData.m_directionalLightsBufferInfo = directionalLightsBufferInfo;
-	//shadeVisBufferPassPSData.m_directionalLightsShadowedBufferInfo = directionalLightsShadowedBufferInfo;
-	//shadeVisBufferPassPSData.m_punctualLightsBufferInfo = punctualLightDataBufferInfo;
-	//shadeVisBufferPassPSData.m_punctualLightsZBinsBufferInfo = punctualLightZBinsBufferInfo;
-	//shadeVisBufferPassPSData.m_punctualLightsShadowedBufferInfo = punctualLightShadowedDataBufferInfo;
-	//shadeVisBufferPassPSData.m_punctualLightsShadowedZBinsBufferInfo = punctualLightShadowedZBinsBufferInfo;
-	//shadeVisBufferPassPSData.m_materialDataBufferInfo = { m_renderResources->m_materialBuffer, 0, m_renderResources->m_materialBuffer->getDescription().m_size, sizeof(MaterialData) };
-	//shadeVisBufferPassPSData.m_instanceDataBufferInfo = instanceDataBufferInfo;
-	//shadeVisBufferPassPSData.m_transformDataBufferInfo = transformDataBufferInfo;
-	//shadeVisBufferPassPSData.m_subMeshInfoBufferInfo = { m_renderResources->m_subMeshDataInfoBuffer, 0, m_renderResources->m_subMeshDataInfoBuffer->getDescription().m_size, sizeof(SubMeshInfo) };
-	//shadeVisBufferPassPSData.m_indexBufferInfo = { m_renderResources->m_indexBuffer, 0, m_renderResources->m_indexBuffer->getDescription().m_size, 4 };
-	//shadeVisBufferPassPSData.m_punctualLightsBitMaskBufferHandle = punctualLightBitMaskBufferViewHandle;
-	//shadeVisBufferPassPSData.m_punctualLightsShadowedBitMaskBufferHandle = punctualLightShadowedBitMaskBufferViewHandle;
-	//shadeVisBufferPassPSData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	//shadeVisBufferPassPSData.m_deferredShadowImageViewHandle = deferredShadowsImageViewHandle;
-	//shadeVisBufferPassPSData.m_resultImageViewHandle = lightImageViewHandle;
-	//shadeVisBufferPassPSData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	//shadeVisBufferPassPSData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
-	//shadeVisBufferPassPSData.m_shadowAtlasImageViewHandle = shadowAtlasImageViewHandle;
-	//shadeVisBufferPassPSData.m_fomImageViewHandle = fomImageViewHandle;
-	//shadeVisBufferPassPSData.m_triangleImageViewHandle = triangleImageViewHandle;
-	//shadeVisBufferPassPSData.m_depthImageViewHandle = triangleDepthBufferImageViewHandle;
-	//
-	//ShadeVisibilityBufferPassPS::addToGraph(graph, shadeVisBufferPassPSData);
 
 
 	// Hi-Z nearest depth pyramid
@@ -1021,21 +937,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	HiZPyramidPass::addToGraph(graph, hiZMaxPyramidPassData, hiZMaxPyramidPassOutData);
 
-
-	// screen space reflections
-	//SSRModule::Data ssrModuleData;
-	//ssrModuleData.m_passRecordContext = &passRecordContext;
-	//ssrModuleData.m_ignoreHistory = m_framesSinceLastResize < RendererConsts::FRAMES_IN_FLIGHT;
-	//ssrModuleData.m_noiseTextureHandle = m_blueNoiseTextureIndex.m_handle;
-	//ssrModuleData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	//ssrModuleData.m_hiZPyramidImageViewHandle = hiZMaxPyramidPassOutData.m_resultImageViewHandle;
-	//ssrModuleData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	//ssrModuleData.m_depthImageViewHandle = depthImageViewHandle;
-	//ssrModuleData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle; 
-	//ssrModuleData.m_prevColorImageViewHandle = prevLightImageViewHandle;
-	//ssrModuleData.m_velocityImageViewHandle = velocityImageViewHandle;
-	//
-	//m_ssrModule->addToGraph(graph, ssrModuleData);
 
 
 	// gtao
@@ -1085,29 +986,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 	VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
-
-
-	//// apply volumetric fog and indirect specular light to scene
-	//VolumetricFogApplyPass::Data volumetricFogApplyPassData;
-	//volumetricFogApplyPassData.m_passRecordContext = &passRecordContext;
-	//volumetricFogApplyPassData.m_ssao = g_ssaoEnabled;
-	//volumetricFogApplyPassData.m_reflectionProbeDataBufferInfo = localReflProbesDataBufferInfo;
-	//volumetricFogApplyPassData.m_reflectionProbeZBinsBufferInfo = localReflProbesZBinsBufferInfo;
-	//volumetricFogApplyPassData.m_exposureDataBufferHandle = exposureDataBufferViewHandle;
-	//volumetricFogApplyPassData.m_reflectionProbeImageView = m_reflectionProbeModule->getCubeArrayView();
-	//volumetricFogApplyPassData.m_reflectionProbeBitMaskBufferHandle = reflProbeBitMaskBufferViewHandle;
-	//volumetricFogApplyPassData.m_blueNoiseImageView = m_blueNoiseArrayImageView;
-	//volumetricFogApplyPassData.m_depthImageViewHandle = depthImageViewHandle;
-	//volumetricFogApplyPassData.m_volumetricFogImageViewHandle = m_volumetricFogModule->getVolumetricScatteringImageViewHandle();
-	////volumetricFogApplyPassData.m_indirectSpecularLightImageViewHandle = m_ssrModule->getSSRResultImageViewHandle();
-	//volumetricFogApplyPassData.m_brdfLutImageViewHandle = brdfLUTImageViewHandle;
-	//volumetricFogApplyPassData.m_albedoMetalnessImageViewHandle = albedoMetalnessImageViewHandle;
-	//volumetricFogApplyPassData.m_normalRoughnessImageViewHandle = normalRoughnessImageViewHandle;
-	//volumetricFogApplyPassData.m_ssaoImageViewHandle = m_gtaoModule->getAOResultImageViewHandle(); // TODO: what to pass in when ssao is disabled?
-	//volumetricFogApplyPassData.m_raymarchedVolumetricsImageViewHandle = m_volumetricFogModule->getRaymarchedScatteringImageViewHandle();
-	//volumetricFogApplyPassData.m_resultImageHandle = lightImageViewHandle;
-	//
-	//VolumetricFogApplyPass::addToGraph(graph, volumetricFogApplyPassData);
 
 
 	ParticlesPass::Data particlesPassData;
@@ -1228,6 +1106,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	tonemapPassData.m_bloomEnabled = g_bloomEnabled;
 	tonemapPassData.m_bloomStrength = g_bloomStrength;
 	tonemapPassData.m_applyLinearToGamma = g_FXAAEnabled || !g_CASEnabled;
+	tonemapPassData.m_applyDither = !g_FXAAEnabled && !g_CASEnabled;
 	tonemapPassData.m_srcImageHandle = currentOutput;
 	tonemapPassData.m_dstImageHandle = tonemapTargetTextureHandle;
 	tonemapPassData.m_bloomImageViewHandle = bloomImageViewHandle;
@@ -1244,6 +1123,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	// FXAA
 	FXAAPass::Data fxaaPassData;
 	fxaaPassData.m_passRecordContext = &passRecordContext;
+	fxaaPassData.m_applyDither = !g_CASEnabled;
 	fxaaPassData.m_inputImageHandle = currentOutput;
 	fxaaPassData.m_resultImageHandle = fxaaTargetTextureHandle;
 
@@ -1291,7 +1171,6 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 
 		DebugDrawPass::addToGraph(graph, debugDrawPassData);
 	}
-#endif
 
 
 	// ImGui

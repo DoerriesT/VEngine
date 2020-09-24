@@ -72,6 +72,8 @@ void VEngine::TonemapPass::addToGraph(rg::RenderGraph &graph, const Data &data)
 		pushConsts.applyLinearToGamma = data.m_applyLinearToGamma;
 		pushConsts.bloomEnabled = data.m_bloomEnabled;
 		pushConsts.bloomStrength = data.m_bloomStrength;
+		pushConsts.applyDither = data.m_applyDither;
+		pushConsts.time = data.m_passRecordContext->m_commonRenderData->m_time;
 
 		cmdList->pushConstants(pipeline, ShaderStageFlagBits::COMPUTE_BIT, 0, sizeof(pushConsts), &pushConsts);
 

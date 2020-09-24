@@ -10,6 +10,7 @@ namespace VEngine
 		struct Data
 		{
 			PassRecordContext *m_passRecordContext;
+			bool m_applyDither;
 			rg::ImageViewHandle m_inputImageHandle;
 			rg::ImageViewHandle m_resultImageHandle;
 		};
