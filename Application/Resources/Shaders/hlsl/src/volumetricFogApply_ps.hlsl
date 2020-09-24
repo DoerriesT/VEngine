@@ -74,11 +74,13 @@ float4 main(PSInput input) : SV_Target0
 	g_VolumetricFogImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 	float3 texelSize = 1.0 / imageDims;
 	
+	d = max(0.0, d - texelSize.z * 1.5);
+	
 	float4 fog = 0.0;
 	{
 		for (int i = 0; i < 4; ++i)
 		{
-			float3 tc = float3(input.texCoord, d) + noise.xyz * texelSize;
+			float3 tc = float3(input.texCoord, d) + noise.xyz * float3(1.0, 1.0, 0.5) * texelSize;
 			fog += g_VolumetricFogImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], tc, 0.0) / 4.0;
 			noise = noise.yzwx;
 		}
