@@ -368,8 +368,8 @@ void VEngine::RenderSystem::update(float timeDelta)
 								if (fomQuadTreeAllocator.alloc(128, fomAtlasDrawInfo.m_offsetX, fomAtlasDrawInfo.m_offsetY, fomAtlasDrawInfo.m_size))
 								{
 									punctualLightShadowed.m_fomShadowAtlasParams.x = (fomAtlasDrawInfo.m_size - 2) / 2048.0f;
-									punctualLightShadowed.m_fomShadowAtlasParams.y = static_cast<float>(fomAtlasDrawInfo.m_offsetX + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
-									punctualLightShadowed.m_fomShadowAtlasParams.z = static_cast<float>(fomAtlasDrawInfo.m_offsetY + 1) / fomAtlasDrawInfo.m_size * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.y = static_cast<float>(fomAtlasDrawInfo.m_offsetX + 1) / (fomAtlasDrawInfo.m_size - 2) * punctualLightShadowed.m_fomShadowAtlasParams.x;
+									punctualLightShadowed.m_fomShadowAtlasParams.z = static_cast<float>(fomAtlasDrawInfo.m_offsetY + 1) / (fomAtlasDrawInfo.m_size - 2) * punctualLightShadowed.m_fomShadowAtlasParams.x;
 									punctualLightShadowed.m_fomShadowAtlasParams.w = 1.0f;
 
 									fomAtlasDrawInfo.m_lightPosition = transformationComponent.m_position;
@@ -632,30 +632,30 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 					float lightDepthVS = glm::dot(glm::vec4(light.m_position, 1.0f), viewMatDepthRow);
 
-					// spot light
-					if (light.m_angleScale != -1.0f)
-					{
-						float cosAngle = -light.m_angleOffset / light.m_angleScale;
-						float sinAngle = glm::sqrt(1.0f - cosAngle * cosAngle);
-
-						glm::vec3 lightDirVS = m_commonRenderData.m_viewMatrix * glm::vec4(light.m_direction, 0.0f);
-
-						//const glm::vec3 v1 = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), lightDirVS);
-						//const glm::vec3 v2 = glm::cross(v1, lightDirVS);
-						// optimized the obove lines into the following expression:
-						const float v2 = lightDirVS.x * lightDirVS.x + lightDirVS.y * lightDirVS.y;
-						// cone vertex
-						const float p0 = -lightDepthVS;
-						// first point on cone cap rim
-						const float p1 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * v2);
-						// second point on cone cap rim
-						const float p2 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * -v2);
-
-						nearestPoint = -glm::max(p0, p1, p2);
-						furthestPoint = -glm::min(p0, p1, p2);
-					}
-					// point light
-					else
+					//// spot light
+					//if (light.m_angleScale != -1.0f)
+					//{
+					//	float cosAngle = -light.m_angleOffset / light.m_angleScale;
+					//	float sinAngle = glm::sqrt(1.0f - cosAngle * cosAngle);
+					//
+					//	glm::vec3 lightDirVS = m_commonRenderData.m_viewMatrix * glm::vec4(light.m_direction, 0.0f);
+					//
+					//	//const glm::vec3 v1 = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), lightDirVS);
+					//	//const glm::vec3 v2 = glm::cross(v1, lightDirVS);
+					//	// optimized the obove lines into the following expression:
+					//	const float v2 = lightDirVS.x * lightDirVS.x + lightDirVS.y * lightDirVS.y;
+					//	// cone vertex
+					//	const float p0 = -lightDepthVS;
+					//	// first point on cone cap rim
+					//	const float p1 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * v2);
+					//	// second point on cone cap rim
+					//	const float p2 = -lightDepthVS + radius * (cosAngle * lightDirVS.z + sinAngle * -v2);
+					//
+					//	nearestPoint = -glm::max(p0, p1, p2);
+					//	furthestPoint = -glm::min(p0, p1, p2);
+					//}
+					//// point light
+					//else
 					{
 						nearestPoint = -lightDepthVS - radius;
 						furthestPoint = -lightDepthVS + radius;
@@ -678,35 +678,33 @@ void VEngine::RenderSystem::update(float timeDelta)
 
 			// global participating media
 			{
-			auto view = m_entityRegistry.view<GlobalParticipatingMediumComponent, RenderableComponent>();
+				m_entityRegistry.view<GlobalParticipatingMediumComponent, RenderableComponent>().each(
+					[&](GlobalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
+					{
+						GlobalParticipatingMedium medium{};
+						medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
+						medium.m_extinction = mediumComponent.m_extinction;
+						medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
+						medium.m_phase = mediumComponent.m_phaseAnisotropy;
+						medium.m_heightFogEnabled = mediumComponent.m_heightFogEnabled;
+						medium.m_heightFogStart = mediumComponent.m_heightFogStart;
+						medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
+						medium.m_maxHeight = mediumComponent.m_maxHeight;
+						medium.m_textureScale = mediumComponent.m_textureScale;
+						medium.m_textureBias = mediumComponent.m_textureBias;
+						medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
 
-			view.each([&](GlobalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
-				{
-					GlobalParticipatingMedium medium{};
-					medium.m_emissive = mediumComponent.m_emissiveColor * mediumComponent.m_emissiveIntensity;
-					medium.m_extinction = mediumComponent.m_extinction;
-					medium.m_scattering = mediumComponent.m_albedo * mediumComponent.m_extinction;
-					medium.m_phase = mediumComponent.m_phaseAnisotropy;
-					medium.m_heightFogEnabled = mediumComponent.m_heightFogEnabled;
-					medium.m_heightFogStart = mediumComponent.m_heightFogStart;
-					medium.m_heightFogFalloff = mediumComponent.m_heightFogFalloff;
-					medium.m_maxHeight = mediumComponent.m_maxHeight;
-					medium.m_textureScale = mediumComponent.m_textureScale;
-					medium.m_textureBias = mediumComponent.m_textureBias;
-					medium.m_densityTexture = mediumComponent.m_densityTexture.m_handle;
 
-
-					m_lightData.m_globalParticipatingMedia.push_back(medium);
-				});
+						m_lightData.m_globalParticipatingMedia.push_back(medium);
+					});
 			}
 
 			// local participating media
 			{
-				auto view = m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, RenderableComponent>();
-
 				std::vector<float> mediumRadii;
 
-				view.each([&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
+				m_entityRegistry.view<TransformationComponent, LocalParticipatingMediumComponent, RenderableComponent>().each(
+					[&](TransformationComponent &transformationComponent, LocalParticipatingMediumComponent &mediumComponent, RenderableComponent &)
 					{
 						glm::mat4 worldToLocalTransposed =
 							glm::transpose(glm::scale(1.0f / transformationComponent.m_scale)

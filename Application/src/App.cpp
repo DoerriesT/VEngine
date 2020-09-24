@@ -167,6 +167,43 @@ void App::initialize(Engine *engine)
 	entityRegistry.assign<PointLightComponent>(spotLightEntity, Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true, true);
 	entityRegistry.assign<RenderableComponent>(spotLightEntity);
 	scene.m_entities.push_back({ "Local Light", spotLightEntity });
+
+	{
+		glm::vec3 hangingLightPositions[]
+		{
+			glm::vec3(-5.560f, 1.500f, 1.789f),
+			glm::vec3(-5.610f, 1.500f, -1.841f),
+			glm::vec3(5.497f, 1.500f, 1.789f),
+			glm::vec3(5.497f, 1.500f, -1.841f),
+		};
+
+		for (size_t i = 0; i < 4; ++i)
+		{
+			entt::entity lightEntity = entityRegistry.create();
+			entityRegistry.assign<TransformationComponent>(lightEntity, TransformationComponent::Mobility::DYNAMIC, hangingLightPositions[i]);
+			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(3000.0f), 2000.0f, 4.0f, true, true);
+			entityRegistry.assign<RenderableComponent>(lightEntity);
+			scene.m_entities.push_back({ "Hanging Light " + std::to_string(i), lightEntity });
+		}
+
+		glm::vec3 cornerLightPositions[]
+		{
+			glm::vec3(11.795f, 2.000f, 4.326f),
+			glm::vec3(11.795f, 2.000f, -4.083f),
+			glm::vec3(-11.391f, 2.000f, 4.376f),
+			glm::vec3(-11.391f, 2.000f, -4.083f),
+		};
+
+		for (size_t i = 0; i < 4; ++i)
+		{
+			entt::entity lightEntity = entityRegistry.create();
+			entityRegistry.assign<TransformationComponent>(lightEntity, TransformationComponent::Mobility::DYNAMIC, cornerLightPositions[i]);
+			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(6000.0f), 2000.0f, 8.0f, true, true);
+			entityRegistry.assign<RenderableComponent>(lightEntity);
+			scene.m_entities.push_back({ "Corner Light " + std::to_string(i), lightEntity });
+		}
+	}
+
 }
 
 void App::update(float timeDelta)
