@@ -9,7 +9,6 @@
 #include "Graphics/RenderSystem.h"
 #include "GlobalVar.h"
 
-extern uint32_t g_dirLightEntity;
 static constexpr size_t FRAME_TIME_ARRAY_SIZE = 64;
 
 VEngine::Editor::Editor(Engine *engine, uint32_t editorWindowWidth, uint32_t editorWindowHeight)
@@ -230,7 +229,7 @@ void VEngine::Editor::update(float timeDelta)
 
 	if (m_showEntityDetailWindow)
 	{
-		m_detailsWindow->draw(g_dirLightEntity, m_editorCameraEntity);
+		m_detailsWindow->draw(0, m_editorCameraEntity);
 	}
 }
 

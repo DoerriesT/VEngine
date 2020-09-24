@@ -7,7 +7,7 @@ int main()
 {
 	App logic;
 	VEditor::VEditor editor(logic);
-	VEngine::Engine engine("Vulkan", editor);
+	VEngine::Engine engine("Real-Time Volumetric Lighting", editor);
 	engine.start();
 
 	return EXIT_SUCCESS;

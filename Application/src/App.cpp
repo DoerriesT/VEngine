@@ -28,27 +28,17 @@
 #include <Utility/Utility.h>
 #include <Window/Window.h>
 
+using namespace VEngine;
 
 bool g_fogJittering = true;
 float g_fogHistoryAlpha = 0.2f;
-
 bool g_raymarchedFog = false;
-
-extern float g_ssrBias;
-
-uint32_t g_dirLightEntity;
-
 int g_volumetricShadow = 0;
-
-entt::entity g_globalFogEntity = 0;
-entt::entity g_localFogEntity = 0;
-entt::entity g_emitterEntity = 0;
-entt::entity g_localLightEntity = 0;
 
 extern bool g_volumetricFogCheckerBoard;
 extern bool g_volumetricFogMergedPasses;
 
-void App::initialize(VEngine::Engine *engine)
+void App::initialize(Engine *engine)
 {
 	m_engine = engine;
 
@@ -56,81 +46,17 @@ void App::initialize(VEngine::Engine *engine)
 
 	auto &entityRegistry = m_engine->getEntityRegistry();
 	m_cameraEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(m_cameraEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
-	entityRegistry.assign<VEngine::CameraComponent>(m_cameraEntity, VEngine::CameraComponent::ControllerType::FPS, m_engine->getWidth() / (float)m_engine->getHeight(), glm::radians(60.0f), 0.1f, 300.0f);
+	entityRegistry.assign<TransformationComponent>(m_cameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
+	entityRegistry.assign<CameraComponent>(m_cameraEntity, CameraComponent::ControllerType::FPS, m_engine->getWidth() / (float)m_engine->getHeight(), glm::radians(60.0f), 0.1f, 300.0f);
 	m_engine->getRenderSystem().setCameraEntity(m_cameraEntity);
 	scene.m_entities.push_back({ "Camera", m_cameraEntity });
 
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/terrain");
-	//entt::entity terrainEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(terrainEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -5.0f, 0.0f));
-	//entityRegistry.assign<VEngine::MeshComponent>(terrainEntity, scene.m_meshInstances["Resources/Models/terrain"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(terrainEntity);
-	//scene.m_entities.push_back({ "Terrain", terrainEntity });
-
-
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
-	//entt::entity quadEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, 0.0f, 0.0f), glm::quat(), glm::vec3(2048.0f, 1.0f, 2048.0f));
-	//entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
-	//scene.m_entities.push_back({ "Quad", quadEntity });
-
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 	entt::entity sponzaEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(sponzaEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	entityRegistry.assign<VEngine::MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
-	entityRegistry.assign<VEngine::RenderableComponent>(sponzaEntity);
+	entityRegistry.assign<TransformationComponent>(sponzaEntity, TransformationComponent::Mobility::STATIC);
+	entityRegistry.assign<MeshComponent>(sponzaEntity, scene.m_meshInstances["Resources/Models/sponza"]);
+	entityRegistry.assign<RenderableComponent>(sponzaEntity);
 	scene.m_entities.push_back({ "Sponza", sponzaEntity });
-
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/test_orb");
-	//entt::entity orbEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(orbEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(), glm::vec3(3.0f));
-	//entityRegistry.assign<VEngine::MeshComponent>(orbEntity, scene.m_meshInstances["Resources/Models/test_orb"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(orbEntity);
-	//scene.m_entities.push_back({ "Test Orb", orbEntity });
-
-	/*scene.load(m_engine->getRenderSystem(), "Resources/Models/gihouse");
-	entt::entity giHouseEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(giHouseEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	entityRegistry.assign<VEngine::MeshComponent>(giHouseEntity, scene.m_meshInstances["Resources/Models/gihouse"]);
-	entityRegistry.assign<VEngine::RenderableComponent>(giHouseEntity);
-
-	scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
-	entt::entity quadEntity = entityRegistry.create();
-	auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	quadTc.m_scale = 60.0f;
-	entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-	entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);*/
-
-
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_e");
-	//entt::entity exteriorEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(exteriorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	//entityRegistry.assign<VEngine::MeshComponent>(exteriorEntity, scene.m_meshInstances["Resources/Models/bistro_e"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(exteriorEntity);
-	//scene.m_entities.push_back({ "Bistro Exterior", exteriorEntity });
-	//
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/bistro_i");
-	//entt::entity interiorEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(interiorEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	//entityRegistry.assign<VEngine::MeshComponent>(interiorEntity, scene.m_meshInstances["Resources/Models/bistro_i"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(interiorEntity);
-	//scene.m_entities.push_back({ "Bistro Interior", interiorEntity });
-
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/quad");
-	//entt::entity quadEntity = entityRegistry.create();
-	//auto &quadTc = entityRegistry.assign<VEngine::TransformationComponent>(quadEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	//quadTc.m_scale = 60.0f;
-	//entityRegistry.assign<VEngine::MeshComponent>(quadEntity, scene.m_meshInstances["Resources/Models/quad"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(quadEntity);
-
-	//scene.load(m_engine->getRenderSystem(), "Resources/Models/mori_knob");
-	//entt::entity knobEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(knobEntity, VEngine::TransformationComponent::Mobility::STATIC);
-	//entityRegistry.assign<VEngine::MeshComponent>(knobEntity, scene.m_meshInstances["Resources/Models/mori_knob"]);
-	//entityRegistry.assign<VEngine::RenderableComponent>(knobEntity);
-
 
 	auto createReflectionProbe = [&](const glm::vec3 &bboxMin, const glm::vec3 &bboxMax, bool manualOffset = false, const glm::vec3 &capturePos = glm::vec3(0.0f))
 	{
@@ -138,9 +64,9 @@ void App::initialize(VEngine::Engine *engine)
 		glm::vec3 captureOffset = manualOffset ? capturePos - probeCenter : glm::vec3(0.0f);
 
 		auto reflectionProbeEntity = entityRegistry.create();
-		entityRegistry.assign<VEngine::TransformationComponent>(reflectionProbeEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), bboxMax - probeCenter);
-		entityRegistry.assign<VEngine::LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset);
-		entityRegistry.assign<VEngine::RenderableComponent>(reflectionProbeEntity);
+		entityRegistry.assign<TransformationComponent>(reflectionProbeEntity, TransformationComponent::Mobility::DYNAMIC, probeCenter, glm::quat(), bboxMax - probeCenter);
+		entityRegistry.assign<LocalReflectionProbeComponent>(reflectionProbeEntity, captureOffset);
+		entityRegistry.assign<RenderableComponent>(reflectionProbeEntity);
 		scene.m_entities.push_back({ "Reflection Probe", reflectionProbeEntity });
 		return reflectionProbeEntity;
 	};
@@ -172,8 +98,8 @@ void App::initialize(VEngine::Engine *engine)
 	m_engine->getRenderSystem().updateTextureData();
 
 
-	g_globalFogEntity = entityRegistry.create();
-	auto &gpmc = entityRegistry.assign<VEngine::GlobalParticipatingMediumComponent>(g_globalFogEntity);
+	auto globalFogEntity = entityRegistry.create();
+	auto &gpmc = entityRegistry.assign<GlobalParticipatingMediumComponent>(globalFogEntity);
 	gpmc.m_albedo = glm::vec3(1.0f);
 	gpmc.m_extinction = 0.1f;
 	gpmc.m_emissiveColor = glm::vec3(1.0f);
@@ -183,20 +109,20 @@ void App::initialize(VEngine::Engine *engine)
 	gpmc.m_heightFogStart = 0.0f;
 	gpmc.m_heightFogFalloff = 0.1f;
 	gpmc.m_maxHeight = 100.0f;
-	entityRegistry.assign<VEngine::RenderableComponent>(g_globalFogEntity);
-	scene.m_entities.push_back({ "Global Fog", g_globalFogEntity });
+	entityRegistry.assign<RenderableComponent>(globalFogEntity);
+	scene.m_entities.push_back({ "Global Fog", globalFogEntity });
 
 
-	g_localFogEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(g_localFogEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)), glm::vec3(1.0f, 1.0f, 1.0f));
-	entityRegistry.assign<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity, glm::vec3(1.0f), 3.0f, glm::vec3(1.0f), 0.0f, 0.0f, false, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f, glm::vec3(), true);
-	entityRegistry.assign<VEngine::RenderableComponent>(g_localFogEntity);
-	scene.m_entities.push_back({ "Local Fog", g_localFogEntity });
+	auto localFogEntity = entityRegistry.create();
+	entityRegistry.assign<TransformationComponent>(localFogEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(0.0f), 0.0f)), glm::vec3(1.0f, 1.0f, 1.0f));
+	entityRegistry.assign<LocalParticipatingMediumComponent>(localFogEntity, glm::vec3(1.0f), 3.0f, glm::vec3(1.0f), 0.0f, 0.0f, false, 0.0f, 12.0f, perlinNoiseTexture, glm::vec3(18.0f, 2.0f, 11.0f) / 8.0f, glm::vec3(), true);
+	entityRegistry.assign<RenderableComponent>(localFogEntity);
+	scene.m_entities.push_back({ "Local Fog", localFogEntity });
 
 
-	g_dirLightEntity = m_sunLightEntity = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(m_sunLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
-	auto &dlc = entityRegistry.assign<VEngine::DirectionalLightComponent>(m_sunLightEntity, VEngine::Utility::colorTemperatureToColor(4000.0f), 100.0f, true, 4u, 130.0f, 0.9f);
+	auto sunLightEntity = entityRegistry.create();
+	entityRegistry.assign<TransformationComponent>(sunLightEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
+	auto &dlc = entityRegistry.assign<DirectionalLightComponent>(sunLightEntity, Utility::colorTemperatureToColor(4000.0f), 100.0f, true, 4u, 130.0f, 0.9f);
 	dlc.m_depthBias[0] = 5.0f;
 	dlc.m_depthBias[1] = 5.0f;
 	dlc.m_depthBias[2] = 5.0f;
@@ -205,17 +131,17 @@ void App::initialize(VEngine::Engine *engine)
 	dlc.m_normalOffsetBias[1] = 2.0f;
 	dlc.m_normalOffsetBias[2] = 2.0f;
 	dlc.m_normalOffsetBias[3] = 2.0f;
-	entityRegistry.assign<VEngine::RenderableComponent>(m_sunLightEntity);
-	scene.m_entities.push_back({ "Sun Light", m_sunLightEntity });
+	entityRegistry.assign<RenderableComponent>(sunLightEntity);
+	scene.m_entities.push_back({ "Sun Light", sunLightEntity });
 
 	auto particleEmitter = entityRegistry.create();
-	entityRegistry.assign<VEngine::TransformationComponent>(particleEmitter, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
-	VEngine::ParticleEmitterComponent emitterC{};
+	entityRegistry.assign<TransformationComponent>(particleEmitter, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
+	ParticleEmitterComponent emitterC{};
 	emitterC.m_direction = glm::vec3(0.0f, 5.0f, 0.0f);
 	emitterC.m_particleCount = 32;
 	emitterC.m_particleLifetime = 10.0f;
 	emitterC.m_velocityMagnitude = 1.0f;
-	emitterC.m_spawnType = VEngine::ParticleEmitterComponent::DISK;
+	emitterC.m_spawnType = ParticleEmitterComponent::DISK;
 	emitterC.m_spawnAreaSize = 0.2f;
 	emitterC.m_spawnRate = 2.0f;
 	emitterC.m_particleSize = 0.4f;
@@ -224,11 +150,9 @@ void App::initialize(VEngine::Engine *engine)
 	emitterC.m_FOMOpacityMult = 0.5f;
 	emitterC.m_textureHandle = smokeTexture;
 
-	g_emitterEntity = particleEmitter;
+	entityRegistry.assign<ParticleEmitterComponent>(particleEmitter, emitterC);
 
-	entityRegistry.assign<VEngine::ParticleEmitterComponent>(particleEmitter, emitterC);
-
-	entityRegistry.assign<VEngine::RenderableComponent>(particleEmitter);
+	entityRegistry.assign<RenderableComponent>(particleEmitter);
 	scene.m_entities.push_back({ "Particle Emitter", particleEmitter });
 
 	std::default_random_engine e;
@@ -238,36 +162,11 @@ void App::initialize(VEngine::Engine *engine)
 	std::uniform_real_distribution<float> c(0.0f, 1.0f);
 	std::uniform_real_distribution<float> r(0.0f, glm::two_pi<float>());
 
-	//for (size_t i = 0; i < 16; ++i)
-	//{
-	//	entt::entity lightEntity = entityRegistry.create();
-	//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)));
-	//	entityRegistry.assign<VEngine::PointLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
-	//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-	//}
-
-	//entt::entity pointLightEntity = entityRegistry.create();
-	//entityRegistry.assign<VEngine::TransformationComponent>(pointLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(10.0f, 1.0f, 0.0f));
-	//entityRegistry.assign<VEngine::PointLightComponent>(pointLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f);
-	//entityRegistry.assign<VEngine::RenderableComponent>(pointLightEntity);
 	entt::entity spotLightEntity = entityRegistry.create();
-	g_localLightEntity = m_spotLightEntity = spotLightEntity;
-	//entityRegistry.assign<VEngine::TransformationComponent>(m_spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-	//entityRegistry.assign<VEngine::PointLightComponent>(m_spotLightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, true);
-	//entityRegistry.assign<VEngine::RenderableComponent>(m_spotLightEntity);
-	entityRegistry.assign<VEngine::TransformationComponent>(spotLightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
-	//entityRegistry.assign<VEngine::SpotLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, glm::radians(45.0f), glm::radians(15.0f), true);
-	entityRegistry.assign<VEngine::PointLightComponent>(spotLightEntity, VEngine::Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true, true);
-	entityRegistry.assign<VEngine::RenderableComponent>(spotLightEntity);
+	entityRegistry.assign<TransformationComponent>(spotLightEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.0f, 0.0f));
+	entityRegistry.assign<PointLightComponent>(spotLightEntity, Utility::colorTemperatureToColor(3000.0f), 4000.0f, 8.0f, true, true);
+	entityRegistry.assign<RenderableComponent>(spotLightEntity);
 	scene.m_entities.push_back({ "Local Light", spotLightEntity });
-
-	//for (size_t i = 0; i < 64; ++i)
-	//{
-	//	entt::entity lightEntity = entityRegistry.create();
-	//	entityRegistry.assign<VEngine::TransformationComponent>(lightEntity, VEngine::TransformationComponent::Mobility::DYNAMIC, glm::vec3(px(e), py(e), pz(e)), glm::quat(glm::vec3(r(e), r(e), r(e))));
-	//	entityRegistry.assign<VEngine::SpotLightComponent>(lightEntity, glm::vec3(c(e), c(e), c(e)), 1000.0f, 8.0f, glm::radians(79.0f), glm::radians(15.0f), true);
-	//	entityRegistry.assign<VEngine::RenderableComponent>(lightEntity);
-	//}
 }
 
 void App::update(float timeDelta)
@@ -276,123 +175,59 @@ void App::update(float timeDelta)
 
 	ImGui::Begin("Volumetric Fog");
 	{
-		VEngine::Window *window = m_engine->getWindow();
-		bool fullscreen = window->getWindowMode() == VEngine::Window::WindowMode::FULL_SCREEN;
+		Window *window = m_engine->getWindow();
+		bool fullscreen = window->getWindowMode() == Window::WindowMode::FULL_SCREEN;
 		if (ImGui::Checkbox("Fullscreen", &fullscreen))
 		{
-			window->setWindowMode(fullscreen ? VEngine::Window::WindowMode::FULL_SCREEN : VEngine::Window::WindowMode::WINDOWED);
+			window->setWindowMode(fullscreen ? Window::WindowMode::FULL_SCREEN : Window::WindowMode::WINDOWED);
 		}
 
-		bool vsync = VEngine::g_VSyncEnabled;
+		bool vsync = g_VSyncEnabled;
 		ImGui::Checkbox("VSync", &vsync);
-		VEngine::g_VSyncEnabled.set(vsync);
+		g_VSyncEnabled.set(vsync);
 
-		int volumeWidth = VEngine::g_VolumetricFogVolumeWidth;
+		int volumeWidth = g_VolumetricFogVolumeWidth;
 		ImGui::DragInt("Volume Width", &volumeWidth, 1.0f, 32, 256);
-		VEngine::g_VolumetricFogVolumeWidth = std::min(std::max((uint32_t)volumeWidth, 32u), 256u);
+		g_VolumetricFogVolumeWidth = std::min(std::max((uint32_t)volumeWidth, 32u), 256u);
 
-		int volumeHeight = VEngine::g_VolumetricFogVolumeHeight;
+		int volumeHeight = g_VolumetricFogVolumeHeight;
 		ImGui::DragInt("Volume Height", &volumeHeight, 1.0f, 32, 256);
-		VEngine::g_VolumetricFogVolumeHeight = std::min(std::max((uint32_t)volumeHeight, 32u), 256u);
+		g_VolumetricFogVolumeHeight = std::min(std::max((uint32_t)volumeHeight, 32u), 256u);
 
-		int volumeDepth = VEngine::g_VolumetricFogVolumeDepth;
+		int volumeDepth = g_VolumetricFogVolumeDepth;
 		ImGui::DragInt("Volume Depth", &volumeDepth, 1.0f, 32, 256);
-		VEngine::g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 32u), 256u);
+		g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 32u), 256u);
 
+		bool volumetricShadow = g_volumetricShadow;
+
+		ImGui::Checkbox("Volumetric Shadow", &volumetricShadow);
+		g_volumetricShadow = volumetricShadow;
 		ImGui::Checkbox("Checker Board", &g_volumetricFogCheckerBoard);
 		ImGui::Checkbox("Merged Passes", &g_volumetricFogMergedPasses);
 
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
 		ImGui::DragFloat("Fog History Alpha", &g_fogHistoryAlpha, 0.01f, 0.0f, 1.0f, "%.7f");
-
-		static float time = 0.0f;
-		time += timeDelta;
-
-		auto &localMediaC = entityRegistry.get<VEngine::LocalParticipatingMediumComponent>(g_localFogEntity);
-		localMediaC.m_textureBias = glm::vec3(time, 0.0f, time * 0.5f) * 0.2;
 	}
 	ImGui::End();
 
-	auto &input = m_engine->getUserInput();
+	// simulate wind
+	static float time = 0.0f;
+	time += timeDelta;
 
-	//entt::entity entities[] = { m_spotLightEntity, m_sunLightEntity, g_localFogEntity };
-	//
-	//auto cameraEntity = m_engine->getRenderSystem().getCameraEntity();
-	//auto camC = entityRegistry.get<VEngine::CameraComponent>(cameraEntity);
-	//VEngine::Camera camera(entityRegistry.get<VEngine::TransformationComponent>(cameraEntity), camC);
-	//
-	//auto viewMatrix = camera.getViewMatrix();
-	//auto projMatrix = glm::perspective(camC.m_fovy, camC.m_aspectRatio, camC.m_near, camC.m_far);
-	//
-	//auto &tansC = entityRegistry.get<VEngine::TransformationComponent>(entities[entityIdx]);
-	//
-	//auto &io = ImGui::GetIO();
-	//
-	//static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
-	//static ImGuizmo::MODE mode = ImGuizmo::MODE::WORLD;
-	//
-	//auto &input = m_engine->getUserInput();
-	//if (input.isKeyPressed(InputKey::ONE))
-	//{
-	//	operation = ImGuizmo::OPERATION::TRANSLATE;
-	//}
-	//else if (input.isKeyPressed(InputKey::TWO))
-	//{
-	//	operation = ImGuizmo::OPERATION::ROTATE;
-	//}
-	//
-	//if (input.isKeyPressed(InputKey::F1))
-	//{
-	//	mode = ImGuizmo::MODE::WORLD;
-	//}
-	//else if (input.isKeyPressed(InputKey::F2))
-	//{
-	//	mode = ImGuizmo::MODE::LOCAL;
-	//}
+	entityRegistry.view<GlobalParticipatingMediumComponent>().each(
+		[&](GlobalParticipatingMediumComponent &mediumComponent)
+		{
+			mediumComponent.m_textureBias = glm::vec3(time, 0.0f, time * 0.5f) * 0.2f;
+		});
 
-	if (input.isKeyPressed(InputKey::V))
-	{
-		g_volumetricShadow = 0;
-	}
-	else if (input.isKeyPressed(InputKey::B))
-	{
-		g_volumetricShadow = 1;
-	}
-	else if (input.isKeyPressed(InputKey::N))
-	{
-		g_volumetricShadow = 2;
-	}
+	entityRegistry.view<LocalParticipatingMediumComponent>().each(
+		[&](LocalParticipatingMediumComponent &mediumComponent)
+		{
+			mediumComponent.m_textureBias = glm::vec3(time, 0.0f, time * 0.5f) * 0.2f;
+		});
 
-	//glm::mat4 orientation = glm::translate(tansC.m_position) * glm::mat4_cast(tansC.m_orientation);
-	//
-	//ImGuizmo::SetRect((float)0.0f, (float)0.0f, (float)io.DisplaySize.x, (float)io.DisplaySize.y);
-	//ImGuizmo::Manipulate((float *)&viewMatrix, (float *)&projMatrix, operation, mode, (float *)&orientation);
-	//glm::vec3 position;
-	//glm::vec3 eulerAngles;
-	//glm::vec3 scale;
-	//ImGuizmo::DecomposeMatrixToComponents((float *)&orientation, (float *)&position, (float *)&eulerAngles, (float *)&scale);
-	//
-	//if (operation == ImGuizmo::OPERATION::TRANSLATE)
-	//{
-	//	tansC.m_position = position;
-	//}
-	//else if (operation == ImGuizmo::OPERATION::ROTATE)
-	//{
-	//	tansC.m_orientation = glm::quat(glm::radians(eulerAngles));
-	//}
-
-	entityRegistry.get<VEngine::CameraComponent>(m_cameraEntity).m_aspectRatio = std::max(m_engine->getWidth(), 1u) / (float)std::max(m_engine->getHeight(), 1u);
-
-	//auto &renderSystem = m_engine->getRenderSystem();
-	//
-	//renderSystem.drawDebugLine(glm::vec3(5.0f, 1.0f, -5.0f), glm::vec3(5.0f, 1.0f, 5.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	//renderSystem.drawDebugLineVisible(glm::vec3(4.0f, 1.0f, -5.0f), glm::vec3(4.0f, 1.0f, 5.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-	//renderSystem.drawDebugLineHidden(glm::vec3(3.0f, 1.0f, -5.0f), glm::vec3(3.0f, 1.0f, 5.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-	//
-	//renderSystem.drawDebugTriangle(glm::vec3(-5.0f, 1.0f, 0.0f), glm::vec3(-5.0f, -1.0f, -2.0f), glm::vec3(-5.0f, -1.0f, 2.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 0.5f), glm::vec4(1.0f, 0.0f, 0.0f, 0.5f));
-	//renderSystem.drawDebugTriangleVisible(glm::vec3(-4.0f, 1.0f, 0.0f), glm::vec3(-4.0f, -1.0f, -2.0f), glm::vec3(-4.0f, -1.0f, 2.0f), glm::vec4(0.0f, 1.0f, 0.0f, 0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 0.5f), glm::vec4(0.0f, 1.0f, 0.0f, 0.5f));
-	//renderSystem.drawDebugTriangleHidden(glm::vec3(-3.0f, 1.0f, 0.0f), glm::vec3(-3.0f, -1.0f, -2.0f), glm::vec3(-3.0f, -1.0f, 2.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 0.5f), glm::vec4(0.0f, 0.0f, 1.0f, 0.5f));
+	entityRegistry.get<CameraComponent>(m_cameraEntity).m_aspectRatio = std::max(m_engine->getWidth(), 1u) / (float)std::max(m_engine->getHeight(), 1u);
 }
 
 void App::shutdown()

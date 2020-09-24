@@ -11,7 +11,5 @@ public:
 
 private:
 	VEngine::Engine *m_engine;
-	entt::entity m_sunLightEntity;
-	entt::entity m_spotLightEntity;
 	entt::entity m_cameraEntity;
 };

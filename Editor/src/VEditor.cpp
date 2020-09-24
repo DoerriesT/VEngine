@@ -15,9 +15,6 @@
 
 using namespace VEngine;
 
-extern entt::entity g_emitterEntity;
-extern entt::entity g_localLightEntity;
-
 VEditor::VEditor::VEditor(VEngine::IGameLogic &gameLogic)
 	:m_gameLogic(gameLogic),
 	m_engine(),
