@@ -7,7 +7,7 @@ namespace VEngine
 	GlobalVar<bool> g_VSyncEnabled = false;
 	GlobalVar<bool> g_TAAEnabled = true;
 	GlobalVar<float> g_TAABicubicSharpness = 0.5f;
-	GlobalVar<float> g_TAAMipBias = -1.0f;
+	GlobalVar<float> g_TAAMipBias = -0.5f;
 	GlobalVar<bool> g_FXAAEnabled = false;
 	GlobalVar<float> g_FXAAQualitySubpix = 0.75f;
 	GlobalVar<float> g_FXAAQualityEdgeThreshold = 0.166f;

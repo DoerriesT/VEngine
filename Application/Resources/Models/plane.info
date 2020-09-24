@@ -1,0 +1,47 @@
+{
+    "materialLibraryFile": "Resources/Models/plane.matlib",
+    "maxCorner": [
+        128.0,
+        0.0,
+        128.0
+    ],
+    "meshFile": "Resources/Models/plane.mesh",
+    "minCorner": [
+        -128.0,
+        0.0,
+        -128.0
+    ],
+    "subMeshInstances": [
+        {
+            "material": 0,
+            "name": "Plane",
+            "subMesh": 0
+        }
+    ],
+    "subMeshes": [
+        {
+            "dataOffset": 0,
+            "indexCount": 6,
+            "maxCorner": [
+                128.0,
+                0.0,
+                128.0
+            ],
+            "minCorner": [
+                -128.0,
+                0.0,
+                -128.0
+            ],
+            "name": "Plane",
+            "texCoordMax": [
+                256.0,
+                1.0
+            ],
+            "texCoordMin": [
+                0.0,
+                -255.0
+            ],
+            "vertexCount": 4
+        }
+    ]
+}

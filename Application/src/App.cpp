@@ -58,6 +58,13 @@ void App::initialize(Engine *engine)
 	entityRegistry.assign<RenderableComponent>(sponzaEntity);
 	scene.m_entities.push_back({ "Sponza", sponzaEntity });
 
+	scene.load(m_engine->getRenderSystem(), "Resources/Models/plane");
+	entt::entity planeEntity = entityRegistry.create();
+	entityRegistry.assign<TransformationComponent>(planeEntity, TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -0.01f, 0.0f));
+	entityRegistry.assign<MeshComponent>(planeEntity, scene.m_meshInstances["Resources/Models/plane"]);
+	entityRegistry.assign<RenderableComponent>(planeEntity);
+	scene.m_entities.push_back({ "Plane", planeEntity });
+
 	auto createReflectionProbe = [&](const glm::vec3 &bboxMin, const glm::vec3 &bboxMax, bool manualOffset = false, const glm::vec3 &capturePos = glm::vec3(0.0f))
 	{
 		glm::vec3 probeCenter = (bboxMin + bboxMax) * 0.5f;
@@ -101,7 +108,7 @@ void App::initialize(Engine *engine)
 	auto globalFogEntity = entityRegistry.create();
 	auto &gpmc = entityRegistry.assign<GlobalParticipatingMediumComponent>(globalFogEntity);
 	gpmc.m_albedo = glm::vec3(1.0f);
-	gpmc.m_extinction = 0.1f;
+	gpmc.m_extinction = 0.05f;
 	gpmc.m_emissiveColor = glm::vec3(1.0f);
 	gpmc.m_emissiveIntensity = 0.0f;
 	gpmc.m_phaseAnisotropy = 0.7f;
@@ -121,7 +128,7 @@ void App::initialize(Engine *engine)
 
 
 	auto sunLightEntity = entityRegistry.create();
-	entityRegistry.assign<TransformationComponent>(sunLightEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-18.5f), 0.0f, 0.0f)));
+	entityRegistry.assign<TransformationComponent>(sunLightEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(), glm::quat(glm::vec3(glm::radians(-24.5f), 0.0f, 0.0f)));
 	auto &dlc = entityRegistry.assign<DirectionalLightComponent>(sunLightEntity, Utility::colorTemperatureToColor(4000.0f), 100.0f, true, 4u, 130.0f, 0.9f);
 	dlc.m_depthBias[0] = 5.0f;
 	dlc.m_depthBias[1] = 5.0f;
@@ -135,19 +142,19 @@ void App::initialize(Engine *engine)
 	scene.m_entities.push_back({ "Sun Light", sunLightEntity });
 
 	auto particleEmitter = entityRegistry.create();
-	entityRegistry.assign<TransformationComponent>(particleEmitter, TransformationComponent::Mobility::DYNAMIC, glm::vec3(-4.0f, 0.0f, 0.0f));
+	entityRegistry.assign<TransformationComponent>(particleEmitter, TransformationComponent::Mobility::DYNAMIC, glm::vec3(32.0f, 0.0f, -22.0f));
 	ParticleEmitterComponent emitterC{};
 	emitterC.m_direction = glm::vec3(0.0f, 5.0f, 0.0f);
 	emitterC.m_particleCount = 32;
-	emitterC.m_particleLifetime = 10.0f;
+	emitterC.m_particleLifetime = 20.0f;
 	emitterC.m_velocityMagnitude = 1.0f;
 	emitterC.m_spawnType = ParticleEmitterComponent::DISK;
 	emitterC.m_spawnAreaSize = 0.2f;
 	emitterC.m_spawnRate = 2.0f;
 	emitterC.m_particleSize = 0.4f;
-	emitterC.m_particleFinalSize = 2.0f;
-	emitterC.m_rotation = 0.5f;
-	emitterC.m_FOMOpacityMult = 0.5f;
+	emitterC.m_particleFinalSize = 3.0f;
+	emitterC.m_rotation = 0.35f;
+	emitterC.m_FOMOpacityMult = 0.6f;
 	emitterC.m_textureHandle = smokeTexture;
 
 	entityRegistry.assign<ParticleEmitterComponent>(particleEmitter, emitterC);
