@@ -2,6 +2,7 @@
 #include <IGameLogic.h>
 #include <entt/entity/registry.hpp>
 #include "GUI.h"
+#include <vector>
 
 struct ProfilingData
 {
@@ -51,13 +52,14 @@ private:
 	bool m_currentlyProfiling = false;
 	uint32_t m_profiledFrames = 0;
 	ProfilingStage m_currentProfilingStage;
-	uint32_t m_currentScene;
 
-	ProfilingData m_profilingData[3][8]; // one set of data per scene
+	ProfilingData m_profilingData[8];
 
 	bool m_showTerrain = false;
 	entt::entity m_planeEntity;
 	entt::entity m_terrainEntity;
+	std::vector<entt::entity> m_randomLights;
+	int m_activeRandomLightCount = 0;
 
 	void profile();
 };

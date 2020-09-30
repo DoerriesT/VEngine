@@ -124,7 +124,7 @@ float4 main(PSInput input) : SV_Target0
 		const uint2 tile = getTile(int2(input.position.xy));
 	
 		const float mipCount = 7.0;
-		float mipLevel = sqrt(roughness) * mipCount;
+		float mipLevel = (roughness) * mipCount;
 	
 		for (uint wordIndex = wordMin; wordIndex <= wordMax; ++wordIndex)
 		{
