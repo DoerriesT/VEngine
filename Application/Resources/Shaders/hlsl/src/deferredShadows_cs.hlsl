@@ -143,6 +143,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	uint3 imageDims;
 	g_ShadowImage.GetDimensions(imageDims.x, imageDims.y, imageDims.z);
 	const float texelSize = 1.0 / imageDims.x;
+	bool foundValidCascade = false;
 	for (int i = g_Constants.cascadeCount - 1; i >= 0; --i)
 	{
 		const float normalOffsetScale = g_CascadeParams[cascadeDataOffset + i].y * scaleWeight;
@@ -150,34 +151,42 @@ void main(uint3 threadID : SV_DispatchThreadID)
 		const float border = maxFilterRadiusWorldSpace * g_CascadeParams[cascadeDataOffset + i].z * texelSize;
 		const bool valid = all(abs(shadowCoord.xy) < (border * -2.0 + 1.0));
 		tc = valid ? shadowCoord : tc;
+		foundValidCascade = foundValidCascade || valid;
 	}
 	
-	tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
-	tc.z += g_CascadeParams[int(tc.w)].x;
-
-	float shadow = 0.0;
-	const float noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0)).x * 2.0 * 3.1415;
-	//const float noise = interleavedGradientNoise(float2(threadID.xy) + 0.5) * 2.0 * 3.1415;
-	const float filterScale = penumbra(noise, tc.xyz, 16, tc.w);
-	const float maxFilterRadiusTexelSpace = maxFilterRadiusWorldSpace * g_CascadeParams[int(tc.w)].z * texelSize;
-	for (uint j = 0; j < 16; ++j)
+	if (foundValidCascade)
 	{
-		const float2 coord = filterScale * maxFilterRadiusTexelSpace * vogelDiskSample(j, 16, noise) + tc.xy;
-		shadow += g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(coord, tc.w), tc.z).x * (1.0 / 16.0);
-	}
+		tc.xy = tc.xy * float2(0.5, -0.5) + 0.5;
+		tc.z += g_CascadeParams[int(tc.w)].x;
 	
-	if (shadow > 0.0 && g_Constants.volumetricShadow)
+		float shadow = 0.0;
+		const float noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0)).x * 2.0 * 3.1415;
+		//const float noise = interleavedGradientNoise(float2(threadID.xy) + 0.5) * 2.0 * 3.1415;
+		const float filterScale = penumbra(noise, tc.xyz, 16, tc.w);
+		const float maxFilterRadiusTexelSpace = maxFilterRadiusWorldSpace * g_CascadeParams[int(tc.w)].z * texelSize;
+		for (uint j = 0; j < 16; ++j)
+		{
+			const float2 coord = filterScale * maxFilterRadiusTexelSpace * vogelDiskSample(j, 16, noise) + tc.xy;
+			shadow += g_ShadowImage.SampleCmpLevelZero(g_ShadowSampler, float3(coord, tc.w), tc.z).x * (1.0 / 16.0);
+		}
+		
+		if (shadow > 0.0 && g_Constants.volumetricShadow)
+		{
+			float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
+			float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
+			
+			float rangeBegin = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2), 0.0).x;
+			float rangeEnd = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2 + 1), 0.0).x;
+			float depth = clamp(tc.z, rangeBegin, rangeEnd);
+			depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
+			
+			shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
+		}
+		
+		g_ResultImage[threadID.xy] = shadow;
+	}
+	else
 	{
-		float4 fom0 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 0.0), 0.0);
-		float4 fom1 = g_FomImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2.0 + 1.0), 0.0);
-		
-		float rangeBegin = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2), 0.0).x;
-		float rangeEnd = g_FomDepthRangeImage.SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], float3(tc.xy, tc.w * 2 + 1), 0.0).x;
-		float depth = clamp(tc.z, rangeBegin, rangeEnd);
-		depth = (depth - rangeBegin) / (rangeEnd - rangeBegin);
-		
-		shadow = min(shadow, fourierOpacityGetTransmittance(depth, fom0, fom1));
+		g_ResultImage[threadID.xy] = 1.0;
 	}
-	
-	g_ResultImage[threadID.xy] = shadow;
 }

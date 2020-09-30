@@ -94,9 +94,6 @@ void main(uint3 threadID : SV_DispatchThreadID)
 	const float stepCount = 16.0;
 	const float stepSize = rayLength / stepCount;
 	
-	
-	float3 viewSpaceV = mul(g_Constants.viewMatrix, float4(-rayDir, 0.0)).xyz;
-	
 	float4 accum = float4(0.0, 0.0, 0.0, 1.0);
 	
 	float noise = g_BlueNoiseImage.Load(int4((threadID.xy + 32 * (g_Constants.frame & 1)) & 63, g_Constants.frame & 63, 0)).x;
@@ -142,7 +139,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 				for (uint i = 0; i < g_Constants.directionalLightCount; ++i)
 				{
 					DirectionalLight directionalLight = g_DirectionalLights[i];
-					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w);
+					lighting += directionalLight.color * henyeyGreenstein(-rayDir, directionalLight.direction, emissivePhase.w);
 				}
 			}
 			
@@ -152,7 +149,7 @@ void main(uint3 threadID : SV_DispatchThreadID)
 				{
 					DirectionalLight directionalLight = g_DirectionalLightsShadowed[i];
 					float shadow = getDirectionalLightShadow(directionalLight, worldSpacePos);
-					lighting += directionalLight.color * henyeyGreenstein(viewSpaceV, directionalLight.direction, emissivePhase.w) * shadow;
+					lighting += directionalLight.color * henyeyGreenstein(-rayDir, directionalLight.direction, emissivePhase.w) * shadow;
 				}
 			}
 		}

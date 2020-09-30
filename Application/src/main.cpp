@@ -6,8 +6,8 @@
 int main()
 {
 	App logic;
-	VEditor::VEditor editor(logic);
-	VEngine::Engine engine("Real-Time Volumetric Lighting", editor);
+	//VEditor::VEditor editor(logic);
+	VEngine::Engine engine("Real-Time Volumetric Lighting", logic);
 	engine.start();
 
 	return EXIT_SUCCESS;

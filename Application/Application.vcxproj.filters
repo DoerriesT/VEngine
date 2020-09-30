@@ -12,9 +12,15 @@
     <ClCompile Include="src\App.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\GUI.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GUI.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

@@ -34,8 +34,8 @@ using namespace VEngine;
 
 bool g_fogJittering = true;
 float g_fogHistoryAlpha = 0.2f;
-bool g_raymarchedFog = false;
-int g_volumetricShadow = 0;
+bool g_raymarchedFog = true;
+int g_volumetricShadow = 1;
 
 extern bool g_volumetricFogCheckerBoard;
 extern bool g_volumetricFogMergedPasses;
@@ -49,9 +49,11 @@ void App::initialize(Engine *engine)
 	auto &entityRegistry = m_engine->getEntityRegistry();
 	m_cameraEntity = entityRegistry.create();
 	entityRegistry.assign<TransformationComponent>(m_cameraEntity, TransformationComponent::Mobility::DYNAMIC, glm::vec3(0.0f, 1.8f, 0.0f), glm::quat(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f)));
-	entityRegistry.assign<CameraComponent>(m_cameraEntity, CameraComponent::ControllerType::FPS, m_engine->getWidth() / (float)m_engine->getHeight(), glm::radians(60.0f), 0.1f, 300.0f);
+	entityRegistry.assign<CameraComponent>(m_cameraEntity, CameraComponent::ControllerType::FPS, m_engine->getWidth() / (float)m_engine->getHeight(), glm::radians(60.0f), 0.1f, 2000.0f);
 	m_engine->getRenderSystem().setCameraEntity(m_cameraEntity);
 	scene.m_entities.push_back({ "Camera", m_cameraEntity });
+
+	m_gui = new GUI(engine, m_cameraEntity);
 
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/sponza");
 	entt::entity sponzaEntity = entityRegistry.create();
@@ -60,12 +62,19 @@ void App::initialize(Engine *engine)
 	entityRegistry.assign<RenderableComponent>(sponzaEntity);
 	scene.m_entities.push_back({ "Sponza", sponzaEntity });
 
+	scene.load(m_engine->getRenderSystem(), "Resources/Models/terrain");
+	m_terrainEntity = entityRegistry.create();
+	entityRegistry.assign<TransformationComponent>(m_terrainEntity, TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -5.0f, 0.0f));
+	entityRegistry.assign<MeshComponent>(m_terrainEntity, scene.m_meshInstances["Resources/Models/terrain"]);
+	//entityRegistry.assign<RenderableComponent>(m_terrainEntity);
+	scene.m_entities.push_back({ "Terrain", m_terrainEntity });
+
 	scene.load(m_engine->getRenderSystem(), "Resources/Models/plane");
-	entt::entity planeEntity = entityRegistry.create();
-	entityRegistry.assign<TransformationComponent>(planeEntity, TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -0.01f, 0.0f));
-	entityRegistry.assign<MeshComponent>(planeEntity, scene.m_meshInstances["Resources/Models/plane"]);
-	entityRegistry.assign<RenderableComponent>(planeEntity);
-	scene.m_entities.push_back({ "Plane", planeEntity });
+	m_planeEntity = entityRegistry.create();
+	entityRegistry.assign<TransformationComponent>(m_planeEntity, TransformationComponent::Mobility::STATIC, glm::vec3(0.0f, -0.01f, 0.0f));
+	entityRegistry.assign<MeshComponent>(m_planeEntity, scene.m_meshInstances["Resources/Models/plane"]);
+	entityRegistry.assign<RenderableComponent>(m_planeEntity);
+	scene.m_entities.push_back({ "Plane", m_planeEntity });
 
 	auto createReflectionProbe = [&](const glm::vec3 &bboxMin, const glm::vec3 &bboxMax, bool manualOffset = false, const glm::vec3 &capturePos = glm::vec3(0.0f))
 	{
@@ -233,21 +242,21 @@ void App::update(float timeDelta)
 			window->setWindowMode(fullscreen ? Window::WindowMode::FULL_SCREEN : Window::WindowMode::WINDOWED);
 		}
 
-		bool vsync = g_VSyncEnabled;
-		ImGui::Checkbox("VSync", &vsync);
-		g_VSyncEnabled.set(vsync);
+		//bool vsync = g_VSyncEnabled;
+		//ImGui::Checkbox("VSync", &vsync);
+		//g_VSyncEnabled.set(vsync);
 
 		int volumeWidth = g_VolumetricFogVolumeWidth;
-		ImGui::DragInt("Volume Width", &volumeWidth, 1.0f, 32, 256);
-		g_VolumetricFogVolumeWidth = std::min(std::max((uint32_t)volumeWidth, 32u), 256u);
+		ImGui::DragInt("Volume Width", &volumeWidth, 1.0f, 160, 240);
+		g_VolumetricFogVolumeWidth = std::min(std::max((uint32_t)volumeWidth, 160u), 240u);
 
 		int volumeHeight = g_VolumetricFogVolumeHeight;
-		ImGui::DragInt("Volume Height", &volumeHeight, 1.0f, 32, 256);
-		g_VolumetricFogVolumeHeight = std::min(std::max((uint32_t)volumeHeight, 32u), 256u);
+		ImGui::DragInt("Volume Height", &volumeHeight, 1.0f, 90, 135);
+		g_VolumetricFogVolumeHeight = std::min(std::max((uint32_t)volumeHeight, 90u), 135u);
 
 		int volumeDepth = g_VolumetricFogVolumeDepth;
-		ImGui::DragInt("Volume Depth", &volumeDepth, 1.0f, 32, 256);
-		g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 32u), 256u);
+		ImGui::DragInt("Volume Depth", &volumeDepth, 1.0f, 64, 128);
+		g_VolumetricFogVolumeDepth = std::min(std::max((uint32_t)volumeDepth, 64u), 128u);
 
 		bool volumetricShadow = g_volumetricShadow;
 
@@ -259,6 +268,20 @@ void App::update(float timeDelta)
 		ImGui::Checkbox("Raymarched Fog", &g_raymarchedFog);
 		ImGui::Checkbox("Fog Volume Jittering", &g_fogJittering);
 		ImGui::DragFloat("Fog History Alpha", &g_fogHistoryAlpha, 0.01f, 0.0f, 1.0f, "%.7f");
+
+		if (ImGui::Checkbox("Toggle Terrain", &m_showTerrain))
+		{
+			if (m_showTerrain)
+			{
+				entityRegistry.remove<RenderableComponent>(m_planeEntity);
+				entityRegistry.assign<RenderableComponent>(m_terrainEntity);
+			}
+			else
+			{
+				entityRegistry.remove<RenderableComponent>(m_terrainEntity);
+				entityRegistry.assign<RenderableComponent>(m_planeEntity);
+			}
+		}
 	}
 	ImGui::End();
 
@@ -279,10 +302,13 @@ void App::update(float timeDelta)
 		});
 
 	entityRegistry.get<CameraComponent>(m_cameraEntity).m_aspectRatio = std::max(m_engine->getWidth(), 1u) / (float)std::max(m_engine->getHeight(), 1u);
+
+	m_gui->draw();
 }
 
 void App::shutdown()
 {
+	delete m_gui;
 }
 
 void App::profile()

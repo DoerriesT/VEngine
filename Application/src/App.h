@@ -1,6 +1,7 @@
 #pragma once
 #include <IGameLogic.h>
 #include <entt/entity/registry.hpp>
+#include "GUI.h"
 
 struct ProfilingData
 {
@@ -46,12 +47,17 @@ public:
 private:
 	VEngine::Engine *m_engine;
 	entt::entity m_cameraEntity;
+	GUI *m_gui;
 	bool m_currentlyProfiling = false;
 	uint32_t m_profiledFrames = 0;
 	ProfilingStage m_currentProfilingStage;
 	uint32_t m_currentScene;
 
 	ProfilingData m_profilingData[3][8]; // one set of data per scene
+
+	bool m_showTerrain = false;
+	entt::entity m_planeEntity;
+	entt::entity m_terrainEntity;
 
 	void profile();
 };
