@@ -159,15 +159,15 @@ void GUI::draw()
 
 		if (ImGui::BeginPopup("add_entity_popup"))
 		{
-			if (ImGui::Selectable("Directional Light"))
-			{
-				auto entity = entityRegistry.create();
-				entityRegistry.assign<TransformationComponent>(entity);
-				entityRegistry.assign<DirectionalLightComponent>(entity);
-				entityRegistry.assign<RenderableComponent>(entity);
-				scene.m_entities.push_back({ "Directional Light", entity });
-				m_entity = entity;
-			}
+			//if (ImGui::Selectable("Directional Light"))
+			//{
+			//	auto entity = entityRegistry.create();
+			//	entityRegistry.assign<TransformationComponent>(entity);
+			//	entityRegistry.assign<DirectionalLightComponent>(entity);
+			//	entityRegistry.assign<RenderableComponent>(entity);
+			//	scene.m_entities.push_back({ "Directional Light", entity });
+			//	m_entity = entity;
+			//}
 			if (ImGui::Selectable("Point Light"))
 			{
 				auto entity = entityRegistry.create();
@@ -242,7 +242,7 @@ void GUI::draw()
 						selected = entity.second;
 					}
 					ImGui::PushID(&entity);
-					if (ImGui::BeginPopupContextItem("delete_entity_context_menu"))
+					if (!entityRegistry.has<DirectionalLightComponent>(entity.second) && ImGui::BeginPopupContextItem("delete_entity_context_menu"))
 					{
 						if (ImGui::Selectable("Delete"))
 						{
@@ -271,7 +271,7 @@ void GUI::draw()
 			}
 
 			// delete entity by pressing delete key
-			if (m_entity != entt::null && m_toDeleteEntity == entt::null)
+			if (m_entity != entt::null && m_toDeleteEntity == entt::null && !entityRegistry.has<DirectionalLightComponent>(m_entity))
 			{
 				if (ImGui::IsKeyPressed((int)InputKey::DELETE, false))
 					m_toDeleteEntity = m_entity;
@@ -289,6 +289,12 @@ void GUI::draw()
 
 				if (ImGui::Button("OK", ImVec2(120, 0)))
 				{
+					// manually removing this component before entity destruction fixes
+					// a crash where a callback tries to access the entity after destruction
+					if (entityRegistry.has<ParticleEmitterComponent>(m_toDeleteEntity))
+					{
+						entityRegistry.remove<ParticleEmitterComponent>(m_toDeleteEntity);
+					}
 					entityRegistry.destroy(m_toDeleteEntity);
 					size_t index = 0;
 					bool found = true;
