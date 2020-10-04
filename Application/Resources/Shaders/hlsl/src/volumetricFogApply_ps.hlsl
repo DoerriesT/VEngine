@@ -28,7 +28,7 @@ float4 main(PSInput input) : SV_Target0
 {
 	const float depth = g_DepthImage.Load(int3(input.position.xy, 0)).x;
 	
-	float4 noise = g_BlueNoiseImage.Load(int4((int2(input.position.xy) + 32 * (g_PushConsts.frame & 1)) & 63, g_PushConsts.frame & 63, 0));
+	float4 noise = g_BlueNoiseImage.Load(int4(int2(input.position.xy) & 63, g_PushConsts.frame & 63, 0));
 	noise = (noise * 2.0 - 1.0) * 1.5;
 	
 	const float centerDepth = rcp(g_PushConsts.unprojectParams.z * depth + g_PushConsts.unprojectParams.w);

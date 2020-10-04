@@ -13,6 +13,7 @@ private:
 	entt::entity m_cameraEntity;
 	entt::entity m_entity;
 	entt::entity m_lastDisplayedEntity;
+	entt::entity m_toDeleteEntity;
 	int m_translateRotateScaleMode;
 	bool m_localTransformMode;
 };

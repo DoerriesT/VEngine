@@ -138,6 +138,7 @@ GUI::GUI(VEngine::Engine *engine, entt::entity cameraEntity)
 	m_cameraEntity(cameraEntity),
 	m_entity(entt::null),
 	m_lastDisplayedEntity(entt::null),
+	m_toDeleteEntity(entt::null),
 	m_translateRotateScaleMode(),
 	m_localTransformMode()
 {
@@ -151,8 +152,6 @@ void GUI::draw()
 	// entity selector
 	ImGui::Begin("Entities");
 	{
-		entt::entity toDeleteEntity = entt::null;
-
 		if (ImGui::Button("Add Entity"))
 		{
 			ImGui::OpenPopup("add_entity_popup");
@@ -220,11 +219,12 @@ void GUI::draw()
 				uint32_t entityCount = 0;
 				for (auto &entity : scene.m_entities)
 				{
-					if (!(entityRegistry.has<PointLightComponent>(entity.second) 
+					if (!(entityRegistry.has<DirectionalLightComponent>(entity.second) 
 						|| entityRegistry.has<PointLightComponent>(entity.second)
 						|| entityRegistry.has<SpotLightComponent>(entity.second)
 						|| entityRegistry.has<GlobalParticipatingMediumComponent>(entity.second)
-						|| entityRegistry.has<LocalParticipatingMediumComponent>(entity.second)))
+						|| entityRegistry.has<LocalParticipatingMediumComponent>(entity.second)
+						|| entityRegistry.has<ParticleEmitterComponent>(entity.second)))
 					{
 						continue;
 					}
@@ -246,7 +246,7 @@ void GUI::draw()
 					{
 						if (ImGui::Selectable("Delete"))
 						{
-							toDeleteEntity = entity.second;
+							m_toDeleteEntity = entity.second;
 						}
 						ImGui::EndPopup();
 					}
@@ -271,13 +271,13 @@ void GUI::draw()
 			}
 
 			// delete entity by pressing delete key
-			if (m_entity != entt::null && toDeleteEntity == entt::null)
+			if (m_entity != entt::null && m_toDeleteEntity == entt::null)
 			{
 				if (ImGui::IsKeyPressed((int)InputKey::DELETE, false))
-					toDeleteEntity = m_entity;
+					m_toDeleteEntity = m_entity;
 			}
 
-			if (toDeleteEntity != entt::null)
+			if (m_toDeleteEntity != entt::null)
 			{
 				ImGui::OpenPopup("Delete Entity?");
 			}
@@ -289,27 +289,27 @@ void GUI::draw()
 
 				if (ImGui::Button("OK", ImVec2(120, 0)))
 				{
-					entityRegistry.destroy(toDeleteEntity);
+					entityRegistry.destroy(m_toDeleteEntity);
 					size_t index = 0;
 					bool found = true;
 					for (; index < scene.m_entities.size(); ++index)
 					{
-						if (scene.m_entities[index].second == toDeleteEntity)
+						if (scene.m_entities[index].second == m_toDeleteEntity)
 						{
 							found = true;
 							break;
 						}
 					}
 					ContainerUtility::remove(scene.m_entities, scene.m_entities[index]);
-					m_entity = m_entity == toDeleteEntity ? entt::null : m_entity;
-					toDeleteEntity = entt::null;
+					m_entity = m_entity == m_toDeleteEntity ? entt::null : m_entity;
+					m_toDeleteEntity = entt::null;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::SetItemDefaultFocus();
 				ImGui::SameLine();
 				if (ImGui::Button("Cancel", ImVec2(120, 0)))
 				{
-					toDeleteEntity = entt::null;
+					m_toDeleteEntity = entt::null;
 					ImGui::CloseCurrentPopup();
 				}
 				ImGui::EndPopup();

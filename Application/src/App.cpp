@@ -209,7 +209,7 @@ void App::initialize(Engine *engine)
 		{
 			entt::entity lightEntity = entityRegistry.create();
 			entityRegistry.assign<TransformationComponent>(lightEntity, TransformationComponent::Mobility::DYNAMIC, hangingLightPositions[i]);
-			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(3000.0f), 2000.0f, 4.0f, true, true);
+			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(3000.0f), 1000.0f, 4.0f, true, true);
 			entityRegistry.assign<RenderableComponent>(lightEntity);
 			scene.m_entities.push_back({ "Hanging Light " + std::to_string(i), lightEntity });
 		}
@@ -226,7 +226,7 @@ void App::initialize(Engine *engine)
 		{
 			entt::entity lightEntity = entityRegistry.create();
 			entityRegistry.assign<TransformationComponent>(lightEntity, TransformationComponent::Mobility::DYNAMIC, cornerLightPositions[i]);
-			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(6000.0f), 2000.0f, 8.0f, true, true);
+			entityRegistry.assign<PointLightComponent>(lightEntity, Utility::colorTemperatureToColor(6000.0f), 1000.0f, 8.0f, true, true);
 			entityRegistry.assign<RenderableComponent>(lightEntity);
 			scene.m_entities.push_back({ "Corner Light " + std::to_string(i), lightEntity });
 		}

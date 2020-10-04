@@ -48,10 +48,12 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 {
 	m_probeMatrices.clear();
 	probeRenderCount = 0;
+	probeRelightCount = 0;
 
 	auto view = m_entityRegistry.view<TransformationComponent, LocalReflectionProbeComponent, ReflectionProbeInternalDataComponent, RenderableComponent>();
 
 	// update cache
+	if (!view.empty())
 	{
 		struct ProbeSortData
 		{

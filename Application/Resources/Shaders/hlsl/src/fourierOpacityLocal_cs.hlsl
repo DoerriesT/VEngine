@@ -69,7 +69,6 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	
 	uint2 dstCoord = globalCoord.xy + uint2(lightInfo.offsetX, lightInfo.offsetY);
 	const float2 texCoord = (globalCoord.xy + 0.5) * lightInfo.texelSize;
-	const uint depthCoord = 0;
 	
 	// compute ray from light source passing through the current pixel
 	float3 ray = 0.0;
@@ -84,9 +83,9 @@ void main(uint3 threadID : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint
 	}
 	
 	// ray segment of current thread
-	const float segmentLength = lightInfo.radius / 4.0;
-	float rayStart = segmentLength * depthCoord;
-	const float rayEnd = segmentLength * (depthCoord + 1);
+	const float segmentLength = lightInfo.radius;
+	float rayStart = 0.0;
+	const float rayEnd = lightInfo.radius;
 	const float invRadius = 1.0 / lightInfo.radius;
 	
 	float4 result0 = 0.0;

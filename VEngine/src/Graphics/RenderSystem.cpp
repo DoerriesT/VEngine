@@ -1275,8 +1275,8 @@ void VEngine::RenderSystem::calculateCascadeViewProjectionMatrices(const glm::ve
 		constexpr float precisionRange = 65536.0f;
 
 		// snap to shadow map texel to avoid shimmering
-		lightView[3].x -= fmodf(lightView[3].x, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
-		lightView[3].y -= fmodf(lightView[3].y, (radius / static_cast<float>(shadowTextureSize)) * 2.0f);
+		lightView[3].x -= fmodf(lightView[3].x, (radius / 256.0f) * 2.0f);
+		lightView[3].y -= fmodf(lightView[3].y, (radius / 256.0f) * 2.0f);
 		lightView[3].z -= fmodf(lightView[3].z, depthRange / precisionRange);
 
 		viewMatrixDepthRows[i] = glm::vec4(lightView[0][2], lightView[1][2], lightView[2][2], lightView[3][2]);

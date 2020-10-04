@@ -271,7 +271,7 @@ void VEngine::FourierOpacityDirectionalLightPass::addToGraph(rg::RenderGraph &gr
 							glm::mat4 invShadowMatrix = glm::inverse(data.m_shadowMatrices[light.m_shadowOffset + (uint32_t)cascadeIdx]);
 
 							PushConsts2 pushConsts;
-							pushConsts.rayDir = -glm::normalize(glm::vec3(commonData->m_invViewMatrix * glm::vec4(light.m_direction, 0.0f)));
+							pushConsts.rayDir = -glm::normalize(glm::vec3(light.m_direction));
 							pushConsts.invLightRange = 1.0f / 300.0f;
 							pushConsts.topLeft = invShadowMatrix * glm::vec4(-1.0f, 1.0f, 0.0f, 1.0f);
 							pushConsts.deltaX = (glm::vec3(invShadowMatrix * glm::vec4(1.0f, 1.0f, 0.0f, 1.0f)) - pushConsts.topLeft) / w;
