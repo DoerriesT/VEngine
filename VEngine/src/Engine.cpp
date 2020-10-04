@@ -119,7 +119,7 @@ void VEngine::Engine::start()
 		m_cameraControllerSystem->update(timeDelta, m_renderSystem->getCameraEntity());
 		m_gameLogic.update(timeDelta);
 
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 
 		memmove(frametimes.get(), frametimes.get() + 1, (FRAME_TIME_ARRAY_SIZE - 1) * sizeof(float));
 		frametimes[FRAME_TIME_ARRAY_SIZE - 1] = timeDelta * 1000.0f;
