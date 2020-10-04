@@ -243,7 +243,7 @@ void VEngine::ReflectionProbeManager::update(const CommonRenderData &commonData,
 					probe.m_worldToLocal1 = worldToLocalTransposed[1];
 					probe.m_worldToLocal2 = worldToLocalTransposed[2];
 					probe.m_capturePosition = probePosition;
-					probe.m_arraySlot = internalComponent.m_cacheSlot;
+					probe.m_arraySlot = (float)internalComponent.m_cacheSlot;
 					probe.m_boxInvFadeDist0 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[0], 1e-5f, transformationComponent.m_scale.x) / transformationComponent.m_scale.x);
 					probe.m_boxInvFadeDist1 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[1], 1e-5f, transformationComponent.m_scale.x) / transformationComponent.m_scale.x);
 					probe.m_boxInvFadeDist2 = 1.0f / (glm::clamp(probeComponent.m_boxFadeDistances[2], 1e-5f, transformationComponent.m_scale.y) / transformationComponent.m_scale.y);

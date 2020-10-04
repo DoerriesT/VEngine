@@ -74,7 +74,7 @@ void VEngine::Scene::load(RenderSystem &renderSystem, std::string filepath)
 			materials.push_back(material);
 		}
 
-		renderSystem.createMaterials(materials.size(), materials.data(), materialHandles.data());
+		renderSystem.createMaterials((uint32_t)materials.size(), materials.data(), materialHandles.data());
 		renderSystem.updateTextureData();
 	}
 

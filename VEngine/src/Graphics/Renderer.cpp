@@ -24,7 +24,6 @@
 #include "Pass/ImGuiPass.h"
 #include "Pass/ReadBackCopyPass.h"
 #include "Pass/HiZPyramidPass.h"
-#include "Pass/BuildIndexBufferPass.h"
 #include "Pass/SharpenFfxCasPass.h"
 #include "Pass/TemporalAAPass.h"
 #include "Pass/DepthPrepassPass.h"
@@ -699,7 +698,7 @@ void VEngine::Renderer::render(const CommonRenderData &commonData, const RenderD
 	ShadowAtlasPass::Data shadowAtlasPassData;
 	shadowAtlasPassData.m_passRecordContext = &passRecordContext;
 	shadowAtlasPassData.m_shadowMapSize = 8192;
-	shadowAtlasPassData.m_drawInfoCount = lightData.m_shadowAtlasDrawInfos.size();
+	shadowAtlasPassData.m_drawInfoCount = (uint32_t)lightData.m_shadowAtlasDrawInfos.size();
 	shadowAtlasPassData.m_shadowAtlasDrawInfo = lightData.m_shadowAtlasDrawInfos.data();
 	shadowAtlasPassData.m_renderLists = renderData.m_renderLists;
 	shadowAtlasPassData.m_shadowMatrices = renderData.m_shadowMatrices;

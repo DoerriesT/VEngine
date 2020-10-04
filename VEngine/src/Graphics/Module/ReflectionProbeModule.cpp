@@ -257,9 +257,9 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 				viewCreateInfo.m_image = m_probeArrayImage;
 				viewCreateInfo.m_viewType = gal::ImageViewType::_2D_ARRAY;
 				viewCreateInfo.m_format = createInfo.m_format;
-				viewCreateInfo.m_baseMipLevel = j;
+				viewCreateInfo.m_baseMipLevel = (uint32_t)j;
 				viewCreateInfo.m_levelCount = 1;
-				viewCreateInfo.m_baseArrayLayer = i * 6;
+				viewCreateInfo.m_baseArrayLayer = (uint32_t)i * 6;
 				viewCreateInfo.m_layerCount = 6;
 
 				m_graphicsDevice->createImageView(viewCreateInfo, &m_probeMipViews[i][j]);
@@ -367,7 +367,7 @@ VEngine::ReflectionProbeModule::ReflectionProbeModule(gal::GraphicsDevice *graph
 	
 				BufferImageCopy region{};
 				region.m_bufferOffset = 0;
-				region.m_bufferRowLength = Utility::alignUp(sizeof(coeffs), m_graphicsDevice->getBufferCopyRowPitchAlignment()) / 16;
+				region.m_bufferRowLength = (uint32_t)Utility::alignUp(sizeof(coeffs), m_graphicsDevice->getBufferCopyRowPitchAlignment()) / 16;
 				region.m_bufferImageHeight = 1;
 				region.m_imageLayerCount = 1;
 				region.m_extent.m_width = sizeof(coeffs) / 16;

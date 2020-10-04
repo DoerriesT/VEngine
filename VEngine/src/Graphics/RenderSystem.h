@@ -7,7 +7,6 @@
 #include "RendererConsts.h"
 #include "Handles.h"
 #include "Utility/AxisAlignedBoundingBox.h"
-#include "BVH.h"
 #include "Renderer.h"
 #include "ReflectionProbeManager.h"
 #include "ParticleEmitterManager.h"
@@ -80,7 +79,6 @@ namespace VEngine
 		LightData m_lightData;
 		float m_haltonX[RendererConsts::MAX_TAA_HALTON_SAMPLES];
 		float m_haltonY[RendererConsts::MAX_TAA_HALTON_SAMPLES];
-		BVH m_bvh;
 		uint32_t m_width;
 		uint32_t m_height;
 		uint32_t m_swapChainWidth;

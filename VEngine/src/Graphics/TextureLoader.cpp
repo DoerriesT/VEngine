@@ -99,7 +99,7 @@ void VEngine::TextureLoader::load(const char *filepath, gal::Image *&image, gal:
 					bufferCopyRegion.m_extent.m_height = static_cast<uint32_t>(gliTex.extent(level).y);
 					bufferCopyRegion.m_extent.m_depth = static_cast<uint32_t>(gliTex.extent(level).z);
 					bufferCopyRegion.m_bufferOffset = currentOffset;
-					bufferCopyRegion.m_bufferRowLength = rowPitch / gli::block_size(gliTex.format()) * gli::block_extent(gliTex.format()).x; // this is in pixels
+					bufferCopyRegion.m_bufferRowLength = static_cast<uint32_t>(rowPitch / gli::block_size(gliTex.format()) * gli::block_extent(gliTex.format()).x); // this is in pixels
 					bufferCopyRegion.m_bufferImageHeight = static_cast<uint32_t>(glm::max(gliTex.extent(level), blockExtent).y);
 
 					bufferCopyRegions.push_back(bufferCopyRegion);

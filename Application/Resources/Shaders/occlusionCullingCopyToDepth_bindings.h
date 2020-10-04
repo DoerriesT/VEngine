@@ -1,2 +1,0 @@
-#define INPUT_IMAGE_SET 0
-#define INPUT_IMAGE_BINDING 0

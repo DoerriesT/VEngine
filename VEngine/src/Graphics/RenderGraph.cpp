@@ -944,7 +944,7 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 
 	std::vector<SemaphoreDependencyInfo> semaphoreDependencies(m_passSubresources.size());
 
-	const uint32_t finalResourceIdx = (uint32_t)m_viewDescriptions[(size_t)finalResourceHandle - 1].m_resourceHandle - 1;
+	const uint32_t finalResourceIdx = (uint32_t)(size_t)m_viewDescriptions[(size_t)finalResourceHandle - 1].m_resourceHandle - 1;
 
 	for (uint32_t resourceIdx = 0; resourceIdx < m_resourceDescriptions.size(); ++resourceIdx)
 	{
@@ -1079,7 +1079,7 @@ void VEngine::rg::RenderGraph::createSynchronization(ResourceViewHandle finalRes
 			m_batches.push_back({});
 			auto &batch = m_batches.back();
 			batch.m_passIndexOffset = i;
-			batch.m_cmdListOffset = 3 + m_batches.size() - 1;
+			batch.m_cmdListOffset = 3 + (uint16_t)m_batches.size() - 1;
 			batch.m_queue = curQueue;
 			for (size_t j = 0; j < 3; ++j)
 			{
