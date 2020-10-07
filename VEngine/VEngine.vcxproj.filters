@@ -28,9 +28,6 @@
     <Filter Include="src\Gui">
       <UniqueIdentifier>{a986f54a-fb21-4e47-bcd4-d4d615a52a56}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Editor">
-      <UniqueIdentifier>{df1a4664-06a3-40aa-9f97-a2abfdeb2b26}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\Graphics\gal">
       <UniqueIdentifier>{a8af73be-c547-472d-bb63-382abd12e1a0}</UniqueIdentifier>
     </Filter>
@@ -167,12 +164,6 @@
     </ClInclude>
     <ClInclude Include="src\Level.h">
       <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Editor\EntityDetailsWindow.h">
-      <Filter>src\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Editor\Editor.h">
-      <Filter>src\Editor</Filter>
     </ClInclude>
     <ClInclude Include="src\Graphics\gal\vulkan\GraphicsDeviceVk.h">
       <Filter>src\Graphics\gal\vulkan</Filter>
@@ -532,12 +523,6 @@
     </ClCompile>
     <ClCompile Include="src\Gui\MemoryAllocatorPlot.cpp">
       <Filter>src\Gui</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Editor\EntityDetailsWindow.cpp">
-      <Filter>src\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Editor\Editor.cpp">
-      <Filter>src\Editor</Filter>
     </ClCompile>
     <ClCompile Include="src\Graphics\gal\vulkan\GraphicsDeviceVk.cpp">
       <Filter>src\Graphics\gal\vulkan</Filter>

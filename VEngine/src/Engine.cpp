@@ -9,7 +9,6 @@
 #include "graphics/imgui/imgui.h"
 //#include "graphics/imgui/imgui_impl_glfw.h"
 #include "Graphics/imgui/ImGuizmo.h"
-#include "Editor/Editor.h"
 #include "Input/ImGuiInputAdapter.h"
 
 float g_ssrBias = 0.7f;

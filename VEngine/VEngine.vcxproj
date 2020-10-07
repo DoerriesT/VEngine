@@ -154,8 +154,6 @@
     <ClInclude Include="src\Components\RenderableComponent.h" />
     <ClInclude Include="src\Components\SpotLightComponent.h" />
     <ClInclude Include="src\Components\TransformationComponent.h" />
-    <ClInclude Include="src\Editor\Editor.h" />
-    <ClInclude Include="src\Editor\EntityDetailsWindow.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\GlobalVar.h" />
     <ClInclude Include="src\Graphics\Camera\Camera.h" />
@@ -287,8 +285,6 @@
     <ClInclude Include="src\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Editor\Editor.cpp" />
-    <ClCompile Include="src\Editor\EntityDetailsWindow.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\GlobalVar.cpp" />
     <ClCompile Include="src\Graphics\Camera\Camera.cpp" />
