@@ -1,4 +1,6 @@
 #  Dynamic Diffuse Voxel Global Illumination
+![Voxel GI](featured.png?raw=true "Voxel GI")
+
 An experimental implementation (C++/Vulkan) of a real-time GI technique based on the [Scalable Real-Time Global Illumination for Large Scenes](https://enlisted.net/en/news/show/25-gdc-talk-scalable-real-time-ray-traced-global-illumination-for-large-scenes-en) talk by Anton Yudintsev.
 
 # Controls
